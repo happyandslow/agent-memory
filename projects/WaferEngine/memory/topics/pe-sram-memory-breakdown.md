@@ -79,7 +79,7 @@ compute block.
 
 ## Related
 
-- `tools/pe_mem_breakdown/` (the tool); spec/plan at agent-memory root `2026-06-28-pe-sram-*`.
+- `tools/pe_mem_breakdown/` (the tool); design+plan at `projects/WaferEngine/docs/2026-06-28-pe-sram-*`; full session log at `projects/WaferEngine/memory/transcripts/2026-06-28-session-multi-request-brainstorm.md`.
 - Earlier hand-analysis: `WaferServe/kernels/Decode-GQA/docs/PE_SRAM_BREAKDOWN.md`,
   `PE_MEMORY_ANALYSIS.md` (this supersedes them on silicon, both phases).
 - `csl_cs_python_cwd_binding` — cs_readelf/cs_python SIF binds only $PWD.

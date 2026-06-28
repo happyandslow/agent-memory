@@ -10,6 +10,13 @@ Obsidian landing page for `WaferEngine`.
 - [[memory/project]] — stable project facts and repo paths
 - [[memory/README]] — memory layout and policy
 
+## Notes & artifacts
+
+- [[memory/topics/pe-sram-memory-breakdown]] — per-PE SRAM breakdown (qwen3 decode+prefill, real WSE-3)
+- `docs/2026-06-28-pe-sram-memory-breakdown-tool-design.md` — tool design spec
+- `docs/2026-06-28-pe-sram-memory-breakdown-tool-plan.md` — tool implementation plan
+- `memory/transcripts/2026-06-28-session-multi-request-brainstorm.md` — full session log
+
 ## Current status
 
 See [[tracking/status]].
