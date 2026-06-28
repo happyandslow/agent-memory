@@ -13,11 +13,11 @@ Obsidian landing page for `WaferEngine`.
 ## Notes & artifacts
 
 - [[memory/topics/pe-sram-memory-breakdown]] — per-PE SRAM breakdown (qwen3 decode+prefill, real WSE-3)
-- `docs/2026-06-28-wse-per-pe-resource-discovery.md` — **discovery write-up** (memory + seq-len + colors, with image/commit traceability)
-- `docs/wse_per_pe_resource_analysis.pptx` / `.pdf` — **summary slides** (10, non-expert); regen `docs/make_slides.py`
-- `docs/2026-06-28-pe-sram-memory-breakdown-tool-design.md` — tool design spec
-- `docs/2026-06-28-pe-sram-memory-breakdown-tool-plan.md` — tool implementation plan
-- `memory/transcripts/2026-06-28-session-multi-request-brainstorm.md` — full session log
+- `docs/2026-06-28/wse-per-pe-resource-discovery.md` — **discovery write-up** (memory + seq-len + colors, with image/commit traceability)
+- `docs/2026-06-28/wse_per_pe_resource_analysis.pptx` / `.pdf` — **summary slides** (10, non-expert); regen `docs/2026-06-28/make_slides.py`
+- `docs/2026-06-28/pe-sram-memory-breakdown-tool-design.md` — tool design spec
+- `docs/2026-06-28/pe-sram-memory-breakdown-tool-plan.md` — tool implementation plan
+- `memory/transcripts/2026-06-28/session-multi-request-brainstorm.md` — full session log
 
 ## Current status
 

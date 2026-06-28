@@ -3,7 +3,7 @@
 **Date:** 2026-06-28
 **Repo / branch (all code + image artifacts):** `WaferEngine` @ `lexu/pe-mem-breakdown` (NOT merged)
 **Tool:** `tools/pe_mem_breakdown/`  ·  **Hardware:** real Cerebras CS-3 (WSE-3, fabric 762×1172, `cmaddr=10.27.29.3:9000`)
-**Slides:** `projects/WaferEngine/docs/wse_per_pe_resource_analysis.{pptx,pdf}` (this repo) · regen `make_slides.py`
+**Slides:** `projects/WaferEngine/docs/2026-06-28/wse_per_pe_resource_analysis.{pptx,pdf}` (this repo) · regen `docs/2026-06-28/make_slides.py`
 **Curated short note:** [`memory/topics/pe-sram-memory-breakdown.md`](../memory/topics/pe-sram-memory-breakdown.md)
 
 Image paths below are **WaferEngine-repo-relative** (`tools/pe_mem_breakdown/results/…`) on branch
@@ -119,8 +119,8 @@ softmax color subset, exact band-reduce subset.
 | color-usage maps | `results/{decode,prefill}/*_color_usage.png` | `0869200` |
 | seq-len probe | `models/qwen3_1p7b-decode/integration/probe_seqlen_device.py` | `023cf1d` |
 | device enablement (compile-only, msize) | `models/qwen3_1p7b-{decode,prefill}/launch*.py` | `38580db`,`577210f`,`17dcf35`,`bd8eb25`,`2813f48`,`37d945c` |
-| slides (this repo) | `projects/WaferEngine/docs/wse_per_pe_resource_analysis.{pptx,pdf}` | agent-memory |
+| slides (this repo) | `projects/WaferEngine/docs/2026-06-28/wse_per_pe_resource_analysis.{pptx,pdf}` | agent-memory |
 
 Raw device ELFs/`msize.txt` are gitignored (`tools/pe_mem_breakdown/device_artifacts/`, reproducible).
-Spec + plan: `projects/WaferEngine/docs/2026-06-28-pe-sram-memory-breakdown-tool-{design,plan}.md`.
-Full session log: `projects/WaferEngine/memory/transcripts/2026-06-28-session-multi-request-brainstorm.md`.
+Spec + plan: `projects/WaferEngine/docs/2026-06-28/pe-sram-memory-breakdown-tool-{design,plan}.md`.
+Full session log: `projects/WaferEngine/memory/transcripts/2026-06-28/session-multi-request-brainstorm.md`.

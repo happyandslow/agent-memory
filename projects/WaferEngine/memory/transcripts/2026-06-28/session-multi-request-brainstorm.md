@@ -8,7 +8,7 @@ qwen3-1.7B decode and prefill.
 
 ## Deliverable: `tools/pe_mem_breakdown/` (branch `lexu/pe-mem-breakdown`)
 Built via brainstorming → spec → plan → subagent-driven execution (9 code tasks + final
-whole-branch review, 28 tests). Spec/plan in `/home/lexu/agent-memory/2026-06-28-pe-sram-*`.
+whole-branch review, 28 tests). Spec/plan in `/home/lexu/agent-memory/projects/WaferEngine/docs/2026-06-28/pe-sram-memory-breakdown-tool-{design,plan}.md`.
 
 - `pe_mem/elf_parse.py` — `readelf -SW/-sW` → section + symbol byte sizes.
 - `pe_mem/cs_readelf.py` — `cs_readelf -m` per-coordinate totals (SIF binds only $PWD → run cwd=artifact_dir).

@@ -1,7 +1,7 @@
 """Generate a concise slide deck (PPTX) summarizing the per-PE resource analysis
 of qwen3-1.7B on the Cerebras WSE-3. For non-expert viewers.
 
-  python tools/pe_mem_breakdown/docs/make_slides.py
+  python projects/WaferEngine/docs/2026-06-28/make_slides.py
 """
 import os
 from pptx import Presentation

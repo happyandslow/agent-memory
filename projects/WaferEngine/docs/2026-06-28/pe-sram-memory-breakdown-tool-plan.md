@@ -69,7 +69,7 @@ CATEGORIES = ("code", "weights", "kv_cache", "activations", "system", "free")
 <!-- README.md -->
 # PE SRAM Memory-Breakdown Tool
 Per-PE SRAM breakdown (code/weights/KV/activations/system/free) for WaferEngine CSL artifacts.
-See `/home/lexu/agent-memory/2026-06-28-pe-sram-memory-breakdown-tool-design.md` for the design.
+See `/home/lexu/agent-memory/projects/WaferEngine/docs/2026-06-28/pe-sram-memory-breakdown-tool-design.md` for the design.
 ```
 
 - [ ] **Step 4: Run test to verify it passes**

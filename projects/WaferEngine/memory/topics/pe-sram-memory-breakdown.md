@@ -89,8 +89,8 @@ A color is "in use" in a step when code binds it to `@fabin`/`@fabout`. Static p
   (17–19), shuttles (3–4/12–13).
 - **Trade-off:** decode = color-frugal / reconfiguration-heavy (route-repaint cycles to save colors);
   prefill = color-hungry / reconfiguration-light (colors to keep matmul routes static). Neither is
-  color-bound. Full write-up + traceability: `../docs/2026-06-28-wse-per-pe-resource-discovery.md`;
-  slides `../docs/wse_per_pe_resource_analysis.{pptx,pdf}`.
+  color-bound. Full write-up + traceability: `../../docs/2026-06-28/wse-per-pe-resource-discovery.md`;
+  slides `../../docs/2026-06-28/wse_per_pe_resource_analysis.{pptx,pdf}`.
 
 ## Decisions
 
@@ -138,7 +138,7 @@ compute block.
 
 ## Related
 
-- `tools/pe_mem_breakdown/` (the tool); design+plan at `projects/WaferEngine/docs/2026-06-28-pe-sram-*`; full session log at `projects/WaferEngine/memory/transcripts/2026-06-28-session-multi-request-brainstorm.md`.
+- `tools/pe_mem_breakdown/` (the tool); design+plan at `projects/WaferEngine/docs/2026-06-28/pe-sram-memory-breakdown-tool-{design,plan}.md`; full session log at `projects/WaferEngine/memory/transcripts/2026-06-28/session-multi-request-brainstorm.md`.
 - Earlier hand-analysis: `WaferServe/kernels/Decode-GQA/docs/PE_SRAM_BREAKDOWN.md`,
   `PE_MEMORY_ANALYSIS.md` (this supersedes them on silicon, both phases).
 - `csl_cs_python_cwd_binding` — cs_readelf/cs_python SIF binds only $PWD.
