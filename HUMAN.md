@@ -53,12 +53,23 @@ Update memory but do not commit; show me the diff first.
 
 ### When starting a new project
 
-1. Copy `projects/_template` to `projects/<project-slug>`.
-2. Fill in `memory/project.md` with repo paths, remotes, machines, commands, and confidentiality notes.
-3. Fill in `memory/context.md` with the minimal startup context.
-4. Link the project into Obsidian under `10-work/<project-slug>`.
-5. Add instructions in the actual work repo pointing to this memory location.
-6. Configure Claude Code hooks if the project will be active on a remote server.
+From `/Users/lexu/Project/agent-memory`, run:
+
+```bash
+python3 scripts/init_project.py <project-slug> \
+  --name "<Project Name>" \
+  --code-repo "<git-url-or-path>" \
+  --remote-path "<ssh-host:/path/to/work-repo>" \
+  --link-obsidian
+```
+
+Then:
+
+1. Fill in any remaining blanks in `projects/<project-slug>/memory/project.md` with repo paths, remotes, machines, commands, and confidentiality notes.
+2. Fill in `projects/<project-slug>/memory/context.md` with the minimal startup context.
+3. Paste the printed routing snippet into the actual work repo's `AGENTS.md`, `CLAUDE.md`, and `HERMES.md`.
+4. Configure Claude Code hooks if the project will be active on a remote server.
+5. Run `python3 scripts/check_memory_repo.py`, review the diff, commit, and push.
 
 ### When pausing a project
 

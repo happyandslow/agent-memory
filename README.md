@@ -41,6 +41,20 @@ agent-memory/
 
 ## Add a new work project
 
+Preferred command:
+
+```bash
+python3 scripts/init_project.py <project-slug> \
+  --name "<Project Name>" \
+  --code-repo "<git-url-or-path>" \
+  --remote-path "<ssh-host:/path/to/work-repo>" \
+  --link-obsidian
+```
+
+This copies `projects/_template` to `projects/<project-slug>`, fills common placeholders, optionally creates the Obsidian `10-work/<project-slug>` symlink, and prints the memory-routing snippet to paste into the actual work repo's `AGENTS.md`, `CLAUDE.md`, and `HERMES.md`.
+
+Manual equivalent:
+
 1. Copy `projects/_template` to `projects/<project-slug>`.
 2. Fill in `projects/<project-slug>/memory/project.md` and `memory/context.md`.
 3. Link or expose that folder in Obsidian under:
