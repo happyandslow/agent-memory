@@ -1,0 +1,86 @@
+# PE SRAM Memory Breakdown (qwen3-1.7B decode + prefill, real WSE-3)
+
+## Summary
+
+Per-PE 48 KB SRAM breakdown (code / weights / KV / activations / system / free) for the
+qwen3-1.7B decode and prefill kernels, measured on the real CS-3 (WSE-3) fabric. Headline:
+`.text` (the full transformer-layer program) is **~half the entire 48 KB and is replicated on
+every compute PE** — the #1 cost, ahead of weights (~11 KB). KV cache is the squeezed residual
+(<0.4 KB/PE), so **max-seq-len is capped by code+weights, not by a KV-storage choice**. Tool:
+`tools/pe_mem_breakdown/` (branch `lexu/pe-mem-breakdown`, NOT merged).
+
+## Current state
+
+Measured 2026-06-28 on real CS-3 (762×1172, cmaddr 10.27.29.3:9000), `--compile-only` (random
+weights — memory layout is weight-value-independent). Coordinate ground-truth via worker-side
+`cs-readelf -m` → `msize.txt` → `run_breakdown.py --msize-file` (decode 329090 placed PEs,
+prefill 327938).
+
+Per compute PE (of 48 KB), PE-weighted coordinate truth:
+
+| role | code | weights | KV | activ | system | free | %used |
+| --- | --: | --: | --: | --: | --: | --: | --: |
+| decode (compute) | 22.6K | 11.2K | 0.23K | 0.38K | ~3.6K | ~11K | 77–79% |
+| prefill (compute) | 23K | 11.2K | 0.35K | 0.40K | ~5.4K | ~8.4K | ~82% |
+| ht_head (embedding) | 2.2K / 1.0K | 19K / **38K** | 0 | 0 | ~1.2–1.6K | 26K / 8.9K | 46% / 82% |
+| ht_tail (lm_head) | 9.0–9.3K | 19K | 0 | ~0 | ~6.5K | ~14K | ~70% |
+
+(ht_head/ht_tail two numbers = decode / prefill; prefill ht_head embedding is structural/mock so
+its 38 KB is the as-built footprint.) demux/mux/io_port are routing-only (~0–64 B code).
+
+**SAME-ROLE PEs ARE MEMORY-UNIFORM on silicon** (verified over every placed PE):
+- Prefill: every role BYTE-IDENTICAL (Δ=0, σ=0) — all 262144 prefill PEs = exactly 40720 B.
+- Decode: uniform except the `decode` role has a 544 B (1.4%) two-class split, entirely in
+  `system`/routing, exactly half-and-half = **row_0 vs row_1**; code & weights identical.
+- ⇒ Stacked-bar means need NO error bars; the mean is the per-PE value (decode ±0.7%).
+
+## Decisions
+
+| Date | Decision | Rationale | Link |
+| --- | --- | --- | --- |
+| 2026-06-28 | Trust `--msize-file` (coord) over `--elfs-only` for "how many PEs look like X" | `--elfs-only` counts distinct binaries in `executables/`, INCLUDING unplaced placeholder binaries (e.g. decode-259/269, ~7.7 KB .text) that never sit at a real coordinate — it OVERSTATES variation | — |
+| 2026-06-28 | **CORRECTION:** no large central-vs-edge / interior-vs-strip decode variation | Coordinate `cs-readelf -m` shows every real decode PE at total 37728/38272 (~77–79%); the "strip 45%" claim was an `--elfs-only` artifact | supersedes earlier session note |
+| 2026-06-28 | Get device per-coordinate totals by running `cs-readelf -m` WORKER-SIDE | Device `sim.elf` is >2 GB → `download_artifact` exceeds the 2 GB gRPC cap; but `launch.py` runs inside the SDK container (via cs_python) so `cs-readelf` is on PATH and writes a tiny `msize.txt` to pull | — |
+| 2026-06-28 | seq-len ceiling is code+weights, not KV | Compute PEs are ~77–82% full with KV already sub-0.4 KB; grow seq-len by cutting code/weights (fewer layers/block, quantized FFN), not "more KV room" | confirms `WaferServe/.../PE_SRAM_BREAKDOWN.md` on silicon |
+
+## Commands / paths
+
+```bash
+# Quick per-distinct-ELF breakdown (no cluster sim.elf; OVERSTATES variation — placeholders):
+python tools/pe_mem_breakdown/run_breakdown.py --artifact <dir> --kernel decode \
+    --config <cfg.json> --out <out> --elfs-only
+
+# Ground-truth per-coordinate (needs msize.txt from worker-side cs-readelf -m):
+python tools/pe_mem_breakdown/run_breakdown.py --artifact <dir> --kernel decode \
+    --config <cfg.json> --out <out> --msize-file <dir>/msize.txt
+# then the 8 spatial maps placed by coordinate:
+python tools/pe_mem_breakdown/heatmaps_from_csv.py --csv <out>/decode_breakdown.csv \
+    --out <out>/heatmaps --kernel decode
+
+# Device compile + pull (via cs3-runner skill), worker-side msize:
+#   launch_device.py --compile-only  ->  pulls executables/+sim.map+plan.json+msize.txt
+#   (msize.txt written by launch.py compile_only: cs-readelf -m sim.elf inside the SDK container)
+```
+
+Results committed at `tools/pe_mem_breakdown/results/{decode,prefill}/` (per-coord CSV + stacked
++ within_block + `heatmaps/` with the 8 maps). Raw device ELFs in `device_artifacts/` (gitignored;
+reproducible). Fabric layout: thin HT band x≈4–131 (x_demux, ht_head y<256, ht_tail y≥256, mux,
+io_port) + compute block x≈132–644. Weights concentrate in the HT band; kv/activ/rope only in the
+compute block.
+
+## Open questions
+
+- Branch `lexu/pe-mem-breakdown` not merged (per user). 17+ commits, review-clean.
+- Config sweeps (seq_len / layers-per-block) to quantify the seq-len lever — not yet run.
+
+## Last updated
+
+2026-06-28
+
+## Related
+
+- `tools/pe_mem_breakdown/` (the tool); spec/plan at agent-memory root `2026-06-28-pe-sram-*`.
+- Earlier hand-analysis: `WaferServe/kernels/Decode-GQA/docs/PE_SRAM_BREAKDOWN.md`,
+  `PE_MEMORY_ANALYSIS.md` (this supersedes them on silicon, both phases).
+- `csl_cs_python_cwd_binding` — cs_readelf/cs_python SIF binds only $PWD.
+- decode worker seq-len ceiling (spp=2 fits / spp=4 OOMs) — same root cause.
