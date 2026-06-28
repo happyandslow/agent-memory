@@ -34,6 +34,22 @@ its 38 KB is the as-built footprint.) demux/mux/io_port are routing-only (~0–6
   `system`/routing, exactly half-and-half = **row_0 vs row_1**; code & weights identical.
 - ⇒ Stacked-bar means need NO error bars; the mean is the per-PE value (decode ±0.7%).
 
+## Max sequence length (measured on real WSE-3, bsz=1, decode)
+
+`integration/probe_seqlen_device.py` sweeps MAX_SEQ_LEN (compile-only, one wsjob, catches the
+RuntimeError SdkLauncher raises on a placement OOM; keep MAX_OUTPUT_LEN≥15 to avoid the unrelated
+short-egress OOM). **Result: MAX_SEQ_LEN = 22,784 (seq_len_per_pe=89) is the max that compiles +
+places; 23,040 (spp=90) OOMs.** That's 44.5× the shipped 512 — qwen3-1.7B (unlike llama-8B, which
+is pinned at spp=2 by its ~29 KB .bss) has real KV headroom because its compute PE is only ~38 KB
+used / ~11 KB free.
+
+Mechanism (matches llama failure mode, just ~45× later): KV grows ~112 B/PE per spp step (= per
+256 tokens ⇒ **0.4375 B/token/PE** at bsz=1). The ~10.9 KB free fills until ~1 KB remains, which the
+`.task_table`/`.data.hi` placement needs → OOM. Analytical predicts ~spp 90–91; measured spp=89.
+NOTE: this corrected the tool's `bytes_per_token_per_pe` (was returning the per-256-token-step value
+112, now 112/256; added `bytes_per_seqstep_per_pe`). Caveat: compile/fit ceiling, not a verified
+full inference run; bsz=1 (KV ∝ batch).
+
 ## Decisions
 
 | Date | Decision | Rationale | Link |
@@ -42,6 +58,7 @@ its 38 KB is the as-built footprint.) demux/mux/io_port are routing-only (~0–6
 | 2026-06-28 | **CORRECTION:** no large central-vs-edge / interior-vs-strip decode variation | Coordinate `cs-readelf -m` shows every real decode PE at total 37728/38272 (~77–79%); the "strip 45%" claim was an `--elfs-only` artifact | supersedes earlier session note |
 | 2026-06-28 | Get device per-coordinate totals by running `cs-readelf -m` WORKER-SIDE | Device `sim.elf` is >2 GB → `download_artifact` exceeds the 2 GB gRPC cap; but `launch.py` runs inside the SDK container (via cs_python) so `cs-readelf` is on PATH and writes a tiny `msize.txt` to pull | — |
 | 2026-06-28 | seq-len ceiling is code+weights, not KV | Compute PEs are ~77–82% full with KV already sub-0.4 KB; grow seq-len by cutting code/weights (fewer layers/block, quantized FFN), not "more KV room" | confirms `WaferServe/.../PE_SRAM_BREAKDOWN.md` on silicon |
+| 2026-06-28 | qwen3 decode max MAX_SEQ_LEN (bsz=1) = **22,784** on real WSE-3 (44.5× the shipped 512) | measured by `integration/probe_seqlen_device.py` compile sweep; spp=89 PASS, spp=90 OOM; qwen3's light ~11 KB-free PE gives real KV room (llama-8B doesn't) | see Max-sequence-length section |
 
 ## Commands / paths
 
