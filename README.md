@@ -51,7 +51,15 @@ python3 scripts/init_project.py <project-slug> \
   --link-obsidian
 ```
 
-This copies `projects/_template` to `projects/<project-slug>`, fills common placeholders, optionally creates the Obsidian `10-work/<project-slug>` symlink, and prints the memory-routing snippet to paste into the actual work repo's `AGENTS.md`, `CLAUDE.md`, and `HERMES.md`.
+This copies `projects/_template` to `projects/<project-slug>`, fills common placeholders, optionally creates the Obsidian `10-work/<project-slug>` symlink, and prints a **portable** memory-routing snippet to paste into the actual work repo's `AGENTS.md`, `CLAUDE.md`, and `HERMES.md`.
+
+The routing snippet should not hard-code only the Mac path. In remote-first repos it should tell agents to resolve the memory repo root in this order:
+
+1. `$AGENT_MEMORY_ROOT` if set on the current machine;
+2. `../agent-memory` if the memory repo is cloned as a sibling of the work repo;
+3. `/Users/lexu/Projects/agent-memory` as the Mac fallback.
+
+Then project memory is always `$AGENT_MEMORY_ROOT/projects/<project-slug>`.
 
 Manual equivalent:
 

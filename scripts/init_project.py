@@ -94,8 +94,8 @@ def main() -> int:
             print(f"linked Obsidian: {obsidian_target} -> {dest}")
 
     print(f"created project memory: {dest}")
-    print("\nAdd this to the work repo AGENTS.md/CLAUDE.md/HERMES.md:\n")
-    print(f"""## Project memory\n\nThis repo uses the shared agent-memory repository for durable project context.\n\n- Memory repo: `{ROOT}`\n- Project memory: `{dest}`\n- Obsidian view: `{obsidian_target}`\n\nAt session start, read:\n\n1. `{dest}/memory/context.md`\n2. `{dest}/memory/project.md`\n3. relevant files under `{dest}/memory/topics/`\n4. `{dest}/tracking/status.md`\n5. `{dest}/plan.md` when planning or reporting status\n\nAt session wrap-up, update curated memory and commit changes in the memory repo.\nDo not commit secrets, live databases, or bulk raw transcripts.\n""")
+    print("\nAdd this portable routing block to the work repo AGENTS.md/CLAUDE.md/HERMES.md:\n")
+    print(f"""## Project memory\n\nThis repo uses the shared `agent-memory` repository for durable project context.\n\nProject slug: `{slug}`\n\nResolve the memory repo root on the current machine in this order:\n\n1. If `$AGENT_MEMORY_ROOT` is set, use that.\n2. Else if `../agent-memory` exists next to this work repo, use `../agent-memory`.\n3. Else on Le's Mac, use `/Users/lexu/Projects/agent-memory`.\n\nThen the project memory is:\n\n```text\n$AGENT_MEMORY_ROOT/projects/{slug}\n```\n\nMachine-specific known locations:\n\n- Mac local memory repo: `/Users/lexu/Projects/agent-memory`\n- Mac Obsidian view: `{obsidian_target}`\n- Remote/server memory repo: set `$AGENT_MEMORY_ROOT` or clone as a sibling `../agent-memory`\n\nAt session start, read from the resolved project memory path:\n\n1. `memory/context.md`\n2. `memory/project.md`\n3. relevant files under `memory/topics/`\n4. `tracking/status.md`\n5. `plan.md` when planning or reporting status\n\nAt session wrap-up, update curated memory and commit changes in the memory repo.\nDo not commit secrets, live databases, or bulk raw transcripts.\n""")
     return 0
 
 

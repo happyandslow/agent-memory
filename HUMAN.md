@@ -67,9 +67,10 @@ Then:
 
 1. Fill in any remaining blanks in `projects/<project-slug>/memory/project.md` with repo paths, remotes, machines, commands, and confidentiality notes.
 2. Fill in `projects/<project-slug>/memory/context.md` with the minimal startup context.
-3. Paste the printed routing snippet into the actual work repo's `AGENTS.md`, `CLAUDE.md`, and `HERMES.md`.
-4. Configure Claude Code hooks if the project will be active on a remote server.
-5. Run `python3 scripts/check_memory_repo.py`, review the diff, commit, and push.
+3. Paste the printed portable routing snippet into the actual work repo's `AGENTS.md`, `CLAUDE.md`, and `HERMES.md`. The snippet should not contain only the Mac absolute path; it should let agents resolve `$AGENT_MEMORY_ROOT`, a sibling `../agent-memory` clone, or the Mac fallback path.
+4. On remote machines such as `gala2`, clone this repo near the work repo, for example `~/repos/agent-memory`, or set `AGENT_MEMORY_ROOT` to its location.
+5. Configure Claude Code hooks if the project will be active on a remote server.
+6. Run `python3 scripts/check_memory_repo.py`, review the diff, commit, and push.
 
 ### When pausing a project
 
