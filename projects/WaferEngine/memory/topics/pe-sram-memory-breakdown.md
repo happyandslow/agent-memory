@@ -76,6 +76,22 @@ Two more caveats on the 22,784 figure: (1) it's the compile/placement ceiling �
 at that length was NOT executed; (2) bsz=1 — KV scales linearly with batch, so 2 concurrent requests
 ≈ halve the max length.
 
+## Colors — the second scarce per-PE resource (24 fabric channels)
+
+A color is "in use" in a step when code binds it to `@fabin`/`@fabout`. Static per-role analysis
+(`color_usage_map.py`), color IDs from `colors.json`:
+- **Decode compute PE: 8/24 colors** (16 free on this PE). All matmuls go through **all-reduce**, so
+  colors **1–5** are time-multiplexed and **repainted 6×/layer** by `reconfig_allreduce_axis()`
+  (`decode.csl:1213/1227/1233/1239/1252/1258`) — switching the collective between **Y / X / kv-head
+  BAND**. "Free" colors aren't wasted: kpipe 7–17 = strip PEs, 18/21/22/23 = ht_head/ht_tail.
+- **Prefill compute PE: 17/24 colors** (7 free). Matmuls use **systolic MeshGEMM** with 6 dedicated
+  **statically-routed** hop colors (6–11), never repainted mid-matmul; plus reduces (1–5), KV-hops
+  (17–19), shuttles (3–4/12–13).
+- **Trade-off:** decode = color-frugal / reconfiguration-heavy (route-repaint cycles to save colors);
+  prefill = color-hungry / reconfiguration-light (colors to keep matmul routes static). Neither is
+  color-bound. Full write-up + traceability: `../docs/2026-06-28-wse-per-pe-resource-discovery.md`;
+  slides `../docs/wse_per_pe_resource_analysis.{pptx,pdf}`.
+
 ## Decisions
 
 | Date | Decision | Rationale | Link |
