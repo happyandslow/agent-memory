@@ -50,6 +50,32 @@ NOTE: this corrected the tool's `bytes_per_token_per_pe` (was returning the per-
 112, now 112/256; added `bytes_per_seqstep_per_pe`). Caveat: compile/fit ceiling, not a verified
 full inference run; bsz=1 (KV ∝ batch).
 
+Full compile sweep (real WSE-3, `test_device_2x2blk.json`, PREFILL_LEN=256, MAX_OUTPUT_LEN=64):
+
+| MAX_SEQ_LEN | seq_len_per_pe | result |
+| --: | --: | --- |
+| 512 (shipped) | 2 | PASS |
+| 1,024 | 4 | PASS |
+| 2,048 | 8 | PASS |
+| 4,096 | 16 | PASS |
+| 8,192 | 32 | PASS |
+| 16,384 | 64 | PASS |
+| 20,480 | 80 | PASS |
+| 22,528 | 88 | PASS |
+| **22,784** | **89** | **PASS ← max** |
+| 23,040 | 90 | FAIL (per-PE OOM) |
+| 24,576 | 96 | FAIL |
+| 32,768 | 128 | FAIL |
+
+Method notes: geometric bracket (1024→32768) then binary-narrow; sweep many MAX_SEQ_LEN per wsjob
+to save cluster time. EPCC 502 transients (`_InactiveRpcError ... status 502`) on `launcher.run`
+killed the appliance session mid-sweep (every later config inherits the dead connection) — these are
+NOT real OOMs; the driver/reader must distinguish them from the real OOM signature
+(`RuntimeError: SdkLauncher.run() command error`) and re-run the affected range in a fresh session.
+Two more caveats on the 22,784 figure: (1) it's the compile/placement ceiling — a full inference run
+at that length was NOT executed; (2) bsz=1 — KV scales linearly with batch, so 2 concurrent requests
+≈ halve the max length.
+
 ## Decisions
 
 | Date | Decision | Rationale | Link |
