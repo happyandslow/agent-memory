@@ -10,8 +10,8 @@
 
 ## Source of truth
 
-- Code repo: `/Users/lexu/Project/contextbase` per the 2026-06-29 design note; verify current path before use.
-- Remote server path(s):
+- Code repo: `git@github.com:happyandslow/contextbase.git`; local notes also reference `/Users/lexu/Project/contextbase` per the 2026-06-29 design note, so verify the current checkout path before use.
+- Remote server path(s): `gala2:/home/lexu/contextbase`
 - Local checkout path(s): `/Users/lexu/Project/contextbase` (verify)
 - Obsidian path: `/Users/lexu/Library/CloudStorage/GoogleDrive-lxu5398@gmail.com/My Drive/Obsidian-note-vault/note-vault/10-work/contextbase`
 - Memory repo path: `/Users/lexu/Projects/agent-memory/projects/contextbase` on Mac; `~/agent-memory/projects/contextbase` on gala2.
