@@ -20,7 +20,7 @@ Remote Claude Code hooks should write memory at source. Hermes cron should verif
 Memory repo:
 
 ```text
-/Users/lexu/Project/agent-memory
+/Users/lexu/Projects/agent-memory
 ```
 
 Obsidian vault:
@@ -45,11 +45,15 @@ When Le asks about a work project:
 4. Check `tracking/status.md` and git status if the task is about freshness/current state.
 5. Use live source tools when the question is about current external state; memory is context, not proof of current reality.
 
+## Dated-file convention
+
+Hermes maintenance must enforce the `AGENTS.md` dated-file convention: non-exempt project `docs/` artifacts require `YYYY-MM-DD-<slug>.<ext>` filenames, inbox captures require dated filenames, and ambiguous dates should be reported as manual conflicts rather than guessed.
+
 ## Hermes cron pattern
 
 Recommended recurring jobs:
 
-1. `git pull --ff-only` in `/Users/lexu/Project/agent-memory`.
+1. `git pull --ff-only` in `/Users/lexu/Projects/agent-memory`.
 2. Run `python3 scripts/check_memory_repo.py`.
 3. Report:
    - projects with missing required files;

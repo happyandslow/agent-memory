@@ -89,8 +89,8 @@ A color is "in use" in a step when code binds it to `@fabin`/`@fabout`. Static p
   (17–19), shuttles (3–4/12–13).
 - **Trade-off:** decode = color-frugal / reconfiguration-heavy (route-repaint cycles to save colors);
   prefill = color-hungry / reconfiguration-light (colors to keep matmul routes static). Neither is
-  color-bound. Full write-up + traceability: `../../docs/2026-06-28/wse-per-pe-resource-discovery.md`;
-  slides `../../docs/2026-06-28/wse_per_pe_resource_analysis.{pptx,pdf}`.
+  color-bound. Full write-up + traceability: `../../docs/2026-06-28/2026-06-28-wse-per-pe-resource-discovery.md`;
+  slides `../../docs/2026-06-28/2026-06-28-wse_per_pe_resource_analysis.{pptx,pdf}`.
 
 ## Decisions
 

@@ -75,6 +75,10 @@ Manual equivalent:
 5. On remote servers, configure Claude Code hooks to update curated memory here and commit it.
 6. Configure Hermes cron locally to pull this repo and report stale or changed memory.
 
+## Dated-file convention
+
+All project `docs/` files must use `YYYY-MM-DD-<slug>.<ext>` filenames, even when they also live under a `docs/YYYY-MM-DD/` directory. Quick captures belong in dated `memory/inbox/YYYY-MM-DD-<topic>.md` files. Stable control files such as `index.md`, `plan.md`, `tracking/status.md`, `memory/context.md`, and `memory/project.md` keep their predictable names but should record dated updates inside the file when facts are time-sensitive. Agents should fix undated non-exempt files during maintenance, or mark a manual conflict if the correct date is unclear.
+
 ## Policy
 
 - Curated memory is source of truth; local agent transcript stores are cache/audit only.

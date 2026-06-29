@@ -15,6 +15,10 @@ When Le starts a Claude Code session for a work project that uses this memory re
 
 If the current work repo contains its own `AGENTS.md`/`CLAUDE.md`, obey that repo's instructions too. Treat the work repo as code source of truth and this memory repo as durable agent/human context.
 
+## Dated-file convention
+
+Before creating or linking durable memory artifacts, follow `AGENTS.md` dated-file rules. In particular, project `docs/` files must be named `YYYY-MM-DD-<slug>.<ext>`, and quick captures should go under `memory/inbox/YYYY-MM-DD-<short-topic>.md`. If you touch an undated non-exempt file, rename it and update references when the date is clear; otherwise record a manual conflict.
+
 ## End-of-session wrap-up
 
 Before ending a meaningful session, update memory in this order:

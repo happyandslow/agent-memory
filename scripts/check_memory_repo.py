@@ -5,6 +5,7 @@ This intentionally checks structure only. It does not judge content quality.
 """
 from __future__ import annotations
 
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -49,6 +50,8 @@ FORBIDDEN_NAMES = {
     "id_ed25519",
 }
 
+DATE_PREFIX_RE = re.compile(r"^\d{4}-\d{2}-\d{2}-")
+
 
 def rel(path: Path) -> str:
     return str(path.relative_to(ROOT))
@@ -91,8 +94,30 @@ def check_forbidden_files() -> list[str]:
     return errors
 
 
+def check_dated_docs() -> list[str]:
+    """Project docs/ artifacts must be date-prefixed for chronological tracking."""
+    errors: list[str] = []
+    if not PROJECTS.exists():
+        return errors
+    for docs_dir in PROJECTS.glob("*/docs"):
+        if not docs_dir.is_dir():
+            continue
+        for path in docs_dir.rglob("*"):
+            if not path.is_file():
+                continue
+            if path.name.startswith(".") or path.name.startswith("~$"):
+                errors.append(f"temporary/hidden file in docs should be removed: {rel(path)}")
+                continue
+            if not DATE_PREFIX_RE.match(path.name):
+                errors.append(
+                    "undated project docs artifact: "
+                    f"{rel(path)} (expected YYYY-MM-DD-<slug>{path.suffix})"
+                )
+    return errors
+
+
 def main() -> int:
-    errors = check_required() + check_forbidden_files()
+    errors = check_required() + check_forbidden_files() + check_dated_docs()
     print(f"agent-memory check @ {datetime.now(timezone.utc).isoformat()}")
     print(f"root: {ROOT}")
     if errors:

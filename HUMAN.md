@@ -24,7 +24,7 @@ This work repo uses ~/repos/agent-memory/projects/<project-slug> as durable memo
 For Hermes on the Mac:
 
 ```text
-Use /Users/lexu/Project/agent-memory/projects/<project-slug> as the project memory. Check current status and help me <task>.
+Use /Users/lexu/Projects/agent-memory/projects/<project-slug> as the project memory. Check current status and help me <task>.
 ```
 
 ## Wrap up a conversation
@@ -41,6 +41,10 @@ If you do not want an automatic commit, say:
 Update memory but do not commit; show me the diff first.
 ```
 
+## Dated-file convention
+
+When you manually add docs, meeting notes, or TODO captures, include the date in the filename: `YYYY-MM-DD-<topic>.md`. For project `docs/`, use `docs/YYYY-MM-DD/YYYY-MM-DD-<topic>.<ext>` or a similarly dated path. Keep stable files like `plan.md` and `tracking/status.md` at their fixed names, but put dated notes/sections inside them when needed.
+
 ## Human maintenance responsibilities
 
 ### Weekly for active projects
@@ -53,7 +57,7 @@ Update memory but do not commit; show me the diff first.
 
 ### When starting a new project
 
-From `/Users/lexu/Project/agent-memory`, run:
+From `/Users/lexu/Projects/agent-memory`, run:
 
 ```bash
 python3 scripts/init_project.py <project-slug> \
@@ -61,6 +65,25 @@ python3 scripts/init_project.py <project-slug> \
   --code-repo "<git-url-or-path>" \
   --remote-path "<ssh-host:/path/to/work-repo>" \
   --link-obsidian
+```
+
+python3 scripts/init_project.py nc_service \
+  --name "nc_service" \
+  --code-repo "git@github.com:lausannel/nc_service.git" \
+  --remote-path "gala2:/home/lexu/nc_service" \
+  --link-obsidian
+
+Example
+
+```
+cd /Users/lexu/Projects/agent-memory
+
+python3 scripts/init_project.py llm-serving-paper \
+  --name "LLM Serving Paper" \
+  --code-repo "git@github.com:your-org/llm-serving-paper.git" \
+  --remote-path "gpu-server:/home/lexu/repos/llm-serving-paper" \
+  --link-obsidian
+
 ```
 
 Then:

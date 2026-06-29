@@ -19,6 +19,17 @@ When working in this repo or in a work project that points here:
 
 Do **not** scan all projects or all transcript indexes unless the user asks for archaeology or cross-project context.
 
+
+## Dated-file convention
+
+Every newly created durable note or artifact in this memory repo must be date-addressable so humans and agents can track chronology from filenames alone.
+
+- For project `docs/` trees, every file must start with an ISO date prefix: `YYYY-MM-DD-<slug>.<ext>`. This applies to Markdown notes, scripts, slides, PDFs, exported data, and other generated artifacts. Date directories such as `docs/YYYY-MM-DD/` are allowed but do not replace the filename prefix.
+- For quick captures and human notes, use `memory/inbox/YYYY-MM-DD-<short-topic>.md` unless a project-specific convention is stricter.
+- For transcript pointers and event notes, use `memory/transcripts/YYYY-MM-DD/<YYYY-MM-DD-<short-topic>.md>` or another project-documented dated pattern.
+- Stable entrypoint/control files are exempt from filename dating because agents need predictable paths: root `README.md`, `AGENTS.md`, `CLAUDE.md`, `HERMES.md`, `HUMAN.md`; project `index.md`, `plan.md`, `tracking/status.md`, `tracking/conflicts.md`; and `memory/README.md`, `memory/context.md`, `memory/project.md`, and directory `README.md` files. These files should still include dated status/history sections when they record time-sensitive facts.
+- If an agent finds an undated non-exempt file during maintenance, rename it to the dated convention and update links. If the date is ambiguous, preserve the file and record a manual conflict instead of guessing.
+
 ## File ownership rules
 
 - `projects/<project>/plan.md`: human-maintained roadmap and durable progress narrative. Agents may propose edits, but should avoid overwriting it mechanically.
