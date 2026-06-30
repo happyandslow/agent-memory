@@ -33,12 +33,19 @@ snapshot" work that a verifier topology would need.
   `prefill.csl:760`) and emits only the last-token hidden state → HT_tail → one
   sampled token. Decode zero-inits its KV and only uses `PREFILL_LEN` to offset
   `iter_num`/RoPE. There is no on-chip prefill→decode KV bridge.
-- **Two full-wafer kernels cannot co-reside.** At device scale each kernel is
-  `Pw×Ph = 512×512`; usable WSE-3 fabric is ~762×1172, so 512+512 > 762 wide.
-  "In-order" therefore means **sequential launch** (run prefill full-wafer, tear
-  down, run decode full-wafer), which matches the user's phrasing. The earlier
-  co-resident `build_*_layout(layout, origin, name)` scaffolding (recovered from
-  deleted `kernels/*_adapter.pyc`) is abandoned for v1.
+- **Co-residence is geometrically possible (vertical stack) but unnecessary for
+  cold-start v1.** Each kernel is `Pw×Ph = 512×512` (real footprint ~Pw+HT flanks
+  wide × ~514 tall); usable WSE-3 fabric is ~762×1172. They do NOT fit side by
+  side (≈700+700 > 762 wide) but DO **stack vertically** (≈514+514 ≈ 1028 < 1172
+  tall, each ≤762 wide) — which is exactly what the deleted
+  `build_*_layout(layout, origin, name)` origin-offset/namespacing adapters were
+  built for. v1 still chooses **sequential launch** (run prefill full-wafer, tear
+  down, run decode full-wafer) — not for geometry, but because under cold-start
+  the two kernels never communicate on-chip, so co-residence adds placement,
+  routing, and host-edge-port rework for zero functional gain, whereas sequential
+  reuses each kernel's already-device-proven standalone artifact unchanged.
+  Co-residence is the right substrate for **v2** (an on-chip prefill→decode KV
+  bridge for real prompt continuity), not for v1.
 - **Cold-start decode with real weights already works on device.** The
   integration `launch.py` honors `cfg["real_weights"]=True` with no
   `kv_cache_file` → loads real Qwen3-1.7B weights via `integration/hf_weights.py`
