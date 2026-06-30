@@ -10,16 +10,28 @@ Status: DESIGN — pending user review before writing-plans.
 Replace the spec-dec sample's v1 `passthrough.csl` oracle kernel with the **real
 Qwen3-1.7B prefill + decode CSL kernels**, with **real HF weights on both
 kernels**. Both kernels are **co-resident in one `SdkLayout`** (vertical stack),
-**compiled and loaded once**; the prefill→decode switch transfers **only the KV**
-(no kernel reload). Add the minimal on-chip operations the decode kernel needs so
-it behaves as the spec-dec **DRAFT model** described by `samples/specdec/proto`.
+**compiled and loaded once** (no kernel reload between phases). Add the minimal
+on-chip operations the decode kernel needs so it behaves as the spec-dec **DRAFT
+model** described by `samples/specdec/proto`.
 
-> **Revision note (2026-06-30):** earlier drafts chose sequential launch +
-> cold-start decode. Superseded — we now **co-reside both kernels (single load)
-> and hand off KV at the switch**, so decode is **warm-started** from the prompt
-> (real continuity) and the decode kernel is never reloaded between phases. This
-> makes a per-request prefill→decode serving loop viable (switch cost = a KV
-> transfer, not a ~2.5-min recompile+reload).
+> **Revision note (2026-06-30, rev 3):** delivered in two milestones.
+> **M1 (cold loading, now):** co-resident both kernels, single load; the
+> prefill→decode handoff per request is just the **seed token** (decode
+> cold-starts with zero KV, real weights). No KV transfer, no runtime KV import.
+> **M2 (warm-start, next):** decode loads prefill's KV at runtime via the
+> **host route** — `memcpy_d2h` of prefill's exported `K/V_cache_bank` →
+> `prefill_kv_unshard` → `device_reshard.kv_to_device` → **dynamic KV load** into
+> decode. M2's only missing piece is the runtime/"dynamic" KV ingest in decode,
+> which is being built separately as a **dynamic-KV-loading decode kernel**; it
+> slots into the same co-resident layout, upgrading the seed-token handoff to a
+> KV handoff.
+>
+> **On-chip KV transfer was investigated and rejected** (see §3a): prefill and
+> decode use transposed KV sharding (seq on X vs Y, blocked vs round-robin, plus
+> a K-dim interleave), so an on-chip handoff needs a new fabric grid-transpose
+> reshard with no existing primitive — strictly harder than the host route, which
+> already has that reshard in numpy. Earlier drafts chose sequential + cold-start
+> (superseded by the co-resident single-load above).
 
 ## 2. Topology (confirmed)
 
@@ -51,8 +63,34 @@ snapshot" work that a verifier topology would need.
   and host-edge I/O-port placement for the lower (offset) region are the two
   placement risks to retire early with a compile-only check.
 - **KV `set_symbol_all` is compile-time only**, so warm-starting decode from
-  prefill's KV at the switch needs a **runtime** KV-import path into decode (it
-  cannot be `set_symbol`'d on a live runtime). See §7.2.
+  prefill's KV needs a **runtime** KV-import path into decode (it cannot be
+  `set_symbol`'d on a live runtime). This is M2's missing piece — the separate
+  **dynamic-KV-loading decode kernel**. M1 (cold) needs none of it.
+- **Prefill retains full KV but its host-drain isn't built.** `K_cache_bank` /
+  `V_cache_bank` are `export var` over all layers (`prefill.csl:659-660`), but the
+  only implemented egress is `z_drain_color` (last-token hidden state); the
+  `kv_drain` wire `prefill_kv_unshard` expects is a contract, not yet implemented.
+  Because the banks are exported, M2's drain can be a near-trivial `memcpy_d2h` of
+  those symbols rather than new CSL.
+
+### 3a. On-chip KV transfer — investigated, rejected
+
+Asked whether prefill→decode KV could move **on-chip** (host-free) to make warm
+handoff easier. It does not. The two kernels use **transposed KV sharding**:
+
+| | Prefill KV | Decode KV |
+|---|---|---|
+| sequence axis | sharded along **X**, **blocked** (`pos = gx·spp + local`) | sharded along **Y**, **round-robin** (`py = t%P, slot = t//P`) |
+| feature axis | along **Y** (PE row owns a kv-head slice) | per-PE tile, `swap_xy` |
+| K rows | even/odd RoPE halves | `reshard_k_dim_indices` interleave |
+
+So an on-chip handoff requires a **fabric grid-transpose + blocked→round-robin
+reindex + K-dim interleave** — an all-to-all reshuffle with no existing CSL
+primitive, on top of new prefill-emit and decode-ingest routing. The **host
+route** performs this exact reshard in ~8 lines of numpy
+(`device_reshard.kv_to_device`) that already exist and are device-proven. On-chip
+is therefore strictly more work for the same result; it is **out of scope**
+(not even a v-next priority, since the host route fully covers warm-start).
 - **Cold-start decode with real weights already works on device.** The
   integration `launch.py` honors `cfg["real_weights"]=True` with no
   `kv_cache_file` → loads real Qwen3-1.7B weights via `integration/hf_weights.py`
@@ -144,14 +182,17 @@ inject) and `launch.py`/round driver.
   format is unchanged; mux relays east to host). The driver pulls
   `blob[sampled_off]` for each of the 16.
 
-### 5.5 Real weights + runtime KV
+### 5.5 Real weights + KV
 - Set `cfg["real_weights"]=True`. Reuse the staging `launch.py` real-weight path
   (`HFWeights` + `device_reshard.weights_to_device` +
   `embed/lm_head/final_norm_to_device`), restored to `integration/`.
-- **No compile-time `kv_cache_file`** — decode's `XKCache/XVCache` compile as
-  zero-init and are **filled at runtime** by the KV-import path at the switch
-  (§7.2). This is the change from the prior `--kv-source` flow, which loaded KV at
-  compile time via `set_symbol_all` (and thus required a recompile per prompt).
+- **M1 (cold):** no `kv_cache_file`; decode's `XKCache/XVCache` compile zero-init
+  and stay zero (decode starts from the seed token, real weights). The
+  prefill→decode handoff is the seed token only.
+- **M2 (warm):** the dynamic-KV-loading decode kernel fills `XKCache/XVCache` at
+  runtime from prefill's drained+resharded KV — no recompile per prompt (the old
+  `--kv-source`/`set_symbol_all` flow recompiled per prompt; that is what M2
+  removes).
 
 ## 6. Prefill kernel: real-weight loader (the largest new piece)
 
@@ -201,28 +242,31 @@ KV-only switch.
 - One `compile()` → one `SdkRuntime.load()` → one `run()`. Decode is armed but
   idle until it receives KV + seed.
 
-### 7.2 The switch = KV-only handoff (no reload)
+### 7.2 M1 switch — seed-token handoff (cold, no reload)
 Per request:
-1. Send prompt tokens to the prefill region; it runs and produces (a) the
-   first-token blob and (b) its on-chip KV.
-2. **Drain prefill KV → reshard → load into decode at runtime.** Recommended:
-   **host-round-trip within the single live runtime** — prefill drains KV to host
-   (chip-drain wire, `prefill_kv_unshard.unshard_wire` → canonical K/V); host
-   reshards to decode layout (`device_reshard.kv_to_device`); host loads it into
-   decode's `XKCache/XVCache` via the runtime KV-import path. KV-import mechanism
-   is one of: **(a)** `memcpy_h2d` into the KV symbols (co-resident layout built on
-   the memcpy framework), or **(b)** a streaming KV-import port + a decode kernel
-   drain task. Pick during implementation; (a) is less new CSL if memcpy coexists
-   with the stream ports, (b) is more self-contained. A fully **on-chip**
-   prefill→decode KV shuttle (no host) is the faster v-next but needs cross-region
-   routing + on-chip reshard.
-3. Set decode `C`/`iter_num`/RoPE base to `prompt_len`; seed token_ids[0] from the
-   prefill first token. Decode is now warm and continues the prompt.
-4. Drive spec-dec rounds: each `exchange(u32s)` sends the round payload, receives
+1. Send prompt tokens to the prefill region; it runs and emits the **first-token**
+   blob. (Its on-chip KV is left in `K/V_cache_bank`, unused in M1.)
+2. Seed decode: `token_ids[0]` ← prefill first token; decode `C`/`iter_num`/RoPE
+   base = 0 (cold). The handoff is a single token over a host stream — trivial, no
+   reshard, no KV import.
+3. Drive spec-dec rounds: each `exchange(u32s)` sends the round payload, receives
    16 draft blobs, returns `[blob[sampled_off] …]` (existing 1-send / 16-receive
    contract).
-5. Next request: re-run prefill (overwrites prefill KV), re-handoff (overwrites
-   decode KV + resets `C`/`iter_num`). No reload at any point.
+4. Next request: re-run prefill (new prompt → new seed), reset decode
+   `C`/`iter_num`. No reload at any point.
+
+M1 limitation: cold decode does not continue the prompt context (drafts won't be
+accepted by a real target until M2). It exercises both real-weight kernels,
+co-residence, the single-load no-reload loop, and the full on-chip round op.
+
+### 7.3 M2 switch — KV handoff (warm, host route)
+Replaces M1 step 2 once the **dynamic-KV-loading decode kernel** lands. Within the
+single live runtime: `memcpy_d2h` prefill's `K/V_cache_bank` → `prefill_kv_unshard`
+→ `device_reshard.kv_to_device` → **dynamic KV load** into decode's
+`XKCache/XVCache`; set decode `C`/`iter_num`/RoPE base = `prompt_len`. Decode is
+now warm and continues the prompt (real acceptance). Needs: prefill `kv_drain`
+egress (memcpy of the exported banks; minimal) + the dynamic-KV ingest in decode
+(built separately). On-chip transfer is NOT used (§3a).
 
 `appliance_handlers.build_handlers` `real` branch → `QwenDraftAppliance`.
 `config/v0.json` keeps `draft_len=16`; add a model-config pointer
@@ -232,23 +276,31 @@ The 4 GB HF checkpoint reaches the pod via the existing per-shard `stage()` path
 (`launch_chain_device.py`); the spec-dec `LauncherBridge` staging must include
 the `integration/` tree and the checkpoint, mirroring `run_pipeline`'s flow.
 
-## 8. Risks / known v1 limitations
+## 8. Risks / limitations
 
+**M1 (cold):**
 - **Combined compile.** Two transformer kernels in one `SdkLayout` is a large
   program; compile time and placement (vertical stack + host-edge ports for the
   offset region) are unproven. Retire early with a compile-only check before any
-  full device run.
-- **Runtime KV import is the genuinely new primitive.** `set_symbol_all` is
-  compile-time only, so warm-starting decode requires either `memcpy_h2d` into the
-  KV symbols or a streaming KV-import port + drain task (§7.2). This is the
-  highest-uncertainty piece; prototype it in isolation first.
-- **KV-layout fidelity at the switch.** Prefill's drained KV must reshard exactly
-  to decode's `XKCache/XVCache` layout (RoPE pairing, round-robin seq-PE mapping).
-  Reuses `prefill_kv_unshard` + `device_reshard.kv_to_device`, but the prefill
-  drain wire on the *real* prefill kernel (vs the sim drain) may need work.
+  full device run. (If combined-compile proves troublesome, the lower-effort
+  fallback is sequential cold-start — reload per request, demo-only.)
+- Cold decode does not continue the prompt → low real-target acceptance until M2
+  (the README gives the same caveat for passthrough). Real weights still make
+  every per-step logit a genuine Qwen3 prediction.
 - Single batch (`bsz=1`), greedy/top-1 sampling per the device config.
-- On-chip (host-free) KV shuttle is out of scope (v-next); v1 uses the
-  host-round-trip-within-one-runtime transfer.
+
+**M2 (warm) — deferred:**
+- **Runtime/"dynamic" KV import is the genuinely new primitive** (built
+  separately): `set_symbol_all` is compile-time only, so warm-start needs
+  `memcpy_h2d` into the KV symbols or a streaming KV-import port + drain task.
+  Prototype in isolation first.
+- **KV-layout fidelity.** Prefill's drained KV must reshard exactly to decode's
+  layout — reuses `prefill_kv_unshard` + `device_reshard.kv_to_device`, but the
+  prefill `kv_drain` egress on the *real* kernel must be added (memcpy of the
+  exported banks) and validated against the unshard wire contract.
+- **On-chip (host-free) KV shuttle: out of scope entirely** (§3a) — transposed
+  sharding makes it strictly harder than the host route, with no offsetting
+  benefit. Not a v-next item.
 
 ## 9. Validation (straight to device, per decision)
 
@@ -256,46 +308,49 @@ No simfab numerical gate. Guard rails instead:
 - **Local compile-only** (`launch_sim`/`--compile-only`) after each kernel edit —
   and critically for the **combined co-resident layout** (placement + host-edge
   ports) — to catch build/placement errors cheaply before spending a device slot.
-- **Runtime-KV-import prototype** in isolation (smallest config) before the full
-  build: confirm host can write decode's `XKCache/XVCache` on a live runtime and
-  decode reads it back correctly.
 - **Host numpy oracle** of the §4 round algorithm with real weights (reuse the
-  `host/oracle_fp16.py` style), run alongside device runs to check the 16 draft
-  ids per round and the rollback/correction bookkeeping. With KV handoff the
-  oracle includes the prompt context, so the **warm-start continuity** is checked
-  (first-round drafts should plausibly continue the prompt).
-- **Device runs** via the existing `cs3-runner` ladder; compare device draft ids
-  to the oracle; confirm the prefill→decode KV switch (≥2 requests, no reload) and
-  multi-round re-arm (≥ several rounds, varying `num_accepted` including 0 and 16)
-  with 0 transmission loss.
+  `host/oracle_fp16.py` style). M1: cold oracle (zero KV) checks the 16 draft ids
+  per round and the rollback/correction bookkeeping.
+- **Device runs** (M1) via the existing `cs3-runner` ladder; compare device draft
+  ids to the cold oracle; confirm co-resident single-load, the seed-token handoff
+  across **≥2 requests with no reload**, and multi-round re-arm (≥ several rounds,
+  varying `num_accepted` including 0 and 16) with 0 transmission loss.
 - Reuse `mock_verify_host.py` to drive rounds locally through the real appliance
   before pointing at the live GPU service.
+- **M2 (when dynamic-KV kernel lands):** prototype the runtime KV import in
+  isolation (host writes decode `XKCache/XVCache` live, decode reads it back);
+  then a warm oracle that includes the prompt context checks continuity
+  (first-round drafts plausibly continue the prompt; acceptance rises).
 
 ## 10. Work breakdown (for writing-plans)
 
+**M1 — cold loading (this plan):**
 1. Restore `integration/` sources (`hf_weights.py`, `device_reshard.py`,
    `prefill_kv_unshard.py`, `run_pipeline.py`, etc.) from the staging copy to
    `models/qwen3_1p7b-decode/integration/`.
 2. **Co-resident layout**: restore/finish the origin-offset + region-namespacing
    adapters; place prefill + decode in one `SdkLayout` (vertical stack); pass a
    compile-only feasibility check (placement, host-edge ports). (§3, §7.1)
-3. **Runtime KV import into decode** (prototype first): `memcpy_h2d` into KV
-   symbols, or streaming KV-import port + drain task. (§7.2, §8)
-4. **KV switch path**: prefill KV drain → `prefill_kv_unshard` →
-   `device_reshard.kv_to_device` → runtime import; set decode `C`/`iter_num`/RoPE
-   base = `prompt_len`. (§7.2)
-5. Decode kernel round ops: per-round ingest + re-arm; iter_num rollback + `C`
+3. Decode kernel round ops: per-round ingest + re-arm; iter_num rollback + `C`
    state; RoPE position table; correction-token inject; forever loop. (§5)
-6. Decode round driver: host-side round payload encode/decode + 16-draft drain;
-   numpy oracle. (§4, §9)
-7. Prefill real-weight loader `prefill_device_reshard.py` + run wrapper. (§6)
-8. `QwenDraftAppliance` (one-load + KV switch) + `appliance_handlers` +
-   `config/v0.json` + staging. (§7)
-9. Device bring-up via cs3-runner; multi-request prefill→decode switch +
-   multi-round verification vs oracle. (§9)
+4. Decode round driver: host-side round payload encode/decode + 16-draft drain;
+   cold numpy oracle. (§4, §9)
+5. Prefill real-weight loader `prefill_device_reshard.py` + run wrapper. (§6)
+6. `QwenDraftAppliance` (one-load + **seed-token** handoff) + `appliance_handlers`
+   + `config/v0.json` + staging. (§7.2)
+7. Device bring-up via cs3-runner; co-resident single-load, seed-token handoff
+   across ≥2 requests (no reload), multi-round verification vs cold oracle. (§9)
 
-## 11. Out of scope (v1)
+**M2 — warm-start (later; gated on the dynamic-KV-loading decode kernel):**
+8. Dynamic-KV ingest in decode (built separately) — the runtime KV import. (§7.3)
+9. Prefill `kv_drain` egress: `memcpy_d2h` of exported `K/V_cache_bank`. (§3, §7.3)
+10. Warm switch path: drain → `prefill_kv_unshard` → `device_reshard.kv_to_device`
+    → dynamic KV load; set decode `C`/`iter_num`/RoPE base = `prompt_len`; warm
+    oracle + continuity validation. (§7.3, §9)
 
-Fully **on-chip** (host-free) prefill→decode KV shuttle; batch > 1; variable `k`;
-the verifier topology. (Co-residence, single-load, and real prompt-KV continuity
-via the host-round-trip switch are now IN scope.)
+## 11. Out of scope
+
+Fully **on-chip** (host-free) prefill→decode KV shuttle (§3a — strictly harder,
+no benefit; not even v-next); batch > 1; variable `k`; the verifier topology.
+(Co-residence + single-load are IN scope for M1; warm prompt-KV continuity is M2
+via the host route.)
