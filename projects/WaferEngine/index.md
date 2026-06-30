@@ -13,6 +13,8 @@ Obsidian landing page for `WaferEngine`.
 ## Notes & artifacts
 
 - [[memory/topics/pe-sram-memory-breakdown]] — per-PE SRAM breakdown (qwen3 decode+prefill, real WSE-3)
+- [[memory/topics/dynamic-kv-load]] — qwen3 decode dynamic KV ingest (Option B; reuse forward path; pass-through HT)
+- `docs/2026-06-30/2026-06-30-qwen3-dynamic-kv-load-design.md` — **design + per-file plan + ordered tasks** (incl. `...-ht_head-dataflow.png` plot)
 - `docs/2026-06-28/2026-06-28-wse-per-pe-resource-discovery.md` — **discovery write-up** (memory + seq-len + colors, with image/commit traceability)
 - `docs/2026-06-28/2026-06-28-wse_per_pe_resource_analysis.pptx` / `.pdf` — **summary slides** (10, non-expert); regen `docs/2026-06-28/2026-06-28-make-slides.py`
 - `docs/2026-06-28/2026-06-28-pe-sram-memory-breakdown-tool-design.md` — tool design spec
