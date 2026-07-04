@@ -37,10 +37,17 @@ Handoff roadmap for continuing the WSE-3 draft-model work. Read
    single-step RoPE-remainder rotations on top of `rope_seek_continuation`. This is the gating item
    for real spec-dec on device.
 2. **Mode-B host adapter** (nc_service). The draft/verify loop: draft `draft_len`, accept K, rewind
-   by R=`draft_len-K`, repeat, on ONE growing sequence. Needs (a) a kernel `n_steps = draft_len`
-   per-round budget (today it generates "fill the cache," not a window), and (b) a decision on the
-   **sampling/PRNG-on-rewind** behavior (does the sampler rewind with the position?). Wire onto the
-   PD framework via the same `appliance_handlers` seam.
+   by R=`draft_len-K`, repeat, on ONE growing sequence. **IMPORTANT — the loop itself is NOT from
+   scratch:** the merged PR #9 already implements and TESTS the full spec-dec draft/verify/accept-K/
+   correction LOOP — but against the **MOCK/passthrough** kernel (`pd_worker.py` drives per-round
+   `codec.encode_request_payload(has_commit, has_proposal, num_accepted, correction_ids)` →
+   `DecodeAppliance.exchange_batch`; the mock echoes, it does NOT rewind KV). So the host accounting
+   (num_accepted, correction_ids, draft_len, per-round iteration) is validated WITHOUT a real kernel;
+   the piece that was missing — the actual KV rewind in the real decode kernel — is now built (v1).
+   Mode B = **connect that tested loop to the real rewind kernel**, plus (a) a kernel
+   `n_steps = draft_len` per-round budget (today it generates "fill the cache," not a `draft_len`
+   window), and (b) a decision on the **sampling/PRNG-on-rewind** behavior (does the sampler rewind
+   with the position?). Wire via the same `appliance_handlers` seam.
 3. **Real-kernel PD device run (mode A / transport)** — re-run `run_e2e_pd_real.sh` with
    `READY_TIMEOUT=7200` + the send_x fix (#4) + ingress-502 hardening (#5) → `PD_REAL_DAEMON_DEV`.
    The data path itself is device-proven (prefill→transform→kv_channel→decode KV digest matched).
