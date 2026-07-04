@@ -9,29 +9,31 @@ Compact startup packet for fresh agent sessions. Keep this short enough that an 
   `waferengine/samples/specdec/`. v1 uses a **passthrough** kernel (ids echoed) so the whole path is
   numerically checkable before the real prefill+decode kernel drops in.
 
-## Current state
+## Current state (2026-07-04 — real kernels + PD + spec-dec rewind)
 
-- Active branch `lexu/toy-emit-recv-modes` (off main, NOT merged; PR being prepared, not opened).
-- Backbone settled: **in-process gRPC patch** (`--bridge inproc`) + **batch d2h receive**
-  (`--recv-mode batch`). Real GPU verifier validated: verify-side p50 **3.30 ms** (batch), 0 errors.
-- Deep context + all numeric tables in ContextBase log `GOZQ9I8pOe`; topic note
-  `memory/topics/specdec-d2h-latency.md`.
+- The **real prefill+decode kernel swap-in is done** (the "next action" of the June phase). Now on
+  branch `lexu/specdec-real-kernels`. The real qwen3 kernels are wired into the merged **PD
+  disaggregation** framework (`driver_main --pd`, pod-to-pod `kv_channel`, `appliance_handlers`
+  factory seam) via `realkv/pd_real_adapters.py` (`IOP_REAL_KERNELS=1`) + the A2 `kv_transform`.
+- **Validated:** `PD_REAL_SIM_PASS` (sim, KV digest matched); single real appliances **bit-exact on
+  real WSE-3** at actual 28-layer size (`DECODE_RESIDENT_DEV_PASS`, `PREFILL_RESIDENT_DEV_PASS`).
+- **Spec-dec decode REWIND (mode B) added and validated bit-exact in sim AND on real WSE-3** —
+  v1 P-aligned, on branch `lexu/decode-rewind` **in the WaferEngine repo** (PR #13 lacked rewind).
+- Two product paths, kept separate: **mode A** (regular PD serving) saved on
+  `lexu/pd-disagg-modeA-serving`; **mode B** (spec-dec) is the rewind work.
 
-## Current focus
+## Current focus / next actions
 
-- Branch cleanup + prepare a PR for `lexu/toy-emit-recv-modes` (do not open until Le says so).
-
-## Next likely actions
-
-- [ ] Finalize PR prep (rebase/squash decision, PR description) — do not open without Le.
-- [ ] Ask GPU service owner for RAW per-round latency dump (exact verify-side distribution).
-- [ ] Per-step full-1000 benchmark vs the real service (GPU-measured both-modes comparison).
-- [ ] Real prefill+decode kernel swap-in.
+- Full roadmap + priorities: **`memory/topics/specdec-cs3-roadmap.md`** (read this first).
+- Top items: (1) **v2 token-granular rewind** (v1 is P-aligned=256 on device, too coarse); (2) the
+  **mode-B host adapter** (draft/verify/accept-K/rewind-by-R loop + `n_steps=draft_len`); (3) the
+  real-kernel PD **device run** (`READY_TIMEOUT=7200` + send_x N-header fix + ingress-502 hardening).
 
 ## Must-read topic notes
 
-- `memory/topics/specdec-d2h-latency.md` — the d2h latency / in-process patch / real-GPU verify-side
-  findings, numbers, commands, and pitfalls. Read before any latency or benchmarking work.
+- **`memory/topics/specdec-cs3-roadmap.md`** — the current roadmap, done/TODO, branches, gotchas.
+- `memory/topics/specdec-d2h-latency.md` — earlier d2h latency / in-process-patch / real-GPU findings.
+- Root **`CLAUDE.md`** (in nc_service) — architecture + build/test/device commands.
 
 ## Important constraints
 
