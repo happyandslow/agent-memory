@@ -16,7 +16,7 @@ Hermes is primarily the local orchestrator/backstop for this repo:
 - help create project scaffolds and Obsidian links;
 - avoid becoming the only persistence path for remote work.
 
-Remote Claude Code hooks should write memory at source. Hermes cron should verify and summarize.
+Claude Code sessions write dated inbox captures and topic-appends at source, and their Stop hook deterministically regenerates views (local commit, no push). Hermes cron runs the full maintain pass daily per the agent-memory skill PLAYBOOK.
 
 ## Default local paths
 
