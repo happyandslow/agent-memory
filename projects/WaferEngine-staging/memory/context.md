@@ -37,6 +37,7 @@ Compact startup packet for fresh agent sessions. Keep this short enough that an 
 
 - `memory/topics/kv-cache-policy-tradeoffs.md` — the core preserve/evict/offload analysis.
 - `memory/topics/e2e-pdSeparate-device-validation.md` — device results, weights gap, max-context byte model.
+- `memory/topics/standalone-vs-integrated-kernel-parity.md` — what integrated e2e/pdSeparate lack vs the up-to-date standalone decode/prefill (multi-request, varlen, chunked prefill, EOS, #12 softmax, oracles).
 - `memory/topics/agentic-kv-trace-datasets.md` — when sourcing real agentic traces for KV preserve-vs-evict / request-length / tool-overhead analysis (pointer; note may not exist yet).
 
 ## Important constraints

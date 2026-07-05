@@ -33,6 +33,9 @@ Status: Active
 - e2e first CS-3 pass `wsjob-dhpbbq2k8azqra5szlb2ct` (compile 291s/run 6.9s).
 - pdSeparate compile fail `wsjob-mffesnuwgdr4awuhdjoqtg` (.bss 69,067 B > 48 KB).
 - Added topic notes: kv-cache-policy-tradeoffs, e2e-pdSeparate-device-validation.
+- Added standalone-vs-integrated-kernel-parity: integrated e2e/pdSeparate are a
+  frozen pre-#12 fork lacking multi-request/varlen/chunked prefill, EOS, the #12
+  f32 softmax fix, tall layouts, and the numeric oracles.
 
 ## Freshness
 

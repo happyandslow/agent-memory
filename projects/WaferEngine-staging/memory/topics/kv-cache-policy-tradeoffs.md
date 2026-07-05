@@ -17,10 +17,14 @@ tradeoff and are the platform for exploring it:
   so a large retained pool + real eviction policy (LRU/priority) is buildable. This
   is the *tiered/offload* corner.
 
-**Neither model reuses KV across requests today** — decode's `round_reset()`
-(`decode.csl:265-281`) rewinds `iter_num` to the new prefill length and overwrites
-the slabs each request. Exploring any preserve policy means *adding* a keyed KV
-store + a "skip prefill on hit" decision.
+**Neither deployment reuses KV across requests today.** The *standalone* decode
+has multi-round machinery (`round_reset` rewinds `iter_num` and overwrites the
+slabs each round — reuse of the slabs, not of the content). But the **integrated
+e2e/pdSeparate are even more limited: they have NO multi-round support at all**
+(single request per compiled load — see [[standalone-vs-integrated-kernel-parity]]).
+Exploring any preserve policy means *adding* a keyed KV store + a "skip prefill on
+hit" decision — and, for the integrated homes, first re-absorbing the standalone's
+varlen multi-round KV ingress.
 
 ## The tiering design space (preserve has more than 2 options)
 
