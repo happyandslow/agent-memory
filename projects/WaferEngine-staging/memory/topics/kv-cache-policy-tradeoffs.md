@@ -48,6 +48,40 @@ but its real cost (fabric BW for the move, addressing/relayout, how many PEs are
 actually free) is unquantified. e2e already uses 645×1028 of the 762×1176 fabric,
 so *some* PEs are free but not a huge reserve at this config.
 
+## Multi-request (standalone) = ISOLATION, not reuse — but the reload transport is already there
+
+Important clarification on the standalone `NUM_ROUNDS` multi-request mode (verified
+in code 2026-07-05): serving multiple requests from one loaded artifact does **not**
+reuse KV across them today — it deliberately *isolates* them.
+
+- **Serve loop** (`decode/launch.py:2489` `for rnd in range(num_rounds)`): each round
+  the host streams a **fresh KV prefix** (`inj_xk/inj_xv`) + `X[0]` seed into
+  `kv_ingress`, decodes, drains logits, then sends the next round. Between rounds the
+  device **re-arms** (no stop/relaunch).
+- **`round_reset()`** (`decode.csl:265-281`) at each round rewinds `iter_num` to the
+  new prefill length, zeroes `step`, re-seeds RoPE from (1,0), recomputes the decode
+  budget → **the prior round's KV is discarded/overwritten**.
+- The host **re-arm validation** (`launch.py:2540-2549`) asserts two same-prefill
+  rounds are **bit-identical** — its explicit purpose is to prove **no cross-round
+  state carryover**. That is the *opposite* of reuse (it guarantees statelessness).
+
+So single→multi-request changes **nothing** about KV reuse: each request is isolated,
+KV re-injected fresh and discarded per round. What multi-request reuses is the
+compiled artifact, resident (compile-baked) weights, and SRAM slabs *as storage* —
+never KV content. Prefill side is symmetric: each round prefills a new prompt
+(`PREFILL_LENS`) from scratch and egresses fresh KV with a `round_sync` re-arm barrier.
+
+**The actionable upside:** the per-round host→decode KV injection **IS the T2
+"reload from host DRAM" transport** already implemented. Today it always streams a
+fresh prefill's KV; reuse = stream a *retained prior request's* KV on a cache hit and
+skip prefill. So the gap from "multi-request" to "prefix-caching / KV reuse" is
+**only a policy layer**, not plumbing: (1) a keyed host-DRAM store of prior
+`inj_xk/inj_xv` (retain instead of discard), (2) a cache-hit decision to skip prefill
+and inject the retained KV, (3) make `round_reset` conditionally **retain + extend** a
+prior KV instead of always rewinding. The integrated e2e/pdSeparate have **no
+multi-round loop at all**, so they lack even this reload transport
+([[standalone-vs-integrated-kernel-parity]]).
+
 ## Multi-turn append — the ship-back-to-prefill subtlety
 
 For multi-turn conversations the reusable KV for `[P1,R1]` includes **R1's KV,
@@ -104,7 +138,10 @@ since the KV is already host-resident).
 - Attack the **quadratic prefill score/mask buffer** so long prompts (the PD
   long-context use case) can be prefilled at all.
 - Add a keyed KV store + skip-prefill-on-hit; port an InferCept-style cost model
-  with WSE-3 tier costs.
+  with WSE-3 tier costs. Concrete standalone hook: retain `inj_xk/inj_xv` in a keyed
+  host store and make `round_reset` (`decode.csl:265-281`) conditionally retain+extend
+  a prior KV instead of always rewinding `iter_num` — the per-round KV-ingress reload
+  transport is already there.
 
 ## Last updated
 
