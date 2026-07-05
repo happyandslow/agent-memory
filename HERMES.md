@@ -67,7 +67,9 @@ Recommended recurring jobs:
    `inbox/` into `plan.md`/`topics/`/decisions; scan `meetings/` read-only; regenerate
    `context.md`/`status.md`/`index.md`/`timeline.md`; declutter; flag ambiguous items to
    `tracking/conflicts.md`; commit safe mechanical changes).
-3. Run `python3 scripts/check_memory_repo.py` as a deterministic pre-flight/sanity check.
+3. Run `python3 scripts/check_memory_repo.py` as a deterministic post-check/sanity check
+   (the PLAYBOOK's maintain op in step 2 already runs this same checker first, as its own
+   internal pre-flight; this cron-level run is a final sanity check after commit).
 4. Report:
    - projects with missing required files;
    - projects whose memory/status files are stale;

@@ -10,10 +10,10 @@ agent-memory skill supersede any older file-role descriptions below.
 When Le starts a Claude Code session for a work project that uses this memory repo:
 
 1. Identify the project slug.
-2. Read `projects/<project>/memory/context.md`.
+2. Read `projects/<project>/memory/context.md` (generated).
 3. Read `projects/<project>/memory/project.md`.
 4. Read relevant topic notes only.
-5. Read `projects/<project>/tracking/status.md` and `projects/<project>/plan.md` if planning or status is needed.
+5. Read `projects/<project>/tracking/status.md` (generated) and `projects/<project>/plan.md` if planning or status is needed.
 6. Avoid loading unrelated project memory.
 
 If the current work repo contains its own `AGENTS.md`/`CLAUDE.md`, obey that repo's instructions too. Treat the work repo as code source of truth and this memory repo as durable agent/human context.
@@ -35,11 +35,12 @@ Before ending a meaningful session, follow the write contract in this order:
    new topic file yourself — that is the maintain pass's job.
 4. Append or refresh transcript/event pointers under `memory/transcripts/` if there
    were important events.
-5. Deterministic regen of the generated views happens via the Claude Code `Stop` hook
-   (see `templates/claude-stop-hook.md`), or manually via
-   `python3 ~/.claude/skills/agent-memory/scripts/build_views.py --root <root>`. Full
-   curation (draining captures, rebuilding views, decluttering) is the maintain pass —
-   run by Hermes cron daily or on demand via the `agent-memory` skill.
+5. Deterministic regen of `memory/timeline.md` and `index.md` happens via the Claude Code
+   `Stop` hook (see `templates/claude-stop-hook.md`), or manually via
+   `python3 ~/.claude/skills/agent-memory/scripts/build_views.py --root <root>`.
+   `memory/context.md` and `tracking/status.md` are prose regenerated only by the
+   maintain pass. Full curation (draining captures, rebuilding all views, decluttering)
+   is the maintain pass — run by Hermes cron daily or on demand via the `agent-memory` skill.
 6. Run `python3 scripts/check_memory_repo.py` from this repo.
 7. Commit changes.
 
@@ -54,10 +55,12 @@ memory: regen views (session hook)
 ## Claude Code hook guidance
 
 On remote servers, wire the Stop hook from `templates/claude-stop-hook.md` (copy-paste into
-`.claude/settings.local.json`). It is git-diff-gated, runs `build_views.py` to regenerate
-`memory/context.md` / `tracking/status.md` / `memory/timeline.md` / `index.md`
-deterministically, and commits locally (no push). Do not hand-write those generated files
-yourself, and do not hook raw transcript dumps directly into git.
+`.claude/settings.local.json`). It is gated on pending changes under `projects`, runs
+`build_views.py` to deterministically regenerate ONLY `memory/timeline.md` and `index.md`,
+and commits locally (no push). `memory/context.md` and `tracking/status.md` are prose and
+are regenerated only by the agent-driven maintain pass (Hermes cron or the `agent-memory`
+skill), not by this hook or by `build_views.py`. Do not hand-write any of the four
+generated files yourself, and do not hook raw transcript dumps directly into git.
 
 A typical remote setup has:
 

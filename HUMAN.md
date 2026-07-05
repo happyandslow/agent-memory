@@ -41,9 +41,11 @@ existing topic note only if clearly refining it in place, add any necessary tran
 pointers, run the memory repo check, and commit the memory changes with a concise message.
 ```
 
-Deterministic regeneration of the generated views happens automatically via the Claude
-Code Stop hook (per-turn, git-diff-gated, local commit only) or via the daily Hermes
-maintain-pass cron. You do not need to ask for it explicitly, but you can force it:
+Deterministic regeneration of `memory/timeline.md`/`index.md` happens automatically via
+the Claude Code Stop hook (per-turn, gated on pending changes, local commit only).
+`memory/context.md` and `tracking/status.md` are prose regenerated only by the daily
+Hermes maintain-pass cron (or the `agent-memory` skill on demand). You do not need to ask
+for it explicitly, but you can force it:
 
 ```text
 Run the agent-memory maintain pass on <project-slug> now.
@@ -109,8 +111,9 @@ Then:
 
 1. Fill in any remaining blanks in `projects/<project-slug>/memory/project.md` with repo paths, remotes, machines, commands, and confidentiality notes.
 2. Add a first braindump entry to `projects/<project-slug>/capture.md` with the minimal
-   startup context; run the `agent-memory` skill's `maintain` op (or Stop hook) to
-   generate the first `memory/context.md` from it rather than hand-writing `context.md`.
+   startup context; run the `agent-memory` skill's `maintain` op (the Stop hook only
+   regenerates `memory/timeline.md`/`index.md`, not `context.md`) to generate the first
+   `memory/context.md` from it rather than hand-writing `context.md`.
 3. Paste the printed portable routing snippet into the actual work repo's `AGENTS.md`, `CLAUDE.md`, and `HERMES.md`. The snippet should not contain only the Mac absolute path; it should let agents resolve `$AGENT_MEMORY_ROOT`, a sibling `../agent-memory` clone, or the Mac fallback path.
 4. On remote machines such as `gala2`, clone this repo near the work repo, for example `~/repos/agent-memory`, or set `AGENT_MEMORY_ROOT` to its location.
 5. Configure the Claude Code Stop hook (`templates/claude-stop-hook.md`) if the project will be active on a remote server.
