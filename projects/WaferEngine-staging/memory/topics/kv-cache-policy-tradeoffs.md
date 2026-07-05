@@ -34,7 +34,8 @@ ladder**, and the right choice is a per-request cost decision:
 | Tier | Where KV is parked | Reuse (reload) cost | Capacity | Notes |
 |---|---|---|---|---|
 | T0 in-place resident | decode PE's own SRAM | ~0 (never moves) | tiny — one cache, ≤ MAX_SEQ_LEN | occupies the working slab; blocks new request |
-| **T1 idle-PE SRAM offload** | spare/empty PEs on the *same wafer* | on-fabric gather (router hops, ns–µs, no host BW) | (#free PEs × ~48 KB) — wafer-scale spatial abundance | **wafer-unique middle tier** (Le's idea); needs a park-band + addressing |
+| **T0.5 in-bank / in-PE multi-request reuse** | the SAME compute bank, holding >1 request's KV | **~0 — reused in place, never moves** | on-chip SRAM shared across cached requests (tightest — competes with the active request for the bank) | **(Le's addition)** cheapest reuse of all (no move), but needs KERNEL support: multi-request bank partition/keying + `round_reset` retain+extend instead of rewind. Home discussable: **decode** (where warm KV sits) or **prefill** — different tradeoffs (see "Where reuse is computed"). |
+| **T1 idle-PE SRAM offload** | spare/empty PEs on the *same wafer* | on-fabric gather (router hops, ns–µs, no host BW) | (#free PEs × ~48 KB) — wafer-scale spatial abundance | **wafer-unique middle tier** (Le's idea); needs a park-band + addressing. Difference vs T0.5: T0.5 reuses *inside* the compute bank (no move, competes for bank space); T1 *moves* to separate idle PEs (frees the bank, pays a move). |
 | T2 host-DRAM offload | host memory (pdSeparate egress path) | ingress stream ~29 MB/req, "a few s" | large (DRAM) | already implemented one-way (prefill→decode) |
 | T3 evict + recompute | nowhere | rerun prefill (~5.7 s @256 tok; **capped ≤~512-tok prompt**, see below) | n/a | pays prefill FLOPs on miss |
 
@@ -103,6 +104,64 @@ So "transfer-free reuse" holds only for mode (a). Parallel reuse needs a
 decode→prefill reverse bridge that neither model has (more natural in pdSeparate,
 since the KV is already host-resident).
 
+## Where reuse is computed — prefill vs decode kernel (WSE-specific)
+
+An axis ORTHOGONAL to the storage tier: for a cache-hit, *which kernel* does the
+work? On GPU this is a non-question — prefill throughput is 10–100× decode and KV is
+cheaply referenced in shared HBM, so you always prefill. **On WSE it must be decided
+explicitly, and the GPU default often inverts.**
+
+**The enabling fact (measured, same e2e device run — apples-to-apples):**
+- decode = **2240 tok/s** (446 µs/tok, serial autoregressive)
+- prefill = **5880 tok/s** (256 tok in 43.5 ms → 170 µs/tok amortized)
+- **ratio ≈ 2.6×**, NOT the 10–100× of GPU.
+- *Why:* WSE keeps all weights resident in on-chip SRAM, so decode is not
+  HBM-bandwidth-starved the way a GPU's tiny-batch decode is → decode throughput sits
+  much closer to prefill. This small ratio is what makes "reuse in decode" viable.
+
+**Scenario (multi-turn chat).** A new request shares a prefix (cache hit up to some
+seq_len) with an earlier one, and the warm KV is mostly *just-decoded* tokens → it is
+**already resident in the DECODE kernel**. Two ways to serve the uncached new turn
+(`L_new` tokens) on top of the warm history (`L_warm` tokens):
+
+- **Option A — ship warm KV to prefill + partial-prefill the new turn.** Cost ≈
+  `move(L_warm)` + `prefill(L_new)` (+ send the new KV back to decode). Needs the
+  decode→prefill reverse bridge + layout transform (does not exist). Move is on-fabric
+  for same-chip (e2e) or a host round-trip for cross-chip (pdSeparate).
+- **Option B — keep KV in decode, force-decode the new turn in place.** Feed the new
+  prompt tokens as forced (teacher-forced) decode steps that append KV without
+  sampling. **No move.** Cost ≈ `L_new × 446 µs`. Smaller build than A (decode already
+  appends KV per step; just needs a forced-token input).
+
+**Fact-check of Le's claim ("keeping KV in decode + force-decoding may win when KV
+transfer is slow") — CONFIRMED.** Breakeven (Option B wins when
+`L_warm × move_per_tok > L_new × 276 µs`, where 276 µs = the force-decode compute
+penalty per new token = 446 − 170):
+
+| KV-move regime (eff. BW) | move µs / warm-tok | Option B (force-decode) wins when |
+|---|---|---|
+| current single-stream (~29.4 MB in ~2 s ≈ 15 MB/s) | ~7800 | `L_warm/L_new > 0.035` → **essentially always** |
+| optimized multi-stream (~1 GB/s) | ~115 | `L_warm/L_new > 2.4` → **typical chat** |
+| ideal 4-ch RoCE (~4 GB/s) | ~29 | `L_warm/L_new > 9.6` → long conversations |
+
+So for multi-turn chat — **large resident history, small new turn** — Option B
+(force-decode in place) wins across every transfer regime. It is most decisive for
+**pdSeparate** (cross-chip move = seconds, single-stream-bottlenecked at ~15 MB/s by
+the serial colmux, not wire BW). The GPU instinct (always ship to prefill) is wrong
+here precisely because (1) prefill is only ~2.6× decode, and (2) the move scales with
+the *large* history `L_warm` while the compute penalty scales with the *small* new
+turn `L_new`.
+
+**Caveats / crossover.** (a) Force-decode is SERIAL (latency-bound): a *large* `L_new`
+(e.g. a pasted document) costs `L_new × 446 µs` and prefill's parallelism can win —
+crossover when `L_new` is large relative to `L_warn`. (b) Numbers are mock-weight,
+bsz=1, e2e 512/256; the ~2.6× ratio is architectural but batch/config can shift it
+(larger batch amortizes prefill's fixed cost → ratio widens → Option A relatively
+better). (c) Neither path is built: Option B needs a forced-token decode input;
+Option A needs the reverse bridge. (d) The "~2 s" transfer is a current single-stream
+artifact (S4 multi-stream would cut it ~N×) — but even at wire speed Option B still
+wins for typical chat ratios.
+
 ## Cost anchors (device, test_device_2x2blk_kv, Pw=512)
 
 - On-chip resident KV: **112–448 B/PE** (tiny vs decode region 34,320 B/PE; weights
@@ -133,8 +192,13 @@ since the KV is already host-resident).
 
 - Quantify **T1 (idle-PE offload)** cost: fabric BW for the KV move, addressing a
   parked KV band, how many PEs are free per config — vs T2 host round-trip.
-- Build the **decode→prefill reverse KV bridge** (+ layout transform) to enable
-  parallel multi-turn reuse; more natural in pdSeparate (KV already host-resident).
+- **Prefer force-decode-in-place (Option B) for multi-turn reuse** (fact-checked win
+  for large-history/small-new-turn); build the **forced-token decode input** — the
+  smaller change vs the decode→prefill reverse bridge (+ layout transform) that
+  Option A needs. Reverse bridge only pays off for large new-input segments.
+- Prototype **T0.5 in-bank multi-request reuse**: partition/key the decode KV bank for
+  >1 request + `round_reset` retain+extend; quantify how many requests fit the bank
+  (SRAM) and the addressing cost. Decide prefill-vs-decode home.
 - Attack the **quadratic prefill score/mask buffer** so long prompts (the PD
   long-context use case) can be prefilled at all.
 - Add a keyed KV store + skip-prefill-on-hit; port an InferCept-style cost model
