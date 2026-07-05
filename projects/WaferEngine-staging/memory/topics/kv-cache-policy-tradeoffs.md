@@ -152,6 +152,54 @@ here precisely because (1) prefill is only ~2.6× decode, and (2) the move scale
 the *large* history `L_warm` while the compute penalty scales with the *small* new
 turn `L_new`.
 
+### Method — how the penalty and breakeven are derived (reusable when numbers change)
+
+**Inputs** (measure/estimate; current values shown — re-measure per config/weights):
+
+| symbol | meaning | current value | source |
+|---|---|---|---|
+| `t_dec` | decode time per token | 446 µs | e2e device run (2240 tok/s = 1e6/446) |
+| `t_pf` | prefill time per token, amortized | 170 µs | e2e device run (43534 µs ÷ 256 tok) |
+| `B_tok` | KV bytes per token | 112 KB | `2·n_layers·n_kv·head_dim·bytes = 28·8·128·2·2` |
+| `BW` | effective KV-move bandwidth | 15 MB/s … 4 GB/s | measured (single-stream ≈29.4 MB/2 s) or target |
+
+**Derived quantities:**
+- **Force-decode penalty per new token** `Δ = t_dec − t_pf` (= 446 − 170 = **276 µs**).
+  Rationale: force-decoding one new prompt token runs a full forward + KV append ≈ one
+  decode step (`t_dec`), minus sampling (small, ignored); prefilling the same token
+  costs `t_pf`. So `Δ` is the *extra* time to ingest a token via serial decode instead
+  of parallel prefill.
+- **Move time per warm token** `m = B_tok / BW`.
+
+**Cost model** (serve `L_new` new tokens on top of `L_warm` resident warm history):
+- Option A (ship-to-prefill): `C_A = L_warm·m + L_new·t_pf`
+- Option B (force-decode):    `C_B = L_new·t_dec`
+
+**Breakeven** — Option B beats A when `C_B < C_A`:
+```
+L_new·t_dec < L_warm·m + L_new·t_pf
+L_new·(t_dec − t_pf) < L_warm·m
+⇒  Option B wins when   L_warm / L_new  >  Δ / m  =  Δ·BW / B_tok  ≡  R*
+```
+Recompute `R*` whenever any input changes:
+```python
+t_dec, t_pf = 446, 170            # µs/token — MEASURE from a run
+B_tok = 28*8*128*2*2              # KV bytes/token = 2·n_layers·n_kv·head_dim·2B(fp16)
+for BW in (15e6, 1e9, 4e9):       # effective KV-move bytes/s
+    d = t_dec - t_pf              # = Δ
+    m = B_tok / BW * 1e6          # µs per warm token
+    print(BW, "-> R* =", d/m)     # Option B wins when L_warm/L_new > R*
+# 15e6 -> 0.035 ; 1e9 -> 2.41 ; 4e9 -> 9.62
+```
+
+**Model assumptions** — each makes Option A look *better* than reality, so B's win is
+conservative: (i) ignores sending `L_new`'s KV back prefill→decode (extra A cost);
+(ii) `t_pf` is amortized at 256 tokens — for small `L_new` prefill is less parallel so
+`t_pf → t_dec`, shrinking `Δ` and `R*`, favoring B more; (iii) force-decode ≈ a decode
+step (skips sampling). To re-anchor: pull `t_dec`/`t_pf` from a run's per-token +
+prefill TSC lines, `B_tok` from the config dims, and `BW` from the measured KV egress/
+ingress time (`bytes ÷ seconds`).
+
 **Caveats / crossover.** (a) Force-decode is SERIAL (latency-bound): a *large* `L_new`
 (e.g. a pasted document) costs `L_new × 446 µs` and prefill's parallelism can win —
 crossover when `L_new` is large relative to `L_warn`. (b) Numbers are mock-weight,
