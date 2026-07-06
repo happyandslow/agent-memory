@@ -272,13 +272,34 @@ registers directly via `@get_config`/`@set_config` (`TIMESTAMP_COUNTER` low-32 +
 `PERF_COUNTER_CONTROL`=7 to enable) — same access the library does, no inline loop.
 Candidate for its own skill.
 
+## Profiling is DEVICE-ONLY going forward (2026-07-06 directive)
+
+Sim profiling is **abandoned** as a measurement path. A sim `PREFILL_LEN` sweep was
+started but **killed mid-run**: e2e sim uses `SimfabConfig(dump_core=True)` and each
+run dumps tens–hundreds of GB, so 7 parallel runs filled `/home` (85%→94%). Rule
+now: **sim only for small `test_sim_*` toy configs (≤16×16 PEs) as a correctness
+check; all profiling / bandwidth runs go on the real CS-3 device** (see project.md
+pitfall). No sim bandwidth number was obtained — we go straight to the device
+number, which is the more meaningful one anyway (real silicon, real dim=2048).
+
+**Device-egress WIP:** the profiler host readback is currently `read_symbol`
+(sim-only). A subagent started a device-compatible stream egress (mirroring the
+`is_tsc_pe` TSC-burst-over-output-stream path in `ht_tail.csl`) but was **stopped
+incomplete**; its partial work is in git worktree
+`.claude/worktrees/agent-a5f7561a999d51c50`. Finishing that egress is the
+prerequisite for any device profiling run.
+
 ## Current state
 
-- Mechanism mapped; segments A/B/C identified and **now measured in sim** (above).
+- Mechanism mapped; segments A/B/C identified and **measured once in sim** (Phase-1
+  toy config: A=20µs prep / B=338 / C=474µs — transfer-bound). Committed `bd21fb3`.
 - Setup floorplan artifact saved (html + pdf).
-- **Next:** ACK round-trip for the true single-clock end-to-end latency (design in
-  the ACK section); then run the **device** config for a representative GB/s and
-  sweep `PREFILL_LEN` to separate fixed (prep) from payload-scaling (wire).
+- **Next (device path):** (1) finish the device stream egress so `KV_PROFILE` reports
+  on hardware; verify via `compile_only` (cslc, no simfab → no disk blowup), not a
+  full sim run. (2) Add `KV_PROFILE=1` to `test_device_2x2blk_kv.json` (real dim=2048).
+  (3) Run on CS-3 via `/cs3-runner` (needs Le's gateway TOTP) → first real GB/s.
+  (4) Sweep `PREFILL_LEN` (≤~512, the prefill cap) on device for the α-vs-BW slope.
+  (5) ACK round-trip for the clean single-clock end-to-end latency.
 
 ## Open questions / next actions
 

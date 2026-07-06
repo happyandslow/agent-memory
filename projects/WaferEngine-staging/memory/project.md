@@ -53,6 +53,14 @@ export MEMORY=$AGENT_MEMORY_ROOT/projects/WaferEngine-staging   # or /home/lexu/
 
 ## Known pitfalls
 
+- **Simulator is for SMALL `test_sim_*` configs only (≤ 16×16 PE block region — the
+  dim=64 toy configs). Anything larger / real-size MUST run on the actual CS-3
+  device (`test_device_*`).** Reason: e2e `launch.py` runs simfab with
+  `SimfabConfig(dump_core=True)` (dumps full device state) and `SIMFAB_TRACE` can
+  add csviz traces — each sim run writes **tens–hundreds of GB**; a batch of
+  parallel runs filled `/home` from 85%→94% and had to be killed + cleaned. So:
+  **profiling / bandwidth / any many-PE run → device, not sim.** Sim stays for
+  quick correctness checks on the toy configs only. (2026-07-06 directive from Le.)
 - **Real Qwen3 weights are NOT wired** into any model — mock/seeded only; no HF
   loader, no Qwen3 gpu_reference oracle, no tokenizer. See
   [[e2e-pdSeparate-device-validation]].
