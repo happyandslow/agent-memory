@@ -161,7 +161,7 @@ turn `L_new`.
 | `t_dec` | decode time per token | 446 µs | e2e device run (2240 tok/s = 1e6/446) |
 | `t_pf` | prefill time per token, amortized | 170 µs | e2e device run (43534 µs ÷ 256 tok) |
 | `B_tok` | KV bytes per token | 112 KB | `2·n_layers·n_kv·head_dim·bytes = 28·8·128·2·2` |
-| `BW` | effective KV-move bandwidth | 15 MB/s … 4 GB/s | measured (single-stream ≈29.4 MB/2 s) or target |
+| `BW` | effective KV-move bandwidth (path-dependent) | host ~15 MB/s→4 GB/s · on-chip fabric ~4.4 GB/s/link | see "Bandwidth regimes" below |
 
 **Derived quantities:**
 - **Force-decode penalty per new token** `Δ = t_dec − t_pf` (= 446 − 170 = **276 µs**).
@@ -191,6 +191,69 @@ for BW in (15e6, 1e9, 4e9):       # effective KV-move bytes/s
     print(BW, "-> R* =", d/m)     # Option B wins when L_warm/L_new > R*
 # 15e6 -> 0.035 ; 1e9 -> 2.41 ; 4e9 -> 9.62
 ```
+
+**Terms (full glossary).**
+- `L_warm` (= `L_history`) — tokens of the reused/cache-hit prefix already resident in
+  DECODE (e.g. the conversation so far).
+- `L_new` — tokens of the uncached new segment to ingest (the new user turn).
+- `t_dec` — wall-clock for one DECODE step (one token): forward + KV append (+ sampling).
+- `t_pf` — wall-clock to ingest one token via PREFILL, *amortized* over the batched prompt
+  pass (total prefill time ÷ prompt length).
+- `Δ = t_dec − t_pf` — force-decode penalty: extra time to ingest one new token by serial
+  decode instead of parallel prefill.
+- `B` (`B_tok`) — KV bytes produced per token = `2·n_layers·n_kv_heads·head_dim·bytes`
+  (the leading 2 = K and V).
+- `BW` — effective bandwidth of the KV *move* from where it sits (DECODE) to where it's
+  reused (PREFILL); path-dependent (on-chip fabric vs cross-chip host bridge).
+- `m = B / BW` — time to move one warm token's KV.
+- `R* = Δ·BW/B` — break-even ratio `L_warm / L_new` above which force-decode-in-place (B)
+  is cheaper than ship-to-prefill (A). Dimensionless (a token-count ratio).
+
+**Worked example (the 0.035 in the fact-check table)** — current single-stream regime:
+```
+Δ  = t_dec − t_pf = 446 − 170        = 276 µs
+B  = 112 KB                          = 114,688 bytes
+BW = 29.4 MB ÷ ~2 s ≈ 15 MB/s       = 14.7e6 B/s
+m  = B / BW = 114,688 / 14.7e6       = 7.80e-3 s = 7,800 µs   (the "~7800 µs/warm-tok" column)
+R* = Δ / m  = 276 / 7,800            = 0.0354 ≈ 0.035
+       (identically  R* = Δ·BW/B = 276e-6 · 14.7e6 / 114,688 = 0.035)
+```
+Reading: B wins once the warm history exceeds `R*·L_new` = **3.5 % of the new turn** → in
+chat essentially always ("→ almost always"). At 1 GB/s `R* = 276/115 ≈ 2.4`; at 4 GB/s
+`276/29 ≈ 9.6`.
+
+**What R\* means / direction of effect.** R* is the history-to-new-turn length ratio at the
+tipping point; **larger R\* ⇒ B (force-decode) wins *less* often** (more history needed to
+justify not moving). Because `R* = Δ·BW/B`:
+- faster move (`BW↑`) → `R*↑` → B wins less (moving is cheap → ship-to-prefill attractive);
+- bigger KV/token (`B↑`) → `R*↓` → B wins more (moving is expensive);
+- bigger penalty (`Δ↑`) → `R*↑` → B wins less.
+
+**Bandwidth regimes — where the `BW` numbers come from** (only the first is measured):
+- **~15 MB/s — cross-chip host bridge, as-built (measured-ish).** pdSeparate's device KV
+  transfer moved the full 29.4 MB in "a few seconds" (STATUS.md); ~2 s → 14.7 MB/s. This is
+  the *single on-chip stream* rate, bottlenecked by the serial colmux/adaptor PE, NOT the
+  wire — hence far below RoCE.
+- **~1 GB/s — cross-chip host bridge, optimized (estimate).** Target if S4 multi-stream
+  removes the single-PE serialization. Not measured.
+- **~4 GB/s — host RoCE ceiling (nameplate).** 4-channel RoCE (~1 GB/s/ch × 4). Idealized.
+- **On-CHIP fabric (same-wafer move — e2e, or the T1 idle-PE tier) — much faster.** Cerebras
+  WSE-3 advertises **214 Pb/s ≈ 27 PB/s** aggregate on-wafer fabric over 900,000 cores at
+  **1.1 GHz**, single-cycle nearest-neighbor latency. Derived (per-link not officially
+  published): **~30 GB/s per PE** (214 Pb/s ÷ 900k) and **~4.4 GB/s per link per direction**
+  (one 32-bit wavelet/cycle × 1.1 GHz); a bulk move parallelizes over many PEs/links → tens
+  of GB/s to ~PB/s aggregate. Sources: Cerebras HotChips 2024 deck; product page
+  (`cerebras.ai/chip`); Introl CS-3 guide.
+
+**Same-chip vs cross-chip — the real fork.** Plugging an on-chip fabric `BW` (≥ ~4.4 GB/s,
+far higher in parallel) into `R* = Δ·BW/B` gives `R* ≥ ~10` (up to hundreds): on-wafer,
+moving KV is so cheap that **ship-to-prefill (A) wins for all but extreme histories**. So the
+force-decode-in-place (B) advantage is really a **cross-chip (pdSeparate, host-path
+~15 MB/s) phenomenon**, driven by the slow host bridge — not fabric cost. On one chip (e2e)
+the fabric move is fast and A would usually win *if the decode→prefill reverse bridge
+existed* (it does not; see [[standalone-vs-integrated-kernel-parity]]). Caveat: the
+per-link/per-PE fabric figures are derived from the advertised aggregate + clock, not an
+officially advertised per-link number.
 
 **Model assumptions** — each makes Option A look *better* than reality, so B's win is
 conservative: (i) ignores sending `L_new`'s KV back prefill→decode (extra A cost);
@@ -257,5 +320,7 @@ wins for typical chat ratios.
 
 ## Last updated
 
-2026-07-05 — from device-validation session (see
-[[e2e-pdSeparate-device-validation]]).
+2026-07-06 — expanded Method with term glossary, worked R*=0.035 example,
+R* direction-of-effect, and bandwidth-regimes incl. WSE-3 on-chip fabric
+(214 Pb/s / ~4.4 GB/s per link) and the same-chip-vs-cross-chip fork.
+2026-07-05 — from device-validation session (see [[e2e-pdSeparate-device-validation]]).
