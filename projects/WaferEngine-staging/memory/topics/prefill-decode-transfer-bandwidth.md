@@ -151,8 +151,10 @@ copy-mode `memcpy_d2h` of the packed buffers, or piggyback the existing
 
 **Byte total** (fill for the target config from the `launch.py` printout):
 `bytes = (Pw·Ph) · (2·max_layers_per_block) · (kv_dim_per_pe·bsz·seq_len_per_pe) · 2`.
-For `test_sim_2x2blk_kv`: Pw=Ph=16, n_layers=8 → max_layers_per_block=4, bsz=1,
-kv_dim_per_pe=4, and seq_len_per_pe from PREFILL_LEN=16 sharded over the Y PEs.
+For `test_sim_2x2blk_kv`: Pw=Ph=16, **n_layers=8 over 2×2=4 blocks →
+max_layers_per_block=2** (not 4 — layers distribute over *all* blocks, X and Y),
+bsz=1, kv_dim_per_pe=4, transferred seq_len_per_pe=2 (PREFILL_LEN=16 / P_BLOCK_SIZE=8)
+⇒ **16 KiB** total (`256 · 4 · (4·1·2) · 2`).
 
 **Config caveat (important).** The shipped **sim** config is a **dim=64 toy**
 (n_layers=8, PREFILL_LEN=16) — the KV payload is a few KB, so a bandwidth number
@@ -225,13 +227,53 @@ The total is **not** the sum of per-PE segment maxes — the pipeline overlaps p
 and wire across PEs, which is why the ACK gives the real number and the profiler
 only explains its composition.
 
+## Phase-1 results (2026-07-06, sim, branch `lexu/staging/kv-transfer-bandwidth`)
+
+Per-PE TSC segment profiler landed (commit `bd21fb3`), guarded by `KV_PROFILE`
+(additive; normal path untouched). Ran `test_sim_2x2blk_kv_prof.json` on simfab —
+**correctness intact** (`KV-TRANSFER PASS: 4 blocks x 2 layers, bit-exact K+V`;
+`SUCCESS: decode top-2 invariant`), 256/256 PEs reporting, max-reduced:
+
+| Segment | cycles | µs | share of sum |
+|---|--:|--:|--:|
+| **A** prefill gather+transform (states 0–3) | 22,400 | 20.4 | 2.4% |
+| **B** prefill north shift (state 4, wire) | 371,443 | 337.7 | 40.6% |
+| **C** decode ingress (receive + write) | 521,472 | 474.1 | 57.0% |
+| sum A+B+C | 915,315 | 832.1 | — |
+
+**Finding — overturns the earlier "prep-bound at small payload" hypothesis.** Pure
+preparation (A) is only ~2.4%; the coupled wire/receive (B + C) is ~98%. The sink
+side (C) is the single largest piece, consistent with the south decode row being
+the store-and-forward tail (receives the most tiles). So the KV handoff is
+**transfer-bound, not compute-bound**, even on this toy config.
+
+**Load-bearing caveat — the sum is a decomposition, NOT the wall-clock latency.**
+B (measured on prefill) and C (measured on decode) are the *same* coupled data
+movement seen from sender vs receiver, so they run **concurrently**, not in series.
+True end-to-end latency ≈ A + (the coupled B/C pipeline, whose tail is C ≈ 474 µs)
+≈ ~495 µs, *not* 832 µs. Getting the real number cleanly is exactly what the **ACK
+round-trip** phase is for — do not report A+B+C as the transfer time.
+
+**Numbers are overhead-dominated** — 16 KiB over a dim=64 toy, so absolute µs /
+0.020 GB/s are not representative; the *ratio* (prep vs transfer) is the signal.
+A representative GB/s needs the device config (real dim=2048) and a `PREFILL_LEN`
+sweep.
+
+**Toolchain gotcha found (reusable).** This model's `scripts/cslc_bin` wrapper caps
+inlined iterations at **8** (deliberate, to bound SRAM on real llama configs), which
+makes the CSL `<time>` library's `get_timestamp` (an `inline for`) fail to compile
+with `exceeded the maximum of 8 inlined iterations`. Workaround used: read the TSC
+registers directly via `@get_config`/`@set_config` (`TIMESTAMP_COUNTER` low-32 +
+`PERF_COUNTER_CONTROL`=7 to enable) — same access the library does, no inline loop.
+Candidate for its own skill.
+
 ## Current state
 
-- Mechanism fully mapped from source; segments A/B/C identified with code anchors.
+- Mechanism mapped; segments A/B/C identified and **now measured in sim** (above).
 - Setup floorplan artifact saved (html + pdf).
-- **No timing instrumentation yet.** The existing e2e device run reports overall
-  `run 6.9s` and decode throughput (2240 tok/s) but does **not** isolate the KV
-  handoff cost ([[e2e-pdSeparate-device-validation]]).
+- **Next:** ACK round-trip for the true single-clock end-to-end latency (design in
+  the ACK section); then run the **device** config for a representative GB/s and
+  sweep `PREFILL_LEN` to separate fixed (prep) from payload-scaling (wire).
 
 ## Open questions / next actions
 
@@ -281,3 +323,9 @@ sound; prep-vs-transfer; destination receive is wire-coupled) and the **ACK
 round-trip** refinement (repaint seam color 22 NORTH→SOUTH, sink ACKs the timer PE
 → single-clock RTT), now preferred over cross-PE ref-correction for the headline
 GB/s. Profiler is complementary (breakdown only).
+
+2026-07-06 (cont.) — **Phase-1 profiler implemented + run in sim** on branch
+`lexu/staging/kv-transfer-bandwidth` (commit `bd21fb3`). Result: A=20µs (prep, 2.4%),
+B=338µs, C=474µs — transfer-bound, not prep-bound; A+B+C is a decomposition not the
+true latency (B/C overlap). Fixed byte math (max_layers_per_block=2 → 16 KiB) and
+recorded the cslc-wrapper inline-cap gotcha. Next: ACK round-trip + device config.
