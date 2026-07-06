@@ -251,6 +251,12 @@ only explains its composition.
 - [ ] Compare against the pdSeparate host-DRAM bridge (KV via `kv_handoff.npz`)
       as the alternative transfer path — same metric, both segments counted.
 
+## Work branch
+
+- **`lexu/staging/kv-transfer-bandwidth`** (WaferEngine-staging repo, off
+  `main`@`fcfc8c1`) — instrumentation work: Phase-1 segment profiler
+  (prep-vs-wire split) then the ACK round-trip. Started 2026-07-06.
+
 ## Commands / paths
 
 - Impl: `models/qwen3_1p7b-e2e/` — egress `src/prefill/prefill.csl` +
