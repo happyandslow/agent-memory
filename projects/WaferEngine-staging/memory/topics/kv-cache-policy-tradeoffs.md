@@ -244,6 +244,24 @@ justify not moving). Because `R* = Δ·BW/B`:
   (one 32-bit wavelet/cycle × 1.1 GHz); a bulk move parallelizes over many PEs/links → tens
   of GB/s to ~PB/s aggregate. Sources: Cerebras HotChips 2024 deck; product page
   (`cerebras.ai/chip`); Introl CS-3 guide.
+- **On-chip SRAM (local KV read/write — a *third*, distinct bandwidth; underpins T0/T0.5
+  and the ~2.6× ratio).** This is not a *move* bandwidth — it is the rate a PE accesses
+  its OWN resident KV. Cerebras WSE-3 advertises **21 PB/s** aggregate SRAM bandwidth over
+  44 GB / 900,000 cores. Derived: **~23 GB/s per PE** (21 PB/s ÷ 900k). Architectural
+  cross-check: each PE does ~2×64-bit reads + 1×64-bit write of its local SRAM per cycle
+  → at 1.1 GHz ≈ 17.6 GB/s read + 8.8 GB/s write ≈ 26 GB/s/PE (same ballpark, ~15%).
+  Relevance: (i) it is why T0 in-place / T0.5 in-bank reuse cost "~0" — the KV never
+  leaves SRAM and is read at full local BW every decode step; (ii) it is **the reason
+  decode ≈ prefill on WSE** — weights + KV live in SRAM at 21 PB/s, not HBM, so decode is
+  not memory-bandwidth-starved the way a GPU's tiny-batch decode is (which must stream
+  weights from HBM). That is the enabling fact behind the ~2.6× ratio (`Δ`), and thus the
+  whole force-decode-in-place argument. Sources: same as fabric (SRAM BW headline 21 PB/s).
+
+**Ordering of the three bandwidths** (for intuition): local SRAM read ~23 GB/s/PE
+(≈21 PB/s aggregate) ≥ on-chip fabric move ~4.4 GB/s/link (≈214 Pb/s aggregate) ≫ host
+bridge ~15 MB/s–4 GB/s. Reuse gets dramatically cheaper the less the KV has to travel:
+stay-in-SRAM (T0/T0.5) ≫ move-on-wafer (T1 / same-chip A) ≫ cross-chip host move (T2 /
+pdSeparate A).
 
 **Same-chip vs cross-chip — the real fork.** Plugging an on-chip fabric `BW` (≥ ~4.4 GB/s,
 far higher in parallel) into `R* = Δ·BW/B` gives `R* ≥ ~10` (up to hundreds): on-wafer,
@@ -322,5 +340,6 @@ wins for typical chat ratios.
 
 2026-07-06 — expanded Method with term glossary, worked R*=0.035 example,
 R* direction-of-effect, and bandwidth-regimes incl. WSE-3 on-chip fabric
-(214 Pb/s / ~4.4 GB/s per link) and the same-chip-vs-cross-chip fork.
+(214 Pb/s / ~4.4 GB/s per link), on-chip SRAM bandwidth (21 PB/s / ~23 GB/s
+per PE, underpinning T0/T0.5 and the ~2.6× ratio), and the same-chip-vs-cross-chip fork.
 2026-07-05 — from device-validation session (see [[e2e-pdSeparate-device-validation]]).
