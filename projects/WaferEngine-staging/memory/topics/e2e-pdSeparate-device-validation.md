@@ -1,3 +1,8 @@
+---
+summary: Device-validation and max-context findings for qwen3 e2e and pdSeparate deployments.
+tags: [waferengine-staging, qwen3, device-validation, pd-disaggregation]
+---
+
 # e2e vs pdSeparate — CS-3 Device Validation, Real-Weights Gap, Max-Context
 
 Session 2026-07-05: quick-validate the two end-to-end qwen3_1p7b deployments on

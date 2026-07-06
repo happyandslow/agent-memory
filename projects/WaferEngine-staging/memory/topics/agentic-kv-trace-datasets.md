@@ -1,3 +1,8 @@
+---
+summary: Dataset and trace pointers for agentic/request-length KV preserve-vs-evict analysis.
+tags: [waferengine-staging, kv-cache, datasets, agentic-workloads]
+---
+
 # Agentic KV-Cache Trace Datasets
 
 ## Summary

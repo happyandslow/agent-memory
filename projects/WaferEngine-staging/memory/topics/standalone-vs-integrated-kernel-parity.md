@@ -1,3 +1,8 @@
+---
+summary: Feature-parity gap between current standalone qwen3 kernels and integrated e2e/pdSeparate snapshots.
+tags: [waferengine-staging, qwen3, kernel-parity, serving]
+---
+
 # Standalone vs Integrated Kernels — Feature Parity Gap
 
 What the **integrated** end-to-end models (`qwen3_1p7b-e2e`, `qwen3_1p7b-e2e-pdSeparate`)

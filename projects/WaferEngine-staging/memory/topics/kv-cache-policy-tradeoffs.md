@@ -1,3 +1,8 @@
+---
+summary: WSE-3 KV preserve-vs-evict/offload tiering analysis across e2e and pdSeparate deployments.
+tags: [waferengine-staging, kv-cache, policy, offload, wse3]
+---
+
 # KV-Cache Preserve-vs-Evict Policy Tradeoffs (WSE-3)
 
 ## Summary

@@ -19,3 +19,13 @@
 - [[memory/topics/prefill-decode-transfer-bandwidth]]
 - [[memory/topics/standalone-vs-integrated-kernel-parity]]
 
+## Topic catalog
+
+| Topic | Summary | Tags | Path |
+| --- | --- | --- | --- |
+| Agentic KV-Cache Trace Datasets | Dataset and trace pointers for agentic/request-length KV preserve-vs-evict analysis. | waferengine-staging, kv-cache, datasets, agentic-workloads | `memory/topics/agentic-kv-trace-datasets.md` |
+| e2e vs pdSeparate — CS-3 Device Validation, Real-Weights Gap, Max-Context | Device-validation and max-context findings for qwen3 e2e and pdSeparate deployments. | waferengine-staging, qwen3, device-validation, pd-disaggregation | `memory/topics/e2e-pdSeparate-device-validation.md` |
+| KV-Cache Preserve-vs-Evict Policy Tradeoffs (WSE-3) | WSE-3 KV preserve-vs-evict/offload tiering analysis across e2e and pdSeparate deployments. | waferengine-staging, kv-cache, policy, offload, wse3 | `memory/topics/kv-cache-policy-tradeoffs.md` |
+| Prefill→Decode KV-Cache Transfer Bandwidth (qwen3_1p7b-e2e) | Effective-bandwidth study for qwen3 e2e prefill-to-decode KV handoff including transform compute and wire time. | waferengine-staging, kv-cache, bandwidth, prefill-decode, measurement | `memory/topics/prefill-decode-transfer-bandwidth.md` |
+| Standalone vs Integrated Kernels — Feature Parity Gap | Feature-parity gap between current standalone qwen3 kernels and integrated e2e/pdSeparate snapshots. | waferengine-staging, qwen3, kernel-parity, serving | `memory/topics/standalone-vs-integrated-kernel-parity.md` |
+

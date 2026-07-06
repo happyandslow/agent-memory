@@ -1,3 +1,8 @@
+---
+summary: Effective-bandwidth study for qwen3 e2e prefill-to-decode KV handoff including transform compute and wire time.
+tags: [waferengine-staging, kv-cache, bandwidth, prefill-decode, measurement]
+---
+
 # Prefill→Decode KV-Cache Transfer Bandwidth (qwen3_1p7b-e2e)
 
 **Tracking topic — started 2026-07-06.** Goal: characterize the *effective
