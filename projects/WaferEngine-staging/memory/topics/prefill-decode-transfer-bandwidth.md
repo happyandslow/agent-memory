@@ -99,11 +99,19 @@ bytes ≈ (Pw · Ph)                        # prefill block PEs, each holds a ti
       · 2                                # fp16 = 2 bytes
 ```
 
-**TODO:** plug in concrete values for `test_sim_2x2blk_kv` /
-`test_device_2x2blk_kv` — the config JSONs did not expose `bsz`, `kv_dim_per_pe`,
-`seq_len_per_pe`, `max_layers_per_block` directly (derived in `launch.py`); pull
-the resolved values from a run's printout and compute the byte total, then divide
-by the measured A+B+C wall time.
+This equals the raw model KV footprint (padding-free for these configs):
+`bytes = n_layers · bsz · (n_kv_heads · head_dim) · PREFILL_LEN · 2(K,V) · 2(bf16)`.
+
+**Concrete values** (resolved 2026-07-06 for the pdSeparate handoff; same total KV
+volume applies to the e2e seam):
+
+| Config | geometry | per-direction KV |
+|---|---|---|
+| `test_device_2x2blk_kv` | n_layers=28, bsz=1, n_kv_heads=8, head_dim=128, PREFILL_LEN=2048 | **224 MiB** (58,720,256 u32) |
+| `test_sim_2x2blk_kv` | n_layers=8, bsz=1, n_kv_heads=2, head_dim=16, PREFILL_LEN=16 | **16 KiB** (4,096 u32) |
+
+(Device: `per_pe_u32 = max_layers_per_block·kv_dim_per_pe·reduce_len = 7·4·8 = 224`;
+`Ph·Pw·per_pe_u32 = 512·512·224`. Cross-check `28·1·1024·2048·2·2 = 234,881,024 B`.)
 
 ## Current state
 
@@ -142,7 +150,82 @@ by the measured A+B+C wall time.
 - Run sim: `cd models/qwen3_1p7b-e2e && ./run_sim.sh model_config/test_sim_2x2blk_kv.json`
 - Setup viz: `projects/WaferEngine-staging/assets/prefill-decode-transfer/`
 
+## Updates — 2026-07-06 · pdSeparate host-bridge + measurement design
+
+The two models take opposite transfer paths, both in scope for this topic:
+- **e2e** — on-chip: gather+transform then north shift through the relay seam
+  (segments A/B/C above). Timing needs *in-kernel* TSC.
+- **pdSeparate** — host-bridge: prefill D2H → host re-layout → decode H2D, two
+  separate device artifacts, KV serialized to an ephemeral `kv_handoff.npz`. This
+  maps almost 1:1 onto the SDK `bandwidth-test` methodology, so it is the easier
+  first measurement. **pdSeparate is the target of the plan below.**
+
+### pdSeparate handoff — 5 stages (all anchors in `models/qwen3_1p7b-e2e-pdSeparate/launch.py`)
+
+| Stage | What | Where | Cost type |
+|---|---|---|---|
+| **S1 D2H wire** | prefill KV egress: switch-gather → mux PE → host, direct output stream `kv_egress_stream` (`memcpy_required=False`) | `runtime.receive(...)` **line 3410** (`nonblock=False`); bytes `= n_egr*4`, `n_egr` @ 3408 | fabric/PCIe wire |
+| **S2 prefill transform** | `_parse_kv_egress` (3411) + `_extract_transform_kv` (3243–3283): unpack, PE-grid transpose (decode mirror `(lx,ly)←(ly,lx)`), V in-tile transpose, seq zero-pad to `MAX_SEQ_LEN/P` | host CPU (numpy) | transform/compute |
+| **S3 bridge (artifact)** | `np.savez` → `kv_handoff.npz` (3424) + subprocess teardown/startup + `np.load` (3627) | disk + process fork | **sim-harness artifact** |
+| **S4 decode transform** | `_repack_kv_stream` (3496 / 3286–3327): seq truncate to `PREFILL_LEN/P`, demux reorder, pack 2×fp16→u32 | host CPU (numpy) | transform/compute |
+| **S5 H2D wire** | decode KV ingress: host → `kv_adaptor`→`kv_demux`→north-shift, direct input stream `kv_stream` | `runtime.send(...)` **line 3498** (`nonblock=False`); bytes `= kv_stream_data.nbytes` | fabric/PCIe wire |
+
+Payload each direction = the KV volume table above (224 MiB device / 16 KiB sim).
+
+### The three bandwidth numbers to report
+
+- **Wire bandwidth** (pure fabric/PCIe) = `bytes / (S1 + S5)`.
+- **Handoff bandwidth** (transfer **+** transform — *this is Le's ask*) =
+  `bytes / (S1 + S2 + S4 + S5)`. Excludes S3.
+- **Full end-to-end** (informational) = `bytes / (S1+S2+S3+S4+S5)`.
+
+### Method — two tiers
+
+**Tier 1 — host wall-clock (do first, ~10 lines, no kernel edits).** Bracket
+`time.perf_counter()` around S1, S2, S4, S5 (and S3 separately). Valid here
+*because* the stream calls are `nonblock=False` — they block to completion, so
+wall time = drain/fill time (unlike the aggregated-`nonblock` case
+`bandwidth-test` warns about). Host time is in real seconds → sidesteps the clock
+question. See [[cerebras-sdk-tsc-vs-hostwall-diagnostic]].
+
+**Tier 2 — on-device TSC (rigorous wire number).** Both streams are SdkLayout
+direct streams, so apply [[cerebras-sdk-pe-timestamp-timing]] (base API +
+sync/tic/toc) with [[cerebras-sdk-direct-stream-tsc-sync-tic-toc]] (the
+direct-stream port + the `nonblock=False`-on-toc drain trick). Put tic/toc on the
+egress mux PE and the ingress adaptor/demux. Cross-check vs Tier-1 (agree within
+~30% or investigate).
+
+### Caveats (load-bearing)
+
+1. **Clock constant is contested.** pdSeparate's decode TSC uses **1.1 GHz**
+   (`launch.py:3125` `per_tok_sec = per_tok_cyc / 1.1e9`); the SDK
+   `bandwidth-test/run.py` uses **0.85 GHz**. A wrong clock scales bandwidth
+   linearly (~30% here). Use the repo's **1.1 GHz** for consistency with its
+   existing tok/s numbers, but validate against a known-duration anchor.
+2. **Sim timing is not physical.** simfab bandwidth is meaningless; the real
+   number needs a **CS-3 device run** of `test_device_2x2blk_kv` (224 MiB). But
+   pdSeparate currently **fails to compile on device** (prefill SRAM overflow at
+   `PREFILL_LEN=2048`, see [[e2e-pdSeparate-device-validation]]) → must drop
+   `PREFILL_LEN ≤ ~512` first, or measure host-transform anywhere + wire on a
+   smaller device config.
+3. **S3 is a simulator artifact, not fundamental.** The `.npz`-to-disk + subprocess
+   fork exists only because simfab allows one Simfabric per OS process. Real
+   PD-disaggregated serving moves KV device→interconnect→device with no `/tmp`
+   file. Count S3 separately; keep it out of the "handoff bandwidth" number.
+
+### Next actions (pdSeparate)
+
+- [ ] Add Tier-1 `perf_counter` brackets at S1/S2/S4/S5 + payload byte prints;
+      run `test_sim_2x2blk_kv` → first per-stage split (relative, not absolute BW).
+- [ ] Get a device-viable config (PREFILL_LEN ≤ 512) compiling → real S1/S5 wire BW.
+- [ ] Tier-2 TSC on the mux/demux PEs; reconcile 1.1 vs 0.85 GHz against Tier-1.
+- [ ] Compare handoff BW: pdSeparate host-bridge vs e2e on-chip seam, same metric.
+
+Related skill created this session: [[cerebras-sdk-pe-timestamp-timing]] (WSE PE
+`<time>`/TSC how-to, distilled from the SDK `bandwidth-test` reference).
+
 ## Last updated
 
-2026-07-06 — topic started; reading summary + setup artifact recorded, measurement
-plan drafted. No numbers yet.
+2026-07-06 — added pdSeparate 5-stage handoff map, concrete KV byte totals
+(224 MiB device / 16 KiB sim), 2-tier measurement plan (host-wall first, TSC
+second), and the 1.1-vs-0.85 GHz clock caveat. Instrumentation not yet applied.
