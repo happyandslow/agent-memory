@@ -1,13 +1,12 @@
 # ContextBase Plan
 
-Human-maintained roadmap and durable progress narrative.
-
-Agents may propose edits, but should not overwrite this mechanically. Generated/current status belongs in `tracking/status.md`.
+Human-maintained roadmap and durable progress narrative. This is the canonical home for project goals, milestones, decisions, and next actions. Generated/current status belongs in `tracking/status.md`.
 
 ## Goals
 
 - Make ContextBase (self-hosted Outline) private/default-deny by project realm.
 - Preserve a practical short-term configuration path while keeping the long-term fork/enforcement roadmap explicit.
+- Treat access-control changes as security-sensitive: do not silently widen access, and verify live deployment state before changing permissions.
 
 ## Milestones
 
@@ -23,8 +22,21 @@ Agents may propose edits, but should not overwrite this mechanically. Generated/
 | --- | --- | --- | --- |
 | 2026-06-29 | Use collection-level realm ACLs as the main path; keep cross-cutting label/IFC as research only. | Outline already implements collection-level group/user ACL union semantics; the immediate gap is defaults, enforcement, and UX. | `docs/2026-06-29-restricted-sharing-acl-design.md` |
 
+## Next actions
+
+- [ ] Run Stage 0 audit from the design note against the live ContextBase/Outline deployment.
+- [ ] Decide whether realm members should default to `read` or `read_write`.
+- [ ] Decide whether existing public shares should be revoked immediately or grandfathered.
+- [ ] Verify the correct local ContextBase repo path before any code edits.
+
 ## Narrative progress log
+
+### 2026-07-06
+
+- Migrated duplicated context/status prose into this canonical plan. No dated inbox items or topic notes existed to drain; the detailed source remains `docs/2026-06-29-restricted-sharing-acl-design.md`.
+- Converted `memory/context.md` and `tracking/status.md` into thin generated projections that point here and to the design note.
 
 ### 2026-06-29
 
 - Added restricted-sharing ACL design note: `docs/2026-06-29-restricted-sharing-acl-design.md`.
+- Created missing project scaffold files during gala2 agent-memory divergence resolution.
