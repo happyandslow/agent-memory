@@ -1,3 +1,8 @@
+---
+summary: Current roadmap for real-kernel SpecDec on CS-3, PD serving, mode-B rewind, and full-loop validation.
+tags: [nc-service, specdec, cs3, pd-disaggregation, roadmap]
+---
+
 # SpecDec-on-CS-3 roadmap (real kernels → PD serving + spec-dec rewind)
 
 Handoff roadmap for continuing the WSE-3 draft-model work. Read

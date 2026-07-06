@@ -1,3 +1,8 @@
+---
+summary: Measured WSE-3 draft-to-host latency and real-GPU verifier integration history for SpecDec.
+tags: [nc-service, specdec, latency, gpu-verifier, wse3]
+---
+
 # SpecDec d2h latency + real-GPU verify-side (WSE-3 drafter)
 
 ## Summary
