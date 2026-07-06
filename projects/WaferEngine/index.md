@@ -16,3 +16,10 @@
 - [[memory/topics/dynamic-kv-load]]
 - [[memory/topics/pe-sram-memory-breakdown]]
 
+## Topic catalog
+
+| Topic | Summary | Tags | Path |
+| --- | --- | --- | --- |
+| Dynamic KV load (qwen3 decode) | Runtime KV ingress for qwen3 decode so one compiled artifact can serve variable-prefill requests. | waferengine, qwen3, decode, kv-cache, serving | `memory/topics/dynamic-kv-load.md` |
+| PE SRAM Memory Breakdown (qwen3-1.7B decode + prefill, real WSE-3) | Device-measured WSE-3 per-PE SRAM/fabric resource analysis for qwen3 decode and prefill. | waferengine, wse3, sram, qwen3, resource-analysis | `memory/topics/pe-sram-memory-breakdown.md` |
+

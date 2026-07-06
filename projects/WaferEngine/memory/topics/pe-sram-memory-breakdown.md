@@ -1,3 +1,8 @@
+---
+summary: Device-measured WSE-3 per-PE SRAM/fabric resource analysis for qwen3 decode and prefill.
+tags: [waferengine, wse3, sram, qwen3, resource-analysis]
+---
+
 # PE SRAM Memory Breakdown (qwen3-1.7B decode + prefill, real WSE-3)
 
 ## Summary

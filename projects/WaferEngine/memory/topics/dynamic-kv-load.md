@@ -1,3 +1,8 @@
+---
+summary: Runtime KV ingress for qwen3 decode so one compiled artifact can serve variable-prefill requests.
+tags: [waferengine, qwen3, decode, kv-cache, serving]
+---
+
 # Dynamic KV load (qwen3 decode)
 
 ## Summary

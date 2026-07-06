@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine
 **Author:** claude
-**Status:** captured   <!-- captured | drained -->
+**Status:** drained   <!-- captured | drained -->
 
 PR https://github.com/WaferAGI/WaferEngine/pull/14 (open) by Congjie He,
 branch `real_qwen3_1p7` → `main`, 33 files +776/−713, empty PR body.
