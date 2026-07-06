@@ -2,6 +2,7 @@
 
 # WaferEngine Timeline
 
+- 2026-07-06 — pr14-real-qwen3-serving → `memory/inbox/2026-07-06-pr14-real-qwen3-serving.md`
 - 2026-06-30 — specdec-dual-kernels-design → `docs/2026-06-30/2026-06-30-specdec-dual-kernels-design.md`
 - 2026-06-30 — session-specdec-dual-kernels → `memory/transcripts/2026-06-30/2026-06-30-session-specdec-dual-kernels.md`
 - 2026-06-30 — qwen3-dynamic-kv-load-ht_head_plot → `docs/2026-06-30/2026-06-30-qwen3-dynamic-kv-load-ht_head_plot.py`
