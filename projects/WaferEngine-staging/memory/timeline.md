@@ -2,4 +2,4 @@
 
 # WaferEngine-staging Timeline
 
-_No dated events yet._
+- 2026-07-06 — prefill-decode-transfer-bandwidth → `memory/inbox/2026-07-06-prefill-decode-transfer-bandwidth.md`

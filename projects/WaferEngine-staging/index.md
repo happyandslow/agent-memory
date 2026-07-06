@@ -16,4 +16,6 @@
 - [[memory/topics/agentic-kv-trace-datasets]]
 - [[memory/topics/e2e-pdSeparate-device-validation]]
 - [[memory/topics/kv-cache-policy-tradeoffs]]
+- [[memory/topics/prefill-decode-transfer-bandwidth]]
 - [[memory/topics/standalone-vs-integrated-kernel-parity]]
+
