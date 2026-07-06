@@ -161,7 +161,7 @@ turn `L_new`.
 | `t_dec` | decode time per token | 446 µs | e2e device run (2240 tok/s = 1e6/446) |
 | `t_pf` | prefill time per token, amortized | 170 µs | e2e device run (43534 µs ÷ 256 tok) |
 | `B_tok` | KV bytes per token | 112 KB | `2·n_layers·n_kv·head_dim·bytes = 28·8·128·2·2` |
-| `BW` | effective KV-move bandwidth (path-dependent) | host ~15 MB/s→4 GB/s · on-chip fabric ~4.4 GB/s/link | see "Bandwidth regimes" below |
+| `BW` | effective KV-move bandwidth (path-dependent) | host ~15 MB/s→4 GB/s · on-chip fabric ~4–7 GB/s/link | see "Bandwidth regimes" below |
 
 **Derived quantities:**
 - **Force-decode penalty per new token** `Δ = t_dec − t_pf` (= 446 − 170 = **276 µs**).
@@ -239,11 +239,16 @@ justify not moving). Because `R* = Δ·BW/B`:
 - **~4 GB/s — host RoCE ceiling (nameplate).** 4-channel RoCE (~1 GB/s/ch × 4). Idealized.
 - **On-CHIP fabric (same-wafer move — e2e, or the T1 idle-PE tier) — much faster.** Cerebras
   WSE-3 advertises **214 Pb/s ≈ 27 PB/s** aggregate on-wafer fabric over 900,000 cores at
-  **1.1 GHz**, single-cycle nearest-neighbor latency. Derived (per-link not officially
-  published): **~30 GB/s per PE** (214 Pb/s ÷ 900k) and **~4.4 GB/s per link per direction**
-  (one 32-bit wavelet/cycle × 1.1 GHz); a bulk move parallelizes over many PEs/links → tens
-  of GB/s to ~PB/s aggregate. Sources: Cerebras HotChips 2024 deck; product page
-  (`cerebras.ai/chip`); Introl CS-3 guide.
+  **1.1 GHz** (32-bit wavelets, 4 nearest neighbors, 2-D mesh; single-cycle neighbor latency).
+  Link counts: **~3.6M directed** (4 × 900k) / **~1.8M physical** (bidirectional). Derived
+  (per-link not officially published): **~30 GB/s per PE** (214 Pb/s ÷ 900k) and **~4–7 GB/s
+  per directed link** — 4.4 = the 32-bit-wavelet-payload floor (32b/cycle × 1.1 GHz); ~7.4 =
+  aggregate-implied (214 Pb/s ÷ ~3.6M links), the ~1.7× gap being undisclosed link width /
+  routing clock. A bulk move parallelizes over many PEs/links → tens of GB/s to ~PB/s
+  aggregate. **Units caveat:** the consistent figure is peta*bits* (214 Pb/s); a "215 PB/s"
+  quote is an 8× bits/bytes slip (contradicts one 32-bit wavelet/cycle). Sources: Cerebras
+  WSE-3 datasheet + HotChips 2024 deck (primary; `cerebras.ai/chip` names the metric but
+  gates the number behind the datasheet); Introl / academic summaries (secondary).
 - **On-chip SRAM (local KV read/write — a *third*, distinct bandwidth; underpins T0/T0.5
   and the ~2.6× ratio).** This is not a *move* bandwidth — it is the rate a PE accesses
   its OWN resident KV. Cerebras WSE-3 advertises **21 PB/s** aggregate SRAM bandwidth over
@@ -257,37 +262,38 @@ justify not moving). Because `R* = Δ·BW/B`:
   weights from HBM). That is the enabling fact behind the ~2.6× ratio (`Δ`), and thus the
   whole force-decode-in-place argument. Sources: same as fabric (SRAM BW headline 21 PB/s).
 
-**Ordering of the three bandwidths** (for intuition): local SRAM read ~23 GB/s/PE
-(≈21 PB/s aggregate) ≥ on-chip fabric move ~4.4 GB/s/link (≈214 Pb/s aggregate) ≫ host
-bridge ~15 MB/s–4 GB/s. Reuse gets dramatically cheaper the less the KV has to travel:
-stay-in-SRAM (T0/T0.5) ≫ move-on-wafer (T1 / same-chip A) ≫ cross-chip host move (T2 /
-pdSeparate A).
+**Ordering of the three bandwidths** (for intuition): local SRAM read ~23 GB/s/PE (≈21 PB/s)
+≈ fabric per-PE ~18–30 GB/s (all 4 links, ≈214 Pb/s) — but a *single* fabric link is only
+~4–7 GB/s ≫ host bridge ~15 MB/s–4 GB/s. Reuse gets dramatically cheaper the less the KV has
+to travel: stay-in-SRAM (T0/T0.5) ≫ move-on-wafer (T1 / same-chip A) ≫ cross-chip host move
+(T2 / pdSeparate A).
 
-**SRAM read vs fabric link — the per-PE arithmetic (how these add up).** The one *exact*
-comparison is per single link vs the SRAM port: a fabric link carries **32 bits/cycle**
-(one wavelet) = 4.4 GB/s @ 1.1 GHz, while a PE reads its SRAM at **128 bits/cycle**
-(2×64-bit) ≈ 17.6 GB/s read (+8.8 write). So **one link is ~4–6× narrower than local SRAM
-read** — solid, just wavelet-width vs SRAM-port-width. Summing links per PE (router = 4
-neighbor links N/S/E/W + 1 local "ramp" port; each neighbor link bidirectional):
-- 4 links, one direction (all outgoing): 4 × 4.4 = **17.6 GB/s**
-- 4 links, both directions (8 directed ports): 8 × 4.4 = **35.2 GB/s**
-- advertised aggregate ÷ cores: 214 Pb/s ÷ 900k = **~30 GB/s/PE** — lands *inside* the
-  17.6–35 band. Note `4 × 4.4 = 17.6`, NOT 30; the ~30 comes from the headline aggregate,
-  and the residual gap is counting convention (directed vs physical links, whether the
-  ramp port is counted, exact clock) — Cerebras doesn't break this out. Honest range:
-  **~18–35 GB/s/PE**, ~30 as the aggregate-derived midpoint.
-- SRAM per PE ~23–26 GB/s → **same order as the all-links fabric total** → "mesh balanced
-  to SRAM" holds only at order-of-magnitude (a PE's *total* link BW ≈ its SRAM BW); any
-  *single* link is ~1/5 of SRAM.
+**SRAM read vs fabric link — the per-PE arithmetic (how these add up).** Mesh = 900,000 PEs ×
+4 neighbors → **~3.6M directed links** (4 × 900k, each PE owns 4 outgoing) / **~1.8M physical**
+(bidirectional, each shared by 2 PEs). Two independent routes to per-link bandwidth agree to
+~2×:
+- **32-bit-wavelet floor:** one wavelet/cycle × 1.1 GHz = **4.4 GB/s/link**.
+- **aggregate-implied:** 214 Pb/s ÷ 3.6M directed links = **~7.4 GB/s/link**.
+The ~1.7× gap = the physical link carries more than the 32-bit payload (color/control bits)
+and/or routes above 1.1 GHz — not published. So **per-link ≈ 4–7 GB/s**.
+Per-PE (4 outgoing links): 4 × 4.4 = 17.6 (floor) … 4 × 7.4 = **~30 GB/s** — and ~30 = 214 Pb/s
+÷ 900k, so the aggregate is self-consistent with **4 links × ~7.4 GB/s**. **Per-PE fabric ≈
+18–30 GB/s.** vs SRAM read **128 bits/cycle** (2×64-bit) ≈ 17.6 GB/s read (+8.8 write ≈
+26 GB/s/PE):
+- **one fabric link (~4–7 GB/s) is ~3–6× narrower than the SRAM read port** (32-bit link
+  payload vs 128-bit SRAM port) — the robust comparison.
+- **per-PE fabric (~18–30) ≈ SRAM/PE (~23–26)** — the mesh is balanced to SRAM at the per-PE
+  aggregate (near-exact at the aggregate-implied ~30 vs ~26).
 
-Takeaway: staying resident (T0/T0.5, SRAM BW) is the exact ~4–6× winner over draining out
-one link (T1). On-chip movement only matches SRAM if it uses *all* links in parallel; a
-single-stream funnel is pinned to one link (4.4 GB/s) — which is why the as-built
-single-stream host path sits even lower (~15 MB/s) and why making T1 cheap requires
-spreading the move across links/PEs (the S4 lesson).
+Takeaway: staying resident (T0/T0.5, SRAM BW) beats draining out one link (T1) by ~3–6×.
+On-chip movement only matches SRAM if it uses *all* links in parallel; a single-stream funnel
+is pinned to one link (~4–7 GB/s) — which is why the as-built single-stream host path sits even
+lower (~15 MB/s) and why making T1 cheap requires spreading the move across links/PEs (the S4
+lesson).
 
-**Same-chip vs cross-chip — the real fork.** Plugging an on-chip fabric `BW` (≥ ~4.4 GB/s,
-far higher in parallel) into `R* = Δ·BW/B` gives `R* ≥ ~10` (up to hundreds): on-wafer,
+**Same-chip vs cross-chip — the real fork.** Plugging an on-chip fabric `BW` (~4–7 GB/s per
+link, ~30 GB/s/PE, far higher in parallel) into `R* = Δ·BW/B` gives `R* ≈ 11–18` per single
+link (up to hundreds when parallelized): on-wafer,
 moving KV is so cheap that **ship-to-prefill (A) wins for all but extreme histories**. So the
 force-decode-in-place (B) advantage is really a **cross-chip (pdSeparate, host-path
 ~15 MB/s) phenomenon**, driven by the slow host bridge — not fabric cost. On one chip (e2e)
@@ -363,6 +369,9 @@ wins for typical chat ratios.
 
 2026-07-06 — expanded Method with term glossary, worked R*=0.035 example,
 R* direction-of-effect, and bandwidth-regimes incl. WSE-3 on-chip fabric
-(214 Pb/s / ~4.4 GB/s per link), on-chip SRAM bandwidth (21 PB/s / ~23 GB/s
+(214 Pb/s aggregate; ~3.6M directed links; per-link ~4–7 GB/s [32-bit-wavelet floor
+4.4 … aggregate-implied 7.4]; ~30 GB/s/PE), on-chip SRAM bandwidth (21 PB/s / ~23 GB/s
 per PE, underpinning T0/T0.5 and the ~2.6× ratio), and the same-chip-vs-cross-chip fork.
+Reconciled the per-link vs per-PE vs aggregate arithmetic; corrected the Cerebras source
+attribution (datasheet/HotChips primary, product page gates the number) + petabit units caveat.
 2026-07-05 — from device-validation session (see [[e2e-pdSeparate-device-validation]]).
