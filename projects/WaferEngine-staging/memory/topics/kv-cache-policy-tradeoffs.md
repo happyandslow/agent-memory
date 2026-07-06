@@ -263,6 +263,29 @@ bridge ~15 MB/s–4 GB/s. Reuse gets dramatically cheaper the less the KV has to
 stay-in-SRAM (T0/T0.5) ≫ move-on-wafer (T1 / same-chip A) ≫ cross-chip host move (T2 /
 pdSeparate A).
 
+**SRAM read vs fabric link — the per-PE arithmetic (how these add up).** The one *exact*
+comparison is per single link vs the SRAM port: a fabric link carries **32 bits/cycle**
+(one wavelet) = 4.4 GB/s @ 1.1 GHz, while a PE reads its SRAM at **128 bits/cycle**
+(2×64-bit) ≈ 17.6 GB/s read (+8.8 write). So **one link is ~4–6× narrower than local SRAM
+read** — solid, just wavelet-width vs SRAM-port-width. Summing links per PE (router = 4
+neighbor links N/S/E/W + 1 local "ramp" port; each neighbor link bidirectional):
+- 4 links, one direction (all outgoing): 4 × 4.4 = **17.6 GB/s**
+- 4 links, both directions (8 directed ports): 8 × 4.4 = **35.2 GB/s**
+- advertised aggregate ÷ cores: 214 Pb/s ÷ 900k = **~30 GB/s/PE** — lands *inside* the
+  17.6–35 band. Note `4 × 4.4 = 17.6`, NOT 30; the ~30 comes from the headline aggregate,
+  and the residual gap is counting convention (directed vs physical links, whether the
+  ramp port is counted, exact clock) — Cerebras doesn't break this out. Honest range:
+  **~18–35 GB/s/PE**, ~30 as the aggregate-derived midpoint.
+- SRAM per PE ~23–26 GB/s → **same order as the all-links fabric total** → "mesh balanced
+  to SRAM" holds only at order-of-magnitude (a PE's *total* link BW ≈ its SRAM BW); any
+  *single* link is ~1/5 of SRAM.
+
+Takeaway: staying resident (T0/T0.5, SRAM BW) is the exact ~4–6× winner over draining out
+one link (T1). On-chip movement only matches SRAM if it uses *all* links in parallel; a
+single-stream funnel is pinned to one link (4.4 GB/s) — which is why the as-built
+single-stream host path sits even lower (~15 MB/s) and why making T1 cheap requires
+spreading the move across links/PEs (the S4 lesson).
+
 **Same-chip vs cross-chip — the real fork.** Plugging an on-chip fabric `BW` (≥ ~4.4 GB/s,
 far higher in parallel) into `R* = Δ·BW/B` gives `R* ≥ ~10` (up to hundreds): on-wafer,
 moving KV is so cheap that **ship-to-prefill (A) wins for all but extreme histories**. So the
