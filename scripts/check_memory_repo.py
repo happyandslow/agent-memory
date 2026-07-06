@@ -1,133 +1,35 @@
 #!/usr/bin/env python3
-"""Validate the agent-memory repository structure.
+"""Thin wrapper: delegates to the agent-memory skill's checker.
 
-This intentionally checks structure only. It does not judge content quality.
+Kept at this path so existing `python3 scripts/check_memory_repo.py` calls
+(cron, CLAUDE.md, HUMAN.md) continue to work after checker consolidation.
 """
 from __future__ import annotations
-
-import re
+import os
+import subprocess
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-PROJECTS = ROOT / "projects"
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
-ROOT_REQUIRED = [
-    "README.md",
-    "AGENTS.md",
-    "CLAUDE.md",
-    "HERMES.md",
-    "HUMAN.md",
-    ".gitignore",
-]
-
-PROJECT_REQUIRED = [
-    "index.md",
-    "plan.md",
-    "tracking/status.md",
-    "memory/README.md",
-    "memory/project.md",
-    "memory/context.md",
-    "memory/topics/README.md",
-    "memory/transcripts/README.md",
-    "memory/inbox/README.md",
-    "memory/agents/README.md",
-]
-
-FORBIDDEN_SUFFIXES = {
-    ".db",
-    ".sqlite",
-    ".sqlite3",
-    ".pem",
-    ".key",
-    ".p12",
-}
-
-FORBIDDEN_NAMES = {
-    ".env",
-    "id_rsa",
-    "id_ed25519",
-}
-
-DATE_PREFIX_RE = re.compile(r"^\d{4}-\d{2}-\d{2}-")
-
-
-def rel(path: Path) -> str:
-    return str(path.relative_to(ROOT))
-
-
-def check_required() -> list[str]:
-    errors: list[str] = []
-    for item in ROOT_REQUIRED:
-        path = ROOT / item
-        if not path.exists():
-            errors.append(f"missing root file: {item}")
-
-    if not PROJECTS.exists():
-        errors.append("missing projects/ directory")
-        return errors
-
-    project_dirs = [p for p in PROJECTS.iterdir() if p.is_dir() and not p.name.startswith(".")]
-    if not project_dirs:
-        errors.append("projects/ contains no project directories")
-        return errors
-
-    for project in sorted(project_dirs):
-        for item in PROJECT_REQUIRED:
-            path = project / item
-            if not path.exists():
-                errors.append(f"missing project file: {rel(path)}")
-    return errors
-
-
-def check_forbidden_files() -> list[str]:
-    errors: list[str] = []
-    for path in ROOT.rglob("*"):
-        if ".git" in path.parts:
-            continue
-        if not path.is_file():
-            continue
-        lower = path.name.lower()
-        if lower in FORBIDDEN_NAMES or any(lower.endswith(s) for s in FORBIDDEN_SUFFIXES):
-            errors.append(f"potential secret/database file should not be committed: {rel(path)}")
-    return errors
-
-
-def check_dated_docs() -> list[str]:
-    """Project docs/ artifacts must be date-prefixed for chronological tracking."""
-    errors: list[str] = []
-    if not PROJECTS.exists():
-        return errors
-    for docs_dir in PROJECTS.glob("*/docs"):
-        if not docs_dir.is_dir():
-            continue
-        for path in docs_dir.rglob("*"):
-            if not path.is_file():
-                continue
-            if path.name.startswith(".") or path.name.startswith("~$"):
-                errors.append(f"temporary/hidden file in docs should be removed: {rel(path)}")
-                continue
-            if not DATE_PREFIX_RE.match(path.name):
-                errors.append(
-                    "undated project docs artifact: "
-                    f"{rel(path)} (expected YYYY-MM-DD-<slug>{path.suffix})"
-                )
-    return errors
-
+def _skill_checker() -> Path | None:
+    candidates = [
+        Path(os.environ["AGENT_MEMORY_SKILL"]) / "scripts" / "check_memory_repo.py"
+        if os.environ.get("AGENT_MEMORY_SKILL") else None,
+        Path.home() / ".claude/skills/agent-memory/scripts/check_memory_repo.py",
+        Path.home() / "Projects/claude-skills/agent-memory/scripts/check_memory_repo.py",
+    ]
+    return next((c for c in candidates if c and c.is_file()), None)
 
 def main() -> int:
-    errors = check_required() + check_forbidden_files() + check_dated_docs()
-    print(f"agent-memory check @ {datetime.now(timezone.utc).isoformat()}")
-    print(f"root: {ROOT}")
-    if errors:
-        print("FAIL")
-        for error in errors:
-            print(f"- {error}")
-        return 1
-    print("PASS")
-    return 0
-
+    skill = _skill_checker()
+    if skill is None:
+        print("agent-memory skill checker not found; install the skill "
+              "(claude-skills/agent-memory/install.sh).", file=sys.stderr)
+        return 2
+    return subprocess.call(
+        [sys.executable, str(skill), "--root", str(REPO_ROOT), *sys.argv[1:]]
+    )
 
 if __name__ == "__main__":
     raise SystemExit(main())
