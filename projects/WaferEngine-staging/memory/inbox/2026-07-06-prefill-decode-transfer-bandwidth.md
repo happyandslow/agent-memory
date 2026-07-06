@@ -31,6 +31,21 @@
 - [ ] Compare on-chip seam path vs pdSeparate host-DRAM bridge under the same
       both-segments-counted metric.
 
+## Update (later 2026-07-06) — timing mechanism + measurement design
+
+- Timing on WSE-3 = per-PE TSC via CSL `<time>` (48-bit, 3×u16, `enable_tsc` +
+  `get_timestamp`), cycles→time at **1.1 GHz** (project constant; the SDK
+  bandwidth-test's 0.85 GHz is wrong for WaferEngine — caught + fixed in the skill).
+- A `cerebras-sdk-pe-timestamp-timing` skill already existed; updated it to v1.1.0
+  (freq reconciliation + single-PE low-32 segment-profiler + in-repo refs to
+  `bench/layer_block/src/time_pe.csl`).
+- Designed the e2e measurement: anchors t0=`start_kv_transfer`, t1=states0–3 done,
+  t2=state4 north-shift done (top prefill row), t3=`kv_flush_then_init` (south-most
+  decode row). Phase 1 = per-PE segment split (compute vs wire, sim `read_symbol`);
+  Phase 2 = cross-PE ref-corrected end-to-end GB/s (direct-stream sync). Sim config
+  is a dim=64 toy → need device/large config for a real number. Full design in the
+  topic note.
+
 ## Pointers
 
 - Topic: `memory/topics/prefill-decode-transfer-bandwidth.md`
