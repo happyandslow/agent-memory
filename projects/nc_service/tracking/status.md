@@ -2,52 +2,44 @@
 
 > Generated/current-state dashboard. Safe for deterministic scripts or hooks to overwrite.
 
-Last updated: 2026-07-05 08:30 BST
+Last updated: 2026-07-06 08:34 BST
 Status: Active
 
 ## Summary
 
-- **Real qwen3 prefill+decode kernels wired into the PD disaggregation framework** and the
-  **spec-dec decode REWIND** kernel added — the June "kernel swap-in" is done.
-- Validated: `PD_REAL_SIM_PASS` (sim); single real appliances **bit-exact on real WSE-3** at actual
-  28-layer size (`DECODE_RESIDENT_DEV_PASS`, `PREFILL_RESIDENT_DEV_PASS`); **decode rewind v1
-  (P-aligned) bit-exact in sim AND on-chip** (`rearm_all_identical=True`, 4380 tok/s).
-- Real GPU verifier (`10.22.28.100:32245`) validated end-to-end (batch, full 1000-round, 0 errors):
-  GPU-measured **verify-side p50 3.30 ms** (qps 301); gateway driver-side p50 1.93 ms (qps 514).
-- SpecDec WSE-3 drafter backbone settled on **in-process gRPC patch + batch d2h receive**; earlier
-  `lexu/toy-emit-recv-modes` branch (2026-06-29, 3 commits off main, 64 tests passing) still pending
-  a PR — verify live repo before acting.
-- Branches: `lexu/specdec-real-kernels` (main dev), `lexu/pd-disagg-modeA-serving` (mode A),
-  `lexu/decode-rewind` (rewind kernel, in the WaferEngine repo).
+- **Real qwen3 prefill+decode kernels are wired into the PD disaggregation framework** and the June kernel swap-in phase is done.
+- Validated: `PD_REAL_SIM_PASS` (sim); single real appliances **bit-exact on real WSE-3** at actual 28-layer size (`DECODE_RESIDENT_DEV_PASS`, `PREFILL_RESIDENT_DEV_PASS`); decode rewind v1 and v2 are bit-exact in sim and on real WSE-3.
+- **Token-granular mode-B/spec-dec rewind is device-proven**: non-P-aligned continuation positions match a straight-decode top-k oracle on chip (`DECODE_REWIND_V2_SIM_PASS`, commits noted in the roadmap topic).
+- **Mode-B host adapter first increments are done**: sim pass, device window pass, partial-accept accounting fix, full adapter-chain `MODEB_DEV_PASS`, framework factory dispatch, and exchange-batch sim pass are recorded in `memory/topics/specdec-cs3-roadmap.md`.
+- Current bottleneck is the full loop runner: `run_e2e_pd_modeb_sim.sh` is built, but has not completed because it must run on CS-3 in the `csl` conda env and the EIDF gateway has been intermittently rejecting auth.
 
 ## Current focus
 
 - Roadmap: `memory/topics/specdec-cs3-roadmap.md`.
-- **v2 token-granular rewind** (v1 P-aligned=256 on device is too coarse for real draft_len).
-- Clean up `lexu/toy-emit-recv-modes` and prepare a PR (do NOT open it without Le).
+- Complete and run the full mode-B PD/spec-dec loop with the real adapter path.
+- Keep mode A (regular PD serving) and mode B (spec-dec rewind) separate.
 
 ## Next actions
 
-- [ ] v2 rewind: per-PE position + `A mod P` RoPE-remainder rotations (kernel, `lexu/decode-rewind`).
-- [ ] Mode-B host adapter: draft/verify/accept-K/rewind-by-R loop + `n_steps=draft_len` budget.
-- [ ] Real-kernel PD device run: `READY_TIMEOUT=7200` + send_x N-header fix + ingress-502 hardening → `PD_REAL_DAEMON_DEV`.
+- [ ] Run `waferengine/samples/specdec/realkv/run_e2e_pd_modeb_sim.sh 2` on the CS-3 login node in the `csl` conda env with `IOP_REAL_KERNELS_SRC_{PREFILL,DECODE}` set; success criterion is `mock_verify_host` `failures:0`.
+- [ ] After the full sim loop passes, run partial-accept on device, then connect to the real GPU verify service.
+- [ ] Re-run the real-kernel PD device transport path (`PD_REAL_DAEMON_DEV`) with `READY_TIMEOUT=7200`, the send_x N-header fix, and ingress-502 hardening.
+- [ ] Periodically rebase `lexu/decode-rewind` against PR #13 head and consider upstreaming the rewind.
 
 ## Open risks/blockers
 
-- **CS-3 ingress 502s** (transient HTML from `10.27.24.65:443`) at serve/teardown kill device runs;
-  needs `grpc.RpcError` retry in `bridges.py`. Blocked one actual-size PD device run.
-- v1 rewind is **P-aligned only** — not usable for real spec-dec until v2 (token-granular).
-- Mode-A adapter `send_x` sends flat-zero X (missing N-header tile) → mode-A multi-round hangs.
-- Verify-side exact distribution blocked on the GPU service exposing raw per-round latencies (only aggregate percentiles available today).
-- Per-step verify-side is still a mock/estimate (~6.2 ms); not yet GPU-measured.
+- **CS-3/EIDF gateway auth flakiness**: repeated Permission denied at `cs3-run` connect has blocked the full-loop run; warm `cs3-ssh.sh CS-3` immediately before `cs3-run.sh` when device runs are attempted.
+- Full-loop driver requires `cerebras.sdk.client`/`SdkLauncher`; `cs_python` has `SdkLayout`/`SdkRuntime`/grpc but not the full launcher.
+- **CS-3 ingress 502s** at serve/teardown still need `grpc.RpcError` retry hardening in `engine/io_pipeline/gateway/bridges.py`.
+- Mode-A adapter `send_x` sends flat-zero X without the per-round N-header tile; mode-A multi-round hangs until fixed.
+- Verify-side exact distribution is still blocked on the GPU service exposing raw per-round latencies.
 
 ## Recent changes
 
+- 2026-07-06: Daily maintenance refreshed this dashboard from `specdec-cs3-roadmap.md`; the roadmap now records token-granular rewind, mode-B adapter/device progress, framework dispatch, exchange-batch sim pass, and the unrun full-loop runner.
 - 2026-07-05: Daily maintenance found no new project notes/TODOs beyond existing active items; inbox/topics/transcripts and dated-file convention still pass.
-- 2026-07-04: real-kernel PD adapters + PD_REAL_SIM_PASS; single appliances device-validated;
-  decode rewind v1 built + validated bit-exact sim + on-chip; roadmap topic note + CLAUDE.md written.
+- 2026-07-04: real-kernel PD adapters + PD_REAL_SIM_PASS; single appliances device-validated; decode rewind v1/v2 work and mode-B roadmap captured.
 - 2026-07-01: Daily maintenance found no new project notes/TODOs beyond existing active items; dated docs convention still passes.
-- 2026-06-30: Daily maintenance found no new project notes/TODOs beyond existing active items.
 - 2026-06-29: real-GPU verify-side measured + full cumulative breakdown + distribution; ContextBase `GOZQ9I8pOe` updated (rev 23); README in-process reproduction recipe added; topic note created.
 
 ## Manual conflicts / Le attention
@@ -56,6 +48,6 @@ Status: Active
 
 ## Freshness
 
-- Source checked: 2026-07-04 (CS-3 device runs; nc_service `lexu/specdec-real-kernels`; WaferEngine `lexu/decode-rewind`); not rechecked by 2026-07-05 cron (memory-only maintenance)
-- Memory checked: 2026-07-05 08:30 BST
-- Generated by: manual merge (local project status + Hermes 2026-07-05 daily maintenance)
+- Source checked: 2026-07-04 from memory/topic notes (CS-3 device/sim work); live repos were not rechecked by 2026-07-06 cron.
+- Memory checked: 2026-07-06 08:34 BST
+- Generated by: Hermes daily maintenance
