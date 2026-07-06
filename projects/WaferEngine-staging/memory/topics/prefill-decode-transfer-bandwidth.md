@@ -162,6 +162,69 @@ the **device** config (real Qwen3 geometry, dim=2048) or a purpose-built larger
 sim config. Sweep `PREFILL_LEN` to separate the fixed (A/C compute) from the
 payload-scaling (B wire) components.
 
+### Why the technique makes sense (reasoning)
+
+The TSC is the only clock on the wafer — a per-PE counter, one tick per fabric
+cycle; there is no readable "fabric clock". So all on-device timing reduces to
+"read this PE's counter before/after". Two guarantees + one hazard follow:
+- **Within one PE**, `t_after − t_before` is exact (same monotonic counter) and
+  captures compute *and* fabric-wait time. → the segment profiler is trustworthy
+  with no correction.
+- **Across two PEs**, counters are not zeroed together (each starts at device
+  reset; the reset signal reaches PEs at slightly different times), so A-PE `t0`
+  vs B-PE `t3` = elapsed time **+ unknown offset**. That offset is what
+  reference-correction removes; its magnitude ≈ signal propagation across the PE
+  rectangle (tens–hundreds of cycles).
+
+Le's overhead model is correct: cost = **preparation + transfer**, and they are
+physically different work. Preparation = on-PE re-layout into the destination's
+memory order (`kv_transform` on prefill; the mirror write on decode) — pure
+compute, costs cycles with nothing on the fabric. Transfer = the store-and-forward
+north shift (wire + small per-hop cost). The profiler separates exactly these.
+
+**Destination handling is only partly "within a PE".** The decode-side *write*
+into `XKCache_tile`/`XVCache_tile` is local (preparation on the sink side). But
+the *receive* (`@mov16` from the fabric-in DSD) is **wire-coupled** — it blocks on
+the shifted wavelets, and store-and-forward means sender and receiver move in
+lockstep. So "measure on sender" and "measure on receiver" do not cleanly
+compose: the receive overlaps the send.
+
+### ACK round-trip refinement (preferred for the headline number)
+
+To avoid the cross-PE offset entirely, have the sink send a 1-wavelet **ACK** back
+after it finishes writing; the sender PE records both `t0` and `t_ack` **on its own
+clock** → `RTT = t_ack − t0`, no reference-correction. This is the standard
+round-trip trick and is cheap here:
+
+- The seam already reserves **color 22** doing nothing (`build_relay` paints it
+  RAMP/RAMP). Repaint it **NORTH→SOUTH** (decode is north, prefill south → ACK
+  travels *down* the same seam column).
+- A designated **prefill timer PE** (e.g. block column 0, top prefill row) samples
+  `t0` at `start_kv_transfer()`, does its own A+B work, then parks on color 22.
+- The **last decode PE to finish** (south-most decode row, same column) emits one
+  wavelet on color 22 right after `kv_flush_then_init()`; it transits the seam
+  south and activates a task on the timer PE, which samples `t_ack`.
+
+Caveats: (1) `RTT = forward delivery + ACK return`; the ACK is one wavelet over a
+fixed hop count, so its return is a small **calibratable constant** — measure a
+lone no-payload ACK once and subtract (and since payload ≫ 1 wavelet, the error is
+small even uncalibrated). (2) The ACK should fire after the *globally* last decode
+PE, not just column 0's; all south-row PEs receive the same `Ph` tiles and finish
+within a few cycles, so column-0 is a good proxy — gate behind a cheap "all decode
+done" reduction if an exact bound is needed.
+
+**Which measurement for which question (complementary, do both):**
+
+| Question | Tool | Cross-PE clock issue |
+|---|---|---|
+| Total handoff latency → headline GB/s | **ACK round-trip** on one timer PE | none (single clock) |
+| Preparation-vs-transfer breakdown | **segment profiler**, per PE | none (within-PE deltas) |
+| Sanity cross-check | raw `t0(prefill) − t3(decode)` | small — the two critical PEs straddle the seam ~2 rows apart |
+
+The total is **not** the sum of per-PE segment maxes — the pipeline overlaps prep
+and wire across PEs, which is why the ACK gives the real number and the profiler
+only explains its composition.
+
 ## Current state
 
 - Mechanism fully mapped from source; segments A/B/C identified with code anchors.
@@ -206,3 +269,9 @@ design added (TSC `<time>` per-PE, 1.1 GHz, segment-profiler for compute-vs-wire
 split, cross-PE ref-correction for headline GB/s; sim-first via read_symbol). Skill
 `cerebras-sdk-pe-timestamp-timing` updated (freq fix + segment profiler). No numbers
 yet — next: instrument `prefill.csl`/`decode.csl` and run the sim.
+
+2026-07-06 (cont.) — added the reasoning (why per-PE TSC + segment profiler is
+sound; prep-vs-transfer; destination receive is wire-coupled) and the **ACK
+round-trip** refinement (repaint seam color 22 NORTH→SOUTH, sink ACKs the timer PE
+→ single-clock RTT), now preferred over cross-PE ref-correction for the headline
+GB/s. Profiler is complementary (breakdown only).
