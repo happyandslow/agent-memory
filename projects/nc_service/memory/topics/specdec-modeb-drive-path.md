@@ -86,6 +86,24 @@ Wire itself = `SdkRuntime.send/receive`, `memcpy_required=False` direct streams 
 
 Expected on `r>=1`: tiny `band_send`/`x_send`; the mass in `recv16` (=> batch receive) or in `driver_rtt - worker_total` (=> transport).
 
+## MEASURED on device (2026-07-07) — the culprit is `repack_continuation_band`, NOT the ring
+
+4-config A/B on real WSE-3 (`IOP_MODEB_TIMING`/`_BATCH_RECV`/`_NONBLOCK_SEND`). **The recurring rewind round is ~38 ms** (driver rtt), NOT 115 ms — the earlier 115 ms was a single-sample outlier. Worker breakdown (`csctl log-export <jid> -p <path>` then unzip; the pod stdout carries the `[MODEB_TIMING r=N ...]` lines):
+
+```
+baseline r=1 perstep nb=0: total=34.3 | band_build=19.3 band_send=0.8 | recv16=13.9(step0=3.4 rest=10.5) | tsc=0.2
+both     r=1 batch  nb=1 : total=33.8 | band_build=19.1 band_send=0.4 | recv16=14.1               | tsc=0.0
+```
+
+Recurring round = **band_build 19 ms (host numpy) + recv16 ~14 ms (FABRIC: 16 tok x ~0.7 ms) + transport ~4 ms (rtt-worker) + ~1 ms**. Findings:
+
+- **`repack_continuation_band` = 19 ms is the dominant cost** — a pure-numpy `P*Pw` (~12k tiles) Python loop building the meta band. **Fixed: vectorised (where(arange(P)<r,q+1,q) + broadcast), byte-identical (verified across P/Pw/A), ~145x faster local, 19 ms -> <1 ms.** kv_transform.py:394. Offline-testable (test_kv_transform).
+- **Ring levers were the wrong target.** batch receive: recv16 14.1 vs 13.9 = NO help (recv16 is fabric, the receive waits on compute regardless). nonblock send: band_send 0.4 vs 0.8 = 0.4 ms (band_send already tiny). Both kept opt-in but marginal. nonblock DID help round-0's full-KV send (14->5.2 ms), one-time only.
+- **Transport (`launcher.run`) is only ~4 ms/round** — not the bottleneck. (Round-0 is different: driver rtt ~8 s vs worker 77 ms -> ~7.8 s in the first exchange's transport/KV path; one-time, not investigated.)
+- recv16 ~14 ms = kernel compute (~0.7 ms/tok ~ 1400 tok/s); irreducible on our side -> kernel work.
+
+Net: repack fix alone ~halves the recurring round (38 -> ~19 ms). Below that needs kernel (recv16) or multi-round transport batching. Lesson: MEASURE — the 3 hypothesised levers (batch/nonblock/kernel-merge) all missed the real 19 ms host-numpy cost. Fix is UNCOMMITTED on `lexu/specdec-real-kernels` pending a device re-run to confirm band_build drops.
+
 ## Commands / paths
 
 Also posted on PR #10: https://github.com/lausannel/nc_service/pull/10#issuecomment-4906340575
