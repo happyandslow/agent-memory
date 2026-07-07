@@ -106,6 +106,92 @@
     which pushes it out <code>host_color</code> to the edge (output queue 2). Edge-agnostic — the caller
     paints which physical edge. <span class="ref">kv_prof_mux.csl:11-13 (params) · 28 (main/drain) · 32 (send) · 38-43 (comptime bind+init)</span></p>
 
+  <h2>Topological map — region allocation, reporter PEs, and the result's travel path</h2>
+  <p>Schematic (not to scale) of the <b>actual-size 512×512</b> layout (footprint 645×1028).
+    The two reporter PEs sit at the <b>far-east/south corner</b> of their block regions, but the
+    host I/O ports live at the <b>far-west edge (x=0)</b> — so each profiler burst is routed by the
+    SDK <b>~640 columns back across the whole fabric</b> (two such long D2H routes, on top of the two
+    logits routes). Coordinates are fabric (x,y); code refs in mono.</p>
+
+  <div class="board" role="img" aria-label="Fabric topology: decode blocks north, relay seam, prefill blocks south, west band of demux/HT/mux, two thin profiler mux regions at the east and south edges, and six host I/O ports at the west edge x=0. The decode reporter PE at (643,512) emits east into the decode profiler mux, whose burst is routed back west to io_port at (0,19); the prefill reporter at (643,1026) emits south into the prefill profiler mux, routed to (0,37).">
+    <svg viewBox="0 0 700 520" width="700" height="520" font-family="var(--sans)">
+      <defs>
+        <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M1,1 L8,4.5 L1,8 Z" fill="var(--host)"/></marker>
+        <marker id="ahd" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill="var(--dec)"/></marker>
+        <marker id="ahp" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill="var(--pre)"/></marker>
+      </defs>
+
+      <!-- ===== Host I/O edge (x=0) panel ===== -->
+      <rect x="15" y="44" width="164" height="236" rx="8" fill="var(--panel2)" stroke="var(--hair)"/>
+      <text x="97" y="62" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--muted)">Host I/O edge (x=0)</text>
+      <!-- io_port rows (not to y-scale; real y labelled) -->
+      <g font-family="var(--mono)" font-size="10">
+        <rect x="24" y="70" width="146" height="20" rx="3" fill="var(--panel)" stroke="var(--hair)"/><text x="30" y="84" fill="var(--muted)">io_port_0_0  (y0)  x in</text>
+        <rect x="24" y="94" width="146" height="20" rx="3" fill="var(--panel)" stroke="var(--hair)"/><text x="30" y="108" fill="var(--muted)">io_port_0_1  (y1)  logits·dec</text>
+        <rect x="24" y="118" width="146" height="20" rx="3" fill="var(--panel)" stroke="var(--hair)"/><text x="30" y="132" fill="var(--muted)">io_port_0_18 (y18) pf tok in</text>
+        <rect x="24" y="142" width="146" height="20" rx="3" fill="var(--dec-fill)" stroke="var(--dec)" stroke-width="1.5"/><text x="30" y="156" fill="var(--dec)" font-weight="700">io_port_0_19 (y19) DEC prof</text>
+        <rect x="24" y="166" width="146" height="20" rx="3" fill="var(--pre-fill)" stroke="var(--pre)" stroke-width="1.5"/><text x="30" y="180" fill="var(--pre)" font-weight="700">io_port_0_37 (y37) PF prof</text>
+        <rect x="24" y="190" width="146" height="20" rx="3" fill="var(--panel)" stroke="var(--hair)"/><text x="30" y="204" fill="var(--muted)">io_port_0_55 (y55) logits·pf</text>
+      </g>
+      <text x="97" y="230" text-anchor="middle" font-size="10" fill="var(--muted)">all valid stride-18 slots</text>
+      <text x="97" y="244" text-anchor="middle" font-size="10" fill="var(--muted)">(discover_io_locs.py ✓)</text>
+      <text x="97" y="266" text-anchor="middle" font-size="10.5" fill="var(--host)" font-weight="600">→ host receive</text>
+
+      <!-- ===== fabric ===== -->
+      <!-- west band -->
+      <rect x="212" y="52" width="66" height="426" fill="var(--band-fill)" stroke="var(--band)"/>
+      <text x="245" y="270" text-anchor="middle" font-size="10.5" fill="var(--band)" transform="rotate(-90 245 270)">west band · demux/HT/mux · x2–131</text>
+      <!-- PLACE_X marker -->
+      <line x1="284" y1="48" x2="284" y2="486" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="3 3" opacity=".7"/>
+      <text x="284" y="44" text-anchor="middle" font-size="9.5" fill="var(--warn)" font-family="var(--mono)">PLACE_X=132</text>
+
+      <!-- decode block region -->
+      <rect x="284" y="52" width="366" height="204" fill="var(--dec-fill)" stroke="var(--dec)" stroke-width="1.5"/>
+      <text x="467" y="120" text-anchor="middle" font-size="14" font-weight="650" fill="var(--dec)">DECODE blocks</text>
+      <text x="467" y="137" text-anchor="middle" font-size="10.5" font-family="var(--mono)" fill="var(--dec)">rows y 1–512 · cols x 132–643</text>
+      <!-- relay seam -->
+      <rect x="284" y="256" width="366" height="8" fill="var(--host-fill)" stroke="var(--host)"/>
+      <text x="467" y="262.5" text-anchor="middle" font-size="8.5" font-family="var(--mono)" fill="var(--host)">relay seam y513–514</text>
+      <!-- prefill block region -->
+      <rect x="284" y="264" width="366" height="214" fill="var(--pre-fill)" stroke="var(--pre)" stroke-width="1.5"/>
+      <text x="467" y="360" text-anchor="middle" font-size="14" font-weight="650" fill="var(--pre)">PREFILL blocks</text>
+      <text x="467" y="377" text-anchor="middle" font-size="10.5" font-family="var(--mono)" fill="var(--pre)">rows y 515–1026 · cols x 132–643</text>
+
+      <!-- decode profiler mux (thin column, east of decode) -->
+      <rect x="652" y="150" width="12" height="106" fill="var(--mux-fill)" stroke="var(--mux)"/>
+      <text x="672" y="150" font-size="9.5" font-family="var(--mono)" fill="var(--mux)">dec_kv_prof_mux</text>
+      <text x="672" y="161" font-size="9" font-family="var(--mono)" fill="var(--mux)">1×256 @ x645 (launch.py:1310,1330)</text>
+      <!-- prefill profiler mux (thin row, south of prefill) -->
+      <rect x="284" y="480" width="366" height="12" fill="var(--mux-fill)" stroke="var(--mux)"/>
+      <text x="467" y="502" text-anchor="middle" font-size="9.5" font-family="var(--mono)" fill="var(--mux)">pf_kv_prof_mux · 512×1 @ y1027 (launch.py:2609,2626)</text>
+
+      <!-- reporter PEs -->
+      <circle cx="650" cy="254" r="6" fill="var(--dec)" stroke="#fff" stroke-width="1.5"/>
+      <text x="600" y="238" font-size="10" font-weight="700" fill="var(--dec)" text-anchor="end">DEC reporter</text>
+      <text x="600" y="250" font-size="9.5" font-family="var(--mono)" fill="var(--dec)" text-anchor="end">(643,512) →E · launch.py:3123</text>
+      <circle cx="650" cy="476" r="6" fill="var(--pre)" stroke="#fff" stroke-width="1.5"/>
+      <text x="640" y="462" font-size="10" font-weight="700" fill="var(--pre)" text-anchor="end">PF reporter (643,1026) →S · launch.py:3122</text>
+
+      <!-- ===== travel paths (reporter → mux → long route back to x=0 io_port) ===== -->
+      <!-- DEC: reporter E into mux, then long dashed route back west to io_port_0_19 (170,152) -->
+      <path class="kvflow" d="M650,254 L658,254" stroke="var(--dec)" stroke-width="2.5" fill="none"/>
+      <path class="kvflow" d="M658,208 C 560,120 300,120 172,152" stroke="var(--dec)" stroke-width="2" fill="none" stroke-dasharray="6 5" marker-end="url(#ahd)"/>
+      <text x="470" y="96" text-anchor="middle" font-size="9.5" fill="var(--dec)" font-family="var(--mono)">SDK routes ~640 cols back → x=0</text>
+      <!-- PF: reporter S into mux, then long dashed route back west to io_port_0_37 (170,176) -->
+      <path class="kvflow" d="M650,482 L650,486" stroke="var(--pre)" stroke-width="2.5" fill="none"/>
+      <path class="kvflow" d="M300,486 C 240,486 200,300 172,176" stroke="var(--pre)" stroke-width="2" fill="none" stroke-dasharray="6 5" marker-end="url(#ahp)"/>
+
+      <text x="470" y="516" text-anchor="middle" font-size="9.5" fill="var(--muted)" font-family="var(--mono)">north = top · x increases → east</text>
+    </svg>
+    <div class="legend">
+      <span class="k"><span class="sw" style="background:var(--dec-fill);border-color:var(--dec)"></span>decode blocks + reporter</span>
+      <span class="k"><span class="sw" style="background:var(--pre-fill);border-color:var(--pre)"></span>prefill blocks + reporter</span>
+      <span class="k"><span class="sw" style="background:var(--mux-fill);border-color:var(--mux)"></span>kv_prof_mux forwarders</span>
+      <span class="k"><span class="sw" style="background:var(--band-fill);border-color:var(--band)"></span>west band</span>
+      <span class="k"><span class="sw" style="background:var(--host-fill);border-color:var(--host)"></span>host I/O port (x=0)</span>
+    </div>
+  </div>
+
   <h2>Diagnosis — which parts are actually suspect</h2>
   <div class="tblwrap"><table>
     <thead><tr><th>Observation</th><th class="mono">where</th><th>verdict</th></tr></thead>
@@ -117,28 +203,36 @@
       </tr>
       <tr>
         <td><b>Two host D2H streams, both auto-placed</b> (no <code>io_loc</code> pin) — 3 total with logits</td>
-        <td class="mono">launch.py:2045<br>launch.py:2628</td>
-        <td><span class="verdict" style="background:var(--warn)"></span><b>Prime suspect.</b> Each stream needs a dedicated edge I/O PE; auto-pick of multiple can land on invalid/already-used LVDS slots on real HW → <code>Empty ingress service url</code>. Skill: always pin io_loc.</td>
+        <td class="mono">device worker log</td>
+        <td><span class="verdict" style="background:var(--ok)"></span><b>REFUTED.</b> The <b>device</b> compile placed all streams at VALID stride-18 slots — profiler at <code>io_port_0_19</code> (y19) &amp; <code>io_port_0_37</code> (y37). Compile succeeds; pinning would change nothing. (`discover_io_locs.py` confirms valid = input {0,18,…}, output {1,19,…}.)</td>
       </tr>
       <tr>
-        <td><b><code>nonblock=False</code></b> on both profiler receives while ≥3 streams are active</td>
-        <td class="mono">launch.py:3051-3053</td>
-        <td><span class="verdict" style="background:var(--warn)"></span><b>Real bug (separate).</b> SdkLayout guide §12.1: use <code>nonblock=True</code> for concurrent streams or they deadlock. Would bite in the run phase even if ingress came up.</td>
+        <td><b><code>nonblock=False</code></b> on the profiler receives</td>
+        <td class="mono">launch.py:3049-3053</td>
+        <td><span class="verdict" style="background:var(--ok)"></span><b>REFUTED.</b> Switched both to <code>nonblock=True</code> → still hangs identically. Not the host drain. (Baseline also uses nonblock=False and works.)</td>
+      </tr>
+      <tr>
+        <td><b>Mid-run bring-up of 6 host streams</b> (4 out + 2 in) — baseline has 4 and works</td>
+        <td class="mono">run phase, pre-output</td>
+        <td><span class="verdict" style="background:var(--warn)"></span><b>Open — current suspect.</b> Hang is mid-run, before any runtime stdout; compile + io_loc are fine. Testing now: <b>prefill-only</b> (disable decode stream → 5 streams). If the hang clears, the 2nd stream / a two-stream conflict is the cause.</td>
       </tr>
     </tbody>
   </table></div>
 
-  <div class="keyline"><b>Fix direction:</b> collapse the two lanes into <b>one</b> host stream (funnel both
-    reporter bursts through a single mux → single D2H port → 8-u32 combined blob), <b>pin its io_loc</b> to a
-    known-valid output LVDS Y, and switch the host receive to <b>nonblock=True</b>. The baseline
-    (<code>test_device_2x2blk_kv</code>, 1 logits stream) proves one extra I/O tier is accepted at 512×512.</div>
+  <div class="keyline"><b>Where it stands (2026-07-07):</b> io_loc and <code>nonblock</code> both REFUTED by
+    device evidence. The <code>Could not find coordinator</code> / <code>Empty ingress service url</code> line
+    is <b>benign</b> (it appears verbatim in a <em>successful</em> <code>discover_io_locs.py</code> run). Compile
+    succeeds and places validly; the hang is <b>mid-run, while the appliance brings up the 6 host streams</b>
+    (before any runtime stdout). Active test: <b>prefill-only</b> (5 streams) — does dropping the decode
+    profiler stream clear the hang?</div>
 
   <ul>
-    <li><b>Ground truth so far:</b> baseline (no profiler) runs clean at actual size; profiler config
-      compiles clean locally (169 s) but hangs on device at <code>Could not find coordinator IP:port</code> /
-      <code>Empty ingress service url</code> → it's a device load/run I/O-setup failure, not a build failure.</li>
-    <li><b>Unconfirmed:</b> no SDK doc found that explains the <code>least overlapping color</code> placer
-      message or proves colors-vs-io_loc as the cause; the device log only says <code>Empty ingress service url</code>.
-      Pinning io_loc + single stream is the cheapest test.</li>
+    <li><b>Ground truth:</b> baseline (4 streams) runs clean at actual size (compile 288.7 s, run 7.0 s);
+      profiler (6 streams) compiles clean (local 169 s; device places valid io_locs) but <b>hangs in the
+      run phase</b>. So: not a build failure, not io_loc, not the host drain — a multi-stream run-phase
+      bring-up issue.</li>
+    <li><b>Notable topology fact:</b> both reporters sit at the far-east/south corner (x=643) but their
+      host io_ports are at the far-west edge (x=0) — each profiler burst is SDK-routed ~640 columns back
+      across the fabric (two long D2H routes added on top of the two logits routes). Possible contributor.</li>
   </ul>
 </div>

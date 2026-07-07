@@ -1,0 +1,662 @@
+diff --git a/models/qwen3_1p7b-e2e/launch.py b/models/qwen3_1p7b-e2e/launch.py
+index 1238766..aff068a 100644
+--- a/models/qwen3_1p7b-e2e/launch.py
++++ b/models/qwen3_1p7b-e2e/launch.py
+@@ -572,6 +572,7 @@ def build_decode(layout, cfg, here, place_y, cmaddr):
+     # coordinates (strips / HT band); inside the block columns both ids are free.
+     # Parity scheme: even fabric rows send on 21 / recv on 17, odd rows swap.
+     kv_transfer = int(cfg.get("KV_TRANSFER", 0))
++    kv_profile  = int(cfg.get("KV_PROFILE", 0)) if kv_transfer else 0
+     kv_xfer_0_c = Color("kv_xfer_color_0", 17)
+     kv_xfer_1_c = Color("kv_xfer_color_1", 21)
+ 
+@@ -1117,6 +1118,11 @@ def build_decode(layout, cfg, here, place_y, cmaddr):
+         # global north row stay unpainted). The block PEs run the ingress before
+         # init when kv_transfer is set.
+         rg.set_param_all("kv_transfer", kv_transfer)
++        rg.set_param_all("kv_profile", kv_profile)
++        # KV profiler egress params — reporter override happens post-loop on the
++        # last (south-most) region only; all other PEs keep 0 (never emit).
++        rg.set_param_all("is_kv_prof_reporter", 0)
++        rg.set_param_all("kv_prof_out_color", 0)
+         rg.set_param_all("kv_xfer_color_0", kv_xfer_0_c.get_value())
+         rg.set_param_all("kv_xfer_color_1", kv_xfer_1_c.get_value())
+         if kv_transfer:
+@@ -1266,6 +1272,65 @@ def build_decode(layout, cfg, here, place_y, cmaddr):
+         last_result_color, edge, [port_in_routes], total_wavelets,
+     )
+ 
++    # --- Device-compatible KV profiler egress (reporter PE + east forwarder) ---
++    # The south-most / ingress-tail block PE (east-most block col, south-most row
++    # of the last region = max-C PE) emits its C burst EAST out the block region's
++    # Edge.RIGHT (multi-PE inter-region port; only the reporter row carries data).
++    # A 1-wide × P_BLOCK_SIZE-tall forwarder region just east of the block region
++    # turns that P_BLOCK_SIZE-PE egress into a 1-PE host stream — host ports MUST
++    # be 1-PE, so we cannot stream the block region's tall east edge directly.
++    # (This mirrors the SDK width=1 vertical mux and the prefill south forwarder;
++    # the shared kv_prof_mux.csl is edge-agnostic: recv in_color→RAMP, send
++    # host_color RAMP→edge.) Wired for BOTH sim and device. kv_profile was
++    # resolved at build_decode top.
++    last_rg.set_param_all("is_kv_prof_reporter", 0)
++    kv_prof_dec_egress = None   # forwarder's 1-PE host port → host stream
++    if kv_profile:
++        kv_prof_out_c = last_rg.color("kv_prof_out_color")
++        last_rg.set_param_all("kv_prof_out_color", kv_prof_out_c)
++        rep_bx = Pw          # east-most BLOCK col (region-local; strips at 0 and Pw+1)
++        rep_by = P_BLOCK_SIZE - 1                      # south-most row = ingress tail
++        last_rg.set_param(IntVector(rep_bx, rep_by), "is_kv_prof_reporter", 1)
++        last_rg.paint(IntVector(rep_bx, rep_by), kv_prof_out_c,
++                      [RoutingPosition().set_input([Route.RAMP]).set_output([Route.EAST])])
++        # East strip col transits the burst to the region's east (fabric) edge.
++        last_rg.paint(IntVector(Pw + 1, rep_by), kv_prof_out_c,
++                      [RoutingPosition().set_input([Route.WEST]).set_output([Route.EAST])])
++        # Multi-PE inter-region egress on the block region's east edge (P_BLOCK_SIZE
++        # lanes; only the reporter row is live). connect() → forwarder, so multi-PE
++        # is allowed here (the 1-PE restriction is on host streams, not connects).
++        dec_kv_prof_egress = last_rg.create_output_port(
++            kv_prof_out_c, Edge.RIGHT,
++            [RoutingPosition().set_input([Route.WEST])],
++            4, prefix="kv_prof_dec")
++        # 1-wide × P_BLOCK_SIZE-tall forwarder, east of the block region, bottom row
++        # aligned with the reporter's south-most row. Only that bottom PE is active:
++        # it drains WEST→RAMP and re-emits RAMP→SOUTH out a 1-PE Edge.BOTTOM host
++        # port (Edge.BOTTOM of a 1-wide region is a single PE).
++        dec_fwd = layout.create_code_region(
++            str(here / "src" / "kv_prof_mux.csl"), "dec_kv_prof_mux", 1, P_BLOCK_SIZE)
++        dec_fwd_in_c   = dec_fwd.color("in_color")
++        dec_fwd_host_c = dec_fwd.color("host_color")
++        dec_fwd.set_param_all("in_color",   dec_fwd_in_c)
++        dec_fwd.set_param_all("host_color", dec_fwd_host_c)
++        dec_fwd.set_param_all("is_last_pe", 0)
++        dec_fwd.set_param(IntVector(0, P_BLOCK_SIZE - 1), "is_last_pe", 1)
++        # in_color WEST→RAMP on every row (only the bottom row receives); host_color
++        # RAMP→SOUTH on the bottom (active) row only.
++        dec_fwd.paint_all(dec_fwd_in_c,
++                          [RoutingPosition().set_input([Route.WEST]).set_output([Route.RAMP])])
++        dec_fwd.paint(IntVector(0, P_BLOCK_SIZE - 1), dec_fwd_host_c,
++                      [RoutingPosition().set_input([Route.RAMP]).set_output([Route.SOUTH])])
++        dec_fwd_in_port = dec_fwd.create_input_port(
++            dec_fwd_in_c, Edge.LEFT, [RoutingPosition().set_output([Route.RAMP])],
++            4, prefix="kv_prof_dec_in")
++        dec_fwd_host_port = dec_fwd.create_output_port(
++            dec_fwd_host_c, Edge.BOTTOM, [RoutingPosition().set_input([Route.RAMP])],
++            4, prefix="kv_prof_dec_host")
++        dec_fwd.place(region_place_x + region_width, PLACE_Y + last_row * P_BLOCK_SIZE)
++        layout.connect(dec_kv_prof_egress, dec_fwd_in_port)
++        kv_prof_dec_egress = dec_fwd_host_port
++
+     # --- Post-loop touch-up: row_0 (host-X receiver side) --- #
+     # Paint post_embed_x_color routes from the fake west strip (lcl_x=0)
+     # through the chain-start block so WEST-incoming wavelets travel EAST
+@@ -1976,6 +2041,10 @@ def build_decode(layout, cfg, here, place_y, cmaddr):
+     # piggybacked 8-u32 TSC burst after the last step).
+     logits_stream = layout.create_output_stream(mux_host_port)
+ 
++    # Device-compatible KV profiler egress stream (reporter PE → east edge → host).
++    kv_prof_stream = (layout.create_output_stream(kv_prof_dec_egress)
++                      if kv_prof_dec_egress is not None else None)
++
+     return dict(locals())
+ 
+ 
+@@ -2154,6 +2223,7 @@ def build_prefill(layout, cfg, here, place_y, cmaddr):
+     # KV-cache transfer egress colors (layout-global 17/21, same ids as decode's
+     # ingress; the relay seam wires them through). Even fabric rows send on 21.
+     kv_transfer = int(cfg.get("KV_TRANSFER", 0))
++    kv_profile  = int(cfg.get("KV_PROFILE", 0)) if kv_transfer else 0
+     kv_xfer_0_c = Color("kv_xfer_color_0", 17)
+     kv_xfer_1_c = Color("kv_xfer_color_1", 21)
+ 
+@@ -2299,6 +2369,7 @@ def build_prefill(layout, cfg, here, place_y, cmaddr):
+     rg.set_param_all("x_chain_color_1", x_chain_1_c)
+     rg.set_param_all("is_x_receiver", 0)
+     rg.set_param_all("kv_transfer", kv_transfer)
++    rg.set_param_all("kv_profile", kv_profile)
+     rg.set_param_all("kv_xfer_color_0", kv_xfer_0_c.get_value())
+     rg.set_param_all("kv_xfer_color_1", kv_xfer_1_c.get_value())
+     rg.set_param_all("kv_sweep_w_color_0", 18)
+@@ -2310,6 +2381,20 @@ def build_prefill(layout, cfg, here, place_y, cmaddr):
+               shuttle_ew_0_c, shuttle_ew_1_c, z_drain_c, x_chain_0_c, x_chain_1_c):
+         rg.paint_all(c, [default_rp])
+ 
++    # --- Device-compatible KV profiler egress (reporter PE + south forwarder) ---
++    # ONE representative block PE (east-most block col, south-most row) emits its
++    # A/B burst SOUTH out Edge.BOTTOM into a 1-tall forwarder region placed just
++    # south of the block region; the forwarder's east-most PE is the 1-PE host
++    # I/O port (host ports must be 1-PE). Reporter params set here (paint/port are
++    # created AFTER rg.place, below). Mirrors the HT_tail is_tsc_pe -> mux egress.
++    rg.set_param_all("is_kv_prof_reporter", 0)
++    rg.set_param_all("kv_prof_out_color", 0)   # reporter override below (if profiling)
++    if kv_profile:
++        kv_prof_out_c = rg.color("kv_prof_out_color")
++        rg.set_param_all("kv_prof_out_color", kv_prof_out_c)
++        kv_prof_rep = IntVector(Pw - 1, Ph - 1)   # east-most block col, south-most row
++        rg.set_param(kv_prof_rep, "is_kv_prof_reporter", 1)
++
+     # Per-PE layer count, by serpentine pipeline position of the PE's block.
+     layers_arr = np.zeros((Ph, Pw), dtype=np.int16)
+     for gx in range(Pw):
+@@ -2509,6 +2594,39 @@ def build_prefill(layout, cfg, here, place_y, cmaddr):
+ 
+     rg.place(PLACE_X, PLACE_Y)
+ 
++    # KV profiler egress: reporter emits SOUTH out Edge.BOTTOM; a 1-tall forwarder
++    # region south of the block region turns it into a 1-PE host stream. (Paint /
++    # port / place happen after rg.place — SdkLayout allows it, as decode does.)
++    kv_prof_stream = None
++    if kv_profile:
++        rg.paint(kv_prof_rep, kv_prof_out_c,
++                 [RoutingPosition().set_input([Route.RAMP]).set_output([Route.SOUTH])])
++        kv_prof_pf_egress = rg.create_output_port(
++            kv_prof_out_c, Edge.BOTTOM,
++            [RoutingPosition().set_input([Route.NORTH])],
++            4, prefix="kv_prof_pf")
++        fwd = layout.create_code_region(
++            str(here / "src" / "kv_prof_mux.csl"), "pf_kv_prof_mux", Pw, 1)
++        fwd_in_c   = fwd.color("in_color")
++        fwd_host_c = fwd.color("host_color")
++        fwd.set_param_all("in_color",   fwd_in_c)
++        fwd.set_param_all("host_color", fwd_host_c)
++        fwd.set_param_all("is_last_pe", 0)
++        fwd.set_param(IntVector(Pw - 1, 0), "is_last_pe", 1)
++        fwd.paint_all(fwd_in_c,
++                      [RoutingPosition().set_input([Route.NORTH]).set_output([Route.RAMP])])
++        fwd.paint(IntVector(Pw - 1, 0), fwd_host_c,
++                  [RoutingPosition().set_input([Route.RAMP]).set_output([Route.EAST])])
++        fwd_in_port = fwd.create_input_port(
++            fwd_in_c, Edge.TOP, [RoutingPosition().set_output([Route.RAMP])],
++            4, prefix="kv_prof_pf_in")
++        fwd_host_port = fwd.create_output_port(
++            fwd_host_c, Edge.RIGHT, [RoutingPosition().set_input([Route.RAMP])],
++            4, prefix="kv_prof_pf_host")
++        fwd.place(PLACE_X, PLACE_Y + Ph)   # 1 row south of the block region
++        layout.connect(kv_prof_pf_egress, fwd_in_port)
++        kv_prof_stream = layout.create_output_stream(fwd_host_port)
++
+     # ====================================================================== #
+     # Phase 3b: HT_head + demux (token ids → embedding → X handoff to block 0) #
+     #   HT_head (P/2 × P) abuts block 0's west edge on the same rows; the      #
+@@ -2730,6 +2848,11 @@ def build_prefill(layout, cfg, here, place_y, cmaddr):
+     layout.connect(ht_tail_logits_egress, mux_in_port)
+     logits_stream = layout.create_output_stream(mux_host_port)
+ 
++    # NB: the KV profiler egress stream (kv_prof_stream) is created earlier, right
++    # after the block region places its south forwarder (reporter → Edge.BOTTOM →
++    # 1-tall forwarder → 1-PE host port). Do NOT re-create it here from the
++    # multi-PE block port — host streams must be 1-PE.
++
+     return dict(locals())
+ 
+ 
+@@ -2807,6 +2930,10 @@ def run(cfg: dict, *, cmaddr=None,
+ 
+     cfg_d["KV_TRANSFER"] = kv_transfer
+     cfg_pf["KV_TRANSFER"] = kv_transfer
++    # Phase-1 KV-transfer segment profiler (only meaningful when transferring).
++    kv_profile = int(cfg.get("KV_PROFILE", 0)) if kv_transfer else 0
++    cfg_d["KV_PROFILE"] = kv_profile
++    cfg_pf["KV_PROFILE"] = kv_profile
+     dd = build_decode(layout, cfg_d, here, DEC_PLACE_Y, cmaddr)
+     build_relay(layout, here, PLACE_X, RELAY_Y, Pw, kv_transfer=kv_transfer)
+     pf = build_prefill(layout, cfg_pf, here, PF_PLACE_Y, cmaddr)
+@@ -2912,6 +3039,23 @@ def run(cfg: dict, *, cmaddr=None,
+     pf_tsc_burst = np.empty(8, dtype=np.uint32)
+     runtime.receive(pf["logits_stream"], pf_tsc_burst, 8, nonblock=False)
+ 
++    # KV-transfer profiler device egress (works for BOTH sim and device): the two
++    # reporter PEs each stream a 4-u32 burst out a dedicated east-edge port. Prefill
++    # burst = [A, B, done, pad]; decode burst = [C, done, pad, pad]. Drain BEFORE
++    # stop. This is the device-compatible path that mirrors the is_tsc_pe egress;
++    # the sim read_symbol path below is kept for the cross-check.
++    dec_prof_burst = None
++    pf_prof_burst  = None
++    if kv_profile:
++        # DIAGNOSTIC (2026-07-07): profiler bursts are emitted early (during KV
++        # transfer) but drained here after all decode steps. Blocking (nonblock=
++        # False) drains can deadlock via device back-pressure on the un-drained
++        # profiler streams (SdkLayout guide §12.1). Try nonblock=True to isolate.
++        dec_prof_burst = np.empty(4, dtype=np.uint32)
++        runtime.receive(dd["kv_prof_stream"], dec_prof_burst, 4, nonblock=True)
++        pf_prof_burst = np.empty(4, dtype=np.uint32)
++        runtime.receive(pf["kv_prof_stream"], pf_prof_burst, 4, nonblock=True)
++
+     runtime.stop()
+     run_s = time.perf_counter() - t_run
+     # -------- KV transfer verification (sim only, bit-exact) ---------------
+@@ -2954,6 +3098,101 @@ def run(cfg: dict, *, cmaddr=None,
+         print(("KV-TRANSFER PASS" if kv_pass else f"KV-TRANSFER FAIL ({bad} bad tiles)")
+               + f": {n_blk} blocks x {mlpb} layers, bit-exact K+V")
+ 
++    # -------- Phase-1 KV-transfer segment profiler (sim AND device) --------
++    # A = prefill gather+transform (kv_step states 0-3), B = prefill north shift
++    # (kv_step state 4), C = decode ingress (kv_ingress). The A/B/C values reach
++    # the host via the device-compatible reporter-PE burst egress (the dedicated
++    # east-edge streams), so this prints on real hardware, not just in sim. In
++    # sim we ALSO read every PE's kv_prof_* via read_symbol to (1) report the
++    # max across PEs and (2) cross-check that the STREAMED reporter burst equals
++    # that same reporter PE's read_symbol values — proof the egress is wired right.
++    if kv_profile:
++        P = P_BLK
++        FREQ_GHZ = 1.1
++
++        # Streamed (device path): reporter bursts. Prefill = [A, B, done, pad];
++        # decode = [C, done, pad, pad].
++        A_cyc = int(pf_prof_burst[0]);  B_cyc = int(pf_prof_burst[1])
++        C_cyc = int(dec_prof_burst[0])
++        pf_rep_done  = int(pf_prof_burst[2])
++        dec_rep_done = int(dec_prof_burst[1])
++
++        # Reporter PE fabric coords (must match the launch-side placement:
++        # east-most block col, south-most row of each half's block region).
++        pf_rep_xy  = (PLACE_X + Pw - 1, PF_PLACE_Y + Ph - 1)
++        dec_rep_xy = (PLACE_X + Pw - 1, DEC_PLACE_Y + Ph - 1)
++
++        # Sim-only: read_symbol max-across-PEs + streamed-vs-read_symbol crosscheck.
++        A_max = B_max = C_max = 0
++        pf_done = dec_done = 0
++        xcheck = None
++        if cmaddr is None:
++            for gx in range(Pw):
++                for gy in range(Ph):
++                    buf = np.asarray(runtime.read_symbol(
++                        PLACE_X + gx, PF_PLACE_Y + gy, "kv_prof_pf", dtype="uint32"))
++                    if int(buf[2]) != 0:
++                        pf_done += 1
++                        A_max = max(A_max, int(buf[0]))
++                        B_max = max(B_max, int(buf[1]))
++            for by in range(cfg_d["P_Y_BLOCK_NUM"]):
++                for bx in range(cfg_d["P_X_BLOCK_NUM"]):
++                    for ly in range(P):
++                        for lx in range(P):
++                            buf = np.asarray(runtime.read_symbol(
++                                PLACE_X + bx * P + lx, DEC_PLACE_Y + by * P + ly,
++                                "kv_prof_dec", dtype="uint32"))
++                            if int(buf[1]) != 0:
++                                dec_done += 1
++                                C_max = max(C_max, int(buf[0]))
++            # Exact cross-check: streamed reporter burst == that reporter PE's mem.
++            pf_rep_mem  = np.asarray(runtime.read_symbol(*pf_rep_xy,  "kv_prof_pf",  dtype="uint32"))
++            dec_rep_mem = np.asarray(runtime.read_symbol(*dec_rep_xy, "kv_prof_dec", dtype="uint32"))
++            xcheck = (int(pf_rep_mem[0]) == A_cyc and int(pf_rep_mem[1]) == B_cyc
++                      and int(dec_rep_mem[0]) == C_cyc)
++
++        total_cyc = A_cyc + B_cyc + C_cyc
++        A_us, B_us, C_us = (x / (FREQ_GHZ * 1e3) for x in (A_cyc, B_cyc, C_cyc))
++        total_us = total_cyc / (FREQ_GHZ * 1e3)
++        total_s  = total_cyc / (FREQ_GHZ * 1e9)
++
++        # KV byte total actually moved through the transfer.
++        Pw_Ph        = Pw * Ph
++        kvd_pp       = (cfg_d["n_kv_heads"] * cfg_d["head_dim"]) // P   # kv_dim_per_pe
++        mlpb_r       = -(-cfg_d["n_layers"] // (cfg_d["P_X_BLOCK_NUM"] * cfg_d["P_Y_BLOCK_NUM"]))
++        bsz_r        = cfg_d["bsz"]
++        seqlen_pp    = cfg_pf["PREFILL_LEN"] // P    # transferred KV length per PE
++        kv_bytes     = Pw_Ph * (2 * mlpb_r) * (kvd_pp * bsz_r * seqlen_pp) * 2
++        gbps         = (kv_bytes / total_s / 1e9) if total_s > 0 else 0.0
++
++        src = "read_symbol (sim)" if cmaddr is None else "device stream egress"
++        print(f"\n{'=' * 64}")
++        print(f"  KV-transfer segment profiler (Phase-1, TSC, WSE-3 @ 1.1 GHz)")
++        print(f"{'=' * 64}")
++        print(f"{'Values via:':<44}reporter-PE stream burst (device-compatible)")
++        print(f"{'A  prefill gather+transform (states 0-3):':<44}{A_cyc:>8} cyc  {A_us:9.4f} us")
++        print(f"{'B  prefill north shift (state 4):':<44}{B_cyc:>8} cyc  {B_us:9.4f} us")
++        print(f"{'C  decode ingress (kv_ingress):':<44}{C_cyc:>8} cyc  {C_us:9.4f} us")
++        print(f"{'total A+B+C:':<44}{total_cyc:>8} cyc  {total_us:9.4f} us")
++        print(f"{'reporter done flags (pf / dec):':<44}{pf_rep_done} / {dec_rep_done}")
++        print(f"{'-' * 64}")
++        print(f"  resolved: Pw*Ph={Pw_Ph} 2*max_layers_per_block={2*mlpb_r} "
++              f"kv_dim_per_pe={kvd_pp} bsz={bsz_r} seq_len_per_pe={seqlen_pp}")
++        print(f"{'KV bytes moved:':<44}{kv_bytes} B ({kv_bytes/1024:.1f} KiB)")
++        print(f"{'Effective bandwidth:':<44}{gbps:.3f} GB/s")
++        if cmaddr is None:
++            print(f"{'-' * 64}")
++            print(f"{'[sim] read_symbol max A/B/C (all PEs):':<44}"
++                  f"{A_max} / {B_max} / {C_max} cyc")
++            print(f"{'[sim] PEs reporting (prefill / decode):':<44}{pf_done} / {dec_done}")
++            print(f"{'[sim] STREAM==read_symbol @ reporter PE:':<44}"
++                  f"{'PASS' if xcheck else 'FAIL'}  "
++                  f"(egress cross-check)")
++        print(f"  WARNING: this sim config is a dim=64 TOY (kv_dim_per_pe={kvd_pp}, "
++              f"{kv_bytes/1024:.1f} KiB total).")
++        print(f"  The GB/s number is overhead-dominated, NOT representative of a real model.")
++        print(f"{'=' * 64}")
++
+     print(f"  topk_args.shape = {topk_args.shape} (expected ({max_output_len}, {bsz}, {top_k}))")
+     print(f"  run took {run_s:.1f}s")
+ 
+diff --git a/models/qwen3_1p7b-e2e/launch_device.py b/models/qwen3_1p7b-e2e/launch_device.py
+index f3adf05..b358c55 100644
+--- a/models/qwen3_1p7b-e2e/launch_device.py
++++ b/models/qwen3_1p7b-e2e/launch_device.py
+@@ -22,6 +22,7 @@ HERE = Path(__file__).parent.resolve()
+ FILES_TO_STAGE = [
+     "launch.py",
+     "src/relay.csl",
++    "src/kv_prof_mux.csl",
+     "src/decode/decode.csl",
+     "src/decode/decode_strip.csl",
+     "src/decode/route_calc.csl",
+diff --git a/models/qwen3_1p7b-e2e/model_config/test_device_2x2blk_kv_prof.json b/models/qwen3_1p7b-e2e/model_config/test_device_2x2blk_kv_prof.json
+new file mode 100644
+index 0000000..af3a669
+--- /dev/null
++++ b/models/qwen3_1p7b-e2e/model_config/test_device_2x2blk_kv_prof.json
+@@ -0,0 +1,31 @@
++{
++    "Pw": 512,
++    "Ph": 512,
++    "P_X_BLOCK_NUM": 2,
++    "P_Y_BLOCK_NUM": 2,
++    "group_num": 16,
++    "dim": 2048,
++    "head_dim": 128,
++    "ffn_dim": 6144,
++    "n_heads": 16,
++    "n_kv_heads": 8,
++    "vocab_size": 151936,
++    "HT_WIDTH_tail": 128,
++    "decode": {
++        "bsz": 1,
++        "MAX_SEQ_LEN": 512,
++        "n_layers": 28,
++        "WARMUP": 16,
++        "PREFILL_LEN": 256,
++        "TOP_K": 1
++    },
++    "prefill": {
++        "bsz": 1,
++        "MAX_SEQ_LEN": 512,
++        "n_layers": 28,
++        "PREFILL_LEN": 256,
++        "TOP_K": 1
++    },
++    "KV_TRANSFER": 1,
++    "KV_PROFILE": 1
++}
+diff --git a/models/qwen3_1p7b-e2e/model_config/test_sim_2x2blk_kv_prof.json b/models/qwen3_1p7b-e2e/model_config/test_sim_2x2blk_kv_prof.json
+new file mode 100644
+index 0000000..d5a190c
+--- /dev/null
++++ b/models/qwen3_1p7b-e2e/model_config/test_sim_2x2blk_kv_prof.json
+@@ -0,0 +1,32 @@
++{
++    "Pw": 16,
++    "Ph": 16,
++    "P_X_BLOCK_NUM": 2,
++    "P_Y_BLOCK_NUM": 2,
++    "group_num": 4,
++    "dim": 64,
++    "head_dim": 16,
++    "ffn_dim": 128,
++    "n_heads": 4,
++    "n_kv_heads": 2,
++    "vocab_size": 24,
++    "HT_WIDTH_tail": 4,
++    "KV_TRANSFER": 1,
++    "KV_PROFILE": 1,
++    "decode": {
++        "bsz": 1,
++        "MAX_SEQ_LEN": 32,
++        "n_layers": 8,
++        "WARMUP": 1,
++        "PREFILL_LEN": 16,
++        "TOP_K": 2
++    },
++    "prefill": {
++        "bsz": 1,
++        "group_num": 2,
++        "MAX_SEQ_LEN": 32,
++        "n_layers": 8,
++        "PREFILL_LEN": 16,
++        "TOP_K": 1
++    }
++}
+diff --git a/models/qwen3_1p7b-e2e/src/decode/decode.csl b/models/qwen3_1p7b-e2e/src/decode/decode.csl
+index 4a5aae7..c671ca6 100644
+--- a/models/qwen3_1p7b-e2e/src/decode/decode.csl
++++ b/models/qwen3_1p7b-e2e/src/decode/decode.csl
+@@ -115,6 +115,18 @@ param kv_transfer: i16;
+ param kv_xfer_color_0: u16;
+ param kv_xfer_color_1: u16;
+ 
++// Phase-1 KV-transfer segment profiler (0 disables; additive, guarded). When
++// non-zero each decode PE times segment C = the whole kv_ingress() (receive +
++// write into the cache slab) using its own low-32 TSC counter.
++param kv_profile: i16 = 0;
++// Device-compatible profiler egress: ONE representative decode block PE (the
++// south-most / ingress-tail, host-flagged is_kv_prof_reporter) streams its C
++// off-chip out a dedicated east-edge port on kv_prof_out_color. Mirrors the
++// HT_tail `is_tsc_pe` burst so C reaches the host on real hardware, not just the
++// sim `read_symbol` path. Other PEs leave both at 0.
++param kv_prof_out_color: u16 = 0;
++param is_kv_prof_reporter: i16 = 0;
++
+ // -------------------------------------------------------------------------- //
+ // ------------------------------ PE Variables ------------------------------ //
+ // -------------------------------------------------------------------------- //
+@@ -1378,7 +1390,37 @@ fn kv_ingress_phase(l: i16, n_recv: i16, is_k: bool) void {
+     }
+ }
+ 
++// --- KV-transfer segment profiler (kv_profile != 0; additive) --------------
++// Per-PE low-32 TSC. kv_prof_dec holds u32 cycle counts as f32 bit patterns:
++//   [0] = C cycles (whole kv_ingress: receive + write into cache slab)
++//   [1] = done flag (1 once C recorded)   [2..3] = spare
++// TSC read is done directly via @get_config (mirrors the <time> library's
++// get_timestamp minus its inline-for, which the e2e cslc wrapper caps at 8).
++export var kv_prof_dec = @zeros([4]f32);   // read via runtime.read_symbol (sim)
++
++// Device-compatible egress buffer + DSD (reporter PE only). 4 u32 = [C, done,
++// pad, pad]; 4 is even (SDK 1.13.2 requires an even output-port wavelet count).
++// The reporter borrows OQ7 right after kv_ingress records C (before
++// kv_flush_then_init rebinds OQ7 to broadcast) and emits on kv_prof_out_color,
++// painted RAMP->EAST through the east strip col out a dedicated Edge.RIGHT port
++// (host stream). Mirrors the HT_tail is_tsc_pe burst.
++var kv_prof_burst_dec: [4]u32 = @zeros([4]u32);
++const kv_prof_burst_dec_dsd = @get_dsd(mem1d_dsd,  .{ .base_address = &kv_prof_burst_dec, .extent = @as(i16, 4) });
++const kv_prof_out_dec_dsd   = @get_dsd(fabout_dsd, .{ .extent = @as(i16, 4), .output_queue = @get_output_queue(7) });
++fn kv_prof_enable() void {   // enable the TSC control register (value 7)
++    @set_config(@as(u16, decode_tile_config.addresses.PERF_COUNTER_CONTROL) / decode_tile_config.word_size,
++                @as(u16, 7));
++}
++fn kv_prof_now() u32 {       // low 32 bits of the free-running 48-bit TSC
++    const base = @as(u16, @get_int(decode_tile_config.addresses.TIMESTAMP_COUNTER) / decode_tile_config.word_size);
++    const w0 = @get_config(base);
++    const w1 = @get_config(base + @as(u16, 1));
++    return @as(u32, w0) | (@as(u32, w1) << @as(u16, 16));
++}
++
+ fn kv_ingress() void {
++    var kv_prof_c_start: u32 = 0;
++    if (kv_profile != 0) { kv_prof_enable(); kv_prof_c_start = kv_prof_now(); }
+     // Odd fabric rows swap the queue↔color binding (send on c0, recv on c1).
+     const wafer_y = @as(i16, decode_tile_config.get_fabric_coord(decode_tile_config.fabric_coord.Y));
+     if (wafer_y - (wafer_y / 2) * 2 != 0) {
+@@ -1394,6 +1436,24 @@ fn kv_ingress() void {
+         kv_ingress_phase(l, n_recv, true);
+         kv_ingress_phase(l, n_recv, false);
+     }
++    if (kv_profile != 0) {
++        const c_end = kv_prof_now();
++        const c_cyc = c_end - kv_prof_c_start;
++        kv_prof_dec[0] = @bitcast(f32, c_cyc);                     // C = decode ingress
++        kv_prof_dec[1] = @bitcast(f32, @as(u32, 1));
++        // Device egress (reporter PE only): stream C off-chip. Borrow OQ7 (the
++        // ingress north-shift sends are complete) by rebinding it to the dedicated
++        // east-edge color, emit the 4-u32 burst, then let kv_flush_then_init drain
++        // OQ7 and rebind it to broadcast for the main loop.
++        if (is_kv_prof_reporter != 0) {
++            kv_prof_burst_dec[0] = c_cyc;             // C
++            kv_prof_burst_dec[1] = @as(u32, 1);       // done
++            kv_prof_burst_dec[2] = @as(u32, 0);       // pad
++            kv_prof_burst_dec[3] = @as(u32, 0);       // pad (even count)
++            output_queue_config.encode_output_queue(7, @as(i16, kv_prof_out_color));
++            @mov32(kv_prof_out_dec_dsd, kv_prof_burst_dec_dsd);
++        }
++    }
+     comm_mod.kv_flush_then_init();   // drain OQ7, rebind to broadcast, → kv_init_cont
+ }
+ 
+diff --git a/models/qwen3_1p7b-e2e/src/kv_prof_mux.csl b/models/qwen3_1p7b-e2e/src/kv_prof_mux.csl
+new file mode 100644
+index 0000000..4be1692
+--- /dev/null
++++ b/models/qwen3_1p7b-e2e/src/kv_prof_mux.csl
+@@ -0,0 +1,45 @@
++// KV-transfer profiler egress forwarder (one-shot, generic, shared by both
++// halves). The east-most PE of this 1-tall region drains the reporter PE's
++// 4-u32 burst arriving from the block region (RAMP via in_color) and forwards
++// it east to the host stream (host_color -> Edge.RIGHT). All other PEs are
++// inert. This is the 1-PE host-I/O adaptor that lets a deep block PE reach the
++// host, mirroring the logits mux that carries the HT_tail is_tsc_pe burst.
++//
++// Burst layout: prefill = [A, B, done, pad]; decode = [C, done, pad, pad].
++// 4 u32 (even) satisfies the SDK output-port even-wavelet-count constraint.
++
++param is_last_pe: u16;   // 1 on the east-most PE (the only active one)
++param in_color:   u16;   // burst from the block region -> RAMP
++param host_color: u16;   // -> host (RAMP->EAST at the east edge)
++
++const N: i16 = 4;
++
++var blob: [N]u32 = @zeros([N]u32);
++const blob_dsd = @get_dsd(mem1d_dsd, .{ .base_address = &blob, .extent = N });
++
++const in_q:    input_queue  = @get_input_queue(2);
++const host_oq: output_queue = @get_output_queue(2);
++const recv_dsd = @get_dsd(fabin_dsd,  .{ .extent = N, .input_queue  = in_q });
++const send_dsd = @get_dsd(fabout_dsd, .{ .extent = N, .output_queue = host_oq });
++
++const main_id = @get_local_task_id(8);
++const send_id = @get_local_task_id(9);
++
++task main() void {            // drain the burst from the block region
++    @mov32(blob_dsd, recv_dsd, .{ .async = true, .activate = send_id });
++}
++
++task send() void {            // forward it east to the host edge (done)
++    @mov32(send_dsd, blob_dsd, .{ .async = true });
++}
++
++comptime {
++    // Only the east-most PE participates; the rest are inert.
++    if (is_last_pe == 1) {
++        @bind_local_task(main, main_id);
++        @bind_local_task(send, send_id);
++        @activate(main_id);
++        @initialize_queue(in_q,    .{ .color = @get_color(in_color) });
++        @initialize_queue(host_oq, .{ .color = @get_color(host_color) });
++    }
++}
+diff --git a/models/qwen3_1p7b-e2e/src/prefill/prefill.csl b/models/qwen3_1p7b-e2e/src/prefill/prefill.csl
+index 1b618ea..395bcc6 100644
+--- a/models/qwen3_1p7b-e2e/src/prefill/prefill.csl
++++ b/models/qwen3_1p7b-e2e/src/prefill/prefill.csl
+@@ -91,6 +91,18 @@ param kv_sweep_e_color_0: u16;
+ param kv_sweep_e_color_1: u16;
+ param total_y_pes: i16;        // P_Y_BLOCK_NUM * P_BLOCK_SIZE
+ 
++// Phase-1 KV-transfer segment profiler (0 disables; additive, guarded). When
++// non-zero, each block PE times segment A (kv_step states 0-3, gather+transform)
++// and segment B (state 4, north shift) using its own low-32 TSC counter.
++param kv_profile: i16 = 0;
++// Device-compatible profiler egress: ONE representative block PE (host-flagged
++// is_kv_prof_reporter) streams its A/B off-chip out a dedicated east-edge port
++// on kv_prof_out_color. This mirrors the HT_tail `is_tsc_pe` burst (device PE
++// emit -> fabric output stream -> host receive), so A/B reach the host on real
++// hardware, not just the sim `read_symbol` path. Other PEs leave both at 0.
++param kv_prof_out_color: u16 = 0;
++param is_kv_prof_reporter: i16 = 0;
++
+ // MeshGEMM two-hop color IDs (per-PE; host selects + paints routes).
+ param x_send_color: u16;
+ param x_recv_color: u16;
+@@ -754,6 +766,37 @@ var kv_state: i16 = 0;
+ var kv_layer: i16 = 0;
+ var kv_m: i16 = 0;
+ 
++// --- KV-transfer segment profiler (kv_profile != 0; additive) --------------
++// Per-PE low-32 TSC. kv_prof_pf holds u32 cycle counts as f32 bit patterns:
++//   [0] = A cycles (gather+transform: first kv_step entry -> top of state 4)
++//   [1] = B cycles (north shift: state-4 loop)
++//   [2] = done flag (1 once B recorded)   [3] = spare
++// TSC read is done directly via @get_config (mirrors the <time> library's
++// get_timestamp minus its inline-for, which the e2e cslc wrapper caps at 8).
++var kv_prof_start: u32 = 0;   // timestamp at first kv_step entry (A start)
++var kv_prof_a_end: u32 = 0;   // timestamp at top of state 4  (A end / B start)
++export var kv_prof_pf = @zeros([4]f32);   // read via runtime.read_symbol (sim)
++
++// Device-compatible egress buffer + DSD (reporter PE only). 4 u32 = [A, B, done,
++// pad]; 4 is even (SDK 1.13.2 requires an even output-port wavelet count). The
++// reporter borrows OQ7 after its north shift (OQ7 is idle then: the transfer is
++// the LAST prefill activity — start_kv_transfer runs after all layers finish, so
++// no restore is needed) and emits on kv_prof_out_color, painted RAMP->EAST out a
++// dedicated Edge.RIGHT port (host stream). Mirrors the HT_tail is_tsc_pe burst.
++var kv_prof_burst_pf: [4]u32 = @zeros([4]u32);
++const kv_prof_burst_pf_dsd = @get_dsd(mem1d_dsd,  .{ .base_address = &kv_prof_burst_pf, .extent = @as(i16, 4) });
++const kv_prof_out_pf_dsd   = @get_dsd(fabout_dsd, .{ .extent = @as(i16, 4), .output_queue = @get_output_queue(7) });
++fn kv_prof_enable() void {   // enable the TSC control register (value 7)
++    @set_config(@as(u16, tile_config.addresses.PERF_COUNTER_CONTROL) / tile_config.word_size,
++                @as(u16, 7));
++}
++fn kv_prof_now() u32 {       // low 32 bits of the free-running 48-bit TSC
++    const base = @as(u16, @get_int(tile_config.addresses.TIMESTAMP_COUNTER) / tile_config.word_size);
++    const w0 = @get_config(base);
++    const w1 = @get_config(base + @as(u16, 1));
++    return @as(u32, w0) | (@as(u32, w1) << @as(u16, 16));
++}
++
+ fn kv_src() [*]@fp16() {
+     return if (kv_m == 0) kv_ptr(&K_cache_bank, kv_layer * kv_tile_size)
+            else           kv_ptr(&V_cache_bank, kv_layer * kv_tile_size);
+@@ -761,6 +804,7 @@ fn kv_src() [*]@fp16() {
+ 
+ fn start_kv_transfer() void {
+     kv_state = 0; kv_layer = 0; kv_m = 0;
++    if (kv_profile != 0) { kv_prof_enable(); }
+     comm.kv_flush_70_then_step();   // entry: q7/0 may still hold shuttle tiles
+ }
+ 
+@@ -768,6 +812,7 @@ task kv_step() void {
+     const lpx = comm.local_px_rt;
+     const lpy = comm.local_py_rt;
+     if (kv_state == 0) {           // W sweep (entry: pin q7/0 to the north colors)
++        if (kv_profile != 0 and kv_layer == 0 and kv_m == 0) { kv_prof_start = kv_prof_now(); }
+         if (kv_layer == 0 and kv_m == 0) { comm.kv_rebind_xfer(); }
+         comm.kv_rebind_sweep_w();
+         comm.kv_sweep(true, kv_src(), &kv_stash);
+@@ -799,11 +844,33 @@ task kv_step() void {
+         kv_state = if (kv_layer < max_layers_per_block) 0 else 4;
+         comm.kv_flush_then_step();
+     } else {                       // north shift into decode (q7/0 pinned since entry)
++        if (kv_profile != 0) {
++            kv_prof_a_end = kv_prof_now();
++            kv_prof_pf[0] = @bitcast(f32, kv_prof_a_end - kv_prof_start);   // A = gather+transform
++        }
+         const n_ph: i16 = 2 * max_layers_per_block;
+         var p: i16 = 0;
+         while (p < n_ph) : (p += 1) {
+             comm.kv_north_shift(kv_ptr(&kv_xfer_bank, p * kv_tile_size));
+         }
++        if (kv_profile != 0) {
++            const b_end = kv_prof_now();
++            kv_prof_pf[1] = @bitcast(f32, b_end - kv_prof_a_end);           // B = north shift
++            kv_prof_pf[2] = @bitcast(f32, @as(u32, 1));
++            // Device egress (reporter PE only): stream A/B off-chip. Borrow OQ7
++            // (now idle — the north shift above was the transfer's last send, and
++            // the transfer is prefill's final act) by rebinding it to the dedicated
++            // east-edge color, then emit the 4-u32 burst. No restore: kv_step
++            // returns to nothing on this PE.
++            if (is_kv_prof_reporter != 0) {
++                kv_prof_burst_pf[0] = kv_prof_a_end - kv_prof_start;   // A
++                kv_prof_burst_pf[1] = b_end - kv_prof_a_end;           // B
++                kv_prof_burst_pf[2] = @as(u32, 1);                     // done
++                kv_prof_burst_pf[3] = @as(u32, 0);                     // pad (even count)
++                tile_config.output_queue_config.encode_output_queue(7, @as(i16, kv_prof_out_color));
++                @mov32(kv_prof_out_pf_dsd, kv_prof_burst_pf_dsd);
++            }
++        }
+     }
+ }
+ 
