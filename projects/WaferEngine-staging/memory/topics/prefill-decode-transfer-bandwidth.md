@@ -289,17 +289,49 @@ incomplete**; its partial work is in git worktree
 `.claude/worktrees/agent-a5f7561a999d51c50`. Finishing that egress is the
 prerequisite for any device profiling run.
 
+## Device run attempt on CS-3 (2026-07-07) — blocked by egress, env is fine
+
+Device egress built + merged (`e3814ce`): reporter PE per region emits a 4-u32
+burst on `kv_prof_out_color` → `src/kv_prof_mux.csl` forwarder → host output
+stream; host `runtime.receive`s both. Compiles clean locally (small config,
+`--compile-only`, 124 s). Config `test_device_2x2blk_kv_prof.json` = actual size
+(dim 2048, 28 layers, 512×512, PREFILL_LEN 256 → **~28 MB** KV, kv_dim_per_pe=4,
+max_layers_per_block=7, seq_len_per_pe from PREFILL_LEN/256).
+
+**Outcome: could NOT get a device number.** Findings, in order of certainty:
+1. **The device path works.** The **baseline** `test_device_2x2blk_kv` (no profiler)
+   ran first try: compile 288.7 s, run 7.0 s, `SUCCESS: decode top-1 invariant`,
+   real coordinator `cmaddr=10.27.29.3:9000`. So env / launcher / auth are fine.
+2. **The profiler config specifically fails** — 0 successes across ~9 attempts (two
+   windows), every one hangs at `Could not find coordinator IP:port` / `Empty
+   ingress service url. Falling back to default server: 10.27.24.65:443`. Job logs:
+   `wsjob-coordinator-node-name: ""`, `ingress_pes: []` — the ingress/coordinator
+   never gets assigned. Baseline NEVER shows this. → high-confidence: my egress's
+   **2 extra host output streams** (`kv_prof_dec` + `kv_prof_pf`) break the device
+   ingress-service setup at 512×512 (the [[wse-sdklayout-multistream-io-loc-pinning]]
+   hazard; slipped through small-config compile as "least overlapping color" warnings).
+   Not proven to a single io_loc line, but strongly isolated by the baseline test.
+3. Transient noise on top: CS-3 gateway auth is **intermittent** (`Permission
+   denied` / `Connection closed`) — clears on retry-after-~70s (Le's known
+   workaround); and there was a real **transient coordinator outage** 07-06 22:19 →
+   ~07-07 13:23 that also produced the same fallback message (muddied early
+   diagnosis before the baseline isolated it).
+
+**Fix direction (next, deliberate — no more blind wafer runs):** collapse the
+profiler egress to a **single** output stream (funnel both reporter bursts through
+one mux/port) or pin the extra streams' io_loc explicitly; recompile-verify; one
+device run. Baseline proves ONE extra stream tier works. **CS-3 launch = ONLY
+`run_device.sh` (SdkLauncher → dispatches to a remote cs_python worker); `cs_python`
+is NOT runnable on CS-3 from gala — do not attempt it.**
+
 ## Current state
 
-- Mechanism mapped; segments A/B/C identified and **measured once in sim** (Phase-1
-  toy config: A=20µs prep / B=338 / C=474µs — transfer-bound). Committed `bd21fb3`.
+- Mechanism mapped; segments A/B/C **measured in sim** (Phase-1 toy: A=20µs / B=338 /
+  C=474µs — transfer-bound). Committed `bd21fb3`. Device egress `e3814ce`.
 - Setup floorplan artifact saved (html + pdf).
-- **Next (device path):** (1) finish the device stream egress so `KV_PROFILE` reports
-  on hardware; verify via `compile_only` (cslc, no simfab → no disk blowup), not a
-  full sim run. (2) Add `KV_PROFILE=1` to `test_device_2x2blk_kv.json` (real dim=2048).
-  (3) Run on CS-3 via `/cs3-runner` (needs Le's gateway TOTP) → first real GB/s.
-  (4) Sweep `PREFILL_LEN` (≤~512, the prefill cap) on device for the α-vs-BW slope.
-  (5) ACK round-trip for the clean single-clock end-to-end latency.
+- **Blocked on:** profiler device egress fails ingress setup at 512×512 (extra
+  streams). **Next:** single-stream egress rework → recompile → one CS-3 run for the
+  first real GB/s. Then PREFILL_LEN sweep + ACK round-trip.
 
 ## Open questions / next actions
 

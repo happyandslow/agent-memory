@@ -15,6 +15,7 @@
 
 - [[memory/topics/specdec-cs3-roadmap]]
 - [[memory/topics/specdec-d2h-latency]]
+- [[memory/topics/specdec-modeb-drive-path]]
 
 ## Topic catalog
 
@@ -22,4 +23,5 @@
 | --- | --- | --- | --- |
 | SpecDec-on-CS-3 roadmap (real kernels → PD serving + spec-dec rewind) | Current roadmap for real-kernel SpecDec on CS-3, PD serving, mode-B rewind, and full-loop validation. | nc-service, specdec, cs3, pd-disaggregation, roadmap | `memory/topics/specdec-cs3-roadmap.md` |
 | SpecDec d2h latency + real-GPU verify-side (WSE-3 drafter) | Measured WSE-3 draft-to-host latency and real-GPU verifier integration history for SpecDec. | nc-service, specdec, latency, gpu-verifier, wse3 | `memory/topics/specdec-d2h-latency.md` |
+| Mode-B per-round drive path + timing anchors | Mode-B (spec-dec rewind) per-round drive path with file:line annotations + timing anchors — where a ~115ms recurring round actually spends its time. | nc-service, specdec, mode-B, latency, drive-path, wse3, profiling | `memory/topics/specdec-modeb-drive-path.md` |
 
