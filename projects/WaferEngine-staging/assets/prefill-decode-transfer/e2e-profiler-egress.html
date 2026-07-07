@@ -1,0 +1,144 @@
+<title>e2e KV-profiler egress — implementation map</title>
+<style>
+  :root{
+    --bg:#eef1f5; --panel:#fff; --panel2:#f6f8fb; --ink:#161b22; --muted:#5c6673;
+    --hair:#d5dbe3; --dec:#2f6fd0; --dec-fill:#e5eefb; --pre:#c9791f; --pre-fill:#f9ecd6;
+    --mux:#6f6494; --mux-fill:#eae5f3; --host:#1f9b7e; --host-fill:#d7f0e8;
+    --warn:#e0453f; --ok:#1f9b7e;
+    --mono: ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans: ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0e1218;--panel:#161c25;--panel2:#121821;--ink:#e7ebf1;--muted:#95a0ad;--hair:#2a3441;
+    --dec:#6ea3ee;--dec-fill:#16283f;--pre:#e0a45a;--pre-fill:#3a2c15;--mux:#a99cd0;--mux-fill:#221d33;
+    --host:#48c6a6;--host-fill:#123029;--warn:#ff6b64;--ok:#48c6a6;}}
+  :root[data-theme="dark"]{--bg:#0e1218;--panel:#161c25;--panel2:#121821;--ink:#e7ebf1;--muted:#95a0ad;--hair:#2a3441;--dec:#6ea3ee;--dec-fill:#16283f;--pre:#e0a45a;--pre-fill:#3a2c15;--mux:#a99cd0;--mux-fill:#221d33;--host:#48c6a6;--host-fill:#123029;--warn:#ff6b64;--ok:#48c6a6;}
+  :root[data-theme="light"]{--bg:#eef1f5;--panel:#fff;--panel2:#f6f8fb;--ink:#161b22;--muted:#5c6673;--hair:#d5dbe3;--dec:#2f6fd0;--dec-fill:#e5eefb;--pre:#c9791f;--pre-fill:#f9ecd6;--mux:#6f6494;--mux-fill:#eae5f3;--host:#1f9b7e;--host-fill:#d7f0e8;--warn:#e0453f;--ok:#1f9b7e;}
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;margin:0;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:36px 22px 64px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+  h1{font-size:27px;margin:0 0 8px;font-weight:650;letter-spacing:-.01em;text-wrap:balance}
+  .lede{color:var(--muted);max-width:70ch;margin:0}
+  code{font-family:var(--mono);font-size:.9em;background:var(--panel2);border:1px solid var(--hair);border-radius:5px;padding:1px 5px}
+  h2{font-size:18px;margin:36px 0 12px;font-weight:640}
+
+  .board{background:var(--panel);border:1px solid var(--hair);border-radius:14px;padding:20px;overflow-x:auto;margin-top:8px}
+  .lanes{display:flex;gap:18px;min-width:640px}
+  @media(max-width:680px){.lanes{flex-direction:column}}
+  .lane{flex:1;display:flex;flex-direction:column;gap:0}
+  .lanehead{font-family:var(--mono);font-size:12.5px;font-weight:700;text-align:center;padding:7px;border-radius:8px 8px 0 0;color:#fff}
+  .lane.dec .lanehead{background:var(--dec)} .lane.pre .lanehead{background:var(--pre)}
+  .step{border:1px solid var(--hair);border-left-width:3px;background:var(--panel2);padding:9px 12px;font-size:13px}
+  .lane.dec .step{border-left-color:var(--dec)} .lane.pre .step{border-left-color:var(--pre)}
+  .step.mux{background:var(--mux-fill);border-left-color:var(--mux)}
+  .step b{font-weight:650}
+  .ref{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px}
+  .arrow{align-self:center;color:var(--muted);font-size:15px;line-height:1;padding:3px 0}
+  .flag{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:6px;vertical-align:middle}
+  .flag.warn{background:var(--warn);color:#fff} .flag.ok{background:var(--ok);color:#fff}
+
+  .host{margin-top:14px;background:var(--host-fill);border:1px solid var(--host);border-radius:10px;padding:12px 16px;font-size:13px}
+  .host b{color:var(--host)}
+  .converge{text-align:center;color:var(--muted);font-family:var(--mono);font-size:12px;margin:8px 0 2px}
+
+  table{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px}
+  .tblwrap{overflow-x:auto;border:1px solid var(--hair);border-radius:12px}
+  th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--hair);vertical-align:top}
+  th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--panel2)}
+  td.mono{font-family:var(--mono);font-size:12px;white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  .verdict{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  .keyline{margin-top:14px;background:var(--panel2);border:1px solid var(--hair);border-left:3px solid var(--warn);border-radius:0 10px 10px 0;padding:13px 16px;font-size:14px}
+  .keyline b{color:var(--warn)}
+  ul{max-width:72ch;padding-left:20px} li{margin:6px 0}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">qwen3_1p7b-e2e · KV-transfer profiler · device egress</p>
+  <h1>How the A/B/C timings leave the chip — implementation map</h1>
+  <p class="lede">Two independent reporter PEs each read their own low-32 TSC deltas, pack a
+    4-u32 burst, and emit it off-chip through a 1-PE forwarder (<code>kv_prof_mux.csl</code>) to a
+    host D2H stream. There are <b>two separate host streams</b> today — the suspected cause of the
+    device-side <code>Empty ingress service url</code> hang. Every box is annotated with its
+    source location so it can be inspected directly.</p>
+
+  <div class="board" role="img" aria-label="Two egress lanes (decode C, prefill A/B) each flowing reporter PE to CSL emit to output port to mux forwarder to host stream, converging on the host receive.">
+    <div class="lanes">
+      <!-- DECODE LANE -->
+      <div class="lane dec">
+        <div class="lanehead">DECODE lane — segment C</div>
+        <div class="step"><b>Reporter PE</b> = (Pw, P_BLOCK_SIZE−1)<br>east-most block col, south-most row (ingress tail)<span class="ref">launch.py:1291-1293 · is_kv_prof_reporter=1</span></div>
+        <div class="arrow">↓</div>
+        <div class="step"><b>TSC read + pack</b> — kv_prof_now() via @get_config; C = end−start<br>kv_prof_burst_dec[4]u32 = [C, done, pad, pad]<span class="ref">decode.csl:1395 (now) · 1407 (burst) · 1448-1454 (emit @mov32, OQ7)</span></div>
+        <div class="arrow">↓ &nbsp;RAMP→EAST on kv_prof_out_color</div>
+        <div class="step"><b>Output port</b> (Edge.RIGHT) — dec_kv_prof_egress<span class="ref">launch.py:1294-1305 · east strip transits W→E</span></div>
+        <div class="arrow">↓ &nbsp;layout.connect (launch.py:1331)</div>
+        <div class="step mux"><b>Forwarder</b> dec_kv_prof_mux (kv_prof_mux.csl, 1×P_BLOCK_SIZE)<br>bottom PE: drain WEST→RAMP (IQ2) → send RAMP→SOUTH (OQ2)<span class="ref">launch.py:1310-1329 · kv_prof_mux.csl:28 (main) 32 (send)</span></div>
+        <div class="arrow">↓</div>
+        <div class="step"><b>Host D2H stream</b> — create_output_stream(kv_prof_dec_egress)<span class="flag warn">AUTO io_loc</span><span class="ref">launch.py:2045</span></div>
+      </div>
+
+      <!-- PREFILL LANE -->
+      <div class="lane pre">
+        <div class="lanehead">PREFILL lane — segments A, B</div>
+        <div class="step"><b>Reporter PE</b> = (Pw−1, Ph−1)<br>east-most block col, south-most row<span class="ref">launch.py:2393-2396 · kv_prof_rep · is_kv_prof_reporter=1</span></div>
+        <div class="arrow">↓</div>
+        <div class="step"><b>TSC read + pack</b> — kv_prof_now(); A=t1−t0, B=t2−t1<br>kv_prof_burst_pf[4]u32 = [A, B, done, pad]<span class="ref">prefill.csl:771 (now) · 786 (burst) · 865-871 (emit @mov32, OQ7)</span></div>
+        <div class="arrow">↓ &nbsp;RAMP→SOUTH on kv_prof_out_color</div>
+        <div class="step"><b>Output port</b> (Edge.BOTTOM) — kv_prof_pf_egress<span class="ref">launch.py:2602-2607</span></div>
+        <div class="arrow">↓ &nbsp;layout.connect (launch.py:2627)</div>
+        <div class="step mux"><b>Forwarder</b> pf_kv_prof_mux (kv_prof_mux.csl, Pw×1)<br>east-most PE: drain NORTH→RAMP (IQ2) → send RAMP→EAST (OQ2)<span class="ref">launch.py:2608-2625 · kv_prof_mux.csl:28/32</span></div>
+        <div class="arrow">↓</div>
+        <div class="step"><b>Host D2H stream</b> — create_output_stream(fwd_host_port)<span class="flag warn">AUTO io_loc</span><span class="ref">launch.py:2628</span></div>
+      </div>
+    </div>
+
+    <div class="converge">both streams ↓ converge on the host</div>
+    <div class="host"><b>Host receive</b> — <code>runtime.receive(dd["kv_prof_stream"], …, nonblock=False)</code> and
+      <code>runtime.receive(pf["kv_prof_stream"], …, nonblock=False)</code><span class="flag warn">nonblock=False</span>
+      then decode u32 bit-patterns → A/B/C cycles → µs @1.1 GHz. <span class="ref">launch.py:3051-3053</span></div>
+  </div>
+
+  <h2>Shared forwarder — <code>src/kv_prof_mux.csl</code></h2>
+  <p>One tiny region reused by both lanes. Only its <code>is_last_pe</code> PE is live: <code>main()</code>
+    drains the incoming burst (<code>in_color</code>→RAMP, input queue 2) and hands off to <code>send()</code>,
+    which pushes it out <code>host_color</code> to the edge (output queue 2). Edge-agnostic — the caller
+    paints which physical edge. <span class="ref">kv_prof_mux.csl:11-13 (params) · 28 (main/drain) · 32 (send) · 38-43 (comptime bind+init)</span></p>
+
+  <h2>Diagnosis — which parts are actually suspect</h2>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Observation</th><th class="mono">where</th><th>verdict</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Compile warns <code>Assign color to bus … least overlapping color 0 / 18</code> for the two profiler host buses</td>
+        <td class="mono">compile log<br>(pf→0, dec→18)</td>
+        <td><span class="verdict" style="background:var(--ok)"></span><b>Likely benign.</b> Over-claiming colors is a hard cslc <em>error</em>, not a warning — the build succeeded. Not proven fatal on device. (24 colors 0–23; auto-allocated.)</td>
+      </tr>
+      <tr>
+        <td><b>Two host D2H streams, both auto-placed</b> (no <code>io_loc</code> pin) — 3 total with logits</td>
+        <td class="mono">launch.py:2045<br>launch.py:2628</td>
+        <td><span class="verdict" style="background:var(--warn)"></span><b>Prime suspect.</b> Each stream needs a dedicated edge I/O PE; auto-pick of multiple can land on invalid/already-used LVDS slots on real HW → <code>Empty ingress service url</code>. Skill: always pin io_loc.</td>
+      </tr>
+      <tr>
+        <td><b><code>nonblock=False</code></b> on both profiler receives while ≥3 streams are active</td>
+        <td class="mono">launch.py:3051-3053</td>
+        <td><span class="verdict" style="background:var(--warn)"></span><b>Real bug (separate).</b> SdkLayout guide §12.1: use <code>nonblock=True</code> for concurrent streams or they deadlock. Would bite in the run phase even if ingress came up.</td>
+      </tr>
+    </tbody>
+  </table></div>
+
+  <div class="keyline"><b>Fix direction:</b> collapse the two lanes into <b>one</b> host stream (funnel both
+    reporter bursts through a single mux → single D2H port → 8-u32 combined blob), <b>pin its io_loc</b> to a
+    known-valid output LVDS Y, and switch the host receive to <b>nonblock=True</b>. The baseline
+    (<code>test_device_2x2blk_kv</code>, 1 logits stream) proves one extra I/O tier is accepted at 512×512.</div>
+
+  <ul>
+    <li><b>Ground truth so far:</b> baseline (no profiler) runs clean at actual size; profiler config
+      compiles clean locally (169 s) but hangs on device at <code>Could not find coordinator IP:port</code> /
+      <code>Empty ingress service url</code> → it's a device load/run I/O-setup failure, not a build failure.</li>
+    <li><b>Unconfirmed:</b> no SDK doc found that explains the <code>least overlapping color</code> placer
+      message or proves colors-vs-io_loc as the cause; the device log only says <code>Empty ingress service url</code>.
+      Pinning io_loc + single stream is the cheapest test.</li>
+  </ul>
+</div>

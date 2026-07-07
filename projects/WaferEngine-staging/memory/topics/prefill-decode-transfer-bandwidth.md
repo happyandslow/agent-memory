@@ -306,23 +306,38 @@ max_layers_per_block=7, seq_len_per_pe from PREFILL_LEN/256).
    windows), every one hangs at `Could not find coordinator IP:port` / `Empty
    ingress service url. Falling back to default server: 10.27.24.65:443`. Job logs:
    `wsjob-coordinator-node-name: ""`, `ingress_pes: []` — the ingress/coordinator
-   never gets assigned. Baseline NEVER shows this. → high-confidence: my egress's
-   **2 extra host output streams** (`kv_prof_dec` + `kv_prof_pf`) break the device
-   ingress-service setup at 512×512 (the [[wse-sdklayout-multistream-io-loc-pinning]]
-   hazard; slipped through small-config compile as "least overlapping color" warnings).
-   Not proven to a single io_loc line, but strongly isolated by the baseline test.
+   never gets assigned. Baseline NEVER shows this. → my egress's **2 extra host D2H
+   streams** (`kv_prof_dec` + `kv_prof_pf`, 3 total with logits) break the device
+   ingress-service setup at 512×512. Isolated by the baseline test.
+   - **Build-vs-run settled:** the 512×512 profiler config **compiles clean locally**
+     (`--compile-only`, 169 s). So it is a **device load/run I/O-setup failure, not a
+     build failure.**
+   - **The "least overlapping color 0/18" warning is likely a RED HERRING** (Le's
+     catch): over-claiming colors is a hard cslc **error**, not a warning — the build
+     succeeded, so colors are technically valid. SdkLayout guide §5 (24 colors,
+     auto-allocated). No SDK doc found explaining the placer warning or proving
+     colors-vs-io_loc; device log only says `Empty ingress service url`.
+   - **Better-supported suspects** (SdkLayout guide §7 + [[wse-sdklayout-multistream-io-loc-pinning]]):
+     each D2H stream needs a dedicated edge I/O PE; our profiler streams use
+     **auto-picked `io_loc` (unpinned)** — multi-stream auto-pick lands on
+     invalid/already-used LVDS slots on real HW (sim tolerates it). Also a **separate
+     real bug**: host receives use **`nonblock=False`** (`launch.py:3051-3053`) while
+     ≥3 streams are active — guide §12.1 requires `nonblock=True` or deadlock.
+   - **Implementation map** (annotated with code locations + this diagnosis):
+     `assets/prefill-decode-transfer/e2e-profiler-egress.html`.
 3. Transient noise on top: CS-3 gateway auth is **intermittent** (`Permission
    denied` / `Connection closed`) — clears on retry-after-~70s (Le's known
    workaround); and there was a real **transient coordinator outage** 07-06 22:19 →
    ~07-07 13:23 that also produced the same fallback message (muddied early
    diagnosis before the baseline isolated it).
 
-**Fix direction (next, deliberate — no more blind wafer runs):** collapse the
-profiler egress to a **single** output stream (funnel both reporter bursts through
-one mux/port) or pin the extra streams' io_loc explicitly; recompile-verify; one
-device run. Baseline proves ONE extra stream tier works. **CS-3 launch = ONLY
-`run_device.sh` (SdkLauncher → dispatches to a remote cs_python worker); `cs_python`
-is NOT runnable on CS-3 from gala — do not attempt it.**
+**Fix direction (next, deliberate — no more blind wafer runs):** (a) collapse the
+profiler egress to a **single** host stream (funnel both reporter bursts through one
+mux → one D2H port → 8-u32 combined blob), (b) **pin its `io_loc`** to a known-valid
+output LVDS Y (guide/skill), (c) switch host receive to **`nonblock=True`**;
+recompile-verify; one device run. Baseline proves ONE extra stream tier works. **CS-3
+launch = ONLY `run_device.sh` (SdkLauncher → dispatches to a remote cs_python worker);
+`cs_python` is NOT runnable on CS-3 from gala — do not attempt it.**
 
 ## Current state
 
