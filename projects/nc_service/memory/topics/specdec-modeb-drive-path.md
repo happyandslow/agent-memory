@@ -88,7 +88,7 @@ Expected on `r>=1`: tiny `band_send`/`x_send`; the mass in `recv16` (=> batch re
 
 ## MEASURED on device (2026-07-07) — the culprit is `repack_continuation_band`, NOT the ring
 
-4-config A/B on real WSE-3 (`IOP_MODEB_TIMING`/`_BATCH_RECV`/`_NONBLOCK_SEND`). **The recurring rewind round is ~38 ms** (driver rtt), NOT 115 ms — the earlier 115 ms was a single-sample outlier. Worker breakdown (`csctl log-export <jid> -p <path>` then unzip; the pod stdout carries the `[MODEB_TIMING r=N ...]` lines):
+4-config A/B on real WSE-3 (`IOP_MODEB_TIMING`/`_BATCH_RECV`/`_NONBLOCK_SEND`). **The recurring rewind round is ~38 ms** (driver rtt), NOT the 115 ms seen in the earlier 2-round DEADLINE run. That 115 ms is NOT a clean outlier: the old run (a) still had the `list(int(x) for x in band_u32)` double-conversion (measured ~26 ms/round on the pod, since removed) AND (b) was a single pre-instrumentation sample that likely ate a ~50 ms transport/ingress spike (unprovable — no per-round breakdown for it). Trust the ~38 ms (3 consistent samples + full breakdown), not the 115. Worker breakdown (`csctl log-export <jid> -p <path>` then unzip; the pod stdout carries the `[MODEB_TIMING r=N ...]` lines):
 
 ```
 baseline r=1 perstep nb=0: total=34.3 | band_build=19.3 band_send=0.8 | recv16=13.9(step0=3.4 rest=10.5) | tsc=0.2
