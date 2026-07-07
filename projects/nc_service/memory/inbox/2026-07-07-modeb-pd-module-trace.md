@@ -39,9 +39,10 @@ the per-round *timing* call chain; this one is the *who-runs-where* map).
 - Committed to **PR #10** (lausannel/nc_service, branch `lexu/specdec-real-kernels`) under
   `docs/pd-disagg/`: hi-res PNG (1803×5315), single-page **vector** PDF, interactive theme-aware
   HTML, README. Embedded in a PR comment.
-- Uploaded PNG+PDF to **contextbase** storage; ready-to-post log entry saved at
-  `docs/pd-disagg/CONTEXTBASE_ENTRY.md` (attachment ids: PNG 64e84bb7…, PDF 24ddb683…).
-  **Contextbase doc creation BLOCKED** pending MCP re-auth (see gotcha).
+- **contextbase**: PNG+PDF uploaded to storage and a log entry created under the "PD
+  Disaggregation (specdec)" living thread (Hybrid Serve › Logs):
+  https://context.ed-aisys.com/doc/2026-07-07-mode-b-pd-workflow-module-trace-figure-pdf-5tgGAhxEZx
+  (was briefly blocked mid-session by the OAuth gotcha below; resolved after `/mcp` re-auth).
 
 ## Gotchas (operational)
 
