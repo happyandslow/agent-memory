@@ -5,6 +5,8 @@ tags: [nc-service, specdec, latency, gpu-verifier, wse3]
 
 # SpecDec d2h latency + real-GPU verify-side (WSE-3 drafter)
 
+> Related: [specdec-modeb-drive-path](specdec-modeb-drive-path.md) — annotated per-round drive path (file:line) + timing anchors for the ~115ms mode-B rewind round.
+
 ## Summary
 
 Spec-dec on WSE-3: CS-3 is the **draft** model, an external GPU host is the **verifier/target**.
