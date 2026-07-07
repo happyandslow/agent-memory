@@ -72,6 +72,23 @@ export MEMORY=$AGENT_MEMORY_ROOT/projects/WaferEngine-staging   # or /home/lexu/
 - CS-3 via `/cs3-runner`: shared account `congjiehe` — identify own jobs by
   workflow id, NOT USER (`cancel-mine` would kill other tenants). Warm-gateway
   window can lapse mid-run (transient `Permission denied (publickey)` → re-check + retry).
+- **CS-3 device launch = `run_device.sh` ONLY** (→ `launch_device.py` → SdkLauncher,
+  which dispatches to a remote worker that has `cs_python`). **`cs_python` is NOT
+  runnable on CS-3 from gala** — it's for the local simulator only; do not try it as
+  a device path.
+- **CS-3 gateway auth is intermittent** in >1 way: `Permission denied (publickey)`
+  AND `Connection closed by UNKNOWN port 65535`. Both clear on **retry after ~70 s**
+  (Le's manual workaround). Automate device runs with a retry loop that treats any
+  transport error (rc 255) as retryable, `exceeded`/rc 124 as a real hang, and
+  profiler/`SUCCESS` markers as done.
+- **CS-3 coordinator discovery can transiently fail cluster-wide**: SdkLauncher logs
+  `Could not find coordinator IP:port` / `Empty ingress service url. Falling back to
+  default server: 10.27.24.65:443` and hangs (host never feeds the kernel; job shows
+  "running" but starves). Seen as a real ~15 h outage 2026-07-06→07. **A config's own
+  extra I/O streams can cause the SAME symptom** (job's `wsjob-coordinator-node-name`
+  / `ingress_pes` stay empty). **Disambiguate by running the known-good baseline
+  `test_device_2x2blk_kv` (no profiler)**: if baseline works but your config hangs →
+  it's YOUR config (I/O streams / io_loc at full 512×512 scale), not the cluster.
 
 ## Important links
 
