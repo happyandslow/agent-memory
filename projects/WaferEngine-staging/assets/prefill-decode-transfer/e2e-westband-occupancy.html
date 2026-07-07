@@ -1,0 +1,125 @@
+<title>e2e west-band occupancy — why the seam can't reach the edge</title>
+<style>
+  :root{--bg:#eef1f5;--panel:#fff;--ink:#161b22;--muted:#5c6673;--hair:#d5dbe3;
+    --dec:#2f6fd0;--dec-fill:#dbe7fa;--pre:#c9791f;--pre-fill:#f8e9cf;--relay:#1f9b7e;--relay-fill:#d2efe6;
+    --wall:#c0392b;--wall-fill:#f6d7d3;--host:#1f9b7e;--free:#eaf6ef;--accent:#e0453f;
+    --mono:ui-monospace,Menlo,Consolas,monospace;--sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,Arial,sans-serif;}
+  @media(prefers-color-scheme:dark){:root{--bg:#0e1218;--panel:#161c25;--ink:#e7ebf1;--muted:#95a0ad;--hair:#2a3441;
+    --dec:#6ea3ee;--dec-fill:#16283f;--pre:#e0a45a;--pre-fill:#3a2c15;--relay:#48c6a6;--relay-fill:#123029;
+    --wall:#ff6b64;--wall-fill:#3a1714;--host:#48c6a6;--free:#12261c;--accent:#ff6b64;}}
+  :root[data-theme="dark"]{--bg:#0e1218;--panel:#161c25;--ink:#e7ebf1;--muted:#95a0ad;--hair:#2a3441;--dec:#6ea3ee;--dec-fill:#16283f;--pre:#e0a45a;--pre-fill:#3a2c15;--relay:#48c6a6;--relay-fill:#123029;--wall:#ff6b64;--wall-fill:#3a1714;--host:#48c6a6;--free:#12261c;--accent:#ff6b64;}
+  :root[data-theme="light"]{--bg:#eef1f5;--panel:#fff;--ink:#161b22;--muted:#5c6673;--hair:#d5dbe3;--dec:#2f6fd0;--dec-fill:#dbe7fa;--pre:#c9791f;--pre-fill:#f8e9cf;--relay:#1f9b7e;--relay-fill:#d2efe6;--wall:#c0392b;--wall-fill:#f6d7d3;--host:#1f9b7e;--free:#eaf6ef;--accent:#e0453f;}
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;margin:0}
+  .wrap{max-width:940px;margin:0 auto;padding:34px 22px 60px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+  h1{font-size:26px;margin:0 0 8px;font-weight:650;text-wrap:balance}
+  .lede{color:var(--muted);max-width:70ch;margin:0}
+  code{font-family:var(--mono);font-size:.9em;background:var(--bg);border:1px solid var(--hair);border-radius:5px;padding:1px 5px}
+  .board{background:var(--panel);border:1px solid var(--hair);border-radius:14px;padding:18px;overflow-x:auto;margin-top:16px}
+  svg{display:block;max-width:100%;height:auto}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px;font-size:13px;color:var(--muted)}
+  .k{display:inline-flex;align-items:center;gap:7px}.sw{width:14px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,.15)}
+  .keyline{margin-top:16px;background:var(--panel);border:1px solid var(--hair);border-left:3px solid var(--wall);border-radius:0 10px 10px 0;padding:13px 16px;font-size:14.5px}
+  .keyline b{color:var(--wall)}
+  .good{border-left-color:var(--host)} .good b{color:var(--host)}
+  h2{font-size:18px;margin:32px 0 10px}
+  ul{max-width:72ch;padding-left:20px} li{margin:6px 0}
+</style>
+<div class="wrap">
+  <p class="eyebrow">qwen3_1p7b-e2e · 512×512 · west-band occupancy</p>
+  <h1>Why the relay seam can't stream off-chip directly</h1>
+  <p class="lede">Vertical slice of the west edge (fabric x=0–160, all rows). The io_ports must live at
+    <b>x=0</b>; the seam's west edge is at <b>x=132</b>. Between them, the <b>HT band (x≈3–131) is a solid
+    wall occupied at every row</b> — so there is no free lane for a westward stream from the seam. From
+    actual <code>.place()</code> rectangles + the compiled <code>plan.json</code>. Not to scale (y compressed).</p>
+
+  <div class="board" role="img" aria-label="West edge occupancy: io lane at x0-2, a solid HT-band wall at x3-131 spanning all rows, and the seam and block regions at x132 and east. The seam is boxed in by the wall to its west, decode blocks north, prefill blocks south. The working logits egress originates inside the wall at x3 and hops to the io_port at x0-1. The seam-to-edge route is blocked.">
+    <svg viewBox="0 0 620 520" width="620" height="520" font-family="var(--sans)">
+      <!-- helpers: X = 70 + fx*3.2 ; Y = 36 + fy*0.446 -->
+      <!-- axis -->
+      <text x="20" y="30" font-size="11" fill="var(--muted)" font-family="var(--mono)">y↓</text>
+      <g font-family="var(--mono)" font-size="9.5" fill="var(--muted)" text-anchor="end">
+        <text x="62" y="40">0</text><text x="62" y="264">513</text><text x="62" y="272">514</text><text x="62" y="493">1026</text>
+      </g>
+      <g font-family="var(--mono)" font-size="9.5" fill="var(--muted)" text-anchor="middle">
+        <text x="70" y="510">x0</text><text x="80" y="510">2</text><text x="80" y="30">io</text>
+        <text x="240" y="510">x3–131 (HT wall)</text><text x="493" y="510">x132 →</text>
+      </g>
+
+      <!-- io lane x=0..2 (free) -->
+      <rect x="66" y="36" width="13" height="457" fill="var(--free)" stroke="var(--hair)"/>
+      <!-- io ports at x=0 -->
+      <g>
+        <rect x="64" y="36.4" width="6" height="4" fill="var(--dec)"/><text x="90" y="41" font-size="8.5" font-family="var(--mono)" fill="var(--dec)">io_port_0_1 (y1) logits·dec</text>
+        <rect x="64" y="44" width="6" height="4" fill="var(--host)"/><text x="90" y="48" font-size="8.5" font-family="var(--mono)" fill="var(--host)">io_port_0_0/18 (y0/18) inputs</text>
+        <rect x="64" y="60" width="6" height="4" fill="var(--pre)"/><text x="90" y="64" font-size="8.5" font-family="var(--mono)" fill="var(--pre)">io_port_0_55 (y55) logits·pf</text>
+      </g>
+
+      <!-- decode demux x=2 -->
+      <rect x="79" y="36.4" width="7" height="114" fill="var(--dec-fill)" stroke="var(--dec)" stroke-width=".7"/>
+
+      <!-- ===== HT WALL x=3..131, all rows ===== -->
+      <!-- decode HT (y1-512) -->
+      <rect x="86" y="36.4" width="326" height="228" fill="var(--wall-fill)" stroke="var(--wall)" stroke-width="1"/>
+      <text x="249" y="120" text-anchor="middle" font-size="12" font-weight="650" fill="var(--wall)">DECODE HT band</text>
+      <text x="249" y="136" text-anchor="middle" font-size="10" font-family="var(--mono)" fill="var(--wall)">ht_head / ht_tail · x3–130 · y1–512</text>
+      <!-- mux/demux at seam rows y513-514 -->
+      <rect x="86" y="264" width="326" height="8" fill="var(--wall-fill)" stroke="var(--wall)" stroke-width="1"/>
+      <text x="249" y="270.5" text-anchor="middle" font-size="8" font-family="var(--mono)" fill="var(--wall)">logits_mux (x3–130,y513) · pf_demux (y514)</text>
+      <!-- prefill HT (y515-1026) -->
+      <rect x="86" y="272" width="326" height="221" fill="var(--wall-fill)" stroke="var(--wall)" stroke-width="1"/>
+      <text x="249" y="390" text-anchor="middle" font-size="12" font-weight="650" fill="var(--wall)">PREFILL HT band</text>
+      <text x="249" y="406" text-anchor="middle" font-size="10" font-family="var(--mono)" fill="var(--wall)">pf_ht_head / pf_ht_tail · x4–131 · y515–1026</text>
+      <text x="249" y="60" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--wall)">◄ SOLID WALL — occupied every row ►</text>
+
+      <!-- ===== block region / seam (x=132+) ===== -->
+      <rect x="412" y="36.4" width="180" height="228" fill="var(--dec-fill)" stroke="var(--dec)" stroke-width="1"/>
+      <text x="502" y="150" text-anchor="middle" font-size="12" font-weight="650" fill="var(--dec)">DECODE blocks</text>
+      <rect x="412" y="264" width="180" height="8" fill="var(--relay-fill)" stroke="var(--relay)" stroke-width="1.3"/>
+      <text x="502" y="270.5" text-anchor="middle" font-size="8.5" font-weight="700" font-family="var(--mono)" fill="var(--relay)">RELAY SEAM y513–514</text>
+      <rect x="412" y="272" width="180" height="221" fill="var(--pre-fill)" stroke="var(--pre)" stroke-width="1"/>
+      <text x="502" y="390" text-anchor="middle" font-size="12" font-weight="650" fill="var(--pre)">PREFILL blocks</text>
+      <text x="590" y="30" text-anchor="end" font-size="9" font-family="var(--mono)" fill="var(--muted)">… blocks continue east to x643</text>
+
+      <!-- ✗ blocked seam→edge route -->
+      <line x1="412" y1="268" x2="86" y2="268" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="7 5"/>
+      <text x="250" y="252" text-anchor="middle" font-size="11" font-weight="700" fill="var(--accent)">✗ seam→edge blocked by the wall</text>
+      <circle cx="249" cy="268" r="10" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+      <line x1="242" y1="261" x2="256" y2="275" stroke="var(--accent)" stroke-width="2.5"/>
+      <line x1="256" y1="261" x2="242" y2="275" stroke="var(--accent)" stroke-width="2.5"/>
+
+      <!-- ✓ working logits egress: originates INSIDE the wall (ht_tail x3) → io_port x0 -->
+      <path d="M120,240 L120,44 L79,42" stroke="var(--host)" stroke-width="2.5" fill="none" marker-end="url(#g)"/>
+      <text x="150" y="220" font-size="9.5" font-weight="700" fill="var(--host)">✓ logits: ht_tail (in wall) → io_port. short hop, no crossing</text>
+      <defs><marker id="g" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M1,1 L8,4.5 L1,8 Z" fill="var(--host)"/></marker></defs>
+    </svg>
+    <div class="legend">
+      <span class="k"><span class="sw" style="background:var(--wall-fill);border-color:var(--wall)"></span>HT band (solid wall)</span>
+      <span class="k"><span class="sw" style="background:var(--dec-fill);border-color:var(--dec)"></span>decode blocks</span>
+      <span class="k"><span class="sw" style="background:var(--pre-fill);border-color:var(--pre)"></span>prefill blocks</span>
+      <span class="k"><span class="sw" style="background:var(--relay-fill);border-color:var(--relay)"></span>relay seam</span>
+      <span class="k"><span class="sw" style="background:var(--free);border-color:var(--hair)"></span>free (io lane, behind wall)</span>
+    </div>
+  </div>
+
+  <div class="keyline"><b>Confirmed: no free seam→edge lane.</b> The HT band (x≈3–131) is occupied on every row —
+    decode HT (y1–512), the logits-mux + pf-demux at the seam rows (y513–514), and prefill HT (y515–1026).
+    The seam (x=132) is walled off from the io_ports at x=0. A westward <code>create_output_stream</code>
+    from the seam would traverse occupied HT PEs — the same failure class as the current east egress.</div>
+
+  <h2>What actually works — and the fix</h2>
+  <div class="keyline good"><b>Piggyback the logits egress (device-proven).</b> The working logits stream
+    <em>originates inside the wall</em> — <code>ht_tail</code> at x≈3 hops straight to the io_port at x=0 (no
+    crossing), and it already carries an 8-u32 TSC burst off-chip (<code>is_tsc_pe</code>). The fix: route each
+    half's profiler burst to its own <code>ht_tail</code> via the <b>proven block→ht_tail connect path</b> (the
+    z-handoff, region-scoped colors) and append it like the TSC burst.</div>
+  <ul>
+    <li><b>Decode C</b> is clean — measured early (during ingress); the reporter emits once, ht_tail appends it
+      alongside its existing TSC burst; host adds one <code>receive</code>.</li>
+    <li><b>Prefill A/B</b> has one wrinkle — measured in <code>start_kv_transfer</code>, <em>after</em> prefill's
+      ht_tail already sent its logits blob + TSC burst → needs a second, later append (the one new bit to design).</li>
+    <li><b>Alt (single combined stream):</b> carry prefill A/B <em>north</em> on the idle KV colors 17/21 through
+      the seam into decode after the north-shift, collect A/B+C in decode, emit through the one decode logits egress.</li>
+  </ul>
+</div>
