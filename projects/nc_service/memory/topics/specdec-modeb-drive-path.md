@@ -88,7 +88,11 @@ Expected on `r>=1`: tiny `band_send`/`x_send`; the mass in `recv16` (=> batch re
 
 ## MEASURED on device (2026-07-07) — the culprit is `repack_continuation_band`, NOT the ring
 
-4-config A/B on real WSE-3 (`IOP_MODEB_TIMING`/`_BATCH_RECV`/`_NONBLOCK_SEND`). **The recurring rewind round is ~38 ms** (driver rtt), NOT the 115 ms seen in the earlier 2-round DEADLINE run. That 115 ms is NOT a clean outlier: the old run (a) still had the `list(int(x) for x in band_u32)` double-conversion (measured ~26 ms/round on the pod, since removed) AND (b) was a single pre-instrumentation sample that likely ate a ~50 ms transport/ingress spike (unprovable — no per-round breakdown for it). Trust the ~38 ms (3 consistent samples + full breakdown), not the 115. Worker breakdown (`csctl log-export <jid> -p <path>` then unzip; the pod stdout carries the `[MODEB_TIMING r=N ...]` lines):
+4-config A/B on real WSE-3 (`IOP_MODEB_TIMING`/`_BATCH_RECV`/`_NONBLOCK_SEND`). **The recurring round = a STABLE ~34 ms worker part + a HIGHLY VARIABLE transport part.** Do NOT trust a single "~38 ms" figure — that came from 2 bring-ups that both happened to hit LOW transport (~4 ms). An independent hand-run hit ~115 ms recurring (transport ~81 ms). So 38 ms and 115 ms are BOTH real; they differ in transport, not the worker.
+- worker/ring ~34 ms = `band_build` 19 ms (host CPU) + `recv16` ~14 ms (fabric). Stable across runs.
+- transport = `driver_rtt − worker_total` = the `launcher.run` gRPC hop through the flaky L7 :443 ingress. Swings ~4 ms (good ingress) to ~80 ms+ (bad). THIS is the dominant, variable cost — earlier dismissed as "~4 ms" was a low-transport-regime artifact.
+- Sampling lesson: 3 rounds within ONE bring-up are correlated (same transport regime), NOT independent samples. Characterizing transport needs multiple INDEPENDENT bring-ups.
+- The old 115 ms DEADLINE round also had the `list(int(x))` double-conversion (~26 ms/pod, since removed), but that is a side issue — the transport swing is the real story. Worker breakdown (`csctl log-export <jid> -p <path>` then unzip; the pod stdout carries the `[MODEB_TIMING r=N ...]` lines):
 
 ```
 baseline r=1 perstep nb=0: total=34.3 | band_build=19.3 band_send=0.8 | recv16=13.9(step0=3.4 rest=10.5) | tsc=0.2
