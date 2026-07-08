@@ -126,9 +126,17 @@ Net: repack fix alone ~halves the recurring round (38 -> ~19 ms). Below that nee
 
 `../artifacts/2026-07-08-specdec-progress-slide.html` (two slides: rewind-round per-stage breakdown + distribution; KV-transfer status). Also published: https://claude.ai/code/artifact/7b850536-90b5-48f0-a202-d24a75aacb98
 
-## KV-transfer on-device measurement — status + a RETRACTED conclusion (2026-07-08)
+## KV-transfer on-device measurement — RESOLVED (2026-07-08, device n=1, rc=0)
 
-The on-device KV-transfer split (`IOP_KV_TIMING`: wire vs host-transform vs framing) is NOT yet captured. **RETRACTED: earlier I called the mode-B PD bring-up failures a "cluster ingress outage" — that was an unfalsifiable "infra" conclusion (cerebras-debugging L3/L9).** Corrections: (1) the `Could not find coordinator / Empty ingress service url -> :443` line is a BENIGN preamble that prints in runs that SUCCEED — not evidence. (2) SdkLauncher buffers stdout until exit, so a prefill pod COMPILING the real 28-layer kernel (~40 min) is indistinguishable from a hang (frozen driver.out, zero output). (3) I cancelled those runs at ~10-15 min — likely killing a compiling pod (my own premature deadline), NOT observing an ingress stall. Framework audit (branch vs main) confirmed `pd_rendezvous` bring-up is byte-identical to the merged PR; my post-run42 additions (`repack_kv_band` vectorize, KV_TIMING) run AFTER the bring-up point. Re-test plan: device run with a GENEROUS cap (>70 min) + monitor the pod COMPILE PHASE via csctl (compile vs genuine hang) + WORKER-side progress markers; do NOT cancel until the phase proves a hang. Also: main already has `kv_bw_check.py` (pod-to-pod wire tool) to reuse for the wire leg.
+**The mode-B PD "failure" was NOT infra.** Earlier I called it a "cluster ingress outage" — a wrong, unfalsifiable "infra" conclusion (cerebras-debugging L3/L9). Corrected by a clean device run (`safe_kvt2`, 90-min cap, job-id cleanup, 4 rounds rc=0): (1) `Could not find coordinator / Empty ingress -> :443` is a BENIGN preamble — it printed in THIS successful run. (2) SdkLauncher buffers stdout until exit, so a prefill pod bringing up (cache-hit compile + fp16 weight H2D + init) is indistinguishable from a hang: frozen driver.out, zero worker-log bytes. (3) prefill bridge comes up **~16 min** after the prefill pod appears; my prior device attempts cancelled at ~10-15 min, i.e. my OWN premature deadline fired just before connect. Decode pod by contrast bound its KV receiver in ~60 s (cache hit).
+
+**Measured KV-transfer split** (blob=134,742,788 B ~128.5 MB, saved `_runs/kvt_saved/kv_timing_2026-07-08.txt`):
+- prefill: egress(D2H off wafer)=1546.6ms, **transform=15333.9ms**, encode=169.9ms, frame=18.1ms
+- wire (pod->pod TCP, 16 streams): send=**81.7ms** (128MB; the 10-12GB/s leg — negligible)
+- decode: unframe=788.7ms, handoff=78.6ms, repack=33.5ms (the vectorized `repack_kv_band` — fast)
+- r=0(prefill) rtt=17178ms; r=1 1506ms; r=2 19.0ms; r=3 18.4ms
+
+**Bottleneck = the prefill-side `kv_transform.transform()` at 15.3 s, NOT the wire (82ms).** Root cause: `transform()` (kv_transform.py:320) is a 7-deep Python for-loop (gy,gx,l,c,kv_col,b,s) scattering element-by-element over the full KV; `canonical_from_egress`/`ingress_from_canonical` are similar 7-8-deep nests. Same per-element pattern I already vectorized in `repack_kv_band`/`repack_continuation_band` — NEXT: vectorize `transform()` (numpy advanced-index/transpose/reshape) to collapse 15.3s -> <0.1s, which would drop r=0 from 17.2s to ~2s (egress-bound). This is the L7 lesson: instrument first — I'd optimized the 33ms repack while the 15.3s transform sat un-instrumented.
 
 ## Commands / paths
 
