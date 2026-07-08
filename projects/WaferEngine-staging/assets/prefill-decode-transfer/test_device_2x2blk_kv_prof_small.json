@@ -1,0 +1,32 @@
+{
+    "Pw": 16,
+    "Ph": 16,
+    "P_X_BLOCK_NUM": 2,
+    "P_Y_BLOCK_NUM": 2,
+    "group_num": 4,
+    "dim": 64,
+    "head_dim": 16,
+    "ffn_dim": 128,
+    "n_heads": 4,
+    "n_kv_heads": 2,
+    "vocab_size": 24,
+    "HT_WIDTH_tail": 4,
+    "KV_TRANSFER": 1,
+    "KV_PROFILE": 1,
+    "decode": {
+        "bsz": 1,
+        "MAX_SEQ_LEN": 32,
+        "n_layers": 8,
+        "WARMUP": 1,
+        "PREFILL_LEN": 16,
+        "TOP_K": 2
+    },
+    "prefill": {
+        "bsz": 1,
+        "group_num": 2,
+        "MAX_SEQ_LEN": 32,
+        "n_layers": 8,
+        "PREFILL_LEN": 16,
+        "TOP_K": 1
+    }
+}
