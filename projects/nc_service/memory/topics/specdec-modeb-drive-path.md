@@ -108,6 +108,20 @@ Recurring round = **band_build 19 ms (host numpy) + recv16 ~14 ms (FABRIC: 16 to
 
 Net: repack fix alone ~halves the recurring round (38 -> ~19 ms). Below that needs kernel (recv16) or multi-round transport batching. Lesson: MEASURE — the 3 hypothesised levers (batch/nonblock/kernel-merge) all missed the real 19 ms host-numpy cost. Fix is UNCOMMITTED on `lexu/specdec-real-kernels` pending a device re-run to confirm band_build drops.
 
+## MEASURED 2026-07-08 — 41-round within-session distribution + the repack fix + KV-transfer is host-bound
+
+**The "repack fix"** = vectorising `repack_continuation_band` (kv_transform.py). The OLD code built the P*Pw (~131k tiles for greedy_kv P=256/Pw=512) meta re-arm band with a Python double-loop (`np.array([iter,A])` per tile) = ~19 ms/round on the pod. Vectorised to `where(arange(P)<r,q+1,q)` + broadcast = <1 ms, byte-identical (verified across P/Pw/A). This is the per-round "continuation-pack" leg (`band_build`).
+
+**41-round run (NUM_ROUNDS=42, MAX_SEQ_LEN=1024 unchanged, accept-1, repack fix in), ONE bring-up:** every leg STABLE (std < 0.3 ms). Per-round distribution:
+- round (driver rtt): p50=18.3 p99=19.9 std=0.27 ms
+- worker (appliance): p50=15.1 std=0.06 ; **recv16 (FABRIC) p50=14.0 std=0.05 = 76% of the round** (step0=3.5 first-token + rest=10.5 = 15 tok x ~0.7 ms ~ 1400 tok/s)
+- **band_build (continuation-pack): p50=0.1 ms (was 19 ms) — repack fix confirmed at scale**
+- transport (intra-cluster): p50=3.2 p99=4.7 std=0.25 ms — STABLE *this session*
+- band_send 0.6 / tsc 0.2 — negligible
+=> recurring round ~38 ms -> **~18 ms** after the repack fix; remaining big leg is FABRIC (recv16, kernel-side). Transport is stable WITHIN a session (~3 ms); the 115 ms seen earlier was a BAD-INGRESS session (transport is the BETWEEN-session variable). Data+plot preserved at `nc_service/_runs/prof42_saved/` (prof42_raw.txt, parse42.py, modeb_latency_distribution.png).
+
+**KV-TRANSFER overhead is HOST-TRANSFORM-bound, NOT wire.** Inter-node ~10 GB/s => 29 MB KV = ~3 ms wire (134 MB framed handoff ~13 ms). But `repack_kv_band` (decode-side full-KV band builder in `load_kv`, kv_transform.py:367) is the SAME Python-loop class as the continuation band but over the full KV: P*mlpb*2*Pw ~1M tiny-numpy-slice iterations/band x P_Y=4 bands = **3.4 s on gala2 -> ~tens of seconds on the pod CPU (~12x)**. So the KV transfer is dominated by host repack, ~3-4 orders of magnitude over the wire. FIX: vectorise `repack_kv_band` (same as the continuation fix) -> should drop to <1 s. Round-0 decode exchange = 8 s (worker 74 ms, ~7.9 s transport/one-time) and prefill exchange = 17 s are separate one-time costs not yet split. To get the exact wire/transform/other split, instrument `load_kv` + the kv_channel handoff on-device.
+
 ## Commands / paths
 
 Also posted on PR #10: https://github.com/lausannel/nc_service/pull/10#issuecomment-4906340575
