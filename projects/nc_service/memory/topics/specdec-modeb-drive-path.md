@@ -140,6 +140,11 @@ Net: repack fix alone ~halves the recurring round (38 -> ~19 ms). Below that nee
 
 **FIXED + DEVICE-CONFIRMED 2026-07-08.** Vectorized `transform()` (numpy index math + one scatter per decode-batch); kept the loop as `_transform_ref` oracle + a byte-equality test (`test_transform_vectorized_matches_ref`), 25 SDK-free realkv tests pass. Second device run (same safe_kvt2 path, remote md5==local so the pod ran the exact code): **transform 15333.9ms -> 351.9ms (~44x on the pod)**, egress/wire/decode unchanged; **r=0 round 17178ms -> 2196ms**, full 4-round run 18721ms -> 3768ms (qps 0.2->1.1), rc=0, pods clean. r=0 is now EGRESS-bound (egress 1.55s). NEXT lever if needed = prefill egress D2H (1.55s) — but the KV-transfer host bottleneck is resolved. NOTE the vectorized transform is UNCOMMITTED on lexu/specdec-real-kernels (working tree), awaiting user's commit call.
 
+## Rounds / NUM_ROUNDS mechanics + standing rule (>=10 rewind rounds)
+
+`IOP_REAL_ROUNDS` (= the `run_e2e_pd_modeb_real.sh N` arg) becomes the decode kernel's compile-time `NUM_ROUNDS` (`pd_real_adapters.py:352`, OVERRIDES the config's baked value). It sizes the decode ports (`MAX_OUTPUT_LEN = max_output_len_worst * NUM_ROUNDS`, i16 => NUM_ROUNDS <= 42 at MAX_SEQ_LEN=1024). So each distinct rounds value is its OWN decode compile — but the decode compile is the CHEAP one (~60s-few min); the ~16-min bring-up is the PREFILL kernel, which has NO NUM_ROUNDS and is reused for any rounds count. => running more rounds costs ~the same bring-up.
+Round map for `run_e2e ... N`: driver runs N+1 rounds = r0 prefill (prefill pod) + r1 KV-ingest (decode load_kv, ~903ms) + r2..rN = **N-1 pure steady-state rewind rounds** (~18ms each). So for >=10 pure rewind rounds use N>=12; N=42 gives 40 (matches the old 41-round distribution). `IOP_MOCK_ACCEPTED=1` (accept 1 tok/round) keeps the accepted position in bounds over many rounds (256+N << 1024). **STANDING RULE (user 2026-07-08): always drive >=10 rewind rounds on mode-B device runs — 3-4 rounds cannot characterize the distribution.** run_kvt2.sh (scratchpad) set to ROUNDS=42.
+
 ## Commands / paths
 
 Also posted on PR #10: https://github.com/lausannel/nc_service/pull/10#issuecomment-4906340575
