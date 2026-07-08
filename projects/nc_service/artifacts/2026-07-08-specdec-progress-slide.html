@@ -164,34 +164,66 @@
 <div class="slide">
   <header>
     <div>
-      <div class="eyebrow">WSE-3 · prefill → decode KV handoff (one-time, per request)</div>
-      <h1>KV transfer — latency not yet isolated; measurement in flight</h1>
+      <div class="eyebrow">WSE-3 · prefill → decode KV handoff · device-measured (n = 1, run rc = 0)</div>
+      <h1>KV transfer — host transform dominates; the wire is 0.5%</h1>
     </div>
     <div class="pg">2 / 2</div>
   </header>
 
-  <!-- where the one-time cost actually sits -->
-  <div class="lbl">The two one-time exchanges (driver-measured rtt)</div>
-  <div class="flow">
-    <div class="node"><div class="h">Prefill exchange&nbsp;&nbsp;<span class="mono" style="color:var(--muted)">~17 s</span></div><div class="d">prefill pod <b>computes</b> the 256-tok KV + frames it — mostly <b>compute</b>, not transfer</div></div>
-    <div class="edge"><div class="arw">→</div></div>
-    <div class="node" style="border-color:color-mix(in srgb,var(--warn) 32%,var(--line));background:color-mix(in srgb,var(--warn) 6%,transparent)"><div class="h">Decode round-0&nbsp;&nbsp;<span class="mono" style="color:var(--muted)">~8 s</span></div><div class="d"><b>74 ms on-wafer</b> + <b>~7.9 s un-decomposed transport</b> ← the KV transfer lives in here</div></div>
+  <div class="hero">
+    <span class="n">17.2</span><span class="u">s · round-0 handoff</span>
+    <span class="sub">128.5 MB KV, one-time per request<br><b>89% is one host function</b> — not the link</span>
   </div>
 
-  <div class="two">
-    <div class="box wip">
-      <div class="bh"><span class="bt">Not yet measured</span><span class="bn">Actual transfer latency</span></div>
-      <div class="note">No measured prefill→decode transfer number yet. The KV move + host rebuild sit inside that <b>~7.9 s</b> of decode-round-0 transport — <b>not yet split</b> into wire / transform / framing.</div>
-      <div class="note">Wire is only <span class="mono">~3 ms</span> <span class="est">computed: 29 MB ÷ 10 GB/s</span> → the ~7.9 s is <b>almost certainly host-side</b>, not the link.</div>
-      <div class="note"><code>IOP_KV_TIMING</code> instrumented; <b>test run ongoing</b>, blocked by a cluster ingress outage — relaunching on a safe job-scoped guard as it recovers.</div>
+  <div class="body">
+    <div>
+      <div class="lbl">Where the 128.5 MB KV handoff spends its time</div>
+      <div class="stages">
+        <div class="stage big">
+          <div class="name">prefill <code>transform</code><span class="flag">bottleneck</span></div>
+          <div class="track"><div class="fill" style="width:100%;background:var(--fabric)"></div></div>
+          <div class="ms">15334</div>
+        </div>
+        <div class="stage">
+          <div class="name">prefill egress (D2H)</div>
+          <div class="track"><div class="fill" style="width:10.1%;background:var(--transport)"></div></div>
+          <div class="ms">1547</div>
+        </div>
+        <div class="stage">
+          <div class="name">decode unframe</div>
+          <div class="track"><div class="fill" style="width:5.1%;background:var(--misc)"></div></div>
+          <div class="ms">789</div>
+        </div>
+        <div class="stage">
+          <div class="name">encode + frame</div>
+          <div class="track"><div class="fill" style="width:1.2%;background:var(--misc)"></div></div>
+          <div class="ms">188</div>
+        </div>
+        <div class="stage">
+          <div class="name">handoff + repack</div>
+          <div class="track"><div class="fill" style="width:0.7%;background:var(--misc)"></div></div>
+          <div class="ms">112</div>
+        </div>
+        <div class="stage big">
+          <div class="name">wire (pod→pod, 16×)</div>
+          <div class="track"><div class="fill" style="width:0.5%;background:var(--good)"></div></div>
+          <div class="ms" style="color:var(--good)">82</div>
+        </div>
+      </div>
+      <div class="axis">per-stage host + wire timers (ms) — IOP_KV_TIMING, one device run</div>
     </div>
 
-    <div class="box fix">
-      <div class="bh"><span class="bt">Likely culprit — fixed</span><span class="bn">Host-side band rebuild</span></div>
-      <div class="note"><code>repack_kv_band</code> rebuilt the full KV with a per-tile numpy loop — the suspected bulk of that host cost.</div>
-      <div class="baline"><span class="was">3.4 s</span><span class="arw">→</span><span class="now">17 ms</span></div>
-      <div class="note">Vectorized, <b>byte-identical</b>, ~193× — measured <b>offline (gala2)</b>. <span class="est">pod: ×12 est., unconfirmed on device</span></div>
-      <div class="note" style="color:var(--faint)">The pending run will confirm how much of the ~7.9 s this actually was.</div>
+    <div>
+      <div class="box fix" style="height:100%">
+        <div class="bh"><span class="bt">Fixed</span><span class="bn">prefill <code>transform</code> vectorized</span></div>
+        <div class="note"><code>kv_transform.transform()</code> scattered the KV with a <b>7-deep python loop</b> — the whole 15.3 s. Replaced with numpy index math + one scatter; <b>byte-identical</b> (25 SDK-free tests pass).</div>
+        <div class="baline"><span class="was">15.3 s</span><span class="arw">→</span><span class="now">~0.85 s</span></div>
+        <div class="note"><b>18×</b>, measured on dev-box numpy <span class="est">device confirm pending</span> → projects round-0 <b>17.2 s → ~2.6 s</b> (egress-bound next).</div>
+        <div class="callout" style="margin-top:auto">
+          <span class="k">Not the link</span>
+          <div class="t"><b>Wire = 82 ms (0.5%)</b> — 128.5 MB over 16 streams. The 10–12 GB/s pod-to-pod leg was never the cost; KV transfer is <b>~99% host-side</b>.</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
