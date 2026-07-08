@@ -49,6 +49,21 @@ Floorplan of the co-resident layout is saved as an artifact in this repo:
 - `assets/prefill-decode-transfer/e2e-floorplan.html` — theme-aware source (open in any browser)
 - `assets/prefill-decode-transfer/e2e-floorplan.pdf` — 2-page static render
 
+**Full on-chip topology map** (every e2e component with real 512×512 fabric
+coordinates, x/y axes, KV north-flow, and the A/B/C measurement points):
+
+![e2e full on-chip topology](../../assets/prefill-decode-transfer/e2e-topology-full.png)
+
+- `assets/prefill-decode-transfer/e2e-topology-full.svg` — source image (scalable)
+- `assets/prefill-decode-transfer/e2e-topology-full.png` — 1320px raster for markdown viewers
+
+Components (fabric coords, from `launch.py` `.place()`): decode `ht_head` (x3–130,
+y1–256) / `ht_tail` = lm_head + `is_tsc_pe` (x3–130, y257–512) / decode block
+region (x132–643, y1–512); **relay seam** KV bridge (x132–643, y513–514);
+prefill `pf_ht_head` (x4–131, y515–770) / `pf_ht_tail` (x4–131, y771–1026) /
+prefill block region (x132–643, y515–1026); host io lane at x0. A = prefill
+gather+transform, B = north shift through the seam, C = decode ingress.
+
 It shows decode (north, rows 1–16), the `Pw×2` relay seam (rows 17–18), and
 prefill (south, rows 19–34), all sharing block columns 8–23 because both halves
 place block-column 0 at the same `PLACE_X = HT_WIDTH_tail + 4`. That column
