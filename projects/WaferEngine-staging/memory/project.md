@@ -61,6 +61,15 @@ export MEMORY=$AGENT_MEMORY_ROOT/projects/WaferEngine-staging   # or /home/lexu/
   parallel runs filled `/home` from 85%→94% and had to be killed + cleaned. So:
   **profiling / bandwidth / any many-PE run → device, not sim.** Sim stays for
   quick correctness checks on the toy configs only. (2026-07-06 directive from Le.)
+- **Validate on CS-3, NOT the local simulator — even for small configs** (2026-07-07
+  directive from Le). Local sim is only for *kernel debugging with trace dumps*.
+  Reason beyond disk: the **local sim is SDK 2.10**, which emits `src dest operand
+  overlap` warnings and can **`signal 11`-abort** on the KV-transfer's **benign
+  element-wise in-place ops** (`prefill.csl` RoPE/SiLU/QK-norm — `@op(X, X, …)` where
+  dst==src0, e.g. lines 308/344/380/457-465/932). Those ops **run fine on the CS-3
+  device (1.13.2)** — proven by the baseline `test_device_2x2blk_kv` device run
+  (which contains them). So a **local-sim operand-overlap crash is a 2.10 artifact,
+  NOT a device bug — do not chase it.** compile-only locally is still fine for a build check.
 - **Real Qwen3 weights are NOT wired** into any model — mock/seeded only; no HF
   loader, no Qwen3 gpu_reference oracle, no tokenizer. See
   [[e2e-pdSeparate-device-validation]].
