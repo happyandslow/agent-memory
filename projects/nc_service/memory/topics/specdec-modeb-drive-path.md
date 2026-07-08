@@ -122,6 +122,12 @@ Net: repack fix alone ~halves the recurring round (38 -> ~19 ms). Below that nee
 
 **KV-TRANSFER overhead is HOST-TRANSFORM-bound, NOT wire.** Inter-node ~10 GB/s => 29 MB KV = ~3 ms wire (134 MB framed handoff ~13 ms). But `repack_kv_band` (decode-side full-KV band builder in `load_kv`, kv_transform.py:367) is the SAME Python-loop class as the continuation band but over the full KV: P*mlpb*2*Pw ~1M tiny-numpy-slice iterations/band x P_Y=4 bands = **3.4 s on gala2 -> ~tens of seconds on the pod CPU (~12x)**. So the KV transfer is dominated by host repack, ~3-4 orders of magnitude over the wire. FIX: vectorise `repack_kv_band` (same as the continuation fix) -> should drop to <1 s. Round-0 decode exchange = 8 s (worker 74 ms, ~7.9 s transport/one-time) and prefill exchange = 17 s are separate one-time costs not yet split. To get the exact wire/transform/other split, instrument `load_kv` + the kv_channel handoff on-device.
 
+## Round timelines (image + artifact)
+
+Image: `../artifacts/2026-07-08-specdec-round-timelines.png` (matplotlib, faithful to device numbers). HTML artifact: `../artifacts/2026-07-08-specdec-round-timelines.html` → https://claude.ai/code/artifact/fd34d5a2-5c48-441b-8056-7efb9464ec28
+- Timeline 1 (one-time bring-up ~3.82s): egress 1547 / transform 352 / encode 167 / frame 18 / wire 82 / load_kv 903 / full-KV H2D+1st window 637.
+- Timeline 2 (rewind round ~18.1ms): fabric decode 14 / gateway rtt 3.2 / band+seed send 0.6 / tsc 0.2 / band build 0.1.
+
 ## Progress slide (artifact)
 
 `../artifacts/2026-07-08-specdec-progress-slide.html` (two slides: rewind-round per-stage breakdown + distribution; KV-transfer status). Also published: https://claude.ai/code/artifact/7b850536-90b5-48f0-a202-d24a75aacb98
