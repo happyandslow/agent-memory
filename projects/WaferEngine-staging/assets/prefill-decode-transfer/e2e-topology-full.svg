@@ -85,7 +85,7 @@
   <!-- RELAY SEAM (y513–514)                                         -->
   <!-- ============================================================= -->
   <rect x="250" y="430" width="550" height="26" fill="#d2efe6" stroke="#1f9b7e" stroke-width="1.4"/>
-  <text x="525" y="447" text-anchor="middle" font-size="11" font-weight="700" fill="#1f6f57">RELAY SEAM — KV-cache bridge (colors 17/21) · x132–643 · y513–514</text>
+  <text x="470" y="447" text-anchor="middle" font-size="11" font-weight="700" fill="#1f6f57">RELAY SEAM — KV-cache bridge (colors 17/21)</text>
 
   <!-- ============================================================= -->
   <!-- PREFILL HALF (y515–1026)                                      -->
@@ -118,8 +118,8 @@
   <circle cx="268" cy="474" r="11" fill="#c9791f"/><text x="268" y="478" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">A</text>
   <text x="285" y="478" font-size="9" fill="#c9791f" font-family="ui-monospace,Menlo,Consolas,monospace">gather + transform (prefill reporter (132,515))</text>
   <!-- B: north shift across seam -->
-  <circle cx="723" cy="443" r="11" fill="#1f9b7e"/><text x="723" y="447" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">B</text>
-  <text x="723" y="423" font-size="9" fill="#1f6f57" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace">north shift</text>
+  <circle cx="690" cy="443" r="11" fill="#1f9b7e"/><text x="690" y="447" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">B</text>
+  <text x="690" y="423" font-size="9" fill="#1f6f57" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace">north shift</text>
   <!-- C: decode ingress (collector at x132,y512) -->
   <circle cx="268" cy="414" r="11" fill="#2f6fd0"/><text x="268" y="418" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">C</text>
   <text x="285" y="418" font-size="9" fill="#2f6fd0" font-family="ui-monospace,Menlo,Consolas,monospace">decode ingress (collector (132,512))</text>
