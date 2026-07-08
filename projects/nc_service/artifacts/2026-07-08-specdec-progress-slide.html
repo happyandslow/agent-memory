@@ -1,0 +1,197 @@
+<title>SpecDec Mode-B on WSE-3 — Rewind & KV Transfer</title>
+<style>
+  :root{
+    --paper:#EEF0F3; --panel:#FBFCFD; --ink:#161A20; --muted:#5A6472; --faint:#828C99;
+    --line:#DEE2E8; --accent:#B96A2E; --good:#1F7A54; --warn:#BC4636;
+    --fabric:#3F6E8E; --transport:#B96A2E; --misc:#9AA3AF; --bar:#C9D0D9;
+    --font-sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,sans-serif;
+    --font-mono:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --paper:#0F141B; --panel:#161D26; --ink:#E7ECF3; --muted:#95A2B2; --faint:#6C7787;
+    --line:#26313F; --accent:#D6894C; --good:#46B588; --warn:#E06A5A;
+    --fabric:#6FA6C9; --transport:#D6894C; --misc:#5E6875; --bar:#2C3949;}}
+  :root[data-theme="dark"]{
+    --paper:#0F141B; --panel:#161D26; --ink:#E7ECF3; --muted:#95A2B2; --faint:#6C7787;
+    --line:#26313F; --accent:#D6894C; --good:#46B588; --warn:#E06A5A;
+    --fabric:#6FA6C9; --transport:#D6894C; --misc:#5E6875; --bar:#2C3949;}
+  :root[data-theme="light"]{
+    --paper:#EEF0F3; --panel:#FBFCFD; --ink:#161A20; --muted:#5A6472; --faint:#828C99;
+    --line:#DEE2E8; --accent:#B96A2E; --good:#1F7A54; --warn:#BC4636;
+    --fabric:#3F6E8E; --transport:#B96A2E; --misc:#9AA3AF; --bar:#C9D0D9;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-sans);
+    -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;align-items:center;gap:22px;padding:24px}
+  .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+  .slide{width:min(1120px,100%);aspect-ratio:16/9;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:32px 40px;display:flex;flex-direction:column;gap:18px;
+    box-shadow:0 18px 44px -30px rgba(20,30,45,.4);overflow:hidden}
+  header{display:flex;justify-content:space-between;align-items:baseline;gap:20px;
+    border-bottom:1px solid var(--line);padding-bottom:12px}
+  .eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h1{margin:5px 0 0;font-size:26px;font-weight:680;letter-spacing:-.015em;line-height:1.1}
+  .pg{font-family:var(--font-mono);font-size:11px;color:var(--faint)}
+  .hero{display:flex;align-items:baseline;gap:11px}
+  .hero .n{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:56px;font-weight:640;letter-spacing:-.03em;line-height:.85}
+  .hero .u{font-size:17px;color:var(--muted);font-weight:600}
+  .hero .sub{font-size:12px;color:var(--muted);margin-left:auto;text-align:right;line-height:1.4}
+  .hero .sub b{color:var(--ink)}
+  .body{display:grid;grid-template-columns:1.15fr .85fr;gap:34px;flex:1;min-height:0}
+  .lbl{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:11px}
+  /* stage bars */
+  .stages{display:flex;flex-direction:column;gap:9px}
+  .stage{display:grid;grid-template-columns:118px 1fr 52px;align-items:center;gap:11px}
+  .stage .name{font-size:12.5px;color:var(--ink);text-align:right}
+  .stage .track{height:16px;background:transparent;border-radius:4px}
+  .stage .fill{height:100%;border-radius:4px}
+  .stage .ms{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--muted);text-align:left}
+  .stage.big .name{font-weight:680;color:var(--ink)}
+  .stage.big .ms{color:var(--fabric);font-weight:680}
+  .flag{display:inline-block;font-family:var(--font-mono);font-size:9.5px;font-weight:700;letter-spacing:.06em;
+    color:#fff;background:var(--fabric);border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+  /* histogram */
+  .hist{display:flex;align-items:flex-end;gap:5px;height:132px;padding-top:6px}
+  .hcol{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1}
+  .hcol .h{width:100%;background:var(--bar);border-radius:3px 3px 0 0;min-height:3px}
+  .hcol.out .h{background:var(--warn);opacity:.8}
+  .hcol .x{font-family:var(--font-mono);font-size:9.5px;color:var(--faint)}
+  .hcol .c{font-family:var(--font-mono);font-size:9.5px;color:var(--muted)}
+  .gap{flex:.5;text-align:center;color:var(--faint);align-self:center;font-size:12px}
+  .axis{font-family:var(--font-mono);font-size:10px;color:var(--faint);margin-top:4px}
+  /* callout */
+  .callout{display:flex;gap:12px;align-items:center;background:color-mix(in srgb,var(--fabric) 9%,transparent);
+    border:1px solid color-mix(in srgb,var(--fabric) 28%,var(--line));border-radius:9px;padding:12px 16px}
+  .callout .k{font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+    color:#fff;background:var(--fabric);padding:4px 9px;border-radius:5px;flex:none}
+  .callout .t{font-size:12.5px;line-height:1.45}
+  .callout .t b{font-weight:660}
+  code{font-family:var(--font-mono);font-size:.92em;color:var(--muted)}
+  /* slide 2 flow */
+  .flow{display:flex;align-items:stretch;gap:0;margin:2px 0}
+  .node{flex:1;border:1px solid var(--line);border-radius:8px;padding:11px 14px;background:color-mix(in srgb,var(--ink) 3%,transparent)}
+  .node .h{font-size:13px;font-weight:660}
+  .node .d{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.35}
+  .edge{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 12px;min-width:96px}
+  .edge .v{font-family:var(--font-mono);font-size:13px;font-weight:660;color:var(--good)}
+  .edge .l{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+  .edge .arw{color:var(--faint);font-size:15px;margin-top:2px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:22px;flex:1;min-height:0}
+  .box{border:1px solid var(--line);border-radius:9px;padding:15px 17px;display:flex;flex-direction:column;gap:9px}
+  .box.fix{border-color:color-mix(in srgb,var(--good) 32%,var(--line));background:color-mix(in srgb,var(--good) 7%,transparent)}
+  .box.wip{border-color:color-mix(in srgb,var(--warn) 30%,var(--line));background:color-mix(in srgb,var(--warn) 7%,transparent)}
+  .box .bh{display:flex;align-items:center;gap:9px}
+  .box .bt{font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#fff;padding:4px 8px;border-radius:5px}
+  .box.fix .bt{background:var(--good)} .box.wip .bt{background:var(--warn)}
+  .box .bn{font-size:14px;font-weight:660}
+  .baline{display:flex;align-items:baseline;gap:10px;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+  .baline .was{font-size:17px;color:var(--muted);text-decoration:line-through;text-decoration-color:var(--warn)}
+  .baline .now{font-size:26px;font-weight:660;color:var(--good)}
+  .baline .arw{color:var(--faint)}
+  .note{font-size:12px;color:var(--muted);line-height:1.45}
+  .note b{color:var(--ink);font-weight:650}
+  .est{font-family:var(--font-mono);font-size:10px;color:var(--faint);border:1px dashed var(--line);border-radius:4px;padding:2px 6px;display:inline-block}
+</style>
+
+<!-- ================= SLIDE 1 : REWIND ROUND ================= -->
+<div class="slide">
+  <header>
+    <div>
+      <div class="eyebrow">WSE-3 · Mode-B speculative decode · device-measured</div>
+      <h1>Rewind round — per-stage overhead &amp; distribution</h1>
+    </div>
+    <div class="pg">1 / 2</div>
+  </header>
+
+  <div class="hero">
+    <span class="n">18.3</span><span class="u">ms / round</span>
+    <span class="sub">41 recurring rounds, one session<br><b>std 0.27 ms</b> — stable within a session</span>
+  </div>
+
+  <div class="body">
+    <div>
+      <div class="lbl">Where each round's time goes</div>
+      <div class="stages">
+        <div class="stage big">
+          <div class="name">fabric decode<span class="flag">bottleneck</span></div>
+          <div class="track"><div class="fill" style="width:100%;background:var(--fabric)"></div></div>
+          <div class="ms">14.0</div>
+        </div>
+        <div class="stage">
+          <div class="name">intra-cluster transport</div>
+          <div class="track"><div class="fill" style="width:22.9%;background:var(--transport)"></div></div>
+          <div class="ms">3.2</div>
+        </div>
+        <div class="stage">
+          <div class="name">KV band send (H2D)</div>
+          <div class="track"><div class="fill" style="width:4.3%;background:var(--misc)"></div></div>
+          <div class="ms">0.6</div>
+        </div>
+        <div class="stage">
+          <div class="name">TSC drain</div>
+          <div class="track"><div class="fill" style="width:1.4%;background:var(--misc)"></div></div>
+          <div class="ms">0.2</div>
+        </div>
+        <div class="stage">
+          <div class="name">continuation build</div>
+          <div class="track"><div class="fill" style="width:0.7%;background:var(--misc)"></div></div>
+          <div class="ms">0.1</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="lbl">Round-latency distribution (n = 41)</div>
+      <div class="hist">
+        <div class="hcol"><div class="c">4</div><div class="h" style="height:33%"></div><div class="x">18.1</div></div>
+        <div class="hcol"><div class="c">10</div><div class="h" style="height:83%"></div><div class="x">18.2</div></div>
+        <div class="hcol"><div class="c">12</div><div class="h" style="height:100%"></div><div class="x">18.3</div></div>
+        <div class="hcol"><div class="c">8</div><div class="h" style="height:67%"></div><div class="x">18.4</div></div>
+        <div class="hcol"><div class="c">6</div><div class="h" style="height:50%"></div><div class="x">18.5</div></div>
+        <div class="gap">···</div>
+        <div class="hcol out"><div class="c">1</div><div class="h" style="height:9%"></div><div class="x">19.9</div></div>
+      </div>
+      <div class="axis">driver rtt (ms) — one bar per 0.1 ms bin</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <span class="k">Bottleneck</span>
+    <div class="t"><b>Fabric decode = 14 ms (76%)</b> — the kernel generating 16 tokens at ~0.7 ms/tok ≈ 1400 tok/s. It's the only large stage, and it's <b>kernel-side</b>; the host drive (send / build / drain) is already &lt;1 ms after the continuation-band fix (19 → 0.1 ms).</div>
+  </div>
+</div>
+
+<!-- ================= SLIDE 2 : KV TRANSFER ================= -->
+<div class="slide">
+  <header>
+    <div>
+      <div class="eyebrow">WSE-3 · prefill → decode KV handoff (one-time, per request)</div>
+      <h1>KV transfer — latency not yet isolated; measurement in flight</h1>
+    </div>
+    <div class="pg">2 / 2</div>
+  </header>
+
+  <!-- where the one-time cost actually sits -->
+  <div class="lbl">The two one-time exchanges (driver-measured rtt)</div>
+  <div class="flow">
+    <div class="node"><div class="h">Prefill exchange&nbsp;&nbsp;<span class="mono" style="color:var(--muted)">~17 s</span></div><div class="d">prefill pod <b>computes</b> the 256-tok KV + frames it — mostly <b>compute</b>, not transfer</div></div>
+    <div class="edge"><div class="arw">→</div></div>
+    <div class="node" style="border-color:color-mix(in srgb,var(--warn) 32%,var(--line));background:color-mix(in srgb,var(--warn) 6%,transparent)"><div class="h">Decode round-0&nbsp;&nbsp;<span class="mono" style="color:var(--muted)">~8 s</span></div><div class="d"><b>74 ms on-wafer</b> + <b>~7.9 s un-decomposed transport</b> ← the KV transfer lives in here</div></div>
+  </div>
+
+  <div class="two">
+    <div class="box wip">
+      <div class="bh"><span class="bt">Not yet measured</span><span class="bn">Actual transfer latency</span></div>
+      <div class="note">No measured prefill→decode transfer number yet. The KV move + host rebuild sit inside that <b>~7.9 s</b> of decode-round-0 transport — <b>not yet split</b> into wire / transform / framing.</div>
+      <div class="note">Wire is only <span class="mono">~3 ms</span> <span class="est">computed: 29 MB ÷ 10 GB/s</span> → the ~7.9 s is <b>almost certainly host-side</b>, not the link.</div>
+      <div class="note"><code>IOP_KV_TIMING</code> instrumented; <b>test run ongoing</b>, blocked by a cluster ingress outage — relaunching on a safe job-scoped guard as it recovers.</div>
+    </div>
+
+    <div class="box fix">
+      <div class="bh"><span class="bt">Likely culprit — fixed</span><span class="bn">Host-side band rebuild</span></div>
+      <div class="note"><code>repack_kv_band</code> rebuilt the full KV with a per-tile numpy loop — the suspected bulk of that host cost.</div>
+      <div class="baline"><span class="was">3.4 s</span><span class="arw">→</span><span class="now">17 ms</span></div>
+      <div class="note">Vectorized, <b>byte-identical</b>, ~193× — measured <b>offline (gala2)</b>. <span class="est">pod: ×12 est., unconfirmed on device</span></div>
+      <div class="note" style="color:var(--faint)">The pending run will confirm how much of the ~7.9 s this actually was.</div>
+    </div>
+  </div>
+</div>

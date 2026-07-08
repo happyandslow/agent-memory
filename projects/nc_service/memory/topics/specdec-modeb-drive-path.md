@@ -122,6 +122,14 @@ Net: repack fix alone ~halves the recurring round (38 -> ~19 ms). Below that nee
 
 **KV-TRANSFER overhead is HOST-TRANSFORM-bound, NOT wire.** Inter-node ~10 GB/s => 29 MB KV = ~3 ms wire (134 MB framed handoff ~13 ms). But `repack_kv_band` (decode-side full-KV band builder in `load_kv`, kv_transform.py:367) is the SAME Python-loop class as the continuation band but over the full KV: P*mlpb*2*Pw ~1M tiny-numpy-slice iterations/band x P_Y=4 bands = **3.4 s on gala2 -> ~tens of seconds on the pod CPU (~12x)**. So the KV transfer is dominated by host repack, ~3-4 orders of magnitude over the wire. FIX: vectorise `repack_kv_band` (same as the continuation fix) -> should drop to <1 s. Round-0 decode exchange = 8 s (worker 74 ms, ~7.9 s transport/one-time) and prefill exchange = 17 s are separate one-time costs not yet split. To get the exact wire/transform/other split, instrument `load_kv` + the kv_channel handoff on-device.
 
+## Progress slide (artifact)
+
+`../artifacts/2026-07-08-specdec-progress-slide.html` (two slides: rewind-round per-stage breakdown + distribution; KV-transfer status). Also published: https://claude.ai/code/artifact/7b850536-90b5-48f0-a202-d24a75aacb98
+
+## KV-transfer on-device measurement — status + a RETRACTED conclusion (2026-07-08)
+
+The on-device KV-transfer split (`IOP_KV_TIMING`: wire vs host-transform vs framing) is NOT yet captured. **RETRACTED: earlier I called the mode-B PD bring-up failures a "cluster ingress outage" — that was an unfalsifiable "infra" conclusion (cerebras-debugging L3/L9).** Corrections: (1) the `Could not find coordinator / Empty ingress service url -> :443` line is a BENIGN preamble that prints in runs that SUCCEED — not evidence. (2) SdkLauncher buffers stdout until exit, so a prefill pod COMPILING the real 28-layer kernel (~40 min) is indistinguishable from a hang (frozen driver.out, zero output). (3) I cancelled those runs at ~10-15 min — likely killing a compiling pod (my own premature deadline), NOT observing an ingress stall. Framework audit (branch vs main) confirmed `pd_rendezvous` bring-up is byte-identical to the merged PR; my post-run42 additions (`repack_kv_band` vectorize, KV_TIMING) run AFTER the bring-up point. Re-test plan: device run with a GENEROUS cap (>70 min) + monitor the pod COMPILE PHASE via csctl (compile vs genuine hang) + WORKER-side progress markers; do NOT cancel until the phase proves a hang. Also: main already has `kv_bw_check.py` (pod-to-pod wire tool) to reuse for the wire leg.
+
 ## Commands / paths
 
 Also posted on PR #10: https://github.com/lausannel/nc_service/pull/10#issuecomment-4906340575
