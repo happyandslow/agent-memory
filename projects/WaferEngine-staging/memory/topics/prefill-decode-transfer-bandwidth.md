@@ -49,6 +49,21 @@ Floorplan of the co-resident layout is saved as an artifact in this repo:
 - `assets/prefill-decode-transfer/e2e-floorplan.html` — theme-aware source (open in any browser)
 - `assets/prefill-decode-transfer/e2e-floorplan.pdf` — 2-page static render
 
+**Full on-chip topology map** (every e2e component with real 512×512 fabric
+coordinates, x/y axes, KV north-flow, and the A/B/C measurement points):
+
+![e2e full on-chip topology](../../assets/prefill-decode-transfer/e2e-topology-full.png)
+
+- `assets/prefill-decode-transfer/e2e-topology-full.svg` — source image (scalable)
+- `assets/prefill-decode-transfer/e2e-topology-full.png` — 1320px raster for markdown viewers
+
+Components (fabric coords, from `launch.py` `.place()`): decode `ht_head` (x3–130,
+y1–256) / `ht_tail` = lm_head + `is_tsc_pe` (x3–130, y257–512) / decode block
+region (x132–643, y1–512); **relay seam** KV bridge (x132–643, y513–514);
+prefill `pf_ht_head` (x4–131, y515–770) / `pf_ht_tail` (x4–131, y771–1026) /
+prefill block region (x132–643, y515–1026); host io lane at x0. A = prefill
+gather+transform, B = north shift through the seam, C = decode ingress.
+
 It shows decode (north, rows 1–16), the `Pw×2` relay seam (rows 17–18), and
 prefill (south, rows 19–34), all sharing block columns 8–23 because both halves
 place block-column 0 at the same `PLACE_X = HT_WIDTH_tail + 4`. That column
@@ -288,6 +303,32 @@ number, which is the more meaningful one anyway (real silicon, real dim=2048).
 incomplete**; its partial work is in git worktree
 `.claude/worktrees/agent-a5f7561a999d51c50`. Finishing that egress is the
 prerequisite for any device profiling run.
+
+## VERDICT (2026-07-08): it's the profiler implementation, not the cluster
+
+Le's minimal-kernel test settled the long CS-3 debugging: a trivial 1-PE kernel
+(one output stream, via the same `run_device.sh`→SdkLauncher path) **runs clean**
+on CS-3 — `MINI OK`, correct data, real coordinator `10.27.29.3:9000`. The
+**baseline** (`test_device_2x2blk_kv`, KV_PROFILE=0) also runs. The profiler config
+(`test_device_2x2blk_kv_prof`) differs by **ONLY `KV_PROFILE:1`** (configs are
+byte-identical otherwise) and **hangs**. So:
+- **Cluster/infra is fine; it's the `KV_PROFILE=1` on-chip path that deadlocks.** All
+  earlier "infra down / 502" framing was WRONG.
+- **`Could not find coordinator … falling back to 10.27.24.65:443` is BENIGN** — it
+  prints for the minimal + baseline too, which then connect to the real coordinator
+  and run. Do NOT treat it as the failure.
+- The hang is **run-phase** (SdkLauncher buffers stdout until the cmd finishes; it
+  never finishes → no output relayed, looks like an early hang but isn't).
+- Also refuted this session: io_loc (device places valid), nonblock, the 2 extra
+  streams (P2 removed them, still hangs), the east/west route.
+- **Suspects in P2's path:** (1) the `+8`-wavelet logits append (host `receive`
+  count vs device emit mismatch → logits stream deadlock); (2) the seam rendezvous
+  (decode collector blocking on prefill A/B on color 17 that never arrives).
+- **Next:** bisect the profiler path — build UP from the working minimal, or disable
+  the ht_tail append vs the seam transit independently, to localize the deadlock.
+- Reusable diagnostic (Le's method): when a device job hangs, run a **fake minimal
+  kernel** through the same launcher path — if it runs, the bug is your config, not
+  the cluster.
 
 ## Device run attempt on CS-3 (2026-07-07) — blocked by egress, env is fine
 

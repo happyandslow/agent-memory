@@ -2,6 +2,7 @@
 
 # nc_service Timeline
 
+- 2026-07-08 — specdec-progress-slide → `artifacts/2026-07-08-specdec-progress-slide.html`
 - 2026-07-07 — modeb-pd-module-trace → `memory/inbox/2026-07-07-modeb-pd-module-trace.md`
 - 2026-07-01 — pd-disaggregation-mpar → `pd-disaggregation-docs/plans/2026-07-01-pd-disaggregation-mpar.md`
 - 2026-07-01 — pd-disaggregation-m5-streaming → `pd-disaggregation-docs/plans/2026-07-01-pd-disaggregation-m5-streaming.md`

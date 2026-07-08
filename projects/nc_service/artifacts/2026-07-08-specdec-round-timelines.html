@@ -1,0 +1,149 @@
+<title>SpecDec Mode-B — round timelines</title>
+<style>
+  :root{
+    --paper:#EEF0F3; --panel:#FBFCFD; --ink:#161A20; --muted:#5A6472; --faint:#828C99;
+    --line:#DEE2E8;
+    --compute:#3F6E8E;   /* on-wafer / kernel */
+    --hostxf:#B96A2E;    /* host transform/repack */
+    --pack:#9AA3AF;      /* host encode/frame/build */
+    --wire:#1F7A54;      /* network */
+    --ingest:#7A5AA6;    /* decode host ingest */
+    --gw:#B08A2E;        /* gateway transport */
+    --font-sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,sans-serif;
+    --font-mono:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --paper:#0F141B; --panel:#161D26; --ink:#E7ECF3; --muted:#95A2B2; --faint:#6C7787; --line:#26313F;
+    --compute:#6FA6C9; --hostxf:#D6894C; --pack:#5E6875; --wire:#46B588; --ingest:#A88BD0; --gw:#D6B24C;}}
+  :root[data-theme="dark"]{
+    --paper:#0F141B; --panel:#161D26; --ink:#E7ECF3; --muted:#95A2B2; --faint:#6C7787; --line:#26313F;
+    --compute:#6FA6C9; --hostxf:#D6894C; --pack:#5E6875; --wire:#46B588; --ingest:#A88BD0; --gw:#D6B24C;}
+  :root[data-theme="light"]{
+    --paper:#EEF0F3; --panel:#FBFCFD; --ink:#161A20; --muted:#5A6472; --faint:#828C99; --line:#DEE2E8;
+    --compute:#3F6E8E; --hostxf:#B96A2E; --pack:#9AA3AF; --wire:#1F7A54; --ingest:#7A5AA6; --gw:#B08A2E;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-sans);
+    -webkit-font-smoothing:antialiased;padding:26px;display:flex;flex-direction:column;gap:22px;align-items:center}
+  .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+  .wrap{width:min(1080px,100%);display:flex;flex-direction:column;gap:26px}
+  h1{font-size:23px;font-weight:680;letter-spacing:-.015em;margin:0 0 3px}
+  .lede{font-size:13px;color:var(--muted);line-height:1.5;margin:0}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px 26px;
+    box-shadow:0 16px 40px -32px rgba(20,30,45,.45)}
+  .ptitle{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+  .ptitle h2{font-size:16px;font-weight:660;margin:0}
+  .ptitle .tot{font-family:var(--font-mono);font-size:13px;color:var(--ink);font-weight:660}
+  .ptitle .rep{font-size:11.5px;color:var(--faint)}
+  .cadence{font-size:12px;color:var(--muted);margin:2px 0 15px;line-height:1.4}
+  /* proportional timeline strip */
+  .strip{display:flex;height:34px;border-radius:6px;overflow:hidden;border:1px solid var(--line);margin-bottom:6px}
+  .seg{height:100%;display:flex;align-items:center;justify-content:center;position:relative;min-width:2px;
+    border-right:1px solid color-mix(in srgb,var(--paper) 55%,transparent)}
+  .seg:last-child{border-right:none}
+  .seg .in{font-family:var(--font-mono);font-size:10.5px;font-weight:700;color:#fff;white-space:nowrap;padding:0 6px;
+    text-shadow:0 1px 2px rgba(0,0,0,.32)}
+  .axis{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--faint);margin-bottom:16px}
+  /* legend / breakdown rows */
+  .rows{display:flex;flex-direction:column;gap:8px}
+  .row{display:grid;grid-template-columns:16px 150px 70px 1fr;align-items:baseline;gap:11px}
+  .row .sw{width:12px;height:12px;border-radius:3px;align-self:center}
+  .row .nm{font-size:12.5px;font-weight:600;color:var(--ink)}
+  .row .ms{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--muted);text-align:right}
+  .row .dc{font-size:12px;color:var(--muted);line-height:1.4}
+  .row .dc b{color:var(--ink);font-weight:620}
+  .phase{font-family:var(--font-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);
+    font-weight:700;margin:11px 0 3px;padding-top:9px;border-top:1px dashed var(--line)}
+  .phase:first-child{border-top:none;padding-top:0;margin-top:2px}
+  .foot{font-size:11.5px;color:var(--faint);line-height:1.5;border-top:1px solid var(--line);padding-top:12px}
+  .foot b{color:var(--muted)}
+  code{font-family:var(--font-mono);font-size:.92em}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>Mode-B on WSE-3 — where a round's time goes</h1>
+    <p class="lede">Two timelines, very different scales. The first request pays a <b>one-time</b> KV bring-up (~3.8&nbsp;s); every
+      accepted step after that is a <b>steady rewind round</b> (~18&nbsp;ms). All bars are host <code>perf_counter</code> wall-time
+      (device run, rc=0). Left→right = time order; widths are proportional within each panel.</p>
+  </div>
+
+  <!-- ============ TIMELINE 1 : one-time bring-up ============ -->
+  <div class="panel">
+    <div class="ptitle">
+      <h2>1 · First request — one-time KV bring-up</h2>
+      <span class="tot">≈ 3.82 s total</span>
+      <span class="rep">happens once per request (driver rounds r=0 + r=1)</span>
+    </div>
+    <div class="cadence">The prefill pod computes the KV and hands it to the decode pod, which ingests it and runs the first draft window. None of this recurs.</div>
+
+    <div class="strip" role="img" aria-label="one-time bring-up timeline">
+      <div class="seg" style="width:40.5%;background:var(--compute)"><span class="in">egress 1547</span></div>
+      <div class="seg" style="width:9.2%;background:var(--hostxf)"><span class="in">xform 352</span></div>
+      <div class="seg" style="width:4.4%;background:var(--pack)"><span class="in">enc 167</span></div>
+      <div class="seg" style="width:0.5%;background:var(--pack)"></div>
+      <div class="seg" style="width:2.1%;background:var(--wire)"><span class="in">wire</span></div>
+      <div class="seg" style="width:23.7%;background:var(--ingest)"><span class="in">load_kv 903</span></div>
+      <div class="seg" style="width:16.7%;background:var(--compute)"><span class="in">full-KV H2D + 1st window 637</span></div>
+    </div>
+    <div class="axis"><span>0 s</span><span>r=0 prefill (2.20 s)&nbsp;→&nbsp;|&nbsp;wire&nbsp;|&nbsp;←&nbsp;r=1 first decode (1.54 s)</span><span>3.82 s</span></div>
+
+    <div class="rows">
+      <div class="phase">prefill pod · r=0 (2196 ms driver rtt)</div>
+      <div class="row"><span class="sw" style="background:var(--compute)"></span><span class="nm">egress</span><span class="ms">1547 ms</span>
+        <span class="dc">Run the prefill forward over the prompt <b>and</b> read the 128 MB KV off the wafer. <b>Compute + D2H lumped</b> — one blocking host timer, not isolatable.</span></div>
+      <div class="row"><span class="sw" style="background:var(--hostxf)"></span><span class="nm">transform</span><span class="ms">352 ms</span>
+        <span class="dc">Host reshape: prefill KV layout → decode ingest layout. <b>Was 15.3 s</b> (7-deep python loop) → vectorized.</span></div>
+      <div class="row"><span class="sw" style="background:var(--pack)"></span><span class="nm">encode</span><span class="ms">167 ms</span>
+        <span class="dc">Pack the transformed KV to the u32 handoff buffer.</span></div>
+      <div class="row"><span class="sw" style="background:var(--pack)"></span><span class="nm">frame</span><span class="ms">18 ms</span>
+        <span class="dc">Prepend the handoff header (first-token + sizing).</span></div>
+
+      <div class="phase">network</div>
+      <div class="row"><span class="sw" style="background:var(--wire)"></span><span class="nm">wire</span><span class="ms">82 ms</span>
+        <span class="dc">Ship the 128 MB KV prefill&nbsp;pod → decode&nbsp;pod over 16 parallel TCP streams. <b>The link is not the cost.</b></span></div>
+
+      <div class="phase">decode pod · r=1 (1540 ms driver rtt)</div>
+      <div class="row"><span class="sw" style="background:var(--ingest)"></span><span class="nm">load_kv</span><span class="ms">903 ms</span>
+        <span class="dc">Decode-side ingest: deserialize the blob (790) + handoff (79) + build the full KV bands via <code>repack_kv_band</code> (34).</span></div>
+      <div class="row"><span class="sw" style="background:var(--compute)"></span><span class="nm">full-KV H2D + 1st window</span><span class="ms">≈ 637 ms</span>
+        <span class="dc">Send the full 128 MB KV <b>into the decode kernel</b> (H2D) + run the first 16-step draft window. <b>By difference</b> (rtt − load_kv), not separately instrumented.</span></div>
+    </div>
+  </div>
+
+  <!-- ============ TIMELINE 2 : steady rewind round ============ -->
+  <div class="panel">
+    <div class="ptitle">
+      <h2>2 · Steady state — one rewind round</h2>
+      <span class="tot">≈ 18.1 ms</span>
+      <span class="rep">repeats once per accepted step (measured n=41: mean 18.17 ms, std 0.16)</span>
+    </div>
+    <div class="cadence">After bring-up, each round only re-arms the kernel to the accepted position and drafts a new window. No KV moves — just a ~1 KB band.</div>
+
+    <div class="strip" role="img" aria-label="rewind round timeline">
+      <div class="seg" style="width:8.8%;background:var(--gw)"><span class="in">gw 1.6</span></div>
+      <div class="seg" style="width:0.6%;background:var(--pack)"></div>
+      <div class="seg" style="width:3.3%;background:var(--ingest)"><span class="in">send</span></div>
+      <div class="seg" style="width:77.3%;background:var(--compute)"><span class="in">fabric decode — 16 draft steps · 14.0 ms</span></div>
+      <div class="seg" style="width:1.1%;background:var(--pack)"></div>
+      <div class="seg" style="width:8.8%;background:var(--gw)"><span class="in">gw 1.6</span></div>
+    </div>
+    <div class="axis"><span>0 ms</span><span>on-wafer draft dominates</span><span>18.1 ms</span></div>
+
+    <div class="rows">
+      <div class="row"><span class="sw" style="background:var(--compute)"></span><span class="nm">fabric decode</span><span class="ms">14.0 ms</span>
+        <span class="dc">The kernel drafts 16 tokens, rewound to the accepted position (~0.9 ms/tok ≈ 1400 tok/s). <b>77% of the round — the real bottleneck, kernel-side.</b></span></div>
+      <div class="row"><span class="sw" style="background:var(--gw)"></span><span class="nm">gateway round-trip</span><span class="ms">3.2 ms</span>
+        <span class="dc">Driver↔pod hop over the gateway (command out + result back). Measured as rtt − on-pod work.</span></div>
+      <div class="row"><span class="sw" style="background:var(--ingest)"></span><span class="nm">band + seed send</span><span class="ms">0.6 ms</span>
+        <span class="dc">H2D the ~1 KB continuation band + the seed token (X[0]).</span></div>
+      <div class="row"><span class="sw" style="background:var(--pack)"></span><span class="nm">TSC drain</span><span class="ms">0.2 ms</span>
+        <span class="dc">Read the piggybacked on-wafer timestamps.</span></div>
+      <div class="row"><span class="sw" style="background:var(--pack)"></span><span class="nm">band build</span><span class="ms">0.1 ms</span>
+        <span class="dc">Build the continuation band <span class="mono">[iter-num staircase, accepted position A]</span> (vectorized; was 19 ms).</span></div>
+    </div>
+  </div>
+
+  <div class="panel foot">
+    <b>Reading these honestly.</b> Every bar is a host <code>perf_counter</code> bracket, so there is no wafer/host clock-skew inside a number — but that also means <b>host wall-time of a blocking op, not on-wire bytes</b>. In particular <code>egress</code> lumps the prefill compute with the KV read-back (can't be split without on-wafer TSC), and r=1's <code>full-KV H2D + 1st window</code> is taken by difference. The r=0/r=1 rtts are driver-clock; the sub-stages are pod-clock — the same movement is not summed across both.
+  </div>
+</div>
