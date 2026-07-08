@@ -5,8 +5,6 @@ tags: [nc-service, specdec, mode-B, PD-disaggregation, module-map, wse3, io_pipe
 
 # Mode-B PD module trace (architecture map + deliverables)
 
-Status: drained 2026-07-08 into `memory/topics/specdec-modeb-pd-module-trace.md` and `plan.md`.
-
 Session 2026-07-07: traced every module the two-pod spec-dec PD run touches and shipped
 an annotated architecture diagram. Companion to [[specdec-modeb-drive-path]] (that note is
 the per-round *timing* call chain; this one is the *who-runs-where* map).

@@ -15,6 +15,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [x] Single real appliances validated bit-exact on real WSE-3 (`DECODE_RESIDENT_DEV_PASS`, `PREFILL_RESIDENT_DEV_PASS`).
 - [x] Decode rewind v1 and token-granular v2 validated bit-exact in sim and on real WSE-3.
 - [x] Mode-B adapter increments recorded: sim pass, device window pass, partial-accept accounting fix, full adapter-chain `MODEB_DEV_PASS`, framework factory dispatch, exchange-batch sim pass.
+- [x] Mode-B PD module/process architecture trace delivered to PR #10 and contextbase (`memory/topics/specdec-modeb-pd-module-trace.md`).
 - [ ] Run the full mode-B PD/spec-dec sim loop on CS-3 with `mock_verify_host failures:0`.
 - [ ] Run partial-accept on device and connect the real GPU verifier.
 - [ ] Complete mode-A transport hardening for `PD_REAL_DAEMON_DEV`.
@@ -36,6 +37,11 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Verify live repo/server state before acting; memory records branch/test history, not current proof.
 
 ## Narrative progress log
+
+### 2026-07-07
+
+- Drained module-by-module trace of `run_e2e_pd_modeb_real.sh`: four processes (verifier, gateway, decode pod, prefill pod), three couplings (DraftControl, two in-process-patch bridges, KV side-channel), and the appliance factory seam that swaps only decode for mode B.
+- Delivered the annotated architecture diagram to PR #10 under `docs/pd-disagg/` and posted the PNG/PDF to contextbase (`2026-07-07-mode-b-pd-workflow-module-trace-figure-pdf-5tgGAhxEZx`). Operational gotchas: do not manually consume the Outline MCP OAuth refresh token; current render path is `wkhtmltopdf`/`ghostscript`/`pdftoppm`, not Chromium.
 
 ### 2026-07-06
 

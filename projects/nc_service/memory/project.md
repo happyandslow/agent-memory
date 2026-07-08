@@ -14,14 +14,14 @@
 - Remote server path(s): gala2:/home/lexu/nc_service
 - Local checkout path(s): 
 - Obsidian path: `/Users/lexu/Library/CloudStorage/GoogleDrive-lxu5398@gmail.com/My Drive/Obsidian-note-vault/note-vault/10-work/nc_service`
-- Memory repo path: `/Users/lexu/Project/agent-memory/projects/nc_service`
+- Memory repo path: `/Users/lexu/Projects/agent-memory/projects/nc_service`
 
 ## Machines and agents
 
 | Host | Role | Paths | Notes |
 | --- | --- | --- | --- |
 | remote | primary development |  |  |
-| MacBook | Obsidian/Hermes/local view | `/Users/lexu/Project/agent-memory/projects/nc_service` |  |
+| MacBook | Obsidian/Hermes/local view | `/Users/lexu/Projects/agent-memory/projects/nc_service` |  |
 | Mac mini | backup |  |  |
 
 ## Commands
