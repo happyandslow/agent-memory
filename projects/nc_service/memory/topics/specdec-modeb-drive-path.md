@@ -136,7 +136,9 @@ Net: repack fix alone ~halves the recurring round (38 -> ~19 ms). Below that nee
 - decode: unframe=788.7ms, handoff=78.6ms, repack=33.5ms (the vectorized `repack_kv_band` — fast)
 - r=0(prefill) rtt=17178ms; r=1 1506ms; r=2 19.0ms; r=3 18.4ms
 
-**Bottleneck = the prefill-side `kv_transform.transform()` at 15.3 s, NOT the wire (82ms).** Root cause: `transform()` (kv_transform.py:320) is a 7-deep Python for-loop (gy,gx,l,c,kv_col,b,s) scattering element-by-element over the full KV; `canonical_from_egress`/`ingress_from_canonical` are similar 7-8-deep nests. Same per-element pattern I already vectorized in `repack_kv_band`/`repack_continuation_band` — NEXT: vectorize `transform()` (numpy advanced-index/transpose/reshape) to collapse 15.3s -> <0.1s, which would drop r=0 from 17.2s to ~2s (egress-bound). This is the L7 lesson: instrument first — I'd optimized the 33ms repack while the 15.3s transform sat un-instrumented.
+**Bottleneck = the prefill-side `kv_transform.transform()` at 15.3 s, NOT the wire (82ms).** Root cause: `transform()` (kv_transform.py:320) was a 7-deep Python for-loop (gy,gx,l,c,kv_col,b,s) scattering element-by-element over the full KV. L7 lesson: instrument first — I'd optimized the 33ms repack while the 15.3s transform sat un-instrumented.
+
+**FIXED + DEVICE-CONFIRMED 2026-07-08.** Vectorized `transform()` (numpy index math + one scatter per decode-batch); kept the loop as `_transform_ref` oracle + a byte-equality test (`test_transform_vectorized_matches_ref`), 25 SDK-free realkv tests pass. Second device run (same safe_kvt2 path, remote md5==local so the pod ran the exact code): **transform 15333.9ms -> 351.9ms (~44x on the pod)**, egress/wire/decode unchanged; **r=0 round 17178ms -> 2196ms**, full 4-round run 18721ms -> 3768ms (qps 0.2->1.1), rc=0, pods clean. r=0 is now EGRESS-bound (egress 1.55s). NEXT lever if needed = prefill egress D2H (1.55s) — but the KV-transfer host bottleneck is resolved. NOTE the vectorized transform is UNCOMMITTED on lexu/specdec-real-kernels (working tree), awaiting user's commit call.
 
 ## Commands / paths
 

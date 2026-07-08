@@ -215,10 +215,10 @@
 
     <div>
       <div class="box fix" style="height:100%">
-        <div class="bh"><span class="bt">Fixed</span><span class="bn">prefill <code>transform</code> vectorized</span></div>
+        <div class="bh"><span class="bt">Fixed · on device</span><span class="bn">prefill <code>transform</code> vectorized</span></div>
         <div class="note"><code>kv_transform.transform()</code> scattered the KV with a <b>7-deep python loop</b> — the whole 15.3 s. Replaced with numpy index math + one scatter; <b>byte-identical</b> (25 SDK-free tests pass).</div>
-        <div class="baline"><span class="was">15.3 s</span><span class="arw">→</span><span class="now">~0.85 s</span></div>
-        <div class="note"><b>18×</b>, measured on dev-box numpy <span class="est">device confirm pending</span> → projects round-0 <b>17.2 s → ~2.6 s</b> (egress-bound next).</div>
+        <div class="baline"><span class="was">15.3 s</span><span class="arw">→</span><span class="now">352 ms</span></div>
+        <div class="note"><b>~44×</b>, device-confirmed (2nd run, rc=0) → round-0 <b>17.2 s → 2.2 s</b>, full run 18.7 → 3.8 s. Now <b>egress-bound</b>.</div>
         <div class="callout" style="margin-top:auto">
           <span class="k">Not the link</span>
           <div class="t"><b>Wire = 82 ms (0.5%)</b> — 128.5 MB over 16 streams. The 10–12 GB/s pod-to-pod leg was never the cost; KV transfer is <b>~99% host-side</b>.</div>
