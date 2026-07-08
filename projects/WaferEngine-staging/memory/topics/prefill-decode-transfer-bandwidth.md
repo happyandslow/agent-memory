@@ -289,6 +289,32 @@ incomplete**; its partial work is in git worktree
 `.claude/worktrees/agent-a5f7561a999d51c50`. Finishing that egress is the
 prerequisite for any device profiling run.
 
+## VERDICT (2026-07-08): it's the profiler implementation, not the cluster
+
+Le's minimal-kernel test settled the long CS-3 debugging: a trivial 1-PE kernel
+(one output stream, via the same `run_device.sh`→SdkLauncher path) **runs clean**
+on CS-3 — `MINI OK`, correct data, real coordinator `10.27.29.3:9000`. The
+**baseline** (`test_device_2x2blk_kv`, KV_PROFILE=0) also runs. The profiler config
+(`test_device_2x2blk_kv_prof`) differs by **ONLY `KV_PROFILE:1`** (configs are
+byte-identical otherwise) and **hangs**. So:
+- **Cluster/infra is fine; it's the `KV_PROFILE=1` on-chip path that deadlocks.** All
+  earlier "infra down / 502" framing was WRONG.
+- **`Could not find coordinator … falling back to 10.27.24.65:443` is BENIGN** — it
+  prints for the minimal + baseline too, which then connect to the real coordinator
+  and run. Do NOT treat it as the failure.
+- The hang is **run-phase** (SdkLauncher buffers stdout until the cmd finishes; it
+  never finishes → no output relayed, looks like an early hang but isn't).
+- Also refuted this session: io_loc (device places valid), nonblock, the 2 extra
+  streams (P2 removed them, still hangs), the east/west route.
+- **Suspects in P2's path:** (1) the `+8`-wavelet logits append (host `receive`
+  count vs device emit mismatch → logits stream deadlock); (2) the seam rendezvous
+  (decode collector blocking on prefill A/B on color 17 that never arrives).
+- **Next:** bisect the profiler path — build UP from the working minimal, or disable
+  the ht_tail append vs the seam transit independently, to localize the deadlock.
+- Reusable diagnostic (Le's method): when a device job hangs, run a **fake minimal
+  kernel** through the same launcher path — if it runs, the bug is your config, not
+  the cluster.
+
 ## Device run attempt on CS-3 (2026-07-07) — blocked by egress, env is fine
 
 Device egress built + merged (`e3814ce`): reporter PE per region emits a 4-u32
