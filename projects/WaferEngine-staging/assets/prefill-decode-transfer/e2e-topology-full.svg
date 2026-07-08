@@ -45,15 +45,21 @@
     <text x="435" y="905" font-size="9.5">fabric x  (west band x0–131 widened; block region x132–643)</text>
   </g>
 
-  <!-- ===== HOST I/O lane (x0–2) ===== -->
-  <rect x="70" y="60" width="26" height="768" fill="#eaf6ef" stroke="#d5dbe3"/>
+  <!-- ===== West edge: LVDS I/O (x0) · route lane (x1) · decode demux (x2) ===== -->
+  <!-- NO memcpy halo: this model is SdkLayout direct streams (memcpy_required=False),
+       so the memcpy 3-west/2-east support columns do NOT exist. x0 is the bare LVDS
+       hardware edge where host streams attach; user code there hangs. -->
+  <rect x="70" y="60" width="10" height="768" fill="#eaf6ef" stroke="#d5dbe3"/>            <!-- x0 LVDS edge -->
+  <rect x="80" y="60" width="6"  height="768" fill="#f4f7fb" stroke="#d5dbe3" stroke-dasharray="2 2"/>  <!-- x1 route lane -->
   <g font-family="ui-monospace,Menlo,Consolas,monospace" font-size="7.5">
-    <rect x="66" y="61" width="7" height="5" fill="#2f6fd0"/><text x="99" y="66" fill="#2f6fd0">logits·dec out (y1)</text>
-    <rect x="66" y="70" width="7" height="5" fill="#1f9b7e"/><text x="99" y="75" fill="#1f6f57">host-X in (y0/18…)</text>
-    <rect x="66" y="461" width="7" height="5" fill="#c9791f"/><text x="99" y="459" fill="#c9791f">token·pf in</text>
-    <rect x="66" y="828" width="7" height="5" fill="#c9791f"/><text x="99" y="843" fill="#c9791f">logits·pf out (y1027)</text>
+    <rect x="63" y="61" width="6" height="5" fill="#2f6fd0"/><text x="99" y="66" fill="#2f6fd0">logits·dec out (y1)</text>
+    <rect x="63" y="70" width="6" height="5" fill="#1f9b7e"/><text x="99" y="75" fill="#1f6f57">host-X in (y0/18…)</text>
+    <rect x="63" y="461" width="6" height="5" fill="#c9791f"/><text x="99" y="459" fill="#c9791f">token·pf in</text>
+    <rect x="63" y="828" width="6" height="5" fill="#c9791f"/><text x="99" y="843" fill="#c9791f">logits·pf out (y1027)</text>
   </g>
-  <text x="83" y="55" font-size="8" fill="#5c6673" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace">io x0</text>
+  <text x="75" y="55" font-size="7" fill="#5c6673" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace">LVDS x0</text>
+  <text x="83" y="884" font-size="6.5" fill="#5c6673" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace">x1 route</text>
+  <text x="360" y="55" font-size="8" fill="#c0392b" font-family="ui-monospace,Menlo,Consolas,monospace">no memcpy halo — SdkLayout direct streams (memcpy_required=False)</text>
 
   <!-- ============================================================= -->
   <!-- DECODE HALF (y1–512)                                          -->
@@ -76,10 +82,16 @@
   <text x="525" y="90" text-anchor="middle" font-size="14" font-weight="700" fill="#2f6fd0">DECODE block region</text>
   <text x="525" y="107" text-anchor="middle" font-size="9.5" fill="#2f6fd0" font-family="ui-monospace,Menlo,Consolas,monospace">attention + FFN · 2×2 blocks of 256² PEs · x132–643 · y1–512</text>
 
-  <!-- decode demux + mux (west plumbing) -->
-  <rect x="70" y="60" width="26" height="6" fill="none"/>
-  <rect x="96" y="428" width="154" height="14" fill="#f8e9cf" stroke="#c9791f" stroke-dasharray="3 2"/>
-  <text x="173" y="438" text-anchor="middle" font-size="7.5" fill="#c9791f" font-family="ui-monospace,Menlo,Consolas,monospace">logits_mux (y513) · pf_demux (y514)</text>
+  <!-- decode demux (x_demux): 1-col strip at x=2, y1–256 — host-X distributor,
+       Y-broadcasts the token embedding down the chain-start block column -->
+  <rect x="86" y="60" width="10" height="184" fill="#dbe7fa" stroke="#2f6fd0" stroke-width="0.8"/>
+  <text x="91" y="152" text-anchor="middle" font-size="7" fill="#2f6fd0" transform="rotate(-90 91 152)" font-family="ui-monospace,Menlo,Consolas,monospace">x_demux (x2 · y1–256)</text>
+
+  <!-- west-band seam rows: logits_mux (decode, y513) and pf_demux (prefill, y514) -->
+  <rect x="96" y="430" width="154" height="13" fill="#dbe7fa" stroke="#2f6fd0" stroke-dasharray="3 2"/>
+  <text x="173" y="439" text-anchor="middle" font-size="7" fill="#2f6fd0" font-family="ui-monospace,Menlo,Consolas,monospace">logits_mux (x3–130, y513)</text>
+  <rect x="96" y="443" width="154" height="13" fill="#f8e9cf" stroke="#c9791f" stroke-dasharray="3 2"/>
+  <text x="173" y="452" text-anchor="middle" font-size="7" fill="#c9791f" font-family="ui-monospace,Menlo,Consolas,monospace">pf_demux (x4–131, y514)</text>
 
   <!-- ============================================================= -->
   <!-- RELAY SEAM (y513–514)                                         -->
@@ -134,8 +146,9 @@
     <rect x="70" y="922" width="13" height="13" rx="2" fill="#dbe7fa" stroke="#2f6fd0"/><text x="88" y="932">decode (ht + blocks)</text>
     <rect x="215" y="922" width="13" height="13" rx="2" fill="#f8e9cf" stroke="#c9791f"/><text x="233" y="932">prefill (ht + blocks)</text>
     <rect x="360" y="922" width="13" height="13" rx="2" fill="#d2efe6" stroke="#1f9b7e"/><text x="378" y="932">relay seam (KV bridge)</text>
-    <rect x="530" y="922" width="13" height="13" rx="2" fill="#eaf6ef" stroke="#d5dbe3"/><text x="548" y="932">host io lane (x0)</text>
+    <rect x="530" y="922" width="13" height="13" rx="2" fill="#eaf6ef" stroke="#d5dbe3"/><text x="548" y="932">LVDS I/O edge (x0)</text>
     <text x="668" y="932" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="9">A/B/C = profiled segments</text>
   </g>
-  <text x="70" y="958" font-size="8.5" fill="#5c6673" font-style="italic">Dashed rows = mux/demux I/O plumbing. Seam drawn exaggerated (true height = 2 rows). West band (x0–131) widened for legibility; block region to scale in x within itself.</text>
+  <text x="70" y="953" font-size="8.5" fill="#5c6673" font-style="italic">West edge: x0 = LVDS hardware edge (host streams attach) · x1 = ingress route lane · x2 = decode demux · x3–131 = HT band. Each half has its own demux (decode x_demux is a 1-col strip; prefill pf_demux is a 1-row strip).</text>
+  <text x="70" y="966" font-size="8.5" fill="#5c6673" font-style="italic">Dashed = mux/demux I/O plumbing. Seam exaggerated (true height = 2 rows). West band (x0–131) widened for legibility; block region to scale in x within itself.</text>
 </svg>
