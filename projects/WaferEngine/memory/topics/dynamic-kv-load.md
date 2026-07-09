@@ -14,11 +14,17 @@ ingress at runtime** instead of baking it into the compiled program via
 serving primitive). This is the "dynamic-KV-loading decode kernel" the specdec
 dual-kernel **M2 warm-start** depends on (`docs/2026-06-30/2026-06-30-specdec-dual-kernels-design.md`).
 
-## Current state (2026-06-30)
+## Current state
 
-DESIGN complete and approved; moving to implementation. Full design + per-file
+2026-06-30: DESIGN complete and approved; moving to implementation. Full design + per-file
 plan + dataflow plot:
 - `docs/2026-06-30/2026-06-30-qwen3-dynamic-kv-load-design.md` (+ `...-ht_head-dataflow.png`)
+
+2026-07-06 PR #14 review (not live proof; verify current PR state before acting):
+`real_qwen3_1p7` makes qwen3 serving compile-once / serve-many by splitting baked
+`model_config` from runtime `request_config`, staging the request file for device
+runs, deleting the old compile-time KV bake mode (`KV_TRANSFER=0`), and ending
+decode rounds by runtime token-path budget / EOS STOP flood.
 
 ## Decisions
 

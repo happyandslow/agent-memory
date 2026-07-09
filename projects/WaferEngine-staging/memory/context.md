@@ -15,6 +15,7 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 - `memory/topics/e2e-pdSeparate-device-validation.md` — device results, weights gap, max-context byte model.
 - `memory/topics/standalone-vs-integrated-kernel-parity.md` — feature gap between integrated and standalone kernels.
 - `memory/topics/prefill-decode-transfer-bandwidth.md` — transfer+transform measurement design and floorplan pointers.
+- `memory/topics/h2d-host-device-bandwidth.md` — CS-3 host↔device / host↔host transport findings from `h2d-playground`.
 - `memory/topics/agentic-kv-trace-datasets.md` — traces/datasets for KV policy evaluation.
 
 ## Restart checklist
