@@ -124,7 +124,7 @@
 
   <!-- ================= PANEL C ================= -->
   <text x="770" y="104" font-size="13" font-weight="700" fill="#111">C. The 16 colors — _kpipe_ids (launch.py:610-613)</text>
-  <text x="770" y="120" font-size="11" fill="#666">5 ids ALIAS collective colors; 11 are fresh (7..17)</text>
+  <text x="770" y="120" font-size="11" fill="#666">ALL 24 wafer colors are in use. Only c10/c11 are K-pipe-only.</text>
 
   <rect x="770" y="130" width="420" height="26" fill="#eee" stroke="#999"/>
   <text x="780" y="148" font-size="11" font-weight="700" fill="#111">pipe</text>
@@ -134,35 +134,35 @@
 
   <g font-size="11">
     <rect x="770" y="156" width="420" height="26" fill="#e6194b" fill-opacity="0.16" stroke="#ccc"/>
-    <text x="780" y="174" fill="#111" font-weight="700">k0</text><text x="840" y="174" fill="#111">c1</text><text x="935" y="174" fill="#111">c2</text><text x="1030" y="174" fill="#a00">reduce_1st_0 / _1</text>
+    <text x="780" y="174" fill="#111" font-weight="700">k0</text><text x="840" y="174" fill="#111">c1</text><text x="935" y="174" fill="#111">c2</text><text x="1030" y="174" font-size="10" fill="#a00">reduce_1st_0 / _1</text>
 
     <rect x="770" y="182" width="420" height="26" fill="#f58231" fill-opacity="0.16" stroke="#ccc"/>
-    <text x="780" y="200" fill="#111" font-weight="700">k1</text><text x="840" y="200" fill="#111">c3</text><text x="935" y="200" fill="#111">c4</text><text x="1030" y="200" fill="#a00">reduce_2nd_0 / _1</text>
+    <text x="780" y="200" fill="#111" font-weight="700">k1</text><text x="840" y="200" fill="#111">c3</text><text x="935" y="200" fill="#111">c4</text><text x="1030" y="200" font-size="10" fill="#a00">reduce_2nd_0 / _1</text>
 
     <rect x="770" y="208" width="420" height="26" fill="#d4a017" fill-opacity="0.16" stroke="#ccc"/>
-    <text x="780" y="226" fill="#111" font-weight="700">k2</text><text x="840" y="226" fill="#111">c5</text><text x="935" y="226" fill="#111">c7</text><text x="1030" y="226" fill="#a00">broadcast_color (c5)</text>
+    <text x="780" y="226" fill="#111" font-weight="700">k2</text><text x="840" y="226" fill="#111">c5</text><text x="935" y="226" fill="#111">c7</text><text x="1030" y="226" font-size="10" fill="#a00">broadcast c5 · tok_bcast c7</text>
 
     <rect x="770" y="234" width="420" height="26" fill="#3cb44b" fill-opacity="0.16" stroke="#ccc"/>
-    <text x="780" y="252" fill="#111" font-weight="700">k3</text><text x="840" y="252" fill="#111">c8</text><text x="935" y="252" fill="#111">c9</text><text x="1030" y="252" fill="#a00">HT_head DOWN_A / DOWN_B</text>
+    <text x="780" y="252" fill="#111" font-weight="700">k3</text><text x="840" y="252" fill="#111">c8</text><text x="935" y="252" fill="#111">c9</text><text x="1030" y="252" font-size="10" fill="#a00">HT_head DOWN_A / DOWN_B</text>
 
     <rect x="770" y="260" width="420" height="26" fill="#4363d8" fill-opacity="0.16" stroke="#ccc"/>
-    <text x="780" y="278" fill="#111" font-weight="700">k4</text><text x="840" y="278" fill="#111">c10</text><text x="935" y="278" fill="#111">c11</text><text x="1030" y="278" fill="#777">—</text>
+    <text x="780" y="278" fill="#111" font-weight="700">k4</text><text x="840" y="278" fill="#111">c10</text><text x="935" y="278" fill="#111">c11</text><text x="1030" y="278" font-size="10" fill="#070">K-pipe exclusive</text>
 
     <rect x="770" y="286" width="420" height="26" fill="#911eb4" fill-opacity="0.16" stroke="#ccc"/>
-    <text x="780" y="304" fill="#111" font-weight="700">k5</text><text x="840" y="304" fill="#111">c12</text><text x="935" y="304" fill="#111">c13</text><text x="1030" y="304" fill="#777">—</text>
+    <text x="780" y="304" fill="#111" font-weight="700">k5</text><text x="840" y="304" fill="#111">c12</text><text x="935" y="304" fill="#111">c13</text><text x="1030" y="304" font-size="10" fill="#a00">prefill shuttle_ew_0/1</text>
 
     <rect x="770" y="312" width="420" height="26" fill="#17a2b8" fill-opacity="0.16" stroke="#ccc"/>
-    <text x="780" y="330" fill="#111" font-weight="700">k6</text><text x="840" y="330" fill="#111">c14</text><text x="935" y="330" fill="#111">c15</text><text x="1030" y="330" fill="#777">—</text>
+    <text x="780" y="330" fill="#111" font-weight="700">k6</text><text x="840" y="330" fill="#111">c14</text><text x="935" y="330" fill="#111">c15</text><text x="1030" y="330" font-size="10" fill="#a00">prefill x_chain_0/1</text>
 
     <rect x="770" y="338" width="420" height="26" fill="#808000" fill-opacity="0.16" stroke="#ccc"/>
-    <text x="780" y="356" fill="#111" font-weight="700">k7</text><text x="840" y="356" fill="#111">c16</text><text x="935" y="356" fill="#111">c17</text><text x="1030" y="356" fill="#a00">c17 = kv_xfer_color_0</text>
+    <text x="780" y="356" fill="#111" font-weight="700">k7</text><text x="840" y="356" fill="#111">c16</text><text x="935" y="356" fill="#111">c17</text><text x="1030" y="356" font-size="10" fill="#a00">pf z_drain · kv_xfer_0</text>
   </g>
 
   <rect x="770" y="378" width="420" height="66" rx="4" fill="#fff8e1" stroke="#d4a017"/>
-  <text x="780" y="396" font-size="11" font-weight="700" fill="#111">Aliasing is safe only by X-disjointness</text>
-  <text x="780" y="412" font-size="10.5" fill="#444">Strips live at fabric_x ≥ PLACE_X; collectives run inside block</text>
-  <text x="780" y="426" font-size="10.5" fill="#444">columns; HT_head sits in the west band; kv_xfer runs in block</text>
-  <text x="780" y="439" font-size="10.5" fill="#444">columns. Asserted in COMMENTS only — no compile/runtime check.</text>
+  <text x="780" y="396" font-size="11" font-weight="700" fill="#111">Why alias? 24 colors exist; K-pipe alone wants 16</text>
+  <text x="780" y="412" font-size="10.5" fill="#444">Safe by DIRECTION, not distance: strip cells never tx E/W on a</text>
+  <text x="780" y="426" font-size="10.5" fill="#444">K-pipe color, and block-edge PEs never tx toward a strip on</text>
+  <text x="780" y="439" font-size="10.5" fill="#444">c1..c5. No shared wire is ever driven twice. Comment-only.</text>
 
   <!-- per-cell paint -->
   <text x="770" y="478" font-size="13" font-weight="700" fill="#111">D. How one strip cell is painted (launch.py:1195-1214)</text>

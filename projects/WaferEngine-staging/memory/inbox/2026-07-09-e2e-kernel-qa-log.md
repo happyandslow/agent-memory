@@ -201,3 +201,102 @@ color". Then IQ2 = rx, OQ7 = tx. Sender additionally swaps q0/q1 when
 - `assets/prefill-decode-transfer/e2e-topology-full.svg` (the diagram in question).
 - **New:** `assets/decode-kpipe/kpipe-south.svg` + `.png` — K-pipe illustration
   produced in this session; hand to whoever re-works the topology plot.
+
+---
+
+## Q3 — Why is a K-pipe color double-booked as a reduce/broadcast color? East strip or west? Does the strip do other jobs?
+
+### Which strip
+
+K-pipe paint is applied **only where `real_* == True`** (`launch.py:1228-1230`).
+In the shipped **2×2** config: row 0 → `(real_west=False, real_east=True)`,
+row 1 → `(real_east=True, real_west=False)`. So **only the EAST strip column
+(x644) carries a K-pipe**; the west strip (x131) has no K-pipe color painted at
+all. Which side turns the corner is a function of snake parity, not of design:
+at `P_Y_BLOCK_NUM=4` the middle rows have BOTH strips real and the corner
+alternates east/west/east. e2e ships no ≥3-row config.
+
+### Why the ids are shared — the whole color space is consumed
+
+WSE-3 has **24 fabric colors (0..23)**. Cross-referencing `_kpipe_ids` against
+every other layout-global Color in `launch.py` gives **24 distinct ids in use —
+the entire space**. Only **c10 / c11 are K-pipe-exclusive**:
+
+| pipe | a | b | also used as |
+|---|---|---|---|
+| k0 | c1 | c2 | `reduce_1st_0 / _1` |
+| k1 | c3 | c4 | `reduce_2nd_0 / _1` |
+| k2 | c5 | c7 | `broadcast_color` / `tok_bcast_color` |
+| k3 | c8 | c9 | HT_head `DOWN_A/DOWN_B` (HT_head borrows *from* K-pipe: `DOWN_A_c = kpipe_a_colors[3]`) |
+| k4 | c10 | c11 | — **K-pipe exclusive** |
+| k5 | c12 | c13 | prefill `shuttle_ew_0/1` |
+| k6 | c14 | c15 | prefill `x_chain_0/1` |
+| k7 | c16 | c17 | prefill `z_drain` / `kv_xfer_color_0` |
+
+K-pipe needs `2 × KPIPE_K = 16` ids on its own. 16 + 6 collectives + tok +
+pre/post-embed + inter_block a/b + kv a/b + ht_ready already exceeds 24, so
+aliasing is **forced**, not a stylistic choice.
+
+### Why it is actually safe (stronger than the comment's claim)
+
+The comment says "disjoint X coordinates". The real invariant is
+**direction-disjointness — no wafer wire is ever driven by two users**:
+
+1. **Strip cells never tx E/W on a K-pipe color.** Only `N→S` (pass-through),
+   `N→RAMP` (rx), `RAMP→S` (tx). (`launch.py:1195-1198`)
+2. **Block-edge PEs never tx toward a strip on c1..c5.** In `route_calc`, the
+   1st/2nd-phase reduce chains always converge *inward* toward their root
+   (`remainder_x=0 ⇒ tx EAST`, never WEST), and the X-broadcast **endpoints**
+   at `local_px ∈ {0, P_BLOCK_SIZE-1}` are `rx=<neighbor>, tx=RAMP`. So the
+   E/W wire between a block edge and its adjacent strip is **never driven** on
+   the collective colors. Block PEs do carry *dangling rx* routes pointing at
+   the strip; they simply receive nothing.
+3. **c17's two jobs never share a column.** The decode `kv_xfer` paint is
+   `row_rect = IntRectangle(IntVector(1, ly), IntVector(Pw+1, ly+1))` —
+   **block columns only, strips excluded** (`launch.py:1133`). The relay region
+   is `Pw` wide (x132–643), also excluding strips. So c17 = `kv_xfer_0` runs
+   vertically in block columns while c17 = `kpipe_b_7` runs vertically in the
+   strip column.
+4. **Prefill's ids (c12–c16) are a different Y band** — reuse across regions is
+   free; only ids that must cross a region seam (7, 17, 18, 19, 20, 21, 23) are
+   truly layout-global.
+
+None of this is checked at compile or run time.
+
+### Yes — the strip columns are multi-purpose
+
+Notably, the *fake* strips are not idle; they are compile-time wire:
+
+| Column | Row | Role | Color |
+|---|---|---|---|
+| west (x131) | row 0 | **fake** — transits X into the chain-start block, `WEST→EAST` | `post_embed_x_color` (23), `launch.py:1341-1348` |
+| west (x131) | row 1 (last) | **fake** — transits Z out to HT_tail, `EAST→WEST`; is the source of `decode_out_port` | `result_color` (region-local, `launch.py:1256-1265`) |
+| east (x644) | row 0 | **real** sender — K-pipe + pulls Z from block | 16 K-pipe ids + `inter_block_a/b` (19/20) |
+| east (x644) | row 1 | **real** receiver — K-pipe + broadcasts into block | 16 K-pipe ids + `intra_row_bcast` (6) |
+
+So the east strip is simultaneously the K-pipe *and* the inter/intra-block Z
+handoff endpoint; the west strip is simultaneously the X-ingress wire and the
+Z-egress wire. `decode_out_port` reads from the fake west strip's `EAST→WEST`
+transit, not from RAMP — a detail that would break if the west strip ever became
+real (i.e. at `P_Y_BLOCK_NUM ≥ 4`).
+
+### Implications / next actions
+
+- [ ] **Latent hazard at `P_Y_BLOCK_NUM ≥ 4`:** the west strip becomes real and
+      would need to carry the K-pipe *and* `result_color` / `post_embed_x`
+      transit. `decode_out_port`'s `edge_dir_in` source paint assumes a fake
+      west strip. Any taller-layout work must revisit this.
+- [ ] At `P_Y_BLOCK_NUM ≥ 4` a real west strip paints c8/c9 (`N→S`) at x131,
+      **immediately adjacent** to HT_head's c8/c9 (`DOWN_A/B`) at x≤130. Still
+      direction-disjoint (both N/S only), but "wafer-physical disjoint" in the
+      `launch.py:641-644` comment is loose — they are neighbouring columns.
+
+### Pointers
+
+- `launch.py:1128-1137` (kv paint excludes strips), `:1195-1214` (strip paint),
+  `:1228-1230` (real-strip gating), `:1239-1272` (result_color + fake west
+  strip + `decode_out_port`), `:1341-1355` (post_embed_x transit).
+- `src/decode/route_calc.csl:197-298` (X reduce converges inward), `:401-441`
+  (bcast endpoints ramp).
+- Diagram: `assets/decode-kpipe/kpipe-south.svg` panel C (corrected 2026-07-09
+  to show all aliases, not just c17).
