@@ -331,3 +331,60 @@ for the same color". Hence the park-IQ3..IQ7-on-`x_input_color` step in
   (bcast endpoints ramp).
 - Diagram: `assets/decode-kpipe/kpipe-south.svg` panel C (corrected 2026-07-09
   to show all aliases, not just c17).
+
+---
+
+## Q4 — HT_head's UP_A/UP_B (21,22) and DOWN_A/DOWN_B (8,9): what carries what, and why is DOWN tied to the K-pipe colors?
+
+```
+kpipe_a_colors = [1, 3, 5, 8, 10, 12, 14, 16]
+kpipe_b_colors = [2, 4, 7, 9, 11, 13, 15, 17]
+                            ^pipe 3
+DOWN_A_c = kpipe_a_colors[3] = c8      DOWN_B_c = kpipe_b_colors[3] = c9
+```
+
+### What they carry (the W_E embedding gather, `ht_head.csl:126-226`)
+
+Vocab is sharded along **Y** (row `py` owns `V_per_pe_y` vocab rows); hidden along
+**X** (col owns `2*dim_per_pe`). Each column has a **diag pair**:
+`upper = 2*eff_x`, `lower = 2*eff_x + 1`. For token `t`, the owning row is
+`py_b = t / V_per_pe_y`; its `2*dim_per_pe` slice must reach that column's two
+diag PEs (upper takes the first half, lower the second), which then emit east on
+`post_embed_x` (c23) into decode row 0.
+
+| source `py_b` vs diag pair | direction | colors |
+|---|---|---|
+| `> lower_diag` (south of pair) | northbound chain | **UP_A / UP_B** (21, 22) |
+| `< upper_diag` (north of pair) | southbound chain | **DOWN_A / DOWN_B** (8, 9) |
+| `== upper_diag` | consumes 1st half, 1-hop SOUTH | DOWN_B |
+| `== lower_diag` | consumes 2nd half, 1-hop NORTH | UP_A |
+
+**Both are one-way channels.** UP_* is painted only at/below `upper_diag`;
+DOWN_* only at/above `lower_diag`. All routes are N/S only — never E/W.
+
+**Why two colors per direction:** relay parity, identical trick to the K-pipe. A
+relay's rx and tx must differ, so even `py` shuttles `UP_A→UP_B` and odd shuttles
+`UP_B→UP_A` (`launch.py:876-903`, positions P1–P6). That alternation is the
+*only* kinship with the K-pipe.
+
+### Why DOWN reuses kpipe[3] — pure id scavenging, zero semantics
+
+The 24-color space is exhausted. Ids **8, 9, 10, 11** were the only ones not
+otherwise claimed, and the kpipe loop had *already constructed* `Color` objects
+for 8/9 (pipe 3). So `DOWN_A_c = kpipe_a_colors[3]` reuses those objects rather
+than minting duplicates; `set_param_all("DOWN_A_color", DOWN_A_c)` then binds the
+id to ht_head's local param name (the object's own name stays `kpipe_color_a_3`).
+
+Consequences:
+- After HT_head takes 8/9, **only c10/c11 remain K-pipe-exclusive.**
+- Safe because HT_head is its own region (x3–130) and both users paint **N/S
+  only**, so even the adjacent x130 | x131 wire is never driven. In the shipped
+  2×2 the west strip is fake, so 8/9 are not painted on a strip at all.
+- `UP_A/UP_B` are aliased too, just with different partners: **c21 =
+  `kv_xfer_color_1`**, **c22 = relay reserve / prefill `kv_sweep_e_color_1`**.
+
+### Pointers
+
+- `launch.py:604-646` (`_kpipe_ids`, `DOWN_A_c`/`DOWN_B_c`), `:826-833`
+  (device-name binding), `:855-903` (P1–P6 static paint).
+- `src/decode/ht_head.csl:126-226` (`embed_gather_dispatch`), `:32-40` (color params).
