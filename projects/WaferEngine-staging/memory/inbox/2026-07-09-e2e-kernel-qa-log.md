@@ -129,6 +129,13 @@ RAMP/RAMP with no traffic. 17 aliases a K-pipe id and 21 aliases `UP_A_color`;
 
 ### How the inter-col strip (K-pipe) works
 
+![decode K-pipe south transfer](../../assets/decode-kpipe/kpipe-south.svg)
+
+*Diagram: `assets/decode-kpipe/kpipe-south.svg` (PNG alongside). Drawn from source
+2026-07-09 — panel A ly→pipe interleave, panel B the k=0 chain and parity
+alternation across the region seam, panel C the 16 colors and their aliases,
+panel D the per-cell paint rule. Illustrated at P_BLOCK_SIZE=16 (real: 256).*
+
 The strip is a **corner turn**, and it exists only for **inter-ROW** block hops.
 Intra-row hops (block 0 → block 1 within a row) need no strip: they ride
 `inter_block_a/b_color` (19/20) straight across adjacent block columns.
@@ -192,3 +199,5 @@ color". Then IQ2 = rx, OQ7 = tx. Sender additionally swaps q0/q1 when
   (`dispatch_init_task`), `src/decode/route_calc.csl:129-195` (INTER_A/B,
   `has_inter_send/recv`), `:443-452` (`intra_row_bcast` far-edge).
 - `assets/prefill-decode-transfer/e2e-topology-full.svg` (the diagram in question).
+- **New:** `assets/decode-kpipe/kpipe-south.svg` + `.png` — K-pipe illustration
+  produced in this session; hand to whoever re-works the topology plot.

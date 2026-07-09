@@ -1,0 +1,195 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1290 930" width="1290" height="930" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#333"/>
+    </marker>
+    <marker id="arblue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4363d8"/>
+    </marker>
+    <marker id="arred" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#e6194b"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1290" height="930" fill="#ffffff"/>
+
+  <text x="24" y="30" font-size="18" font-weight="700" fill="#111">qwen3_1p7b-e2e — decode K-pipe: inter-block-row Z transfer down the east strip column</text>
+  <text x="24" y="52" font-size="12" fill="#555">Illustrated with P_BLOCK_SIZE=16 (real: 256) so M_PER_PIPE = P_BLOCK_SIZE/KPIPE_K = 2 (real: 32).  KPIPE_K = 8 pipes, 16 colors, one physical column (x644).</text>
+  <text x="24" y="70" font-size="12" fill="#555">Source: src/decode/decode_strip.csl, decode.csl:1465-1542 (dispatch_init_task), launch.py:600-646 (_kpipe_ids), launch.py:1195-1214 (strip paint).</text>
+
+  <!-- ================= PANEL A ================= -->
+  <text x="40" y="104" font-size="13" font-weight="700" fill="#111">A. Strip column: ly → pipe</text>
+  <text x="40" y="120" font-size="11" fill="#666">k_own = ly mod 8 · i_own = ly div 8</text>
+
+  <!-- sender cells ly 0..15 -->
+  <g font-size="10">
+    <text x="40" y="146" font-size="11" font-weight="700" fill="#333">row_0 region — SENDER</text>
+    <!-- k0 -->
+    <rect x="96" y="152" width="86" height="20" fill="#e6194b" fill-opacity="0.30" stroke="#e6194b" stroke-width="2"/><text x="46" y="166" fill="#444">ly= 0</text><text x="126" y="166" fill="#111" font-weight="700">k0</text>
+    <rect x="96" y="172" width="86" height="20" fill="#f58231" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="186" fill="#444">ly= 1</text><text x="130" y="186" fill="#555">k1</text>
+    <rect x="96" y="192" width="86" height="20" fill="#d4a017" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="206" fill="#444">ly= 2</text><text x="130" y="206" fill="#555">k2</text>
+    <rect x="96" y="212" width="86" height="20" fill="#3cb44b" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="226" fill="#444">ly= 3</text><text x="130" y="226" fill="#555">k3</text>
+    <rect x="96" y="232" width="86" height="20" fill="#4363d8" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="246" fill="#444">ly= 4</text><text x="130" y="246" fill="#555">k4</text>
+    <rect x="96" y="252" width="86" height="20" fill="#911eb4" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="266" fill="#444">ly= 5</text><text x="130" y="266" fill="#555">k5</text>
+    <rect x="96" y="272" width="86" height="20" fill="#17a2b8" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="286" fill="#444">ly= 6</text><text x="130" y="286" fill="#555">k6</text>
+    <rect x="96" y="292" width="86" height="20" fill="#808000" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="306" fill="#444">ly= 7</text><text x="130" y="306" fill="#555">k7</text>
+    <!-- second wrap: i_own = 1 -->
+    <rect x="96" y="312" width="86" height="20" fill="#e6194b" fill-opacity="0.30" stroke="#e6194b" stroke-width="2"/><text x="46" y="326" fill="#444">ly= 8</text><text x="126" y="326" fill="#111" font-weight="700">k0</text>
+    <rect x="96" y="332" width="86" height="20" fill="#f58231" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="346" fill="#444">ly= 9</text><text x="130" y="346" fill="#555">k1</text>
+    <rect x="96" y="352" width="86" height="20" fill="#d4a017" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="366" fill="#444">ly=10</text><text x="130" y="366" fill="#555">k2</text>
+    <rect x="96" y="372" width="86" height="20" fill="#3cb44b" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="386" fill="#444">ly=11</text><text x="130" y="386" fill="#555">k3</text>
+    <rect x="96" y="392" width="86" height="20" fill="#4363d8" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="406" fill="#444">ly=12</text><text x="130" y="406" fill="#555">k4</text>
+    <rect x="96" y="412" width="86" height="20" fill="#911eb4" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="426" fill="#444">ly=13</text><text x="130" y="426" fill="#555">k5</text>
+    <rect x="96" y="432" width="86" height="20" fill="#17a2b8" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="446" fill="#444">ly=14</text><text x="130" y="446" fill="#555">k6</text>
+    <rect x="96" y="452" width="86" height="20" fill="#808000" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="466" fill="#444">ly=15</text><text x="130" y="466" fill="#555">k7</text>
+  </g>
+
+  <!-- region boundary -->
+  <line x1="30" y1="494" x2="750" y2="494" stroke="#111" stroke-width="2" stroke-dasharray="8 5"/>
+  <text x="40" y="489" font-size="11" font-weight="700" fill="#111">region boundary — row_0 → row_1   (parity continues: i_glob = i_own + M)</text>
+
+  <g font-size="10">
+    <text x="40" y="510" font-size="11" font-weight="700" fill="#333">row_1 region — RECEIVER</text>
+    <rect x="96" y="516" width="86" height="20" fill="#e6194b" fill-opacity="0.30" stroke="#e6194b" stroke-width="2"/><text x="46" y="530" fill="#444">ly= 0</text><text x="126" y="530" fill="#111" font-weight="700">k0</text>
+    <rect x="96" y="536" width="86" height="20" fill="#f58231" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="550" fill="#444">ly= 1</text><text x="130" y="550" fill="#555">k1</text>
+    <rect x="96" y="556" width="86" height="20" fill="#d4a017" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="570" fill="#444">ly= 2</text><text x="130" y="570" fill="#555">k2</text>
+    <rect x="96" y="576" width="86" height="20" fill="#3cb44b" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="590" fill="#444">ly= 3</text><text x="130" y="590" fill="#555">k3</text>
+    <rect x="96" y="596" width="86" height="20" fill="#4363d8" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="610" fill="#444">ly= 4</text><text x="130" y="610" fill="#555">k4</text>
+    <rect x="96" y="616" width="86" height="20" fill="#911eb4" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="630" fill="#444">ly= 5</text><text x="130" y="630" fill="#555">k5</text>
+    <rect x="96" y="636" width="86" height="20" fill="#17a2b8" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="650" fill="#444">ly= 6</text><text x="130" y="650" fill="#555">k6</text>
+    <rect x="96" y="656" width="86" height="20" fill="#808000" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="670" fill="#444">ly= 7</text><text x="130" y="670" fill="#555">k7</text>
+    <rect x="96" y="676" width="86" height="20" fill="#e6194b" fill-opacity="0.30" stroke="#e6194b" stroke-width="2"/><text x="46" y="690" fill="#444">ly= 8</text><text x="126" y="690" fill="#111" font-weight="700">k0</text>
+    <rect x="96" y="696" width="86" height="20" fill="#f58231" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="710" fill="#444">ly= 9</text><text x="130" y="710" fill="#555">k1</text>
+    <rect x="96" y="716" width="86" height="20" fill="#d4a017" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="730" fill="#444">ly=10</text><text x="130" y="730" fill="#555">k2</text>
+    <rect x="96" y="736" width="86" height="20" fill="#3cb44b" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="750" fill="#444">ly=11</text><text x="130" y="750" fill="#555">k3</text>
+    <rect x="96" y="756" width="86" height="20" fill="#4363d8" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="770" fill="#444">ly=12</text><text x="130" y="770" fill="#555">k4</text>
+    <rect x="96" y="776" width="86" height="20" fill="#911eb4" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="790" fill="#444">ly=13</text><text x="130" y="790" fill="#555">k5</text>
+    <rect x="96" y="796" width="86" height="20" fill="#17a2b8" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="810" fill="#444">ly=14</text><text x="130" y="810" fill="#555">k6</text>
+    <rect x="96" y="816" width="86" height="20" fill="#808000" fill-opacity="0.18" stroke="#bbb"/><text x="46" y="830" fill="#444">ly=15</text><text x="130" y="830" fill="#555">k7</text>
+  </g>
+  <text x="40" y="858" font-size="10" fill="#666">8 pipes interleave in ONE column.</text>
+  <text x="40" y="872" font-size="10" fill="#666">Pipe k owns ly ≡ k (mod 8).</text>
+  <text x="40" y="886" font-size="10" fill="#666">Highlighted: pipe k=0 (panel B).</text>
+
+  <!-- ================= PANEL B ================= -->
+  <text x="300" y="104" font-size="13" font-weight="700" fill="#111">B. One pipe (k=0): a=c1, b=c2 — hops alternate</text>
+  <text x="300" y="120" font-size="11" fill="#666">parity = i_glob mod 2 · parity 0 ⇒ rx=a, tx=b · parity 1 ⇒ rx=b, tx=a</text>
+  <text x="300" y="134" font-size="11" fill="#666">B = bsz·dim_per_pe wavelets (one row-shard of Z)</text>
+
+  <!-- sender own_0 -->
+  <rect x="300" y="152" width="390" height="72" rx="4" fill="#fdeaee" stroke="#e6194b" stroke-width="2"/>
+  <text x="310" y="170" font-size="12" font-weight="700" fill="#111">SENDER own_0   ly=0   i_glob=0   parity=0</text>
+  <text x="310" y="187" font-size="11" fill="#333">rx=<tspan font-weight="700">c1</tspan>(unused)  tx=<tspan font-weight="700">c2</tspan>   fwd_extent = 0·B</text>
+  <text x="310" y="203" font-size="11" fill="#333">recv own B from block ← WEST on c19/c20  (q0 IQ)</text>
+  <text x="310" y="218" font-size="11" fill="#666">inject own B → q7 OQ on c2</text>
+
+  <line x1="495" y1="224" x2="495" y2="262" stroke="#e6194b" stroke-width="2.5" marker-end="url(#arred)"/>
+  <text x="505" y="248" font-size="12" font-weight="700" fill="#e6194b">c2 · payload [s0]</text>
+
+  <!-- sender own_1 -->
+  <rect x="300" y="264" width="390" height="72" rx="4" fill="#fdeaee" stroke="#e6194b" stroke-width="2"/>
+  <text x="310" y="282" font-size="12" font-weight="700" fill="#111">SENDER own_1   ly=8   i_glob=1   parity=1</text>
+  <text x="310" y="299" font-size="11" fill="#333">rx=<tspan font-weight="700">c2</tspan>  tx=<tspan font-weight="700">c1</tspan>   fwd_extent = 1·B</text>
+  <text x="310" y="315" font-size="11" fill="#333">forward s0 (c2→c1), then inject own B</text>
+  <text x="310" y="330" font-size="11" fill="#666">recv own B from block on c19/c20 → q0 IQ</text>
+
+  <line x1="495" y1="336" x2="495" y2="514" stroke="#4363d8" stroke-width="2.5" marker-end="url(#arblue)"/>
+  <text x="505" y="400" font-size="12" font-weight="700" fill="#4363d8">c1 · payload [s0, s1]</text>
+  <text x="505" y="416" font-size="10" fill="#4363d8">crosses the region boundary</text>
+  <text x="505" y="430" font-size="10" fill="#4363d8">on the SAME wafer-global id</text>
+
+  <!-- recv own_0 -->
+  <rect x="300" y="516" width="390" height="72" rx="4" fill="#eaf0fd" stroke="#4363d8" stroke-width="2"/>
+  <text x="310" y="534" font-size="12" font-weight="700" fill="#111">RECEIVER own_0   ly=0   i_glob=M+0=2   parity=0</text>
+  <text x="310" y="551" font-size="11" fill="#333">rx=<tspan font-weight="700">c1</tspan>  tx=<tspan font-weight="700">c2</tspan>   post_fwd = (M-1-0)·B = 1·B</text>
+  <text x="310" y="567" font-size="11" fill="#333">consume first B = s0 (its own shard, ly matches)</text>
+  <text x="310" y="582" font-size="11" fill="#666">broadcast own B → q0 OQ on c6 → block (WEST)</text>
+
+  <line x1="495" y1="588" x2="495" y2="672" stroke="#e6194b" stroke-width="2.5" marker-end="url(#arred)"/>
+  <text x="505" y="634" font-size="12" font-weight="700" fill="#e6194b">c2 · payload [s1]</text>
+
+  <!-- recv own_1 -->
+  <rect x="300" y="674" width="390" height="72" rx="4" fill="#eaf0fd" stroke="#4363d8" stroke-width="2"/>
+  <text x="310" y="692" font-size="12" font-weight="700" fill="#111">RECEIVER own_1   ly=8   i_glob=M+1=3   parity=1</text>
+  <text x="310" y="709" font-size="11" fill="#333">rx=<tspan font-weight="700">c2</tspan>  tx=<tspan font-weight="700">c1</tspan>(unused)   post_fwd = 0·B</text>
+  <text x="310" y="725" font-size="11" fill="#333">consume B = s1</text>
+  <text x="310" y="740" font-size="11" fill="#666">broadcast own B → q0 OQ on c6</text>
+
+  <rect x="300" y="758" width="390" height="88" rx="4" fill="#f7f7f7" stroke="#bbb"/>
+  <text x="310" y="777" font-size="11" font-weight="700" fill="#111">Why alternate at all?</text>
+  <text x="310" y="796" font-size="10.5" fill="#444">A cell's rx and tx must differ, else its own injected</text>
+  <text x="310" y="810" font-size="10.5" fill="#444">wavelets would re-enter its own rx. Alternating a/b by</text>
+  <text x="310" y="824" font-size="10.5" fill="#444">i_glob parity flips the color on every hop — and</text>
+  <text x="310" y="838" font-size="10.5" fill="#444">i_glob = i_own + M keeps the flip unbroken across the seam.</text>
+
+  <!-- ================= PANEL C ================= -->
+  <text x="770" y="104" font-size="13" font-weight="700" fill="#111">C. The 16 colors — _kpipe_ids (launch.py:610-613)</text>
+  <text x="770" y="120" font-size="11" fill="#666">5 ids ALIAS collective colors; 11 are fresh (7..17)</text>
+
+  <rect x="770" y="130" width="420" height="26" fill="#eee" stroke="#999"/>
+  <text x="780" y="148" font-size="11" font-weight="700" fill="#111">pipe</text>
+  <text x="840" y="148" font-size="11" font-weight="700" fill="#111">a (rx@even)</text>
+  <text x="935" y="148" font-size="11" font-weight="700" fill="#111">b (tx@even)</text>
+  <text x="1030" y="148" font-size="11" font-weight="700" fill="#111">also used as</text>
+
+  <g font-size="11">
+    <rect x="770" y="156" width="420" height="26" fill="#e6194b" fill-opacity="0.16" stroke="#ccc"/>
+    <text x="780" y="174" fill="#111" font-weight="700">k0</text><text x="840" y="174" fill="#111">c1</text><text x="935" y="174" fill="#111">c2</text><text x="1030" y="174" fill="#a00">reduce_1st_0 / _1</text>
+
+    <rect x="770" y="182" width="420" height="26" fill="#f58231" fill-opacity="0.16" stroke="#ccc"/>
+    <text x="780" y="200" fill="#111" font-weight="700">k1</text><text x="840" y="200" fill="#111">c3</text><text x="935" y="200" fill="#111">c4</text><text x="1030" y="200" fill="#a00">reduce_2nd_0 / _1</text>
+
+    <rect x="770" y="208" width="420" height="26" fill="#d4a017" fill-opacity="0.16" stroke="#ccc"/>
+    <text x="780" y="226" fill="#111" font-weight="700">k2</text><text x="840" y="226" fill="#111">c5</text><text x="935" y="226" fill="#111">c7</text><text x="1030" y="226" fill="#a00">broadcast_color (c5)</text>
+
+    <rect x="770" y="234" width="420" height="26" fill="#3cb44b" fill-opacity="0.16" stroke="#ccc"/>
+    <text x="780" y="252" fill="#111" font-weight="700">k3</text><text x="840" y="252" fill="#111">c8</text><text x="935" y="252" fill="#111">c9</text><text x="1030" y="252" fill="#a00">HT_head DOWN_A / DOWN_B</text>
+
+    <rect x="770" y="260" width="420" height="26" fill="#4363d8" fill-opacity="0.16" stroke="#ccc"/>
+    <text x="780" y="278" fill="#111" font-weight="700">k4</text><text x="840" y="278" fill="#111">c10</text><text x="935" y="278" fill="#111">c11</text><text x="1030" y="278" fill="#777">—</text>
+
+    <rect x="770" y="286" width="420" height="26" fill="#911eb4" fill-opacity="0.16" stroke="#ccc"/>
+    <text x="780" y="304" fill="#111" font-weight="700">k5</text><text x="840" y="304" fill="#111">c12</text><text x="935" y="304" fill="#111">c13</text><text x="1030" y="304" fill="#777">—</text>
+
+    <rect x="770" y="312" width="420" height="26" fill="#17a2b8" fill-opacity="0.16" stroke="#ccc"/>
+    <text x="780" y="330" fill="#111" font-weight="700">k6</text><text x="840" y="330" fill="#111">c14</text><text x="935" y="330" fill="#111">c15</text><text x="1030" y="330" fill="#777">—</text>
+
+    <rect x="770" y="338" width="420" height="26" fill="#808000" fill-opacity="0.16" stroke="#ccc"/>
+    <text x="780" y="356" fill="#111" font-weight="700">k7</text><text x="840" y="356" fill="#111">c16</text><text x="935" y="356" fill="#111">c17</text><text x="1030" y="356" fill="#a00">c17 = kv_xfer_color_0</text>
+  </g>
+
+  <rect x="770" y="378" width="420" height="66" rx="4" fill="#fff8e1" stroke="#d4a017"/>
+  <text x="780" y="396" font-size="11" font-weight="700" fill="#111">Aliasing is safe only by X-disjointness</text>
+  <text x="780" y="412" font-size="10.5" fill="#444">Strips live at fabric_x ≥ PLACE_X; collectives run inside block</text>
+  <text x="780" y="426" font-size="10.5" fill="#444">columns; HT_head sits in the west band; kv_xfer runs in block</text>
+  <text x="780" y="439" font-size="10.5" fill="#444">columns. Asserted in COMMENTS only — no compile/runtime check.</text>
+
+  <!-- per-cell paint -->
+  <text x="770" y="478" font-size="13" font-weight="700" fill="#111">D. How one strip cell is painted (launch.py:1195-1214)</text>
+
+  <rect x="770" y="492" width="420" height="118" rx="4" fill="#f7f7f7" stroke="#bbb"/>
+  <text x="780" y="512" font-size="11" fill="#333">All 16 colors are painted on EVERY cell of the strip column:</text>
+  <text x="788" y="532" font-size="11" fill="#111">default:  NORTH → SOUTH   (pure router pass-through)</text>
+  <text x="780" y="554" font-size="11" fill="#333">Its OWN pipe k = ly mod 8 then overrides BOTH of k's colors:</text>
+  <text x="788" y="574" font-size="11" fill="#111">rx_c:  NORTH → RAMP     (terminate, consume)</text>
+  <text x="788" y="592" font-size="11" fill="#111">tx_c:  RAMP  → SOUTH    (inject)</text>
+
+  <rect x="770" y="622" width="420" height="52" rx="4" fill="#eaf7ea" stroke="#3cb44b"/>
+  <text x="780" y="641" font-size="11" font-weight="700" fill="#111">⇒ every strip PE: 2 colors ramped, 14 colors in transit</text>
+  <text x="780" y="659" font-size="10.5" fill="#444">The 7 pipes it does not own flow straight through it, untouched.</text>
+
+  <rect x="770" y="686" width="420" height="152" rx="4" fill="#f7f7f7" stroke="#bbb"/>
+  <text x="780" y="705" font-size="11" font-weight="700" fill="#111">Queue rebind on strips (dispatch_init_task)</text>
+  <text x="780" y="723" font-size="10.5" fill="#444">comm_pe binds IQ3..IQ7 as MASTERS for collective colors c1..c5,</text>
+  <text x="780" y="737" font-size="10.5" fill="#444">which pipes k0..k2 reuse. So a strip PE must first park</text>
+  <text x="780" y="751" font-size="10.5" fill="#444">IQ3..IQ7 on x_input_color (unrouted here), else rebinding</text>
+  <text x="780" y="765" font-size="10.5" fill="#444">IQ2 → rx_color trips "two master input queues for same color".</text>
+  <text x="788" y="785" font-size="10.5" fill="#111">q0 IQ  block → sender   (inter_block_a/b, c19/c20)</text>
+  <text x="788" y="799" font-size="10.5" fill="#111">q0 OQ  receiver → block (intra_row_bcast, c6)</text>
+  <text x="788" y="813" font-size="10.5" fill="#111">q2 IQ  K-pipe rx_color</text>
+  <text x="788" y="827" font-size="10.5" fill="#111">q7 OQ  K-pipe tx_color</text>
+
+  <text x="770" y="862" font-size="10" fill="#666">Whole chain repeats MAX_OUTPUT_LEN times (one decode step per iteration),</text>
+  <text x="770" y="876" font-size="10" fill="#666">driven by 3 async @fmovh tasks per role in decode_strip.csl.</text>
+  <text x="770" y="890" font-size="10" fill="#666">In the shipped 2x2 config only the EAST strip (x644) is real.</text>
+</svg>
