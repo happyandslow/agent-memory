@@ -330,6 +330,93 @@ byte-identical otherwise) and **hangs**. So:
   kernel** through the same launcher path — if it runs, the bug is your config, not
   the cluster.
 
+## STATUS (2026-07-08, cont.): mux count bug FIXED; scale-dependent decode-side hang OPEN
+
+This supersedes the "Suspects/Next" bullets above — suspect #1 was right.
+
+### Fixed & DEVICE-CONFIRMED (at 16×16)
+- **Root cause of the profiler hang = emit-count ≠ forward-count in the logits mux.**
+  `src/decode/mux.csl` relayed per-step blobs + 8 (TSC burst) then STOPPED; nothing
+  drained the extra 8-u32 profiler blob, so the host's `receive` waited for 8 wavelets
+  the mux never sent → silent hang. (Exactly suspect #1 above.)
+  **Fix:** `mux.csl` gained a `param tail_wlts` (= 8, or 16 with profiler) and its
+  trailing drain widened `8 → tail_wlts`; NO new tasks / no `kv_profile` branch — the
+  mux stays profile-agnostic, it just needed the COUNT. `launch.py` passes
+  `8 + (8 if kv_profile else 0)`, mirroring `south_total_with_tsc` so forward-count and
+  receive-count derive from one formula.
+  → profiler now runs **end-to-end at 16×16 on device**: blob delivered
+  `[A,B,pf_done,pad,C,dec_done,pad,pad]` (toy e.g. `[22973,373079,1,0,143910324,1,0,0]`).
+- **Also fixed (latent, not the blocker):** in `ht_tail.csl` the TSC-burst and
+  profiler-blob async emits shared OQ0's default microthread — WSE-3 forbids two
+  concurrent async ops on one output queue sharing a `ut_id` (SDK doc
+  `csl/language/microthreads_wse3`). Serialized via the TSC emit's `.activate` → `tail_prof_emit`.
+
+### OPEN — the issue to dig into (Le taking 1–2 days)
+Full-size **512×512 profiler HANGS before decode step 1**. Cleanly isolated with the
+live-log channel:
+
+| config | 16×16 | 512×512 |
+|---|---|---|
+| baseline `KV_PROFILE=0` | — | ✅ completes (256 steps; first token 98230) |
+| profiler `KV_PROFILE=1` | ✅ completes | ❌ hangs at `SEEDS_SENT` (decode never enters main loop) |
+
+So decode + KV-transfer are fine at scale; the hang is in the **`KV_PROFILE=1`-only
+decode-ingress code** and is **scale-dependent** (fine at `P_BLOCK_SIZE=8`, deadlocks
+at 256). Hangs *before* decode step 1 ⇒ `kv_init_cont` never fires ⇒ deadlock is in
+`kv_ingress` or the post-ingress drain. Two candidates, both scale with block size:
+1. **Seam A/B rendezvous (leading):** reporter's BLOCKING
+   `@mov32(kv_prof_ab_dst_dsd, kv_prof_ab_recv_dsd)` in `decode.csl kv_ingress` waits
+   for prefill's A/B burst northbound through the seam; if it never arrives at
+   256-scale, `kv_ingress` blocks forever.
+2. **Two-stage OQ7 drain:** the flush→handler chain (`comm_pe.csl kv_oq7_empty`
+   2-entry state machine + `kv_prof_emit`/`kv_prof_emit_done`) at a 512-deep
+   north-shift forwarding chain.
+Isolation to split (1) vs (2) = the **C-only variant** (drop the seam A/B recv) at
+full size — NOT yet run (held: understand before patching).
+
+### Agreed forward plan (Le, 2026-07-08): use the PREFILL OUTLET
+Egress A and B via **prefill's own south logits stream**
+(`pf_ht_tail`→`pf_mux`→host — which DOES stream off-chip today; baseline proved it,
+"first token=98230"), instead of riding the seam north. This **deletes the blocking
+cross-half rendezvous** (candidate 1). Wrinkle: prefill's A/B are measured in
+`start_kv_transfer`, AFTER `pf_ht_tail` already sent its logits blob + TSC burst → needs
+a **third, later, non-blocking append** on `pf_ht_tail`'s `is_tsc_pe` (decode's C is
+clean — measured before decode's logits go out). **NOT YET IMPLEMENTED** — implementing
+it would remove the repro Le wants to study.
+
+### Corrections to earlier notes
+- **Compile time:** actual-size e2e compile is **~280 s (~4.7 min)**, NOT >57 min. The
+  earlier "2400s run killed mid-compile" framing was WRONG — those runs compiled in ~5
+  min and then hung at the mux for the rest. (>57 min was a *different* model, pdSeparate.)
+- **`A+B+C` is NOT the bandwidth denominator.** C observes the same north shift as B
+  (receiving end) and spans decode's blocked wait — summing double-counts B. `launch.py`
+  now uses **KV bytes / (A+B)** (both on the same prefill reporter PE); C is diagnostic-
+  only. Every GB/s carries its basis (TSC @ 1.1 GHz, n=1 one-shot handoff, aggregate
+  bytes over all PEs). TOY warning now gated on byte count (was unconditional).
+
+### Repro + references (for the investigation)
+- **Exact hanging code:** `assets/prefill-decode-transfer/profiler-repro-2026-07-08.diff`
+  (working tree, branch `lexu/staging/csl-color-audit`, uncommitted — the diff is the
+  durable record). `test_device_2x2blk_kv_prof.json` (512×512) hangs;
+  `test_device_2x2blk_kv_prof_small.json` (16×16) passes.
+- **Full on-chip topology map:** `assets/prefill-decode-transfer/e2e-topology-full.svg`/`.png`
+  (every component, real fabric coords, KV north-flow, A/B/C points).
+
+### Reusable tooling built this session
+- **Live-log channel** (the key enabler): worker `launch.py` flushes markers to
+  `progress.log`; controller `launch_device.py` runs `launcher.run` in a bg thread and
+  polls `launcher.download_artifact("progress.log")` — works **mid-run** on EPCC
+  (`stage()` mid-run 404s; `download_artifact` does not). Beats SdkLauncher's
+  buffer-until-exit blindness; shows compile-vs-run and which `receive` blocks, live.
+  Markers: `MAIN_START, COMPILE_START/DONE, RUNTIME_RUN, SEEDS_SENT, DECODE_STEP n/N,
+  DECODE_LOOP_DONE, TSC_RECV_*, PROF_BLOB_RECV_*, PF_*, STOP_DONE`.
+- **16×16 device config** `test_device_2x2blk_kv_prof_small.json`: compiles ~240 s, runs
+  the full profiler path → ~5-min iteration loop (vs ~2 h round trips before).
+- **East-edge egress idea (Le):** WSE-3 has 62 LVDS channels on BOTH edges; the block
+  region/seam abuts the EAST edge with no HT wall (unlike the walled-off west). A cleaner
+  egress lane — but unverified for SdkLayout on this appliance (needs a `discover_io_locs`
+  east probe) and doesn't fix the *ingress* deadlock.
+
 ## Device run attempt on CS-3 (2026-07-07) — blocked by egress, env is fine
 
 Device egress built + merged (`e3814ce`): reporter PE per region emits a 4-u32
@@ -443,3 +530,36 @@ GB/s. Profiler is complementary (breakdown only).
 B=338µs, C=474µs — transfer-bound, not prep-bound; A+B+C is a decomposition not the
 true latency (B/C overlap). Fixed byte math (max_layers_per_block=2 → 16 KiB) and
 recorded the cslc-wrapper inline-cap gotcha. Next: ACK round-trip + device config.
+
+2026-07-09 — **DEVICE VALIDATION: profiler egress works end-to-end (3/3 clean runs).**
+Uncommitted on `lexu/staging/kv-transfer-bandwidth`. TWO independent on-device hangs
+found + fixed (device-confirmed on `test_device_2x2blk_kv_prof_small` = 16×16, dim 64,
+8 layers, ~240 s compile):
+  1. **Decode-init hang** — `decode.csl kv_ingress` reporter rebound OQ7's color to
+     `kv_prof_out_color` and emitted the blob BEFORE `kv_flush_then_init` drained
+     OQ7's residual KV tile. Fix: two-stage drain via the single `kv_oq7_empty`
+     empty-queue handler as a 2-entry state machine (`kv_arm_prof` → flush₁ → entry-1
+     activates `kv_prof_emit` + `queue_flush.exit` → emit + flush₂ → entry-2
+     broadcast-rebind + `kv_init_cont`). Mirrors SDK `queue_flush` color-swap-after-drain.
+  2. **Egress hang** — `ht_tail.csl is_tsc_pe` fired TWO `.async` `@mov32` on the SAME
+     queue OQ0 (TSC burst + profiler blob, ~lines 1240/1243) sharing the default
+     microthread → WSE-3 disallows; the 2nd silently never launches → host blocks on
+     the blob receive. Fix: serialize — the TSC emit's completion `.activate`s a new
+     `tail_prof_emit` task that emits the blob on the freed microthread (order kept).
+     Route + recv binding verified correct.
+- **The "intermittent block" was INSTRUMENTATION, not the kernel.** The live-log
+  `download_artifact("progress.log")` mid-run poll (`launch_device.py`) shares the
+  run's gRPC channel; an EPCC-ingress 502 on a poll broke the channel and 502'd the
+  blob receive → looked like an on-device hang. Gate the poll OFF (`PROF_LIVE` env,
+  default synchronous) → 3/3 clean. Lesson: never poll `download_artifact` on the
+  channel `run()` uses; watch job liveness via `csctl` out-of-band.
+- **Numbers (small config, n=4, 1.1 GHz):** A = 22963–22967 cyc ≈ **20.9 µs**
+  (rock-stable); B = 373102–373134 cyc ≈ **339 µs** (stable); C = 65.7M/74.0M/136.5M
+  cyc — **highly variable → wait-dominated** (`kv_ingress` blocks waiting for prefill;
+  C is NOT a clean transfer term). Device A/B match Phase-1 SIM (A=20µs, B=338µs) →
+  device↔sim cross-check passes.
+- **Reusable:** small `_prof_small` compiles ~240 s (vs >57-min full-size) → ~5-min
+  device iterate loop. Worker `progress.log` (flushed markers in `launch.py`, pulled
+  once post-run) gives compile-vs-runtime + which-receive-blocks visibility.
+- **Next:** full-size `test_device_2x2blk_kv_prof.json` (dim 2048, 28 layers,
+  PREFILL_LEN 256, ~28 MB KV) running clean for the real GB/s from A/B.

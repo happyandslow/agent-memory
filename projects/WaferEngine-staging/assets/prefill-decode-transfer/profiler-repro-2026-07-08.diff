@@ -1,0 +1,863 @@
+diff --git a/models/qwen3_1p7b-e2e/launch.py b/models/qwen3_1p7b-e2e/launch.py
+index 7c37e05..b5e90bd 100644
+--- a/models/qwen3_1p7b-e2e/launch.py
++++ b/models/qwen3_1p7b-e2e/launch.py
+@@ -1272,64 +1272,45 @@ def build_decode(layout, cfg, here, place_y, cmaddr):
+         last_result_color, edge, [port_in_routes], total_wavelets,
+     )
+ 
+-    # --- Device-compatible KV profiler egress (reporter PE + east forwarder) ---
+-    # The south-most / ingress-tail block PE (east-most block col, south-most row
+-    # of the last region = max-C PE) emits its C burst EAST out the block region's
+-    # Edge.RIGHT (multi-PE inter-region port; only the reporter row carries data).
+-    # A 1-wide × P_BLOCK_SIZE-tall forwarder region just east of the block region
+-    # turns that P_BLOCK_SIZE-PE egress into a 1-PE host stream — host ports MUST
+-    # be 1-PE, so we cannot stream the block region's tall east edge directly.
+-    # (This mirrors the SDK width=1 vertical mux and the prefill south forwarder;
+-    # the shared kv_prof_mux.csl is edge-agnostic: recv in_color→RAMP, send
+-    # host_color RAMP→edge.) Wired for BOTH sim and device. kv_profile was
+-    # resolved at build_decode top.
++    # --- P2 KV profiler seam collector (egress via HT_tail's logits stream) ------
++    # The collector is last_rg's result-sender edge col (fabric x = PLACE_X, the
++    # west-most block col), south-most row = the seam's north boundary. It receives
++    # prefill's A/B burst arriving from the SOUTH on the KV transfer color, appends
++    # its own C into an 8-u32 blob, and emits it on kv_prof_out_color: RAMP→NORTH up
++    # the edge col to the is_tsc_pe row (root_2nd_phase), then SOUTH→WEST out through
++    # the fake west strip to a dedicated Edge.LEFT port. That port is connected (in
++    # the HT_tail region, below) straight onto HT_tail's east edge at the is_tsc_pe
++    # row, where is_tsc_pe RAMPs it in and piggybacks it on the logits south stream.
++    # All routing is region-scoped (mirrors decode_out_port); no host stream/io_port
++    # is created — reuses the proven west-side logits egress.
+     last_rg.set_param_all("is_kv_prof_reporter", 0)
+-    kv_prof_dec_egress = None   # forwarder's 1-PE host port → host stream
++    last_rg.set_param_all("kv_prof_out_color", 0)
++    kv_prof_dec_egress = None
+     if kv_profile:
+         kv_prof_out_c = last_rg.color("kv_prof_out_color")
+         last_rg.set_param_all("kv_prof_out_color", kv_prof_out_c)
+-        rep_bx = Pw          # east-most BLOCK col (region-local; strips at 0 and Pw+1)
+-        rep_by = P_BLOCK_SIZE - 1                      # south-most row = ingress tail
+-        last_rg.set_param(IntVector(rep_bx, rep_by), "is_kv_prof_reporter", 1)
+-        last_rg.paint(IntVector(rep_bx, rep_by), kv_prof_out_c,
+-                      [RoutingPosition().set_input([Route.RAMP]).set_output([Route.EAST])])
+-        # East strip col transits the burst to the region's east (fabric) edge.
+-        last_rg.paint(IntVector(Pw + 1, rep_by), kv_prof_out_c,
+-                      [RoutingPosition().set_input([Route.WEST]).set_output([Route.EAST])])
+-        # Multi-PE inter-region egress on the block region's east edge (P_BLOCK_SIZE
+-        # lanes; only the reporter row is live). connect() → forwarder, so multi-PE
+-        # is allowed here (the 1-PE restriction is on host streams, not connects).
+-        dec_kv_prof_egress = last_rg.create_output_port(
+-            kv_prof_out_c, Edge.RIGHT,
+-            [RoutingPosition().set_input([Route.WEST])],
+-            4, prefix="kv_prof_dec")
+-        # 1-wide × P_BLOCK_SIZE-tall forwarder, east of the block region, bottom row
+-        # aligned with the reporter's south-most row. Only that bottom PE is active:
+-        # it drains WEST→RAMP and re-emits RAMP→SOUTH out a 1-PE Edge.BOTTOM host
+-        # port (Edge.BOTTOM of a 1-wide region is a single PE).
+-        dec_fwd = layout.create_code_region(
+-            str(here / "src" / "kv_prof_mux.csl"), "dec_kv_prof_mux", 1, P_BLOCK_SIZE)
+-        dec_fwd_in_c   = dec_fwd.color("in_color")
+-        dec_fwd_host_c = dec_fwd.color("host_color")
+-        dec_fwd.set_param_all("in_color",   dec_fwd_in_c)
+-        dec_fwd.set_param_all("host_color", dec_fwd_host_c)
+-        dec_fwd.set_param_all("is_last_pe", 0)
+-        dec_fwd.set_param(IntVector(0, P_BLOCK_SIZE - 1), "is_last_pe", 1)
+-        # in_color WEST→RAMP on every row (only the bottom row receives); host_color
+-        # RAMP→SOUTH on the bottom (active) row only.
+-        dec_fwd.paint_all(dec_fwd_in_c,
+-                          [RoutingPosition().set_input([Route.WEST]).set_output([Route.RAMP])])
+-        dec_fwd.paint(IntVector(0, P_BLOCK_SIZE - 1), dec_fwd_host_c,
+-                      [RoutingPosition().set_input([Route.RAMP]).set_output([Route.SOUTH])])
+-        dec_fwd_in_port = dec_fwd.create_input_port(
+-            dec_fwd_in_c, Edge.LEFT, [RoutingPosition().set_output([Route.RAMP])],
+-            4, prefix="kv_prof_dec_in")
+-        dec_fwd_host_port = dec_fwd.create_output_port(
+-            dec_fwd_host_c, Edge.BOTTOM, [RoutingPosition().set_input([Route.RAMP])],
+-            4, prefix="kv_prof_dec_host")
+-        dec_fwd.place(region_place_x + region_width, PLACE_Y + last_row * P_BLOCK_SIZE)
+-        layout.connect(dec_kv_prof_egress, dec_fwd_in_port)
+-        kv_prof_dec_egress = dec_fwd_host_port
++        kv_prof_rep = IntVector(edge_col_lx, P_BLOCK_SIZE - 1)   # fabric (PLACE_X, south row)
++        last_rg.set_param(kv_prof_rep, "is_kv_prof_reporter", 1)
++        exit_row = root_2nd_phase                # HT_tail is_tsc_pe row (blob turn-west row)
++        if exit_row == P_BLOCK_SIZE - 1:
++            # Collector row == is_tsc_pe row: turn WEST immediately.
++            last_rg.paint(kv_prof_rep, kv_prof_out_c,
++                          [RoutingPosition().set_input([Route.RAMP]).set_output([edge_dir_out])])
++        else:
++            # Emit NORTH up the edge col to exit_row, then turn WEST.
++            last_rg.paint(kv_prof_rep, kv_prof_out_c,
++                          [RoutingPosition().set_input([Route.RAMP]).set_output([Route.NORTH])])
++            for ry in range(exit_row + 1, P_BLOCK_SIZE - 1):
++                last_rg.paint(IntVector(edge_col_lx, ry), kv_prof_out_c,
++                              [RoutingPosition().set_input([Route.SOUTH]).set_output([Route.NORTH])])
++            last_rg.paint(IntVector(edge_col_lx, exit_row), kv_prof_out_c,
++                          [RoutingPosition().set_input([Route.SOUTH]).set_output([edge_dir_out])])
++        # Fake west strip transit (E→W) on the exit row, then the Edge.LEFT port.
++        last_rg.paint(IntVector(fake_strip_lx, exit_row), kv_prof_out_c,
++                      [RoutingPosition().set_input([edge_dir_in]).set_output([edge_dir_out])])
++        kv_prof_dec_egress = last_rg.create_output_port(
++            kv_prof_out_c, edge, [RoutingPosition().set_input([edge_dir_in])],
++            8, prefix="kv_prof_dec")
+ 
+     # --- Post-loop touch-up: row_0 (host-X receiver side) --- #
+     # Paint post_embed_x_color routes from the fake west strip (lcl_x=0)
+@@ -1831,6 +1812,16 @@ def build_decode(layout, cfg, here, place_y, cmaddr):
+     ht_tail_rg.set_param_all("is_tsc_pe", 0)
+     ht_tail_rg.set_param(IntVector(HT_WIDTH_tail - 1, root_2nd_phase), "is_tsc_pe", 1)
+ 
++    # P2 profiler blob: is_tsc_pe RAMPs in the 8-u32 blob (delivered by the decode
++    # seam collector onto the east edge at the is_tsc_pe row) and piggybacks it on
++    # the logits south stream. Region-scoped color; port created after ht_tail_in.
++    ht_tail_rg.set_param_all("kv_profile", 0)
++    ht_tail_rg.set_param_all("kv_prof_color", 0)
++    kv_prof_color_tail = ht_tail_rg.color("kv_prof_color") if kv_profile else None
++    if kv_profile:
++        ht_tail_rg.set_param_all("kv_profile", kv_profile)
++        ht_tail_rg.set_param_all("kv_prof_color", kv_prof_color_tail)
++
+     # Default paint RAMP/RAMP for ALL of tail's colors (Y reduce/broadcast,
+     # emit, and the Z multicast/transit channel). Tail's init task overrides
+     # per-PE at runtime via set_route_1tx / set_route_2tx (mirror of the row
+@@ -1841,6 +1832,8 @@ def build_decode(layout, cfg, here, place_y, cmaddr):
+               broadcast_c, tok_bcast_color, last_result_color, logits_south_c,
+               tail_xready_c):
+         ht_tail_rg.paint_all(c, [default_rp])
++    if kv_profile:
++        ht_tail_rg.paint_all(kv_prof_color_tail, [default_rp])
+ 
+     ht_tail_in_port = ht_tail_rg.create_input_port(
+         last_result_color, ht_tail_in_edge,
+@@ -1848,6 +1841,15 @@ def build_decode(layout, cfg, here, place_y, cmaddr):
+         total_wavelets,
+         prefix="ingress",
+     )
++    # P2 profiler blob ingress: east edge → RAMP (only the is_tsc_pe row carries
++    # data; the collector delivers the blob at that row via the connect below).
++    ht_tail_prof_in_port = None
++    if kv_profile:
++        ht_tail_prof_in_port = ht_tail_rg.create_input_port(
++            kv_prof_color_tail, ht_tail_in_edge,
++            [RoutingPosition().set_output([Route.RAMP])],
++            8, prefix="kv_prof_tail_in",
++        )
+     # Tail emit port: bsz sampled token_ids per root-row PE per step ×
+     # HT_WIDTH_tail cols × (MAX_OUTPUT_LEN - 1) steps (skip last so emit count
+     # == head drain). Every root-row column emits (uniform connect with the
+@@ -1882,7 +1884,9 @@ def build_decode(layout, cfg, here, place_y, cmaddr):
+     south_total_wavelets  = south_wlts_per_step * max_output_len
+     # +8 for the one-shot TSC burst the root-row east emitter piggybacks on the
+     # last step (drained by the mux's tsc tail-relay and the host's final receive).
+-    south_total_with_tsc  = south_total_wavelets + 8
++    # +8 more (P2) for the KV-profiler blob [A,B,done,pad,C,done,pad,pad] the same
++    # is_tsc_pe piggybacks right after the TSC burst when kv_profile is on.
++    south_total_with_tsc  = south_total_wavelets + 8 + (8 if kv_profile else 0)
+     ht_tail_logits_egress = ht_tail_rg.create_output_port(
+         logits_south_c, Edge.BOTTOM,
+         [RoutingPosition().set_input([Route.NORTH])],
+@@ -1978,6 +1982,10 @@ def build_decode(layout, cfg, here, place_y, cmaddr):
+     mux_rg.set_param_all("host_color", mux_host_color)
+     mux_rg.set_param_all("wlts_per_step", south_wlts_per_step)
+     mux_rg.set_param_all("MAX_OUTPUT_LEN", max_output_len)
++    # Trailing wavelets the mux must relay after the per-step blobs: 8-u32 TSC burst
++    # + 8-u32 KV-profiler blob when profiling. Mirrors south_total_with_tsc's tail so
++    # the mux's forward count can never drift from the host's receive count.
++    mux_rg.set_param_all("tail_wlts", 8 + (8 if kv_profile else 0))
+ 
+     # The global top-k is replicated across X, so only the east-most HT_tail
+     # bottom PE emits it. This mux row therefore has ONE active PE — the
+@@ -2027,6 +2035,10 @@ def build_decode(layout, cfg, here, place_y, cmaddr):
+     layout.connect(ht_head_c2_out_port, row0_x_in_port)
+     # Z path: last_row -> HT_tail (raw Z ingress for the lm_head matvec).
+     layout.connect(decode_out_port, ht_tail_in_port)
++    # P2 profiler blob: seam collector (last_row west edge) -> HT_tail east edge
++    # at the is_tsc_pe row -> piggybacked on the logits stream.
++    if kv_profile:
++        layout.connect(kv_prof_dec_egress, ht_tail_prof_in_port)
+     # Logits path: HT_tail bottom row -> mux -> host (post-lm_head logits).
+     layout.connect(ht_tail_logits_egress, mux_in_port)
+     # Ready barrier: HT_head col=0 -> demux east edge. Demux's init() awaits
+@@ -2038,12 +2050,10 @@ def build_decode(layout, cfg, here, place_y, cmaddr):
+     # Host I/O streams.
+     x_stream      = layout.create_input_stream(demux_in_port)
+     # Logits stream: mux easternmost PE -> host (full bsz*vocab per step + the
+-    # piggybacked 8-u32 TSC burst after the last step).
++    # piggybacked 8-u32 TSC burst, then the 8-u32 P2 profiler blob, after the last
++    # step). No separate KV-profiler stream — P2 reuses this logits stream.
+     logits_stream = layout.create_output_stream(mux_host_port)
+-
+-    # Device-compatible KV profiler egress stream (reporter PE → east edge → host).
+-    kv_prof_stream = (layout.create_output_stream(kv_prof_dec_egress)
+-                      if kv_prof_dec_egress is not None else None)
++    kv_prof_stream = None
+ 
+     return dict(locals())
+ 
+@@ -2381,18 +2391,20 @@ def build_prefill(layout, cfg, here, place_y, cmaddr):
+               shuttle_ew_0_c, shuttle_ew_1_c, z_drain_c, x_chain_0_c, x_chain_1_c):
+         rg.paint_all(c, [default_rp])
+ 
+-    # --- Device-compatible KV profiler egress (reporter PE + south forwarder) ---
+-    # ONE representative block PE (east-most block col, south-most row) emits its
+-    # A/B burst SOUTH out Edge.BOTTOM into a 1-tall forwarder region placed just
+-    # south of the block region; the forwarder's east-most PE is the 1-PE host
+-    # I/O port (host ports must be 1-PE). Reporter params set here (paint/port are
+-    # created AFTER rg.place, below). Mirrors the HT_tail is_tsc_pe -> mux egress.
++    # --- P2 KV profiler A/B inject (reporter PE emits NORTH through the seam) ---
++    # The prefill reporter is the NORTH-most block row, WEST-most block col (fabric
++    # x = PLACE_X, adjacent to the seam's south edge). It emits its 4-u32 A/B burst
++    # [A, B, pf_done, pad] NORTH on the KV transfer color (kv_xfer_color_0), which
++    # the relay seam already transits south→north into the decode region (same path
++    # the KV cache took, now idle). No separate egress port/stream — decode's seam
++    # collector receives it and forwards it out the shared logits stream.
+     rg.set_param_all("is_kv_prof_reporter", 0)
+-    rg.set_param_all("kv_prof_out_color", 0)   # reporter override below (if profiling)
++    rg.set_param_all("kv_prof_out_color", 0)
+     if kv_profile:
+-        kv_prof_out_c = rg.color("kv_prof_out_color")
+-        rg.set_param_all("kv_prof_out_color", kv_prof_out_c)
+-        kv_prof_rep = IntVector(Pw - 1, Ph - 1)   # east-most block col, south-most row
++        # kv_xfer_color_0 is already painted RAMP→NORTH on this PE by the KV
++        # north-chain; reusing it post-shift emits the A/B burst up column PLACE_X.
++        rg.set_param_all("kv_prof_out_color", kv_xfer_0_c.get_value())
++        kv_prof_rep = IntVector(0, 0)             # north-most row, west-most block col
+         rg.set_param(kv_prof_rep, "is_kv_prof_reporter", 1)
+ 
+     # Per-PE layer count, by serpentine pipeline position of the PE's block.
+@@ -2594,38 +2606,9 @@ def build_prefill(layout, cfg, here, place_y, cmaddr):
+ 
+     rg.place(PLACE_X, PLACE_Y)
+ 
+-    # KV profiler egress: reporter emits SOUTH out Edge.BOTTOM; a 1-tall forwarder
+-    # region south of the block region turns it into a 1-PE host stream. (Paint /
+-    # port / place happen after rg.place — SdkLayout allows it, as decode does.)
++    # P2: no prefill-side profiler egress. The A/B burst rides the KV seam north
++    # into decode (see the reporter block above); decode collects + streams it.
+     kv_prof_stream = None
+-    if kv_profile:
+-        rg.paint(kv_prof_rep, kv_prof_out_c,
+-                 [RoutingPosition().set_input([Route.RAMP]).set_output([Route.SOUTH])])
+-        kv_prof_pf_egress = rg.create_output_port(
+-            kv_prof_out_c, Edge.BOTTOM,
+-            [RoutingPosition().set_input([Route.NORTH])],
+-            4, prefix="kv_prof_pf")
+-        fwd = layout.create_code_region(
+-            str(here / "src" / "kv_prof_mux.csl"), "pf_kv_prof_mux", Pw, 1)
+-        fwd_in_c   = fwd.color("in_color")
+-        fwd_host_c = fwd.color("host_color")
+-        fwd.set_param_all("in_color",   fwd_in_c)
+-        fwd.set_param_all("host_color", fwd_host_c)
+-        fwd.set_param_all("is_last_pe", 0)
+-        fwd.set_param(IntVector(Pw - 1, 0), "is_last_pe", 1)
+-        fwd.paint_all(fwd_in_c,
+-                      [RoutingPosition().set_input([Route.NORTH]).set_output([Route.RAMP])])
+-        fwd.paint(IntVector(Pw - 1, 0), fwd_host_c,
+-                  [RoutingPosition().set_input([Route.RAMP]).set_output([Route.EAST])])
+-        fwd_in_port = fwd.create_input_port(
+-            fwd_in_c, Edge.TOP, [RoutingPosition().set_output([Route.RAMP])],
+-            4, prefix="kv_prof_pf_in")
+-        fwd_host_port = fwd.create_output_port(
+-            fwd_host_c, Edge.RIGHT, [RoutingPosition().set_input([Route.RAMP])],
+-            4, prefix="kv_prof_pf_host")
+-        fwd.place(PLACE_X, PLACE_Y + Ph)   # 1 row south of the block region
+-        layout.connect(kv_prof_pf_egress, fwd_in_port)
+-        kv_prof_stream = layout.create_output_stream(fwd_host_port)
+ 
+     # ====================================================================== #
+     # Phase 3b: HT_head + demux (token ids → embedding → X handoff to block 0) #
+@@ -2877,6 +2860,32 @@ def build_relay(layout, here, place_x, place_y, width, kv_transfer=0):
+     return relay_rg
+ 
+ 
++# --- worker-side live progress log -------------------------------------------
++# launch.py runs on the appliance worker under SdkLauncher, which buffers stdout
++# until the process exits — so a hang shows no output. These markers are flushed
++# to an absolute progress.log at the worker's invocation cwd; the controller
++# (launch_device.py) pulls it mid-run via launcher.download_artifact("progress.log")
++# (download works mid-run on EPCC; stage() does not). Lets us see compile-vs-run
++# and WHICH receive blocks, live.
++_PROGRESS_PATH = None
++def _prog_init(p):
++    global _PROGRESS_PATH
++    _PROGRESS_PATH = p
++    try:
++        with open(_PROGRESS_PATH, "w") as f:
++            f.write(f"{time.time():.1f} PROGRESS_INIT {p}\n"); f.flush(); os.fsync(f.fileno())
++    except Exception:
++        pass
++def _prog(msg):
++    if _PROGRESS_PATH is None:
++        return
++    try:
++        with open(_PROGRESS_PATH, "a") as f:
++            f.write(f"{time.time():.1f} {msg}\n"); f.flush(); os.fsync(f.fileno())
++    except Exception:
++        pass
++
++
+ def run(cfg: dict, *, cmaddr=None,
+         artifact_dir: Path,
+         cslc_prefix: str = "",
+@@ -2940,11 +2949,13 @@ def run(cfg: dict, *, cmaddr=None,
+ 
+     # ------------------------------ Compile ------------------------------- #
+     print("\nCompiling stacked layout...")
++    _prog("COMPILE_START")
+     t_compile = time.perf_counter()
+     if not cslc_prefix:
+         cslc_prefix = str(here / "scripts" / "cslc_bin")
+     artifacts = layout.compile(out_prefix="sim", cslc_prefix=cslc_prefix, f16_type=FP16TYPE.BF16)
+     compile_s = time.perf_counter() - t_compile
++    _prog(f"COMPILE_DONE {compile_s:.1f}s")
+     print(f"  compile took {compile_s:.1f}s")
+     if compile_only:
+         print("  [compile_only] skipping runtime.load/run")
+@@ -2952,10 +2963,13 @@ def run(cfg: dict, *, cmaddr=None,
+ 
+     # ------------------------------ Runtime ------------------------------- #
+     runtime = SdkRuntime(artifacts, platform, memcpy_required=False)
++    _prog("RUNTIME_LOAD_START")
+     runtime.load()
++    _prog("RUNTIME_LOADED")
+     print("\nRunning (decode + prefill)...")
+     t_run = time.perf_counter()
+     runtime.run()
++    _prog("RUNTIME_RUN")
+ 
+     # Both inputs are small one-shot seeds: queue them before any receive.
+     runtime.send(pf["token_stream"], pf["token_buf_u32"], nonblock=False)
+@@ -2997,6 +3011,7 @@ def run(cfg: dict, *, cmaddr=None,
+     # Single-shot X[0] seed (blocking so we know the seed is queued before
+     # the receive loop starts).
+     runtime.send(x_stream, x_step_buf_u32, nonblock=False)
++    _prog("SEEDS_SENT decode_recv_loop_start")
+ 
+ 
+     # Receive-only decode loop. Each step the device emits south_wlts_per_step u32:
+@@ -3017,6 +3032,8 @@ def run(cfg: dict, *, cmaddr=None,
+         topk_vals[s] = buf[:val_wlts].view(np.uint16)[:top_k * bsz].view(ml_dtypes.bfloat16).reshape(top_k, bsz).T
+         topk_args[s] = buf[val_wlts:val_wlts + arg_wlts].view(np.int32).reshape(top_k, bsz).T
+         sampled_tokens[s] = buf[val_wlts + arg_wlts:val_wlts + arg_wlts + bsz].view(np.int32)  # trailing pad (if any) ignored
++        _prog(f"DECODE_STEP {s+1}/{max_output_len}")
++    _prog("DECODE_LOOP_DONE")
+     print(f"  generated {max_output_len} steps "
+           f"(top-{top_k} + sampled: {south_wlts_per_step} u32/step)")
+ 
+@@ -3024,7 +3041,20 @@ def run(cfg: dict, *, cmaddr=None,
+     # the per-step blobs; the mux forwards it on the same logits stream. Drain it
+     # BEFORE stop. Slots 0..2 = start, slots 4..6 = end (u16 low-16 each); 3/7 pad.
+     tsc_burst = np.empty(8, dtype=np.uint32)
++    _prog("TSC_RECV_START")
+     runtime.receive(logits_stream, tsc_burst, 8, nonblock=False)
++    _prog("TSC_RECV_DONE")
++
++    # P2 KV-transfer profiler blob: is_tsc_pe piggybacks one 8-u32 blob
++    # [A, B, pf_done, pad, C, dec_done, pad, pad] right after the TSC burst on the
++    # SAME decode logits stream (A/B rode the seam north; the collector appended C).
++    # Drain BEFORE stop. One host receive — no separate profiler stream.
++    prof_blob = None
++    if kv_profile:
++        prof_blob = np.empty(8, dtype=np.uint32)
++        _prog("PROF_BLOB_RECV_START")
++        runtime.receive(logits_stream, prof_blob, 8, nonblock=False)
++        _prog(f"PROF_BLOB_RECV_DONE {prof_blob.tolist()}")
+ 
+     # Prefill blob (one-shot first token + top-K) — drain BEFORE stop.
+     pf_blob = np.empty(pf["south_wlts_per_step"], dtype=np.uint32)
+@@ -3036,23 +3066,13 @@ def run(cfg: dict, *, cmaddr=None,
+     # Prefill TSC: the prefill HT_tail TSC PE piggybacked one 8-u32 burst after its
+     # one-shot blob; the prefill mux tsc-relay forwards it on the same stream. Drain
+     # BEFORE stop. Slots 0..2 = start, 4..6 = end (u16 low-16 each); 3/7 pad.
++    _prog("PF_BLOB_DONE pf_tsc_recv_start")
+     pf_tsc_burst = np.empty(8, dtype=np.uint32)
+     runtime.receive(pf["logits_stream"], pf_tsc_burst, 8, nonblock=False)
+-
+-    # KV-transfer profiler device egress (works for BOTH sim and device): the two
+-    # reporter PEs each stream a 4-u32 burst out a dedicated east-edge port. Prefill
+-    # burst = [A, B, done, pad]; decode burst = [C, done, pad, pad]. Drain BEFORE
+-    # stop. This is the device-compatible path that mirrors the is_tsc_pe egress;
+-    # the sim read_symbol path below is kept for the cross-check.
+-    dec_prof_burst = None
+-    pf_prof_burst  = None
+-    if kv_profile:
+-        dec_prof_burst = np.empty(4, dtype=np.uint32)
+-        runtime.receive(dd["kv_prof_stream"], dec_prof_burst, 4, nonblock=False)
+-        pf_prof_burst = np.empty(4, dtype=np.uint32)
+-        runtime.receive(pf["kv_prof_stream"], pf_prof_burst, 4, nonblock=False)
++    _prog("PF_TSC_RECV_DONE stopping")
+ 
+     runtime.stop()
++    _prog("STOP_DONE results_ready")
+     run_s = time.perf_counter() - t_run
+     # -------- KV transfer verification (sim only, bit-exact) ---------------
+     # Read both halves' cache symbols (pre-stop, runtime.read_symbol) and check
+@@ -3106,17 +3126,17 @@ def run(cfg: dict, *, cmaddr=None,
+         P = P_BLK
+         FREQ_GHZ = 1.1
+ 
+-        # Streamed (device path): reporter bursts. Prefill = [A, B, done, pad];
+-        # decode = [C, done, pad, pad].
+-        A_cyc = int(pf_prof_burst[0]);  B_cyc = int(pf_prof_burst[1])
+-        C_cyc = int(dec_prof_burst[0])
+-        pf_rep_done  = int(pf_prof_burst[2])
+-        dec_rep_done = int(dec_prof_burst[1])
++        # Streamed (device path): the single P2 blob off the decode logits stream,
++        # layout [A, B, pf_done, pad, C, dec_done, pad, pad].
++        A_cyc = int(prof_blob[0]);  B_cyc = int(prof_blob[1])
++        C_cyc = int(prof_blob[4])
++        pf_rep_done  = int(prof_blob[2])
++        dec_rep_done = int(prof_blob[5])
+ 
+         # Reporter PE fabric coords (must match the launch-side placement:
+-        # east-most block col, south-most row of each half's block region).
+-        pf_rep_xy  = (PLACE_X + Pw - 1, PF_PLACE_Y + Ph - 1)
+-        dec_rep_xy = (PLACE_X + Pw - 1, DEC_PLACE_Y + Ph - 1)
++        # west-most block col — prefill north-most row / decode south-most row).
++        pf_rep_xy  = (PLACE_X, PF_PLACE_Y)                    # prefill reporter (0,0)
++        dec_rep_xy = (PLACE_X, DEC_PLACE_Y + Ph - 1)          # decode seam collector
+ 
+         # Sim-only: read_symbol max-across-PEs + streamed-vs-read_symbol crosscheck.
+         A_max = B_max = C_max = 0
+@@ -3147,10 +3167,19 @@ def run(cfg: dict, *, cmaddr=None,
+             xcheck = (int(pf_rep_mem[0]) == A_cyc and int(pf_rep_mem[1]) == B_cyc
+                       and int(dec_rep_mem[0]) == C_cyc)
+ 
+-        total_cyc = A_cyc + B_cyc + C_cyc
++        # Bandwidth basis: A (gather+transform) and B (north shift) are measured
++        # back-to-back on the SAME prefill reporter PE, so A+B is a real elapsed
++        # time covering transform + on-fabric transfer. C is the SAME movement
++        # observed from the receiving (decode) end and additionally spans the
++        # decode PE's blocked wait for prefill to compute -- adding it would
++        # double-count the shift. Never sum segment timers across a coupled
++        # transfer; the denominator below is A+B only.
++        prep_cyc = A_cyc + B_cyc
++        sum_cyc  = A_cyc + B_cyc + C_cyc          # diagnostic display only
+         A_us, B_us, C_us = (x / (FREQ_GHZ * 1e3) for x in (A_cyc, B_cyc, C_cyc))
+-        total_us = total_cyc / (FREQ_GHZ * 1e3)
+-        total_s  = total_cyc / (FREQ_GHZ * 1e9)
++        prep_us = prep_cyc / (FREQ_GHZ * 1e3)
++        sum_us  = sum_cyc / (FREQ_GHZ * 1e3)
++        prep_s  = prep_cyc / (FREQ_GHZ * 1e9)
+ 
+         # KV byte total actually moved through the transfer.
+         Pw_Ph        = Pw * Ph
+@@ -3159,7 +3188,10 @@ def run(cfg: dict, *, cmaddr=None,
+         bsz_r        = cfg_d["bsz"]
+         seqlen_pp    = cfg_pf["PREFILL_LEN"] // P    # transferred KV length per PE
+         kv_bytes     = Pw_Ph * (2 * mlpb_r) * (kvd_pp * bsz_r * seqlen_pp) * 2
+-        gbps         = (kv_bytes / total_s / 1e9) if total_s > 0 else 0.0
++        gbps         = (kv_bytes / prep_s / 1e9) if prep_s > 0 else 0.0
++        # A toy config is overhead-dominated; flag by actual byte total, not by
++        # kv_dim_per_pe (the real 512x512 config also has kv_dim_per_pe=4).
++        is_toy       = kv_bytes < (1 << 20)
+ 
+         src = "read_symbol (sim)" if cmaddr is None else "device stream egress"
+         print(f"\n{'=' * 64}")
+@@ -3168,14 +3200,22 @@ def run(cfg: dict, *, cmaddr=None,
+         print(f"{'Values via:':<44}reporter-PE stream burst (device-compatible)")
+         print(f"{'A  prefill gather+transform (states 0-3):':<44}{A_cyc:>8} cyc  {A_us:9.4f} us")
+         print(f"{'B  prefill north shift (state 4):':<44}{B_cyc:>8} cyc  {B_us:9.4f} us")
+-        print(f"{'C  decode ingress (kv_ingress):':<44}{C_cyc:>8} cyc  {C_us:9.4f} us")
+-        print(f"{'total A+B+C:':<44}{total_cyc:>8} cyc  {total_us:9.4f} us")
++        print(f"{'A+B  transform + transfer (SAME pf PE):':<44}{prep_cyc:>8} cyc  {prep_us:9.4f} us")
++        print(f"{'C  decode blocked-on-ingress (NOT additive):':<44}{C_cyc:>8} cyc  {C_us:9.4f} us")
++        print(f"     ^ C spans the decode PE's wait for prefill to compute, and")
++        print(f"       observes the SAME north shift as B from the receiving end.")
++        print(f"       It is reported for diagnosis only; it is NOT summed into")
++        print(f"       the bandwidth denominator (that would double-count B).")
++        print(f"{'[diag] naive A+B+C (double-counts B):':<44}{sum_cyc:>8} cyc  {sum_us:9.4f} us")
+         print(f"{'reporter done flags (pf / dec):':<44}{pf_rep_done} / {dec_rep_done}")
+         print(f"{'-' * 64}")
+         print(f"  resolved: Pw*Ph={Pw_Ph} 2*max_layers_per_block={2*mlpb_r} "
+               f"kv_dim_per_pe={kvd_pp} bsz={bsz_r} seq_len_per_pe={seqlen_pp}")
+         print(f"{'KV bytes moved:':<44}{kv_bytes} B ({kv_bytes/1024:.1f} KiB)")
+-        print(f"{'Effective bandwidth:':<44}{gbps:.3f} GB/s")
++        print(f"{'Effective bandwidth (bytes / A+B):':<44}{gbps:.3f} GB/s")
++        print(f"{'  basis:':<44}on-device TSC @ {FREQ_GHZ} GHz, prefill reporter PE,")
++        print(f"{'':<44}n=1 transfer (one-shot handoff, not averaged),")
++        print(f"{'':<44}aggregate KV bytes over all {Pw_Ph} PEs.")
+         if cmaddr is None:
+             print(f"{'-' * 64}")
+             print(f"{'[sim] read_symbol max A/B/C (all PEs):':<44}"
+@@ -3184,9 +3224,10 @@ def run(cfg: dict, *, cmaddr=None,
+             print(f"{'[sim] STREAM==read_symbol @ reporter PE:':<44}"
+                   f"{'PASS' if xcheck else 'FAIL'}  "
+                   f"(egress cross-check)")
+-        print(f"  WARNING: this sim config is a dim=64 TOY (kv_dim_per_pe={kvd_pp}, "
+-              f"{kv_bytes/1024:.1f} KiB total).")
+-        print(f"  The GB/s number is overhead-dominated, NOT representative of a real model.")
++        if is_toy:
++            print(f"  WARNING: TOY config (kv_dim_per_pe={kvd_pp}, "
++                  f"{kv_bytes/1024:.1f} KiB total).")
++            print(f"  The GB/s number is overhead-dominated, NOT representative of a real model.")
+         print(f"{'=' * 64}")
+ 
+     print(f"  topk_args.shape = {topk_args.shape} (expected ({max_output_len}, {bsz}, {top_k}))")
+@@ -3278,6 +3319,8 @@ def _parse_args():
+ 
+ def main():
+     args = _parse_args()
++    _prog_init(os.path.join(os.getcwd(), "progress.log"))
++    _prog("MAIN_START")
+     with open(args.config) as f:
+         cfg = json.load(f)
+     artifact_dir = (HERE / args.name).resolve()
+diff --git a/models/qwen3_1p7b-e2e/launch_device.py b/models/qwen3_1p7b-e2e/launch_device.py
+index b358c55..dfd4261 100644
+--- a/models/qwen3_1p7b-e2e/launch_device.py
++++ b/models/qwen3_1p7b-e2e/launch_device.py
+@@ -105,9 +105,41 @@ def main():
+     print(f"Run command  : {run_cmd}")
+     print()
+ 
++    import threading
++    import time as _time
+     with SdkLauncher(str(staging_dir), simulator=args.simulator,
+                      disable_version_check=True) as launcher:
+-        response = launcher.run(run_cmd)
++        # SdkLauncher buffers the worker's stdout until run() returns, so a hang
++        # shows nothing. Run it in a background thread and pull the worker-written
++        # progress.log live via download_artifact (works mid-run on EPCC; stage()
++        # does not). Prints [progress] lines as the worker advances.
++        _result = {}
++
++        def _runner():
++            try:
++                _result["resp"] = launcher.run(run_cmd)
++            except Exception as e:  # noqa: BLE001
++                _result["err"] = e
++
++        th = threading.Thread(target=_runner, name="sdk-run", daemon=True)
++        th.start()
++        local_prog = staging_dir / "progress.local.log"
++        seen = 0
++        while th.is_alive():
++            _time.sleep(15)
++            try:
++                launcher.download_artifact("progress.log", str(local_prog))
++                lines = local_prog.read_text().splitlines()
++                if len(lines) > seen:
++                    for ln in lines[seen:]:
++                        print(f"[progress] {ln}", flush=True)
++                    seen = len(lines)
++            except Exception:
++                pass  # progress.log not present yet / transient pull error
++        th.join()
++        if "err" in _result:
++            raise _result["err"]
++        response = _result.get("resp")
+ 
+     print("Appliance response:")
+     print(response)
+diff --git a/models/qwen3_1p7b-e2e/src/decode/comm_lib/comm_pe.csl b/models/qwen3_1p7b-e2e/src/decode/comm_lib/comm_pe.csl
+index f388079..1300bc4 100644
+--- a/models/qwen3_1p7b-e2e/src/decode/comm_lib/comm_pe.csl
++++ b/models/qwen3_1p7b-e2e/src/decode/comm_lib/comm_pe.csl
+@@ -60,6 +60,17 @@ param kv_transfer: i16;
+ param kv_xfer_color_0: color;
+ param kv_xfer_color_1: color;
+ param kv_init_cont_id: local_task_id;   // post-ingress continuation (decode.csl)
++param kv_prof_emit_id: local_task_id;   // reporter prof-burst emit (decode.csl); unused when kv_profile==0
++
++// KV segment-profiler egress rendezvous (reporter PE only). decode's kv_ingress
++// sets this (via kv_arm_prof) BEFORE the post-ingress flush. The OQ7 empty-queue
++// handler's FIRST entry then runs with OQ7 already drained of its residual KV
++// tile, so it is safe to repurpose OQ7's color: it hands off to kv_prof_emit
++// (rebind color -> kv_prof_out_color, push the burst, re-flush), and the SECOND
++// entry does the normal broadcast rebind + kv_init_cont. Mirrors the SDK
++// queue_flush example's foo()/transmit2 color-swap-after-drain idiom.
++var kv_prof_pending: bool = false;
++fn kv_arm_prof() void { kv_prof_pending = true; }
+ 
+ const reduce_1st_0_recv_queue_id = @get_input_queue(3);
+ const reduce_1st_0_send_queue_id = @get_output_queue(3);
+@@ -1308,6 +1319,16 @@ noinline fn reconfig_allreduce_axis(axis: i16) void {
+ // last forwarded tile (the chain edge gets no consumption signal), so the rebind
+ // runs in the OQ7 empty-queue handler after @queue_flush, then continues init.
+ fn kv_oq7_empty() void {
++    // FIRST entry on the reporter: OQ7 just drained its residual KV tile, so it
++    // is now safe to repurpose OQ7's color. Hand off to decode's kv_prof_emit
++    // (rebinds OQ7 color -> kv_prof_out_color, pushes the burst, re-flushes ->
++    // 2nd entry). Clear the flush state first so the re-flush's T29 fires.
++    if (kv_prof_pending) {
++        kv_prof_pending = false;
++        @activate(kv_prof_emit_id);
++        tile_config.queue_flush.exit(broadcast_send_queue_id);
++        return;
++    }
+     tile_config.output_queue_config.encode_output_queue(7, @as(i16, @get_int(broadcast_color)));
+     tile_config.input_queue_config.encode_input_queue(7, @as(i16, @get_int(broadcast_color)), false);
+     tile_config.queue_flush.exit(broadcast_send_queue_id);
+diff --git a/models/qwen3_1p7b-e2e/src/decode/decode.csl b/models/qwen3_1p7b-e2e/src/decode/decode.csl
+index c671ca6..b717ad0 100644
+--- a/models/qwen3_1p7b-e2e/src/decode/decode.csl
++++ b/models/qwen3_1p7b-e2e/src/decode/decode.csl
+@@ -176,6 +176,7 @@ const comm_mod = @import_module("comm_lib/comm_pe.csl", .{
+     .kv_xfer_color_0 = @get_color(kv_xfer_color_0),
+     .kv_xfer_color_1 = @get_color(kv_xfer_color_1),
+     .kv_init_cont_id = kv_init_cont_id,
++    .kv_prof_emit_id = kv_prof_emit_id,
+ 
+     .region_origin_x = region_origin_x,
+     .region_origin_y = region_origin_y,
+@@ -1337,6 +1338,8 @@ const dispatch_init_id = @get_local_task_id(12);
+ const init_task_id = @get_local_task_id(8);
+ const main_id      = @get_local_task_id(9);
+ const kv_init_cont_id = @get_local_task_id(10);
++const kv_prof_emit_id      = @get_local_task_id(19);   // reporter: post-drain burst emit
++const kv_prof_emit_done_id = @get_local_task_id(20);   // reporter: burst pushed -> re-flush
+ 
+ // ---------------- KV-cache ingress (prefill → decode) --------------------- //
+ // One phase per (layer, K|V): total_y_pes blocking shift steps north on the kv
+@@ -1398,15 +1401,21 @@ fn kv_ingress_phase(l: i16, n_recv: i16, is_k: bool) void {
+ // get_timestamp minus its inline-for, which the e2e cslc wrapper caps at 8).
+ export var kv_prof_dec = @zeros([4]f32);   // read via runtime.read_symbol (sim)
+ 
+-// Device-compatible egress buffer + DSD (reporter PE only). 4 u32 = [C, done,
+-// pad, pad]; 4 is even (SDK 1.13.2 requires an even output-port wavelet count).
+-// The reporter borrows OQ7 right after kv_ingress records C (before
+-// kv_flush_then_init rebinds OQ7 to broadcast) and emits on kv_prof_out_color,
+-// painted RAMP->EAST through the east strip col out a dedicated Edge.RIGHT port
+-// (host stream). Mirrors the HT_tail is_tsc_pe burst.
+-var kv_prof_burst_dec: [4]u32 = @zeros([4]u32);
+-const kv_prof_burst_dec_dsd = @get_dsd(mem1d_dsd,  .{ .base_address = &kv_prof_burst_dec, .extent = @as(i16, 4) });
+-const kv_prof_out_dec_dsd   = @get_dsd(fabout_dsd, .{ .extent = @as(i16, 4), .output_queue = @get_output_queue(7) });
++// P2 seam-collect egress buffer + DSDs (collector PE only). The collector is the
++// decode block PE at the seam's north boundary (south-most block row, west-most
++// block col = the result-sender edge col). It (a) receives prefill's 4-u32 A/B
++// burst [A, B, pf_done, pad] arriving from the SOUTH on the KV-transfer color
++// (kv_in_iq is still bound to kv_xfer_color_0 post-ingress, before
++// kv_flush_then_init rebinds it), (b) appends its own C into slots 4..7, forming
++// the 8-u32 blob [A, B, pf_done, pad, C, dec_done, pad, pad] (8 is even), and
++// (c) emits it WEST on kv_prof_out_color (through the fake west strip → HT_tail),
++// where HT_tail's is_tsc_pe piggybacks it onto the logits south stream. Mirrors
++// the HT_tail is_tsc_pe TSC burst; the A/B ride the seam south→north like KV.
++var kv_prof_burst_dec: [8]u32 = @zeros([8]u32);
++const kv_prof_ab_dst_dsd    = @get_dsd(mem1d_dsd,  .{ .base_address = &kv_prof_burst_dec, .extent = @as(i16, 4) });
++const kv_prof_ab_recv_dsd   = @get_dsd(fabin_dsd,  .{ .extent = @as(i16, 4), .input_queue  = kv_in_iq });
++const kv_prof_burst_dec_dsd = @get_dsd(mem1d_dsd,  .{ .base_address = &kv_prof_burst_dec, .extent = @as(i16, 8) });
++const kv_prof_out_dec_dsd   = @get_dsd(fabout_dsd, .{ .extent = @as(i16, 8), .output_queue = @get_output_queue(7) });
+ fn kv_prof_enable() void {   // enable the TSC control register (value 7)
+     @set_config(@as(u16, decode_tile_config.addresses.PERF_COUNTER_CONTROL) / decode_tile_config.word_size,
+                 @as(u16, 7));
+@@ -1441,17 +1450,23 @@ fn kv_ingress() void {
+         const c_cyc = c_end - kv_prof_c_start;
+         kv_prof_dec[0] = @bitcast(f32, c_cyc);                     // C = decode ingress
+         kv_prof_dec[1] = @bitcast(f32, @as(u32, 1));
+-        // Device egress (reporter PE only): stream C off-chip. Borrow OQ7 (the
+-        // ingress north-shift sends are complete) by rebinding it to the dedicated
+-        // east-edge color, emit the 4-u32 burst, then let kv_flush_then_init drain
+-        // OQ7 and rebind it to broadcast for the main loop.
++        // Collector PE only: receive prefill's A/B burst from the south (blocking;
++        // it arrives on kv_xfer_color_0 right after the KV tiles — counts match the
++        // sender by construction) and append this PE's C, forming the 8-u32 blob.
++        // The blob is NOT emitted here; egress is deferred to kv_prof_emit (after
++        // the OQ7 residual drains) so we never repurpose OQ7 while it is non-empty.
+         if (is_kv_prof_reporter != 0) {
+-            kv_prof_burst_dec[0] = c_cyc;             // C
+-            kv_prof_burst_dec[1] = @as(u32, 1);       // done
+-            kv_prof_burst_dec[2] = @as(u32, 0);       // pad
+-            kv_prof_burst_dec[3] = @as(u32, 0);       // pad (even count)
+-            output_queue_config.encode_output_queue(7, @as(i16, kv_prof_out_color));
+-            @mov32(kv_prof_out_dec_dsd, kv_prof_burst_dec_dsd);
++            @mov32(kv_prof_ab_dst_dsd, kv_prof_ab_recv_dsd);   // blob[0:4] = [A, B, pf_done, pad]
++            kv_prof_burst_dec[4] = c_cyc;             // C
++            kv_prof_burst_dec[5] = @as(u32, 1);       // dec_done
++            kv_prof_burst_dec[6] = @as(u32, 0);       // pad
++            kv_prof_burst_dec[7] = @as(u32, 0);       // pad (even count)
++            // Do NOT rebind OQ7 / emit here: OQ7 may still hold this PE's residual
++            // KV tile (the forwarding chain edge gets no consumption signal), so
++            // repurposing its color now would mis-route that tile. Instead ARM the
++            // deferred egress; the actual rebind + push runs in kv_prof_emit, fired
++            // by the OQ7 empty-handler AFTER kv_flush_then_init drains the residual.
++            comm_mod.kv_arm_prof();
+         }
+     }
+     comm_mod.kv_flush_then_init();   // drain OQ7, rebind to broadcast, → kv_init_cont
+@@ -1553,6 +1568,21 @@ task kv_init_cont() void {
+     @activate(main_id);
+ }
+ 
++// Reporter prof-burst egress, stage 1 (fired by the OQ7 empty-handler's first
++// entry once the residual KV tile has drained -> OQ7 is empty). Now it is safe
++// to repurpose OQ7's color; push the 8-u32 blob async, then re-flush on done.
++task kv_prof_emit() void {
++    output_queue_config.encode_output_queue(7, @as(i16, kv_prof_out_color));
++    @mov32(kv_prof_out_dec_dsd, kv_prof_burst_dec_dsd,
++           .{ .async = true, .activate = kv_prof_emit_done_id });
++}
++// Stage 2: the burst is in OQ7; re-flush drains it out kv_prof_out_color and
++// re-enters kv_oq7_empty (kv_prof_pending now false) for the normal broadcast
++// rebind + kv_init_cont.
++task kv_prof_emit_done() void {
++    comm_mod.kv_flush_then_init();
++}
++
+ // Per-step main loop (streaming):
+ //   Chain-start block (row_y==0): each step pulls one X slice from HT_head's
+ //     east-out stream (x_input_color) via the is_host_x_receiver PE, then
+@@ -1601,6 +1631,8 @@ comptime {
+     @bind_local_task(main,                   main_id);
+     @bind_local_task(dispatch_init_task,     dispatch_init_id);
+     @bind_local_task(kv_init_cont,           kv_init_cont_id);
++    @bind_local_task(kv_prof_emit,           kv_prof_emit_id);
++    @bind_local_task(kv_prof_emit_done,      kv_prof_emit_done_id);
+     @activate(dispatch_init_id);
+ 
+     // Result stream: only edge-row PEs of the last region bind the queue.
+diff --git a/models/qwen3_1p7b-e2e/src/decode/ht_tail.csl b/models/qwen3_1p7b-e2e/src/decode/ht_tail.csl
+index c1686c3..f602a8f 100644
+--- a/models/qwen3_1p7b-e2e/src/decode/ht_tail.csl
++++ b/models/qwen3_1p7b-e2e/src/decode/ht_tail.csl
+@@ -70,6 +70,15 @@ param tok_bcast_color: u16 = 0;   // north emit port (sampled token → HT_head)
+ param warmup_cycles: u16 = 0;
+ param is_tsc_pe:     i16 = 0;
+ 
++// P2 KV-transfer profiler piggyback. When kv_profile != 0 the is_tsc_pe (root-row
++// east-most) also relays an 8-u32 profiler blob [A, B, pf_done, pad, C, dec_done,
++// pad, pad] to the host: it is routed WEST out of the decode block region (from
++// the seam collector) into HT_tail's east edge and up the east column to this PE
++// on kv_prof_color; this PE posts a recv in tail_init and, after the last-step
++// TSC burst, emits it on OQ0 (logits south) — one extra host receive.
++param kv_profile:    i16 = 0;
++param kv_prof_color: u16 = 0;
++
+ // ---------------------------------------------------------------- //
+ // Modules
+ // ---------------------------------------------------------------- //
+@@ -216,6 +225,14 @@ var tail_tsc_burst_u32: [8]u32 = @zeros([8]u32);
+ const tail_tsc_burst_dsd = @get_dsd(mem1d_dsd,  .{ .base_address = &tail_tsc_burst_u32, .extent = @as(i16, 8) });
+ const tail_tsc_out_dsd   = @get_dsd(fabout_dsd, .{ .extent = @as(i16, 8), .output_queue = logits_south_oq });
+ 
++// P2 profiler blob (is_tsc_pe only). Received once (tail_init posts an async recv
++// on IQ7 → kv_prof_color) into memory, then emitted on OQ0 after the TSC burst.
++var tail_prof_burst_u32: [8]u32 = @zeros([8]u32);
++const tail_prof_iq        = @get_input_queue(7);   // IQ7 free on the tail (OQ7 = token emit)
++const tail_prof_burst_dsd = @get_dsd(mem1d_dsd,  .{ .base_address = &tail_prof_burst_u32, .extent = @as(i16, 8) });
++const tail_prof_recv_dsd  = @get_dsd(fabin_dsd,  .{ .extent = @as(i16, 8), .input_queue  = tail_prof_iq });
++const tail_prof_out_dsd   = @get_dsd(fabout_dsd, .{ .extent = @as(i16, 8), .output_queue = logits_south_oq });
++
+ // ---------------------------------------------------------------- //
+ // Sampled next token per batch (root row). Written by tail_sample_token,
+ // X-broadcast to every root-row column, then emitted north to HT_head and
+@@ -1037,6 +1054,7 @@ fn tail_sample_token() void {
+ // ---------------------------------------------------------------- //
+ const tail_init_id = @get_local_task_id(10);
+ const tail_main_id = @get_local_task_id(11);
++const tail_prof_emit_id = @get_local_task_id(12);   // profiler-blob emit, chained after the TSC emit
+ 
+ var tail_step: i16 = 0;
+ 
+@@ -1135,6 +1153,13 @@ task tail_init() void {
+         timestamp.enable_tsc();
+     }
+ 
++    // P2 profiler blob: post the one-shot recv early (the seam collector emits it
++    // during decode ingress, long before the last step) so it sits in memory,
++    // ready for the last-step piggyback emit.
++    if (is_tsc_pe != 0 and kv_profile != 0) {
++        @mov32(tail_prof_burst_dsd, tail_prof_recv_dsd, .{ .async = true });
++    }
++
+     @activate(tail_main_id);
+ }
+ 
+@@ -1213,11 +1238,29 @@ task tail_main() void {
+             tail_tsc_burst_u32[4] = @as(u32, tail_end_buf[0]);
+             tail_tsc_burst_u32[5] = @as(u32, tail_end_buf[1]);
+             tail_tsc_burst_u32[6] = @as(u32, tail_end_buf[2]);
+-            @mov32(tail_tsc_out_dsd, tail_tsc_burst_dsd, .{ .async = true });
++            // P2 profiler blob piggyback: the TSC burst and the blob are BOTH
++            // async emits on the SAME queue (OQ0). Two concurrent async ops on
++            // one output queue must not share a microthread, so we cannot fire
++            // them back-to-back (the 2nd silently never launches -> host blocks
++            // on the blob receive). Instead chain: the TSC emit's completion
++            // activates tail_prof_emit, which emits the blob on the now-free
++            // microthread, right behind the TSC burst (order preserved).
++            if (kv_profile != 0) {
++                @mov32(tail_tsc_out_dsd, tail_tsc_burst_dsd,
++                       .{ .async = true, .activate = tail_prof_emit_id });
++            } else {
++                @mov32(tail_tsc_out_dsd, tail_tsc_burst_dsd, .{ .async = true });
++            }
+         }
+     }
+ }
+ 
++// Fired by the TSC-burst async emit's completion (kv_profile only): emit the
++// 8-u32 profiler blob on OQ0, now that the TSC emit's microthread is free.
++task tail_prof_emit() void {
++    @mov32(tail_prof_out_dsd, tail_prof_burst_dsd, .{ .async = true });
++}
++
+ // =================================================================== //
+ // Comptime: queue bindings + task activation.
+ // =================================================================== //
+@@ -1240,9 +1283,14 @@ comptime {
+     // Cross-column X-phase barrier color.
+     @initialize_queue(tail_xready_iq,       .{ .color = @get_color(tail_xready_color)  });
+     @initialize_queue(tail_xready_oq,       .{ .color = @get_color(tail_xready_color)  });
++    // P2 profiler blob recv (is_tsc_pe only; IQ7 is otherwise input-idle here).
++    if (is_tsc_pe != 0 and kv_profile != 0) {
++        @initialize_queue(tail_prof_iq, .{ .color = @get_color(kv_prof_color) });
++    }
+ 
+     @bind_local_task(tail_init, tail_init_id);
+     @bind_local_task(tail_main, tail_main_id);
++    @bind_local_task(tail_prof_emit, tail_prof_emit_id);
+ 
+     @activate(tail_init_id);
+ }
+diff --git a/models/qwen3_1p7b-e2e/src/decode/mux.csl b/models/qwen3_1p7b-e2e/src/decode/mux.csl
+index fa1ca72..ee26e61 100644
+--- a/models/qwen3_1p7b-e2e/src/decode/mux.csl
++++ b/models/qwen3_1p7b-e2e/src/decode/mux.csl
+@@ -7,6 +7,11 @@ param MAX_OUTPUT_LEN: i16;
+ param is_last_pe: u16;        // 1 on the east-most PE (the only active one)
+ param in_color: u16;          // top-k blob from north (HT_tail east-most) → RAMP
+ param host_color: u16;        // → host (RAMP→EAST at the east edge)
++// Trailing wavelets to relay after the per-step blobs: the 8-u32 TSC burst, plus
++// the 8-u32 KV-profiler blob when profiling. The mux is profile-agnostic — it only
++// needs the COUNT, since fabric DSD extents are comptime-known and wavelets on this
++// path carry no length header. Must match launch.py's south_total_with_tsc tail.
++param tail_wlts: u16;
+ 
+ const N: i16 = @as(i16, wlts_per_step);
+ 
+@@ -24,12 +29,16 @@ const next_id = @get_local_task_id(10);
+ 
+ var step: i16 = 0;
+ 
+-// TSC tail-relay: after the logits steps, drain one 8-u32 TSC burst piggybacked
+-// on in_color and forward it east to host on host_color.
+-var tsc_blob: [8]u32 = @zeros([8]u32);
+-const tsc_blob_dsd = @get_dsd(mem1d_dsd, .{ .base_address = &tsc_blob, .extent = 8 });
+-const tsc_recv_dsd = @get_dsd(fabin_dsd,  .{ .extent = 8, .input_queue  = in_q });
+-const tsc_send_dsd = @get_dsd(fabout_dsd, .{ .extent = 8, .output_queue = host_oq });
++// Tail-relay: after the logits steps, drain the trailing tail_wlts u32 piggybacked
++// on in_color and forward them east to host on host_color. The fabric does not
++// delimit bursts, so one extent-T recv collects the TSC burst's 8 wavelets followed
++// by the profiler blob's 8 (when present), in emission order; the host reads them
++// back as two 8-word receives off the same stream.
++const T: i16 = @as(i16, tail_wlts);
++var tsc_blob: [T]u32 = @zeros([T]u32);
++const tsc_blob_dsd = @get_dsd(mem1d_dsd, .{ .base_address = &tsc_blob, .extent = T });
++const tsc_recv_dsd = @get_dsd(fabin_dsd,  .{ .extent = T, .input_queue  = in_q });
++const tsc_send_dsd = @get_dsd(fabout_dsd, .{ .extent = T, .output_queue = host_oq });
+ const tsc_recv_id = @get_local_task_id(11);
+ const tsc_send_id = @get_local_task_id(12);
+ 
+@@ -47,11 +56,11 @@ task next() void {
+     else { @activate(tsc_recv_id); }   // drain the piggybacked TSC burst, then host
+ }
+ 
+-task tsc_recv() void {                 // drain the 8-u32 TSC burst from the north
++task tsc_recv() void {                 // drain the trailing tail_wlts u32 from the north
+     @mov32(tsc_blob_dsd, tsc_recv_dsd, .{ .async = true, .activate = tsc_send_id });
+ }
+ 
+-task tsc_send() void {                 // forward it east to the host edge (done)
++task tsc_send() void {                 // forward them east to the host edge (done)
+     @mov32(tsc_send_dsd, tsc_blob_dsd, .{ .async = true });
+ }
+ 
