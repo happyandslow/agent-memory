@@ -280,6 +280,37 @@ Z-egress wire. `decode_out_port` reads from the fake west strip's `EAST→WEST`
 transit, not from RAMP — a detail that would break if the west strip ever became
 real (i.e. at `P_Y_BLOCK_NUM ≥ 4`).
 
+### Clarification (Le pushed back — the phrase "double-booked" was misleading)
+
+Sharing is at the level of the **wafer-global color id**, across *different PEs*.
+**No PE uses c1 for two purposes.**
+
+| PE | what c1 means there | who paints the route |
+|---|---|---|
+| block PE (lcl_x 1..Pw) | `reduce_1st_color_0` | `comm_pe.init()` at runtime (`@set_config`) |
+| strip PE (lcl_x 0 or Pw+1) | pipe 0's `a` color | `_paint_real_strip_col` at compile time |
+
+A strip PE never reduces anything. It paints c1 because **all 8 pipes share the
+one column**, so *every* strip cell must transit *all 16* K-pipe colors (`N→S`),
+overriding only its own pipe's two. Five of those 16 ids happen to be *named*
+after collectives because block PEs use those ids for that.
+
+**Structural proof the wire is never shared** — the colors painted across the
+block↔strip boundary are exactly `{c6 intra_row_bcast, c19/c20 inter_block_a/b,
+c23 post_embed_x}`, and `{6,19,20,23} ∩ kpipe_ids = ∅`. The Z hop
+block → strip → south → strip → block is carried by **c19/c20 in, c6 out**; the
+K-pipe colors carry only the vertical leg *inside* the strip column. Reduce
+colors never carry Z and never leave the block columns (reduce chains converge
+inward: `root_1st_phase = pe_num_per_group//2 > 0`, so `remainder_x=0 ⇒ tx EAST`;
+bcast endpoints ramp).
+
+**The one genuine per-PE overlap is at the QUEUE layer, not the route layer.**
+Block and strip PEs are the *same code region* (`decode.csl`), so `comm_pe`'s
+comptime block binds IQ3..IQ7 to c1..c5 as masters on strip PEs too. The K-pipe
+then wants IQ2 bound to a color that may *be* c1..c5 → "two master input queues
+for the same color". Hence the park-IQ3..IQ7-on-`x_input_color` step in
+`dispatch_init_task`. That is the real, and only, cost of the aliasing.
+
 ### Implications / next actions
 
 - [ ] **Latent hazard at `P_Y_BLOCK_NUM ≥ 4`:** the west strip becomes real and
