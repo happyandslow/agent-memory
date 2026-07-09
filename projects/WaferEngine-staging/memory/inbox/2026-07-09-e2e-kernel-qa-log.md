@@ -558,3 +558,55 @@ device vocab (128512) exceeds i16.
   `:921-953` (4 ports), `:1341-1371` (row_0 c23 transit + host-X flags), `:2026-2036` (connects).
 - `src/decode/ht_head.csl` (whole file); `src/decode/decode.csl:1587-1601`;
   `src/decode/comm_lib/comm_pe.csl:1279-1288` (`intra_block_x_broadcast_y_bsz_dim`).
+
+---
+
+## Q7 — Full on-chip data-layout reference (delegated to subagents)
+
+Two subagents read the kernel and produced a per-module tensor-layout reference,
+now at `assets/data-layout/` (README + decode + prefill). Each tensor is documented
+with partition/replication vs fabric axis, local CSL symbol + dim order slow→fast,
+the host-side transform, and the Qwen3-1.7B op it feeds with its contraction axis.
+
+**Headline:** decode's axis roles are **not fixed** — hidden ping-pongs
+`Y → X → Y → X → Y`. Hidden shards on Y for RMSNorm; QKV contracts hidden along Y
+so the output feature/head dim lands on X; **sequence lives on Y**
+(`process_kv`: `local_py == step % 256`); `o_proj` contracts head dim on X →
+hidden back to Y; `down_proj` contracts ffn on X → hidden back to Y. Prefill is
+rotated 90° (seq on X, dim on Y), which is exactly why the KV handoff transposes
+**V but not K**.
+
+**Verified source bugs / asymmetries found:**
+
+1. `src/decode/route_calc.csl:5` is **wrong**: "seq_len + KV-head bands along X".
+   Decode's seq axis is along **Y** — `decode.csl:958` says so, and the reduces
+   prove it (`all_reduceMax_bsz_g` / `all_reduce_bsz_g` / `output_matvec` all
+   contract seq via `local_py`; only `score_matvec` contracts head_dim
+   kv-head-scoped on X). Two comments in the same tree contradict each other.
+2. **Vocab padding asymmetry.** `build_decode` pads 151936 → 152064 and masks the
+   128 dummy logits (`vocab_pad_count`). `build_prefill` does **no padding**,
+   asserts exact divisibility (`launch.py:2136`), hardcodes `vocab_pad_count = 0`
+   (`launch.py:2766`). ⇒ decode `V_per_pe_x = 1188`, prefill `V_per_pe_x = 1187`
+   for the same model. Works today only because 151936 divides 128 but not 256.
+   A dim/vocab failing prefill's assert would hard-fail the build while decode padded.
+3. `launch.py:287-306` P_BLOCK_SIZE commentary describes a config
+   (`P_BLOCK_SIZE=128, Pw=256`) that is not the shipped one.
+4. `HT_X_OFFSET = 0` in all shipped configs ⇒ ht_head's west relay-only columns
+   are dead code and their `W_E_tile` zero-fill is vestigial. (Also seen in Q6.)
+5. Prefill weights are all mock (`randn*0.1`); real HF weights would need the
+   decode-side `_perm_WQ` / `_reshard_K_dim` / `_perm_WO` permutations to reach the
+   pair-interleaved GQA layout the RoPE fills already assume.
+
+### Implications / next actions
+
+- [ ] Fix the stale `route_calc.csl:5` header comment (seq is Y, not X). Cheap, and
+      it actively misleads anyone reasoning about the decode reduce axes.
+- [ ] Give `build_prefill` the same `_pad_to`/`_zpad` path as `build_decode`, or at
+      minimum turn its silent divisibility asserts into an explicit "prefill does not
+      pad" contract at the top of `run()`.
+
+### Pointers
+
+- `assets/data-layout/README.md` (index + shared constants + the two headline facts)
+- `assets/data-layout/e2e-data-layout-decode.md` (427 lines)
+- `assets/data-layout/e2e-data-layout-prefill.md` (541 lines)
