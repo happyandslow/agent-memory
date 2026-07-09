@@ -69,4 +69,6 @@
   `h2d-playground/rdma-explore/` (`dispatch_rdma_bench.py --device mlx5_0 --gid-idx auto`,
   `probe_pingpong.py:auto_gid_idx`); curated in WaferEngine-staging topic
   `h2d-host-device-bandwidth`.
+- ContextBase log (this session): `m62qbYvGQv` —
+  https://context.ed-aisys.com/doc/2026-07-09-kv-handoff-zero-copy-serde-unframe-790ms-to-23ms-rdma-works-but-does-not-help-m62qbYvGQv
 - ContextBase log (2026-07-08 predecessor): `cKDd6Y66yG` under PD Disaggregation (living).
