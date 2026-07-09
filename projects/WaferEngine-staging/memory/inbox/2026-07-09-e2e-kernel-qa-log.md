@@ -458,3 +458,103 @@ buffer the W_E gather fills on steps ≥ 1**. Both paths then emit east on
 - `launch.py:464-466` (sizing), `:680-776` (region, per-PE params, chain paint),
   `:921-953` (ht_head ports), `:2026-2034` (`connect` of both wires).
 - `src/decode/demux.csl` (whole file), `src/decode/ht_head.csl:235-310`.
+
+---
+
+## Q6 — The decode `ht_head` region: build, internals, and its two seams (demux upstream, decode row_0 downstream)
+
+**What:** `src/decode/ht_head.csl` on a `HT_WIDTH_tail × P_BLOCK_SIZE` region placed
+at `(HT_HEAD_X = 3, PLACE_Y = 1)` (`launch.py:808-1000`). It is the **token
+embedding** stage: token id → hidden vector, one row-shard per Y row.
+
+### W_E sharding
+
+`W_E` is sharded **vocab along Y**, **hidden along X**:
+
+- row `py` owns vocab rows `[py*V_per_pe_y, (py+1)*V_per_pe_y)`, `V_per_pe_y = vocab/P_BLOCK_SIZE`
+- col `x_local` owns hidden `[x_local*2*dim_per_pe, (x_local+1)*2*dim_per_pe)`
+
+Per-PE tile is `V_per_pe_y × 2*dim_per_pe`, uploaded by `set_symbol_all("W_E_tile", …)`,
+seed **2024** (tied with lm_head — `tie_word_embeddings`). Note the **2×**: a column
+owns *twice* one decode row's shard, and its **diag pair** splits it — `upper = 2c`
+takes the first half, `lower = 2c+1` the second. Hence the diag PE of row `py`
+owns exactly hidden `[py*dim_per_pe, (py+1)*dim_per_pe)`.
+
+### Per-step behaviour (`main`, bounded by runtime symbol `n_steps`)
+
+| step | what happens |
+|---|---|
+| 0 | **no lookup.** The diag PE drains C1 (`pre_embed_x`, c18) from demux into `embed_buf`. |
+| ≥1 | every column drains `bsz` token ids from south (`tok_bcast`, c7, i32); active cols run `embed_gather_dispatch` (the UP/DOWN gather of Q4) |
+| every | diag PE emits `embed_buf` **east** on C2 (`post_embed_x`, c23) |
+
+`n_steps` is a `set_symbol_all` *runtime* symbol, not a comptime bound — a comptime
+`MAX_OUTPUT_LEN` would unroll the per-step body and blow per-PE code size.
+
+### Upstream seam: demux
+
+Two wires, opposite directions (see [[Q5]]):
+- data `pre_embed_x` **c18**, demux `Edge.RIGHT` → ht_head `Edge.LEFT`, step 0 only.
+  C1's runtime paint: cols `< diag_col` `WEST→EAST`, `col == diag_col` `WEST→RAMP`.
+- barrier `ht_ready` **c0**, ht_head col=0 → demux, 1 wavelet/row, gating demux's
+  `main` until HT_head's `init()` has painted C1/C2.
+
+### Downstream seam: decode row_0
+
+`ht_head_c2_out_port` (c23, `Edge.RIGHT`) → `connect` → `row0_x_in_port`
+(c23, `Edge.LEFT`) (`launch.py:928-935, 2027`).
+
+Inside row_0, c23 is painted (`launch.py:1341-1355`):
+- `WEST→EAST` transit across the **fake west strip** (lcl_x=0) and block cols
+  `[1, 1+root_2nd_phase)`
+- `WEST→RAMP` at column `chain_start_west_x + root_2nd_phase`
+
+So the **receiver is a COLUMN, not a row**: `local_px == root_2nd_phase`, all
+`P_BLOCK_SIZE` rows. `is_host_x_receiver = 1` there; `is_host_x_block = 1` on
+every chain-start block PE (`launch.py:1363-1371`).
+
+On the decode side (`decode.csl:1587-1600`):
+1. `is_host_x_receiver` PE does `@fmovh(X_dsd, x_input_dsd)` on **IQ0**, which
+   `comm_pe` bound to `x_input_color` instead of `inter_block_a_color`.
+2. Every chain-start PE then joins `intra_block_x_broadcast_y_bsz_dim`, which fans
+   X **along the X axis** on `intra_row_bcast_color` (c6) from the root column to
+   all columns of that row.
+
+**Why the shapes line up:** decode shards hidden dim along **Y**, so decode row
+`py` needs hidden `[py*dim_per_pe, (py+1)*dim_per_pe)` **replicated across all
+columns**. HT_head row `py`'s diag PE delivers exactly that slice. Row `py` →
+row `py`, then replicate along X. The step-0 demux seed and the step-N gather land
+in the same `embed_buf`, so downstream cannot tell them apart.
+
+### Closing the autoregressive loop
+
+HT_tail's root row emits the sampled token **north** on `tok_bcast` (c7) up the
+same X column band. HT_head paints c7 **uniformly** `SOUTH→{RAMP, NORTH}` on every
+cell, with the top row (`py=0`) terminating `SOUTH→RAMP` (`launch.py:907-915`).
+So every HT_head PE drains `bsz` ids per step — west relay columns drain and
+discard — keeping the tail↔head connect uniform. Counts match: tail emits for
+`tail_step < MAX_OUTPUT_LEN-1` (= `max_output_len - 1` emits); head drains on
+`ht_step ∈ [1, n_steps)` (= `n_steps - 1` drains). Token is **i32** because a
+device vocab (128512) exceeds i16.
+
+### Queues (memcpy_required=False ⇒ 0..7 all user-available)
+
+`IQ2` tok · `IQ3` C1 · `IQ4/5` UP_A/UP_B · `IQ6/7` DOWN_A/DOWN_B
+`OQ2` C2 · `OQ3/4` UP_A/UP_B · `OQ5` ready · `OQ6/7` DOWN_A/DOWN_B
+
+### Notes / gotchas
+
+- The region spans the full `HT_WIDTH_tail` (to match the tail for a uniform token
+  connect), but embedding runs only on the **east** `HT_WIDTH_head` columns.
+  Today `HT_WIDTH_head = HT_WIDTH_tail = P/2` ⇒ `HT_X_OFFSET = 0`, so the
+  "west cols only relay C1" branch (`head_is_active == 0`) is **dead code**, and
+  the west-column `W_E_tile` zero-fill is vestigial.
+- `head_am_diag` is true on **two** PEs per column (upper + lower), so `P_BLOCK_SIZE`
+  diag PEs total — one per decode row. All of them emit C2 every step.
+
+### Pointers
+
+- `launch.py:808-1000` (region, params, UP/DOWN paint, tok_bcast paint, W_E upload),
+  `:921-953` (4 ports), `:1341-1371` (row_0 c23 transit + host-X flags), `:2026-2036` (connects).
+- `src/decode/ht_head.csl` (whole file); `src/decode/decode.csl:1587-1601`;
+  `src/decode/comm_lib/comm_pe.csl:1279-1288` (`intra_block_x_broadcast_y_bsz_dim`).
