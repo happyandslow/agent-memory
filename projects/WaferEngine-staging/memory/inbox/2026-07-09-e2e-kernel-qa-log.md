@@ -388,3 +388,73 @@ Consequences:
 - `launch.py:604-646` (`_kpipe_ids`, `DOWN_A_c`/`DOWN_B_c`), `:826-833`
   (device-name binding), `:855-903` (P1–P6 static paint).
 - `src/decode/ht_head.csl:126-226` (`embed_gather_dispatch`), `:32-40` (color params).
+
+---
+
+## Q5 — The decode `demux` region in `build_decode`, and how it talks to HT_head
+
+**What:** `src/decode/demux.csl` on a `1 × P_BLOCK_SIZE` column at fabric
+**x = 2** (`DEMUX_FAB_X`), immediately west of the HT band (`HT_HEAD_X = 3`).
+`launch.py:680-776`. It is a **single-shot** store-and-forward scatter of the
+host's step-0 X seed. It does nothing on any later step.
+
+**Why it exists:** an SdkLayout host input stream attaches to exactly **one** PE.
+The X seed is `P_BLOCK_SIZE` row-shards. The demux column turns that one serial
+host stream into P parallel east-going shards.
+
+### Chain mechanics
+
+`B = batch_per_xpe_step = (bsz * dim_per_pe) // 2` u32 (bf16 packs 2/u32);
+`per_step_x_wavelets = B * P_BLOCK_SIZE`.
+
+- PE 0 receives `P*B` u32 from the host on `Edge.TOP` (`in_color`, region-local).
+- PE k keeps the first `B` in `own_buf`, forwards the remaining `(P-k-1)*B` south.
+- Every PE emits its own `B` **east** on `pre_embed_x_color` (c18).
+- Two alternating chain colors (`chain_color_a` even hops, `chain_color_b` odd)
+  — the same rx≠tx parity trick as the K-pipe and HT_head's UP/DOWN chains.
+- Async join: `fwd_and_out` fires forward (`.unblock`) + out (`.activate`) at
+  `next_cycle`, which is `@block`ed at comptime so it runs only after both.
+  `next_cycle` re-arms nothing → single-shot.
+
+### Two wires to HT_head, in opposite directions
+
+| Wire | Color | Direction | Purpose |
+|---|---|---|---|
+| data | `pre_embed_x_color` **c18** | demux `Edge.RIGHT` → ht_head `Edge.LEFT` (multi-PE port) | the step-0 pre-embedded X |
+| barrier | `ht_ready_color` **c0** | ht_head col=0 → demux `Edge.RIGHT`, 1 wavelet/row | "my routes are painted" |
+
+**The barrier is a race fix, not a nicety.** HT_head's C1/C2 routes are painted at
+**runtime** inside `ht_head.csl init()`. If demux emitted C1 wavelets first they
+would hit unpainted routes. So demux's `init()` async-receives the sentinel and
+only then `@activate(main_id)`. Color **0** is safe here only because demux (x2)
+and HT_head (x3) are adjacent — the WSE-3 "avoid id 0 for long-distance routes"
+caveat does not bite at 1 hop (`launch.py:579-585`).
+
+### The shard alignment (why this works at all)
+
+In HT_head, column `c` owns hidden `[c*2*dim_per_pe, (c+1)*2*dim_per_pe)` and its
+**diag pair** is `upper = 2c` (takes the first half) / `lower = 2c+1` (second
+half). So the diag PE of row `py` owns exactly hidden
+`[py*dim_per_pe, (py+1)*dim_per_pe)` — precisely demux PE `ly = py`'s shard.
+
+C1's runtime paint (`ht_head.csl:256-260`): cols `< diag_col` do `WEST→EAST`,
+`col == diag_col` does `WEST→RAMP`. So demux PE `ly`'s shard walks east along row
+`ly` and ramps into that row's diagonal PE, landing in `embed_buf` — **the same
+buffer the W_E gather fills on steps ≥ 1**. Both paths then emit east on
+`post_embed_x` (c23). Step 0 and step N are indistinguishable downstream.
+
+### Notes
+
+- After step 0 the loop closes on-chip: HT_tail → `tok_bcast` (c7) → HT_head does
+  its own lookup. The demux idles for the rest of the run.
+- Ports are declared for `x_total_wavelets = per_step * max_output_len`
+  (capacity), though only one step's worth is ever sent.
+- Current config has `HT_WIDTH_head = HT_WIDTH_tail = P/2` ⇒ `HT_X_OFFSET = 0`, so
+  every HT_head column is embedding-active and the "west cols only relay C1"
+  branch (`ht_head.csl:246`, `head_is_active == 0`) is **dead code today**.
+
+### Pointers
+
+- `launch.py:464-466` (sizing), `:680-776` (region, per-PE params, chain paint),
+  `:921-953` (ht_head ports), `:2026-2034` (`connect` of both wires).
+- `src/decode/demux.csl` (whole file), `src/decode/ht_head.csl:235-310`.

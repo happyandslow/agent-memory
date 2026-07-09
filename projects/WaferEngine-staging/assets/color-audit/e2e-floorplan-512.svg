@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1101 1340" width="1101" height="1340" font-family="ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif">
+<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="2.6" opacity=".5"/></pattern><pattern id="hatchFake" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="1" opacity=".2"/></pattern></defs>
+<style>:root{color-scheme:light dark}text{fill:#0f172a}.bg{fill:#fff}.sub{fill:#64748b}.rl{font-size:13px;font-weight:600}.rd{font-size:10.5px}.ax{font-size:9.5px;fill:#94a3b8}.t1{font-size:19px;font-weight:700}.t2{font-size:11.5px}.bdg{font-size:9px;font-weight:700;fill:#fff}.grid{stroke:#cbd5e1;stroke-width:.6;opacity:.45}.blk{stroke:#334155;stroke-dasharray:4 3;stroke-width:.9;fill:none;opacity:.5}@media (prefers-color-scheme:dark){text{fill:#e2e8f0}.bg{fill:#0b1120}.sub{fill:#94a3b8}.ax{fill:#64748b}.grid{stroke:#334155}.blk{stroke:#94a3b8}}</style>
+<rect class="bg" width="1101" height="1340"/>
+<text class="t1" x="62" y="34">Wafer floorplan — models/qwen3_1p7b-e2e</text>
+<text class="t2 sub" x="62" y="55">ref origin/main · config model_config/test_device_2x2blk_kv.json · 12 code regions · derived from launch.py placement formulas</text>
+<text class="t2 sub" x="62" y="72">fabric 643×1027 PEs (x 2..644, y 1..1027) · Pw=512 Ph=512 · 2×2 blocks of 256 · 1 PE = 1.15px</text>
+<line class="grid" x1="62.0" y1="100.0" x2="62.0" y2="1280.0"/>
+<text class="ax" x="62.0" y="94.0" text-anchor="middle">2</text>
+<line class="grid" x1="153.9" y1="100.0" x2="153.9" y2="1280.0"/>
+<text class="ax" x="153.9" y="94.0" text-anchor="middle">82</text>
+<line class="grid" x1="245.8" y1="100.0" x2="245.8" y2="1280.0"/>
+<text class="ax" x="245.8" y="94.0" text-anchor="middle">162</text>
+<line class="grid" x1="337.8" y1="100.0" x2="337.8" y2="1280.0"/>
+<text class="ax" x="337.8" y="94.0" text-anchor="middle">242</text>
+<line class="grid" x1="429.7" y1="100.0" x2="429.7" y2="1280.0"/>
+<text class="ax" x="429.7" y="94.0" text-anchor="middle">322</text>
+<line class="grid" x1="521.6" y1="100.0" x2="521.6" y2="1280.0"/>
+<text class="ax" x="521.6" y="94.0" text-anchor="middle">402</text>
+<line class="grid" x1="613.5" y1="100.0" x2="613.5" y2="1280.0"/>
+<text class="ax" x="613.5" y="94.0" text-anchor="middle">482</text>
+<line class="grid" x1="705.4" y1="100.0" x2="705.4" y2="1280.0"/>
+<text class="ax" x="705.4" y="94.0" text-anchor="middle">562</text>
+<line class="grid" x1="797.3" y1="100.0" x2="797.3" y2="1280.0"/>
+<text class="ax" x="797.3" y="94.0" text-anchor="middle">642</text>
+<line class="grid" x1="62.0" y1="100.0" x2="800.8" y2="100.0"/>
+<text class="ax" x="54.0" y="103.0" text-anchor="end">1</text>
+<line class="grid" x1="62.0" y1="219.5" x2="800.8" y2="219.5"/>
+<text class="ax" x="54.0" y="222.5" text-anchor="end">105</text>
+<line class="grid" x1="62.0" y1="339.0" x2="800.8" y2="339.0"/>
+<text class="ax" x="54.0" y="342.0" text-anchor="end">209</text>
+<line class="grid" x1="62.0" y1="458.5" x2="800.8" y2="458.5"/>
+<text class="ax" x="54.0" y="461.5" text-anchor="end">313</text>
+<line class="grid" x1="62.0" y1="578.0" x2="800.8" y2="578.0"/>
+<text class="ax" x="54.0" y="581.0" text-anchor="end">417</text>
+<line class="grid" x1="62.0" y1="697.5" x2="800.8" y2="697.5"/>
+<text class="ax" x="54.0" y="700.5" text-anchor="end">521</text>
+<line class="grid" x1="62.0" y1="817.0" x2="800.8" y2="817.0"/>
+<text class="ax" x="54.0" y="820.0" text-anchor="end">625</text>
+<line class="grid" x1="62.0" y1="936.5" x2="800.8" y2="936.5"/>
+<text class="ax" x="54.0" y="939.5" text-anchor="end">729</text>
+<line class="grid" x1="62.0" y1="1055.9" x2="800.8" y2="1055.9"/>
+<text class="ax" x="54.0" y="1058.9" text-anchor="end">833</text>
+<line class="grid" x1="62.0" y1="1175.4" x2="800.8" y2="1175.4"/>
+<text class="ax" x="54.0" y="1178.4" text-anchor="end">937</text>
+<rect x="62.0" y="100.0" width="1.2" height="294.1" fill="#e2e8f0" stroke="#475569" stroke-width="0.5" rx="2" opacity=".93"/>
+<circle cx="62.6" cy="247.1" r="7" fill="#475569"/>
+<text class="bdg" x="62.6" y="250.1" text-anchor="middle">1</text>
+<rect x="63.1" y="100.0" width="147.1" height="294.1" fill="#ccfbf1" stroke="#0f766e" stroke-width="0.5" rx="2" opacity=".93"/>
+<text class="rl" x="136.7" y="246.1" text-anchor="middle">ht_head</text>
+<text class="rd sub" x="136.7" y="261.1" text-anchor="middle">128×256</text>
+<rect x="210.2" y="100.0" width="590.6" height="294.1" fill="#dbeafe" stroke="#1d4ed8" stroke-width="0.5" rx="2" opacity=".93"/>
+<rect x="209.0" y="100.0" width="3.5" height="294.1" fill="url(#hatchFake)" stroke="#1d4ed8" stroke-width=".7" color="#1d4ed8"/>
+<text class="rd" x="210.8" y="247.1" text-anchor="middle" transform="rotate(-90 210.8 247.1)" fill="#1d4ed8">W · fake</text>
+<rect x="798.5" y="100.0" width="3.5" height="294.1" fill="url(#hatch)" stroke="#1d4ed8" stroke-width=".7" color="#1d4ed8"/>
+<text class="rd" x="800.2" y="247.1" text-anchor="middle" transform="rotate(-90 800.2 247.1)" fill="#1d4ed8">E · REAL</text>
+<line class="blk" x1="505.5" y1="100.0" x2="505.5" y2="394.1"/>
+<text class="rl" x="505.5" y="246.1" text-anchor="middle">row_0</text>
+<text class="rd sub" x="505.5" y="261.1" text-anchor="middle">514×256</text>
+<rect x="210.2" y="394.1" width="590.6" height="294.1" fill="#dbeafe" stroke="#1d4ed8" stroke-width="0.5" rx="2" opacity=".93"/>
+<rect x="209.0" y="394.1" width="3.5" height="294.1" fill="url(#hatchFake)" stroke="#1d4ed8" stroke-width=".7" color="#1d4ed8"/>
+<text class="rd" x="210.8" y="541.2" text-anchor="middle" transform="rotate(-90 210.8 541.2)" fill="#1d4ed8">W · fake</text>
+<rect x="798.5" y="394.1" width="3.5" height="294.1" fill="url(#hatch)" stroke="#1d4ed8" stroke-width=".7" color="#1d4ed8"/>
+<text class="rd" x="800.2" y="541.2" text-anchor="middle" transform="rotate(-90 800.2 541.2)" fill="#1d4ed8">E · REAL</text>
+<line class="blk" x1="505.5" y1="394.1" x2="505.5" y2="688.3"/>
+<text class="rl" x="505.5" y="540.2" text-anchor="middle">row_1</text>
+<text class="rd sub" x="505.5" y="555.2" text-anchor="middle">514×256</text>
+<rect x="63.1" y="394.1" width="147.1" height="294.1" fill="#ccfbf1" stroke="#0f766e" stroke-width="0.5" rx="2" opacity=".93"/>
+<text class="rl" x="136.7" y="540.2" text-anchor="middle">ht_tail</text>
+<text class="rd sub" x="136.7" y="555.2" text-anchor="middle">128×256</text>
+<rect x="63.1" y="688.3" width="147.1" height="1.2" fill="#e2e8f0" stroke="#475569" stroke-width="0.5" rx="2" opacity=".93"/>
+<circle cx="136.7" cy="688.9" r="7" fill="#475569"/>
+<text class="bdg" x="136.7" y="691.9" text-anchor="middle">6</text>
+<rect x="211.4" y="688.3" width="588.3" height="2.3" fill="#fef3c7" stroke="#b45309" stroke-width="0.5" rx="2" opacity=".93"/>
+<circle cx="505.5" cy="689.4" r="7" fill="#b45309"/>
+<text class="bdg" x="505.5" y="692.4" text-anchor="middle">7</text>
+<rect x="211.4" y="690.6" width="588.3" height="588.3" fill="#ede9fe" stroke="#6d28d9" stroke-width="0.5" rx="2" opacity=".93"/>
+<line class="blk" x1="505.5" y1="690.6" x2="505.5" y2="1278.9"/>
+<line class="blk" x1="211.4" y1="984.7" x2="799.6" y2="984.7"/>
+<text class="rl" x="505.5" y="983.7" text-anchor="middle">pf_block</text>
+<text class="rd sub" x="505.5" y="998.7" text-anchor="middle">512×512</text>
+<rect x="64.3" y="690.6" width="147.1" height="294.1" fill="#e2e8f0" stroke="#475569" stroke-width="0.5" rx="2" opacity=".93"/>
+<text class="rl" x="137.8" y="836.6" text-anchor="middle">pf_ht_head</text>
+<text class="rd sub" x="137.8" y="851.6" text-anchor="middle">128×256</text>
+<rect x="64.3" y="689.4" width="147.1" height="1.2" fill="#e2e8f0" stroke="#475569" stroke-width="0.5" rx="2" opacity=".93"/>
+<circle cx="137.8" cy="690.0" r="7" fill="#475569"/>
+<text class="bdg" x="137.8" y="693.0" text-anchor="middle">10</text>
+<rect x="64.3" y="984.7" width="147.1" height="294.1" fill="#e2e8f0" stroke="#475569" stroke-width="0.5" rx="2" opacity=".93"/>
+<text class="rl" x="137.8" y="1130.8" text-anchor="middle">pf_ht_tail</text>
+<text class="rd sub" x="137.8" y="1145.8" text-anchor="middle">128×256</text>
+<rect x="64.3" y="1278.9" width="147.1" height="1.2" fill="#e2e8f0" stroke="#475569" stroke-width="0.5" rx="2" opacity=".93"/>
+<circle cx="137.8" cy="1279.5" r="7" fill="#475569"/>
+<text class="bdg" x="137.8" y="1282.5" text-anchor="middle">12</text>
+<text class="t2" x="826.792599805258" y="100" font-weight="700">Code regions</text>
+<rect x="826.792599805258" y="111" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
+<text class="rd" x="844.792599805258" y="120">(1) x_demux</text>
+<text class="rd sub" x="976.792599805258" y="120">1×256 @ (2,1)</text>
+<rect x="826.792599805258" y="127" width="11" height="11" fill="#ccfbf1" stroke="#0f766e"/>
+<text class="rd" x="844.792599805258" y="136">    ht_head</text>
+<text class="rd sub" x="976.792599805258" y="136">128×256 @ (3,1)</text>
+<rect x="826.792599805258" y="143" width="11" height="11" fill="#dbeafe" stroke="#1d4ed8"/>
+<text class="rd" x="844.792599805258" y="152">    row_0</text>
+<text class="rd sub" x="976.792599805258" y="152">514×256 @ (131,1)</text>
+<rect x="826.792599805258" y="159" width="11" height="11" fill="#dbeafe" stroke="#1d4ed8"/>
+<text class="rd" x="844.792599805258" y="168">    row_1</text>
+<text class="rd sub" x="976.792599805258" y="168">514×256 @ (131,257)</text>
+<rect x="826.792599805258" y="175" width="11" height="11" fill="#ccfbf1" stroke="#0f766e"/>
+<text class="rd" x="844.792599805258" y="184">    ht_tail</text>
+<text class="rd sub" x="976.792599805258" y="184">128×256 @ (3,257)</text>
+<rect x="826.792599805258" y="191" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
+<text class="rd" x="844.792599805258" y="200">(6) logits_mux</text>
+<text class="rd sub" x="976.792599805258" y="200">128×1 @ (3,513)</text>
+<rect x="826.792599805258" y="207" width="11" height="11" fill="#fef3c7" stroke="#b45309"/>
+<text class="rd" x="844.792599805258" y="216">(7) relay</text>
+<text class="rd sub" x="976.792599805258" y="216">512×2 @ (132,513)</text>
+<rect x="826.792599805258" y="223" width="11" height="11" fill="#ede9fe" stroke="#6d28d9"/>
+<text class="rd" x="844.792599805258" y="232">    pf_block</text>
+<text class="rd sub" x="976.792599805258" y="232">512×512 @ (132,515)</text>
+<rect x="826.792599805258" y="239" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
+<text class="rd" x="844.792599805258" y="248">    pf_ht_head</text>
+<text class="rd sub" x="976.792599805258" y="248">128×256 @ (4,515)</text>
+<rect x="826.792599805258" y="255" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
+<text class="rd" x="844.792599805258" y="264">(10) pf_demux</text>
+<text class="rd sub" x="976.792599805258" y="264">128×1 @ (4,514)</text>
+<rect x="826.792599805258" y="271" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
+<text class="rd" x="844.792599805258" y="280">    pf_ht_tail</text>
+<text class="rd sub" x="976.792599805258" y="280">128×256 @ (4,771)</text>
+<rect x="826.792599805258" y="287" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
+<text class="rd" x="844.792599805258" y="296">(12) pf_logits_mux</text>
+<text class="rd sub" x="976.792599805258" y="296">128×1 @ (4,1027)</text>
+<text class="t2" x="826.792599805258" y="338" font-weight="700">Strip columns (decode rows)</text>
+<rect x="826.792599805258" y="349" width="11" height="11" fill="url(#hatch)" stroke="#1d4ed8" color="#1d4ed8"/>
+<text class="rd" x="844.792599805258" y="358">carries real inter-region traffic</text>
+<rect x="826.792599805258" y="367" width="11" height="11" fill="url(#hatchFake)" stroke="#1d4ed8" color="#1d4ed8"/>
+<text class="rd" x="844.792599805258" y="376">fake — geometric placeholder</text>
+<text class="rd sub" x="826.792599805258" y="396">A decode row is Pw+2 wide: col 0 = west strip,</text>
+<text class="rd sub" x="826.792599805258" y="410">1..Pw = block cols, Pw+1 = east strip.</text>
+<text class="rd sub" x="826.792599805258" y="424">Strips run decode_strip.csl, imported into</text>
+<text class="rd sub" x="826.792599805258" y="438">decode.csl — cells, not regions of their own.</text>
+<text class="rd sub" x="826.792599805258" y="458">Drawn 3.5px wide for visibility;</text>
+<text class="rd sub" x="826.792599805258" y="472">true width is 1 PE = 1.15px.</text>
+<line class="blk" x1="826.792599805258" y1="494" x2="837.792599805258" y2="494"/>
+<text class="rd" x="844.792599805258" y="498">compute-block boundary (2×2)</text>
+</svg>
