@@ -712,3 +712,97 @@ The barrier is a direct cost of choosing the runtime-paint path.
 - SDK v2.10: `csl/language/builtins.md` (@activate), `csl/language/libraries.md:1460-1530`
   (color_config), `csl/code-examples/benchmark-7pt-stencil-spmv.md:2115-2250`
   (runtime `reset_routes` in a task).
+
+---
+
+## Q9 — When is a diagonal the *right* communication pattern? (What property of embedding→decode fits it?)
+
+### The name
+
+It is the **mesh diagonal funnel** — step 1 of the repo's canonical **P-4** pattern
+(`cerebras-kernel-comm-patterns/references/patterns.md`). P-4 is stated there as
+`transpose ∘ local-relayout ∘ translate`, and the skill explicitly corrects the
+folklore that it is a "gather/scatter": it is a **permutation**.
+
+### The property, stated precisely
+
+A diagonal is the right data path exactly when you must **change which fabric axis
+carries a tensor dimension**, *and* the element→X-owner map and the
+element→Y-consumer map are the **same monotone function of the element index**.
+
+Formally: element `d` currently lives at column `x = φ(d)`; it is needed at row
+`y = ψ(d)`. If φ and ψ are both monotone functions of `d` alone, the destination
+set `{(φ(d), ψ(d))}` is the **graph of a function** — a curve in the PE grid, i.e.
+a diagonal (a staircase when φ and ψ have different granularity).
+
+**Consequence:** every element's X coordinate is *already correct*, so all motion is
+**intra-column** (pure Y). No cross-column traffic ⇒ no all-to-all ⇒ static routes,
+congestion-free, `C` independent parallel chains.
+
+> **The diagonal is the locus where the X-owner and the Y-consumer coincide.**
+> It is the fixed-point set of the axis swap. It is *derived*, never chosen.
+
+If ψ were a permutation not aligned with φ (destination row = some shuffle of `d`),
+the destination set would not be a graph over columns ⇒ X moves required ⇒
+all-to-all ⇒ which Gate 1 of the skill says the fabric **cannot** do (no keyed
+routing); you'd need a mux PE or a host round-trip.
+
+### It is NOT a transpose of the features
+
+- **What is transposed:** *which fabric axis carries the feature dim.* A
+  re-sharding / distribution transpose. Feature **order is preserved**; nothing in
+  any PE's memory is transposed.
+- **Contrast:** the KV bridge's V transform `[f][b][s] → [b][s][f]` IS a genuine
+  local memory transpose. That is P-4's *step 2* ("in-PE re-layout", a strided
+  `@fmovh`), a different piece. HT_head exercises only the **mesh permutation**.
+
+### HT_head is half of the textbook two-step
+
+The classic ScaLAPACK/SUMMA redistribution of a row-distributed vector into a
+column-distributed one is: **(1) move to the diagonal, (2) broadcast along the
+orthogonal axis.** This kernel does exactly that, split across two regions:
+
+```
+W_E[t,:] X-distributed on row py_b   (embedding vector spread across 128 columns)
+   ├─ (1) N/S gather onto the diagonal   [HT_head, UP_*/DOWN_* colors]
+   ├─ ...  C2 east (spatial translation) [c23 → decode row_0 root column]
+   └─ (2) broadcast along X              [decode intra_block_x_broadcast_y, c6]
+        ⇒ hidden Y-sharded, X-replicated = decode's X_tile layout
+```
+
+`intra_row_bcast_color` (c6) is literally step 2 of the diagonal transpose.
+
+### Why a staircase and not a 45° line
+
+Multiplicity `m = P_rows / C_cols`. Here `256/128 = 2`, so each column hosts **2**
+diagonal PEs (the upper/lower pair) and owns `m * dim_per_pe = 16` hidden
+positions. If the band were square (`C = P`), `m = 1`: a true 45° diagonal, one
+diag PE per column, no `we_first`/`we_second` split, no push-order reversal. The
+pair structure is an **artifact of the aspect ratio**, forced by
+`HT_WIDTH_tail = P/2`.
+
+### What the diagonal buys (all four matter)
+
+1. **Intra-column motion only** — no cross-column wire is ever driven.
+2. **Count-exactness**: PE at row `r` forwards a statically derived count. Note the
+   *identical* idiom in P-4's funnel ("each receiver keeps its **first** arrival and
+   forwards the rest; PE `r` forwards `r` north / `P-1-r` south"), in HT_head
+   ("forward the 1st arrival, keep the 2nd"), and in the K-pipe strip. Per the
+   skill, count-exactness *is* the whole flow-control story — no credits, no acks.
+3. **Congestion-free parallelism**: `C` private column-wires, all chains concurrent.
+4. **Load-balanced egress**: exactly one emitter per row ⇒ the downstream east
+   egress uses all 256 row-wires. Funnelling to row 0 instead would serialize it.
+
+### When a diagonal is the WRONG answer
+
+| Situation | Right answer |
+|---|---|
+| source axis == destination axis | **nothing moves** (skill Gate 0 — often a cursor edit) |
+| tensor replicated on source axis, not sharded | router multicast, **P-2** |
+| you want a reduction, not a re-layout | chain all-reduce, **P-1** |
+| ψ is a genuine permutation misaligned with φ | **no pattern exists** — mux PE or host round-trip (Gate 1) |
+
+### Pointers
+
+- Skill: `cerebras-kernel-comm-patterns/references/patterns.md` §P-4.
+- `src/decode/ht_head.csl:126-226`; `comm_pe.csl:1279-1288` (step-2 broadcast).
