@@ -610,3 +610,199 @@ rotated 90° (seq on X, dim on Y), which is exactly why the KV handoff transpose
 - `assets/data-layout/README.md` (index + shared constants + the two headline facts)
 - `assets/data-layout/e2e-data-layout-decode.md` (427 lines)
 - `assets/data-layout/e2e-data-layout-prefill.md` (541 lines)
+
+---
+
+## Q8 — (a) how HT_head's diagonal works; (b) why routes are painted by a task activated in `comptime`
+
+### (a) The diagonal is a bijection: 256 rows ↔ (128 columns × 2 halves)
+
+Real config: P=256 rows, HT band = P/2 = **128 columns**, `dim_per_pe = 8`.
+Band width is forced by the tail (`assert HT_W == P_BLK // 2`), so to cover
+`dim = 2048` with 128 columns each column must own `2*dim_per_pe = 16` hidden
+positions: `128 × 16 = 2048` ✓.
+
+**Constraint:** C2 travels east along a row, so each row needs exactly ONE
+emitter PE holding decode-row-`py`'s slice `[py*8, (py+1)*8)`.
+
+Column `c` owns hidden `[16c, 16c+16)`. So `py*8 ∈ [16c, 16c+16) ⇔ c = py//2`,
+and it is the **first half if `py` even, second half if `py` odd**.
+
+⇒ `emitter(py) = PE(col = py//2, row = py)`. Equivalently column `c` is the
+emitter column for exactly two rows — its **diag pair** `upper = 2c` (first half)
+and `lower = 2c+1` (second half). Plotted, that's a staircase descending 2 rows
+per column: the main diagonal of a 128×256 rectangle. 128 cols × 2 = 256
+emitters, one per row.
+
+**The gather.** Token `t` ⇒ source row `py_b = t / V_per_pe_y`. On that row, EVERY
+column holds its own 16 hidden values of vocab row `t`. So 128 independent
+vertical chains run in parallel, each shipping its 16 values to its own diag pair:
+
+| source vs pair | direction | detail |
+|---|---|---|
+| `py_b > 2c+1` (below) | NORTH, UP_A/UP_B | source pushes `we_first` then `we_second`; `lower_diag` forwards the 1st arrival north, keeps the 2nd |
+| `py_b < 2c` (above) | SOUTH, DOWN_A/DOWN_B | source pushes `we_second` **first**; `upper_diag` forwards the 1st arrival south, keeps the 2nd |
+| `py_b == 2c` | 1 hop SOUTH on DOWN_B | keeps `we_first`, pushes `we_second` |
+| `py_b == 2c+1` | 1 hop NORTH on UP_A | keeps `we_second`, pushes `we_first` |
+
+The **push-order reversal** in case 2 exists purely so "forward the 1st arrival,
+keep the 2nd" is the same relay rule in both directions (`ht_head.csl:153-162`).
+
+**Why both seams line up:** demux PE `ly` holds hidden `[ly*8,(ly+1)*8)`; C1 rides
+east along row `ly` and ramps at `diag_col(ly) = ly//2` — exactly the PE owning
+that slice. That PE is also the one that emits C2 east into decode row `ly`, which
+shards hidden along Y and wants shard `ly`. Both seams are **row-indexed**; the
+diagonal is the only thing reconciling "256 rows of dim-shards" with "128 columns
+of W_E hidden-shards".
+
+### (b) `comptime { @activate(init_id); }` does NOT run `init()` at compile time
+
+A `comptime` block is evaluated by the compiler; its **effect** is to bake state
+into the PE's initial image — `@bind_local_task` fills the task table,
+`@initialize_queue` writes queue descriptors, and `@activate` **sets the task's
+activation bit** so the task picker runs it the moment the PE starts.
+
+- SDK v2.10 builtins: `@activate(id)` — "make my_task eligible to be picked by
+  task picker"; the Builtins reference lists its call site as **comptime *or*
+  runtime** (`CSL_Builtins_Reference_Guide.md:320`).
+- `CSL_SdkLayout_DirectLink_Pattern_Guide.md:454-455`: "`runtime.run()` restarts
+  the device program from its initial state, **including all comptime
+  initializations and `@activate` calls**. This resets the router states."
+
+So `init()` executes at **runtime, first thing**, before any wavelet moves.
+
+**Why paint routes in a task rather than at compile time?** Three reasons:
+
+1. **Some routes must change during execution.** `comm_pe.reconfig_allreduce_axis`
+   repaints 5 colors between Y / X / kv-head topologies **six times per layer**.
+   The color config is a hardware register; rewriting it is `@set_config`. There is
+   no compile-time expression of that. Given the collectives must be runtime-painted
+   anyway, `init()` does the *initial* paint too
+   (`precompute_route_words(); write_Y_routes();`).
+2. **Position-dependent routes can come from either side.** This kernel uses BOTH:
+   `launch.py` statically paints UP/DOWN, K-pipe, `tok_bcast`, `kv_xfer` per cell;
+   `ht_head.csl init()` / `comm_pe.init()` compute C1/C2 and the collectives at
+   runtime from `tile_config.get_fabric_coord()`. Compile-time per-cell `set_param`
+   is also *avoided* in one place because of an **SDK 2.10.0 strip-row bug**
+   (`launch.py:1162-1164`).
+3. **It is the SDK's own idiom.** The `benchmark-7pt-stencil-spmv` example calls
+   `color_config.reset_routes(addr, .{.tx = EAST, .rx = RAMP})` inside a task,
+   branching on `first_px`/`last_px`. And `<tile_config>` docs show
+   `get_color_config_addr` used with a runtime `var blue: color` — "not known until
+   runtime" (`csl/language/libraries.md:1503-1527`). `route_util.csl` is a
+   hand-rolled `reset_routes` that preserves the non-direction bits (`CLEAR_MASK`)
+   so each (axis,color) word can be precomputed once and replayed with a single
+   `@set_config`.
+
+Note `@set_local_color_config` (a PE-comptime route setter) appears only in the
+**historical** cumulative release notes, not in the v2.10 builtins reference. In
+v2.10 the comptime path is SdkLayout `paint`/`paint_range`; the runtime path is
+`color_config.reset_routes` / raw `@set_config`.
+
+**Consequence:** because HT_head paints C1 at runtime, demux must not emit before
+that paint lands — which is exactly why the `ht_ready` (c0) sentinel exists (Q5).
+The barrier is a direct cost of choosing the runtime-paint path.
+
+### Pointers
+
+- `src/decode/ht_head.csl:126-226` (`embed_gather_dispatch`), `:235-275` (`init`),
+  `:315-333` (comptime block).
+- `src/decode/route_util.csl` (whole file); `src/decode/comm_lib/comm_pe.csl:597-665`
+  (`precompute_route_words`, `init`), `:1306-1316` (`reconfig_allreduce_axis`).
+- SDK v2.10: `csl/language/builtins.md` (@activate), `csl/language/libraries.md:1460-1530`
+  (color_config), `csl/code-examples/benchmark-7pt-stencil-spmv.md:2115-2250`
+  (runtime `reset_routes` in a task).
+
+---
+
+## Q9 — When is a diagonal the *right* communication pattern? (What property of embedding→decode fits it?)
+
+### The name
+
+It is the **mesh diagonal funnel** — step 1 of the repo's canonical **P-4** pattern
+(`cerebras-kernel-comm-patterns/references/patterns.md`). P-4 is stated there as
+`transpose ∘ local-relayout ∘ translate`, and the skill explicitly corrects the
+folklore that it is a "gather/scatter": it is a **permutation**.
+
+### The property, stated precisely
+
+A diagonal is the right data path exactly when you must **change which fabric axis
+carries a tensor dimension**, *and* the element→X-owner map and the
+element→Y-consumer map are the **same monotone function of the element index**.
+
+Formally: element `d` currently lives at column `x = φ(d)`; it is needed at row
+`y = ψ(d)`. If φ and ψ are both monotone functions of `d` alone, the destination
+set `{(φ(d), ψ(d))}` is the **graph of a function** — a curve in the PE grid, i.e.
+a diagonal (a staircase when φ and ψ have different granularity).
+
+**Consequence:** every element's X coordinate is *already correct*, so all motion is
+**intra-column** (pure Y). No cross-column traffic ⇒ no all-to-all ⇒ static routes,
+congestion-free, `C` independent parallel chains.
+
+> **The diagonal is the locus where the X-owner and the Y-consumer coincide.**
+> It is the fixed-point set of the axis swap. It is *derived*, never chosen.
+
+If ψ were a permutation not aligned with φ (destination row = some shuffle of `d`),
+the destination set would not be a graph over columns ⇒ X moves required ⇒
+all-to-all ⇒ which Gate 1 of the skill says the fabric **cannot** do (no keyed
+routing); you'd need a mux PE or a host round-trip.
+
+### It is NOT a transpose of the features
+
+- **What is transposed:** *which fabric axis carries the feature dim.* A
+  re-sharding / distribution transpose. Feature **order is preserved**; nothing in
+  any PE's memory is transposed.
+- **Contrast:** the KV bridge's V transform `[f][b][s] → [b][s][f]` IS a genuine
+  local memory transpose. That is P-4's *step 2* ("in-PE re-layout", a strided
+  `@fmovh`), a different piece. HT_head exercises only the **mesh permutation**.
+
+### HT_head is half of the textbook two-step
+
+The classic ScaLAPACK/SUMMA redistribution of a row-distributed vector into a
+column-distributed one is: **(1) move to the diagonal, (2) broadcast along the
+orthogonal axis.** This kernel does exactly that, split across two regions:
+
+```
+W_E[t,:] X-distributed on row py_b   (embedding vector spread across 128 columns)
+   ├─ (1) N/S gather onto the diagonal   [HT_head, UP_*/DOWN_* colors]
+   ├─ ...  C2 east (spatial translation) [c23 → decode row_0 root column]
+   └─ (2) broadcast along X              [decode intra_block_x_broadcast_y, c6]
+        ⇒ hidden Y-sharded, X-replicated = decode's X_tile layout
+```
+
+`intra_row_bcast_color` (c6) is literally step 2 of the diagonal transpose.
+
+### Why a staircase and not a 45° line
+
+Multiplicity `m = P_rows / C_cols`. Here `256/128 = 2`, so each column hosts **2**
+diagonal PEs (the upper/lower pair) and owns `m * dim_per_pe = 16` hidden
+positions. If the band were square (`C = P`), `m = 1`: a true 45° diagonal, one
+diag PE per column, no `we_first`/`we_second` split, no push-order reversal. The
+pair structure is an **artifact of the aspect ratio**, forced by
+`HT_WIDTH_tail = P/2`.
+
+### What the diagonal buys (all four matter)
+
+1. **Intra-column motion only** — no cross-column wire is ever driven.
+2. **Count-exactness**: PE at row `r` forwards a statically derived count. Note the
+   *identical* idiom in P-4's funnel ("each receiver keeps its **first** arrival and
+   forwards the rest; PE `r` forwards `r` north / `P-1-r` south"), in HT_head
+   ("forward the 1st arrival, keep the 2nd"), and in the K-pipe strip. Per the
+   skill, count-exactness *is* the whole flow-control story — no credits, no acks.
+3. **Congestion-free parallelism**: `C` private column-wires, all chains concurrent.
+4. **Load-balanced egress**: exactly one emitter per row ⇒ the downstream east
+   egress uses all 256 row-wires. Funnelling to row 0 instead would serialize it.
+
+### When a diagonal is the WRONG answer
+
+| Situation | Right answer |
+|---|---|
+| source axis == destination axis | **nothing moves** (skill Gate 0 — often a cursor edit) |
+| tensor replicated on source axis, not sharded | router multicast, **P-2** |
+| you want a reduction, not a re-layout | chain all-reduce, **P-1** |
+| ψ is a genuine permutation misaligned with φ | **no pattern exists** — mux PE or host round-trip (Gate 1) |
+
+### Pointers
+
+- Skill: `cerebras-kernel-comm-patterns/references/patterns.md` §P-4.
+- `src/decode/ht_head.csl:126-226`; `comm_pe.csl:1279-1288` (step-2 broadcast).
