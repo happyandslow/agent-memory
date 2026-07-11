@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 Running log of a code-reading session over `models/qwen3_1p7b-e2e` (session
 `e2e-kernel-qa`). Decode CSL read directly; prefill + `launch.py` via subagents.

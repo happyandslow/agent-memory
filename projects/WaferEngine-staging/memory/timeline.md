@@ -2,5 +2,6 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-07-09 — e2e-kernel-qa-log → `memory/inbox/2026-07-09-e2e-kernel-qa-log.md`
 - 2026-07-08 — h2d-playground-review → `memory/inbox/2026-07-08-h2d-playground-review.md`
 - 2026-07-06 — prefill-decode-transfer-bandwidth → `memory/inbox/2026-07-06-prefill-decode-transfer-bandwidth.md`

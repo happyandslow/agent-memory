@@ -19,6 +19,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Run the full mode-B PD/spec-dec sim loop on CS-3 with `mock_verify_host failures:0`.
 - [ ] Run partial-accept on device and connect the real GPU verifier.
 - [ ] Complete mode-A transport hardening for `PD_REAL_DAEMON_DEV`.
+- [ ] Split the new prefill `egress` bottleneck (prefill compute + D2H lumped) with on-wafer TSC-at-emit vs host receive timing.
 
 ## Decisions
 
@@ -33,10 +34,17 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Run `waferengine/samples/specdec/realkv/run_e2e_pd_modeb_sim.sh 2` on the CS-3 login node in the `csl` conda env with `export PYTHONPATH=.` and `IOP_REAL_KERNELS_SRC_{PREFILL,DECODE}` set; success criterion is `mock_verify_host` `failures:0`.
 - [ ] After full sim loop passes, run partial-accept on device and connect the real GPU verifier service.
 - [ ] Re-run real-kernel PD device transport path (`PD_REAL_DAEMON_DEV`) with `READY_TIMEOUT=7200`, the send_x N-header fix, and ingress-502 retry hardening.
+- [ ] If one-time KV handoff remains important after egress is split, replace the npz handoff container with a raw header plus contiguous arrays to reclaim encode/handoff/tobytes overhead.
 - [ ] Periodically rebase `lexu/decode-rewind` against PR #13 head and consider upstreaming rewind.
 - [ ] Verify live repo/server state before acting; memory records branch/test history, not current proof.
 
 ## Narrative progress log
+
+### 2026-07-09
+
+- Drained `memory/inbox/2026-07-09-kv-handoff-zerocopy-and-rdma-negative.md` into `memory/topics/specdec-modeb-drive-path.md` and this plan. Durable finding: the KV handoff zero-copy seam (`23ab43a`) is device-confirmed, cutting decode unframe 789.9 → 23.0 ms and full 43-round run 4494.3 → 3136.7 ms.
+- Preserved RDMA as a negative result: after fixing controller env authority (`e8f8feb`) and RDMA auto-GID/device selection (`dc60b4e`), pod-to-pod RDMA engaged but did not improve r0 handoff (~2283 ms RDMA vs ~2196 ms TCP), proving the wire was not the bottleneck.
+- Updated next actions around the remaining bottleneck: prefill `egress` is still a host bracket around prefill compute plus 128 MB KV readback, and needs TSC/host timing before optimization.
 
 ### 2026-07-07
 

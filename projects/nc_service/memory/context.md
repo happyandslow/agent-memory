@@ -13,7 +13,7 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 - `plan.md` — canonical goals, decisions, milestones, and next actions.
 - `memory/topics/specdec-cs3-roadmap.md` — current roadmap, validated branches/tests, mode-A/mode-B details, and gotchas.
 - `memory/topics/specdec-modeb-pd-module-trace.md` — process/module/coupling map for `run_e2e_pd_modeb_real.sh` plus PR/contextbase deliverable pointers.
-- `memory/topics/specdec-modeb-drive-path.md` — per-round timing call chain and 2026-07-07 measurement findings.
+- `memory/topics/specdec-modeb-drive-path.md` — per-round timing call chain, 2026-07-08/09 KV-transfer findings, RDMA negative result, and zero-copy handoff fix.
 - `memory/topics/specdec-d2h-latency.md` — earlier d2h latency / in-process-patch / real-GPU findings.
 - Root `CLAUDE.md` in the live nc_service repo — architecture plus build/test/device commands.
 
@@ -22,6 +22,6 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 1. Verify live repo/server state before acting.
 2. Read `plan.md`.
 3. Read `memory/topics/specdec-cs3-roadmap.md`.
-4. Read `memory/topics/specdec-modeb-pd-module-trace.md` for who-runs-where / seam questions, or `memory/topics/specdec-modeb-drive-path.md` for timing/latency questions.
+4. Read `memory/topics/specdec-modeb-pd-module-trace.md` for who-runs-where / seam questions, or `memory/topics/specdec-modeb-drive-path.md` for timing/latency/RDMA/KV-handoff questions.
 5. Read `memory/topics/specdec-d2h-latency.md` only for backbone/latency history.
 6. Never print/copy gateway TOTP secrets; use the `/cs3-runner` workflow for device runs.

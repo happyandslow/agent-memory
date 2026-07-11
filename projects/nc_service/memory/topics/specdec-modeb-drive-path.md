@@ -183,4 +183,4 @@ Code: `waferengine/samples/specdec/realkv/modeb_adapter.py`, `appliance_real.py`
 
 ## Last updated
 
-2026-07-07
+2026-07-11

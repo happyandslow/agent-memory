@@ -16,6 +16,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [x] Standalone-vs-integrated kernel parity gap documented.
 - [ ] Instrument prefill→decode transfer segments A/B/C with TSC and compute first effective-GB/s number.
 - [ ] Scope forced-token decode, T0.5 in-bank reuse, and T1 idle-PE offload prototypes.
+- [ ] Decide whether fused e2e should carry prefill's sampled token into decode (host hop or new on-chip `pf_ht_tail` → HT_head wire) before making end-to-end accuracy claims.
 
 ## Decisions
 
@@ -33,8 +34,16 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Compare fused on-chip seam path against pdSeparate host-DRAM bridge under the same both-segments-counted metric.
 - [ ] Quantify T1 idle-PE offload and scope forced-token decode / T0.5 in-bank reuse.
 - [ ] Unblock pdSeparate long-context prefill by shrinking/removing the quadratic score buffer; defer real HF weights/tokenizer/oracle unless Le reprioritizes them.
+- [ ] Redraw/annotate `assets/prefill-decode-transfer/e2e-topology-full.svg`: x131 is a decode west strip, and x644 (the real east strip in 2×2) is currently absent.
+- [ ] Fix e2e source/documentation hygiene found in the 2026-07-09 read: stale `route_calc.csl:5` axis comment, prefill vocab-padding asymmetry, K-pipe alias invariant check, and `csl_color_audit` raw `@set_config` parsing.
 
 ## Narrative progress log
+
+### 2026-07-09
+
+- Drained `memory/inbox/2026-07-09-e2e-kernel-qa-log.md` into `memory/topics/e2e-kernel-dataflow-and-topology.md` plus this plan. Durable finding: fused e2e carries KV state on-chip, but decode step 0 is seeded by host/config token ids rather than prefill's sampled first token.
+- Captured decode topology details: demux/HT_head seams, K-pipe strip mechanics, forced color aliasing, latent `P_Y_BLOCK_NUM >= 4` west-strip hazard, and the new `assets/decode-kpipe/kpipe-south.svg` diagram.
+- Recorded the delegated tensor-layout reference under `assets/data-layout/`, including the decode/prefill axis rotation and follow-up source-cleanup items.
 
 ### 2026-07-06
 

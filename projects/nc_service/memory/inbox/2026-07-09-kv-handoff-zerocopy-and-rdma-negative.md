@@ -2,7 +2,7 @@
 
 **Project:** nc_service
 **Author:** claude
-**Status:** captured   <!-- captured | drained -->
+**Status:** drained
 
 ## What happened / finding
 

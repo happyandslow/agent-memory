@@ -8,7 +8,8 @@ tags: [waferengine-staging, qwen3, kernel-parity, serving]
 What the **integrated** end-to-end models (`qwen3_1p7b-e2e`, `qwen3_1p7b-e2e-pdSeparate`)
 do NOT support relative to the **standalone** kernels (`qwen3_1p7b-decode`,
 `qwen3_1p7b-prefill`), which are the more up-to-date source of truth. Session
-2026-07-05 (CSL + launch.py diffs across the three homes of each kernel).
+2026-07-05 (CSL + launch.py diffs across the three homes of each kernel), with a
+2026-07-09 correction from a direct `qwen3_1p7b-e2e` source read.
 
 ## Provenance (why they diverge)
 
@@ -21,6 +22,11 @@ do NOT support relative to the **standalone** kernels (`qwen3_1p7b-decode`,
   Same for prefill (heavy divergence: comm_pe 785 lines, ht_tail 262). The two
   integrated homes share one frozen snapshot; they differ from each other ONLY in
   KV-transfer plumbing (e2e relay vs pdSeparate demux/mux).
+- **2026-07-09 correction:** current e2e `decode.csl` is no longer the originally
+  pinned `71d80bba` snapshot; the direct read observed md5 `05cc76d4` and Qwen3
+  QK-Norm + fp32-accumulate GEMV (`@fmachs`) present. The serving gaps below still
+  hold, and one numerics gap remains: e2e decode exponentiates softmax scores in
+  bf16 while standalone keeps exp/sum/normalize fully in fp32.
 - So the gap is: standalone = current, verified, feature-rich; integrated = a
   frozen older fork that added integration wiring but dropped serving/accuracy/
   verification features.
@@ -67,10 +73,11 @@ do NOT support relative to the **standalone** kernels (`qwen3_1p7b-decode`,
    but a structural capability only standalone has.
 
 ### Numerics / performance
-8. **#12 f32-score softmax (HF parity).** Standalone does max-subtract/exp/
-   normalize in fp32 (`decode.csl:324-334,1249-1274`); **integrated still does the
-   pre-#12 fp16 softmax** (`fsubh_func`/`fast_exp`/`fmulh` `:238-252`) → worse
-   numerics, near-tie argmaxes can flip.
+8. **Softmax precision residue.** Standalone does max-subtract/exp/normalize in
+   fp32 (`decode.csl:324-334,1249-1274`). Current e2e has closed much of the old
+   numerics gap, but its decode softmax still exponentiates in bf16
+   (`@map(fast_exp, score_dsd, score_dsd)`), keeping only the denominator f32;
+   standalone keeps exp/sum/normalize fully in f32. Prefill softmax is full-f32.
 9. **#13 fast rsqrt/recip Newton iteration** (`decode.csl:227-249`). Integrated: 0
    hits → pays soft-float `__divsf3` division cost on every reciprocal/norm.
 10. **Dedicated Score×V band colors** (`prefill.csl:83-87`, comm_pe 20 vs 3 hits).
@@ -114,4 +121,4 @@ do NOT support relative to the **standalone** kernels (`qwen3_1p7b-decode`,
 
 ## Last updated
 
-2026-07-05.
+2026-07-11.
