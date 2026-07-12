@@ -83,6 +83,68 @@ new capability — it is the existing meta-tile peel (data path) optionally upgr
 event (control path). This does **not** by itself resolve the S4 sizing question (whether the pr14
 injector input edge/color is reconnectable on-chip) — that still needs the deferred device dig.
 
+## Concrete example — Topic 7 (switches + control entrypoints), the canonical control wavelet
+
+From `Cerebras/sdk-examples` `tutorials/topic-07-switches-entrypt/` (the doc-site tutorial pages
+were removed in the site redesign; GitHub is now the canonical source). One control wavelet does
+BOTH: advance a switch AND fire a control task.
+
+- **Sender** (`send.csl`): a `.control = true` fabout DSD + `@mov32` of an encoded payload:
+  `ctrl.encode_single_payload(opcode, suppress_ce_fwd, entrypoint, data16)`.
+  - `encode_single_payload(SWITCH_ADV, true,  {},          0)` → advance switch, **no** control task (CE forwarding suppressed).
+  - `encode_single_payload(SWITCH_ADV, false, recv_ctrl_id, 6)` → advance switch **and** fire the control task `recv_ctrl_id` with arg `6`.
+- **Receiver** (`recv.csl`): `const recv_ctrl_id: control_task_id = @get_control_task_id(40);`
+  `task recv_ctrl_task(data: u16) void { result[0] = @as(u32, data); }` + `@bind_control_task(recv_ctrl_task, recv_ctrl_id)`.
+  Since no data task is on that color, must `@unblock(rx_iq)`/`@unblock(rx_color)` so the CE fires the control task.
+- **Switch config** (`layout.csl`): `@set_color_config(x, y, color, .{ .routes=..., .switches = .{ .pos1={.tx=WEST}, .pos2={.tx=EAST}, .pos3={.tx=SOUTH}, .current_switch_pos=1, .ring_mode=true } })`. Each `SWITCH_ADV` advances the position.
+
+## Task-type taxonomy + how many you can register (Async guide §3 / task-ids page)
+
+| Task | ID constructor | Range | Fires on | Count |
+|---|---|---|---|---|
+| **Local** | `@get_local_task_id(n)` | 8–30 (WSE-3; 0–30 WSE-2; avoid 29,30 sys) | `@activate` / async callback — no fabric | — |
+| **Data** | `@get_data_task_id(color|input_queue)` | *derived from* a color/queue | a **data wavelet** on that color/queue | **scarce** |
+| **Control** | `@get_control_task_id(n)` | **0–63** (both archs) | a **control wavelet** carrying that id | **plentiful** |
+
+- **Data tasks are the scarce ones** — each is welded to a color (WSE-2, ~24 colors minus memcpy 21/22/23) or an **input queue** (WSE-3: only **8 queues, IDs 0–7; queues 0 & 1 memcpy-reserved → ~6 usable per PE**). So on WSE-3 you get ~6 concurrent data tasks.
+- **Control tasks: up to 64** (0–63), memcpy reserves 33–37 → ~59 usable; **not tied to a color/queue**, so cheap and routeless. WSE-3 can give each queue its own control-task table (`ctrl_table_id`). Caveat: the `encode_single_payload` **entrypoint field is ~5-bit** (switch+task combined); a pure sentinel via `encode_control_task_payload(id)` reaches the full 0–63 (examples use 40/42/43).
+
+## Routing change is the SWITCH, not the control task (important correction)
+
+A control wavelet has **two independent consequences**: (1) **router** — advance/reset a switch (changes routing); (2) **CE** — activate a control task. These are separate, toggled by different payload fields.
+- **Changing a color's routing at runtime = the switch mechanism**, NOT a control task. Needs `.switches` pre-declared in `@set_color_config`; a `SWITCH_ADV` control wavelet then advances the position. It happens **at the router as the wavelet passes through the PE** — no `RAMP`, no control task needed (`suppress=true`). Even a pure transit `rx=WEST,tx=EAST` PE re-routes for **subsequent** wavelets (the control wavelet itself still exits on the *current* position).
+- **Limited runtime control**: switches only cycle among pre-declared positions 0–3; you cannot synthesize an arbitrary new route at runtime.
+- A **data task cannot** change routing (needs RAMP delivery, which a transit color lacks); a **control task also isn't the mechanism** (and at a no-RAMP transit PE no control task fires at all — only the switch acts).
+
+## "Non-routable" — precise meaning (corrects earlier loose wording)
+
+- The control **wavelet IS routed** — it "uses the same color infrastructure" and follows the color's `rx`/`tx` route exactly like a data wavelet.
+- What is **non-routable is the control task ID** — it is not a color, has no route of its own; it's a **dispatch selector** for which CE handler runs once the wavelet is delivered. (Sentinel tutorial: "control task IDs are not routable colors… does not specify a route.")
+
+## How much can a control wavelet carry? — 16 bits
+
+A wavelet is 32 bits. In a **control** wavelet those bits encode the command (opcode + suppress bit + entrypoint) leaving a **16-bit data field** handed to the control task as its arg (`task f(data: i16)`). So **≤16 bits of user data per control wavelet**. For more: multiple control wavelets, or **data** wavelets (full 32 bits each) with a header peel. (WSE-3 `dense_mode` packs 2×16-bit per *data* wavelet, not control.)
+
+## Backend CE-dispatch mechanism (the control bit is the first discriminator)
+
+- A wavelet = **32-bit payload + a hardware control flag** (`.control = true` on the sender's fabout DSD). Routed by **color**, identical for data and control.
+- On arrival where the route sends to `RAMP`, on WSE-3 the wavelet enters the **input queue** bound to that color (queue depths 2–6 wavelets). The **first-level discriminator is the control flag**:
+  - **flag=0 (data)** → queued → activates the **data task** bound to that queue; single-wavelet = payload is the task arg, multi-wavelet = drained by a `fabin_dsd` via `@mov*` (async, a microthread pulls N off the queue). ("wavelet → queue → drained by task" is right for data.)
+  - **flag=1 (control)** → **not** enqueued as data ("control wavelets modify router behavior rather than carrying data to the CE"); the router acts on any switch opcode, and if CE-forwarded the CE dispatches via the **control-task table** to the id-named control task, handing it the 16-bit field.
+- **Same color can carry both** — data wavelets fire the data task (on the queue), the control wavelet fires the control task (on its id); topic-05 `pe_program.csl` binds BOTH on one color as proof. Conditions: route delivers to RAMP at that PE, `suppress=false`, the id is bound (and on WSE-3 in the queue's ctrl table), channel unblocked. NB: you bind the control task to an **ID**, not "to the color."
+- **Sourcing caveat:** the public docs describe this at the *programming-model* level (the `.control` flag, data-task-by-queue, control-task-by-id-table, "modify router behavior not carried to CE"). They do NOT publish a gate-level cycle sequence — "control bit checked first" is the documented *behavioral contract*, not a published micro-arch pipeline. Exact silicon ordering = a question for Cerebras.
+
+## SDK doc-site URL mapping (post-redesign, sdk.cerebras.ai, verified 2026-07-12)
+
+The redesign **removed the standalone Topic 5/6/7 tutorial pages**; several earlier `sdk.cerebras.net/...` URLs 404. Current homes:
+- Tasks (data/control/local, ids, activation): `https://sdk.cerebras.ai/csl/language/task-ids`
+- Colors/routing/switches (folded in) + color-swap: `https://sdk.cerebras.ai/csl/language/advanced-features`; base routing tutorial `https://sdk.cerebras.ai/csl/tutorials/gemv-06-routes-1`
+- Fabric DSDs / queues / FIFOs: `https://sdk.cerebras.ai/csl/language/dsds`
+- Language index: `https://sdk.cerebras.ai/csl/language_index`; full machine index: `https://sdk.cerebras.ai/llms.txt`
+- **Control wavelets / switches / sentinels tutorials → GitHub (canonical, stable):** `https://github.com/Cerebras/sdk-examples/tree/master/tutorials` (`topic-05-sentinels`, `topic-06-switches`, `topic-07-switches-entrypt`).
+
 ## Last updated
 
-2026-07-12 (M0/S4 design input; captured from csl-knowledge KB v2.10).
+2026-07-12 (enriched: concrete topic-07 example, task-type limits, switch-vs-control-task routing
+correction, "non-routable" precision, 16-bit capacity, CE-dispatch/control-bit mechanism, post-redesign
+SDK URL mapping). Original capture same day: M0/S4 design input from csl-knowledge KB v2.10.
