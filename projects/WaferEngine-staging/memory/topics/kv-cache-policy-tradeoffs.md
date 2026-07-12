@@ -370,8 +370,73 @@ wins for typical chat ratios.
   a prior KV instead of always rewinding `iter_num` — the per-round KV-ingress reload
   transport is already there.
 
+## Updates
+
+### 2026-07-12 — M0/S3 keyed KV store skeleton (design) + the host-vs-on-chip policy-placement axis
+
+Design-only session (M0 subtask S3). Source of truth = `milestones/M0-reuse-foundation.md § S3`
+(this note is reusable background). Two read-only digs grounded it.
+
+**New architectural axis (was missing from GOALS.md): WHERE the keyed store + management policy
+runs — host vs on-chip.** Three placements:
+- **P1 host (Python):** trivial, growable, arbitrary key type; host is already on the per-round
+  path (§S2.2 reload transport) so no *extra* round-trip today. Cost: host must keep an **accurate
+  model of device KV state** — a synchronized shadow that gets expensive/desync-prone as management
+  adds eviction/compaction/distributed partial retain+extend.
+- **P2 replicate on all compute PEs:** *rejected* — wastes SRAM/program on ~660k PEs, and a global
+  prefix decision needs a cross-PE collective (each PE sees only its slice).
+- **P3 on-chip entrance PE (demux PE 0):** authoritative state co-located (**no host shadow — the
+  "no synchronized view" win**), one entry per request, table on one PE. Cost: SDK/SRAM-bounded,
+  **integer-key only**, fixed compile-time capacity, adds state to a tight design; its round-trip
+  edge over P1 is real only once the reuse loop **closes on-chip** (host out of the per-round KV
+  re-ship path).
+- *"How is P3 different from host?"* — the round-trip advantage is **illusory today** (host already
+  in the loop); the durable difference is **who owns authoritative device-cache state** (P3 needs no
+  shadow), which matters more as management complexity rises.
+- **Decision (M0/M1): host (P1).** M0 has no eviction, no hit decision → host model trivially
+  accurate. **Re-evaluation trigger:** move toward P3 when management gains eviction/compaction/
+  distributed partial retain+extend, OR when we want the loop to close on-chip. Escalated to
+  `GOALS.md §7` + WS4.
+
+**On-PE keyed-lookup feasibility (SDK v2.10, csl-knowledge KB) — reusable reference:** CSL has
+**no map/dict type, no dynamic allocation/heap, no runtime strings, no recursion**. What works:
+static (comptime-sized) arrays + runtime-indexed probes (`table[h]`) + runtime-bounded loops +
+integer compare + integer hashing (bitwise/mult-shift). ⇒ a **compile-time-sized, integer-keyed
+open-addressing or short linear-scan table** is idiomatic and cheap (~1.5 KB for a few hundred
+`(u32 key, u16 slot)` entries; thousands is not, on a tight decode PE). **Chained-hash is awkward**
+(needs a static node pool + manual freelist — avoid). Task-table impact negligible. **No
+first-party per-lookup latency figure exists in the KB.** A prefix key must reduce to an integer
+(no runtime strings) — pre-hash off-PE or fold on-PE.
+
+**Keyed-store skeleton decisions (M0):**
+- **Key = request id** (opaque integer handle). Prefix-hash content key (for automatic hit
+  detection) parked to **M1**; API key type is opaque so M1 swaps it in with no storage-model change.
+- **Prefix-match granularity = whole-blob / exact key** for M0. Token-vs-block match parked to M1,
+  **pre-constrained toward block** because device seq counters (`iter_num_bank`, `prefill_len_per_pe`)
+  count in `P_BLOCK_SIZE`-token units → on-device partial-prefix cuts are naturally block-granular.
+- **Retain-not-discard = host-side keyed retained pool** replacing the ephemeral pdSeparate
+  `savez`/load handoff at `inj_xk/inj_xv` (`launch.py:3264-3283`); entry = `{ opaque S2 payload,
+  meta{cached_len_blocks, layout_tag, created_marker} }`; `created_marker` reserved for M4 eviction.
+- **Retrieve-by-key API** (placement-agnostic, over the S2 `(request_id, payload)` seam):
+  `put(key,payload,meta)` / `get(key)->(payload,meta)|MISS` / `contains(key)`. `match_prefix` +
+  `extend` (M1) and `evict` (M4) listed but out of M0 scope. MISS is explicit, **not** a
+  skip-prefill path (that decision is M1).
+
+**Storage ground truth (working tree, derives from `fcfc8c1`):** decode KV cache = flat `@fp16()`
+arrays with **4 axes only (layer, batch, kv-channel, seq) — no request/prefix/slot key**; `bsz` is
+**lockstep batch, not a request slot** (shared `iter_num`). Cache **bytes are already retained**
+across rounds — only `round_reset` (`decode.csl:277-280` + RoPE/`n_steps` `:270-275`) rewinds the
+counters. ⇒ **on-chip retain-not-discard = gate that rewind** (a control-counter change, not data
+movement; S4/S6 work). **demux PE 0** is a near-empty entrance PE seeing exactly one host entry per
+request — the natural P3 host. No GOALS §2.3 claim falsified by these findings.
+
 ## Last updated
 
+2026-07-12 — appended M0/S3 keyed-store skeleton design: host-vs-on-chip policy-placement axis
+(P1/P2/P3 + host-for-M0 decision + re-eval trigger), SDK v2.10 on-PE keyed-lookup feasibility
+(no map/heap/strings/recursion → compile-time integer table only), keyed-store skeleton (key=request
+id, whole-blob granularity, retain-not-discard host pool, retrieve-by-key API), and cache-tile
+storage ground truth. Source of truth: `milestones/M0-reuse-foundation.md § S3`.
 2026-07-06 — expanded Method with term glossary, worked R*=0.035 example,
 R* direction-of-effect, and bandwidth-regimes incl. WSE-3 on-chip fabric
 (214 Pb/s aggregate; ~3.6M directed links; per-link ~4–7 GB/s [32-bit-wavelet floor

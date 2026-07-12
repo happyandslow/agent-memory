@@ -39,6 +39,25 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Narrative progress log
 
+> **Canonical M0 plan/state lives in the in-repo durable docs** (`ROADMAP.md`, `PROGRESS.md`,
+> `milestones/M0-reuse-foundation.md`) per repo precedence; entries below are background.
+
+### 2026-07-12
+
+- **M0/S3 keyed KV store skeleton designed** (design-only; awaits Le's review before S4–S6 coding).
+  Resolved for M0: key = **request id**, granularity = **whole-blob/exact key**, storage =
+  **host-side keyed retained pool**, plus a **retrieve-by-key API**. Prefix-hash content key +
+  token-vs-block match parked to M1 (block-constrained). Full design in
+  `milestones/M0-reuse-foundation.md § S3`; background folded into
+  `memory/topics/kv-cache-policy-tradeoffs.md` (2026-07-12 Updates).
+- **New architectural axis surfaced (was missing from GOALS): host vs on-chip policy placement.**
+  P1 host (chosen for M0/M1 — easy but needs an accurate device-state shadow), P2 replicate-on-all-PEs
+  (rejected), P3 on-chip demux entrance PE (deferred — SDK v2.10 allows only a compile-time
+  integer-keyed table; no map/heap/strings/recursion). Re-eval trigger recorded; escalated to
+  `GOALS.md §7` + WS4.
+- Prior M0 work (background): S1 status re-check gate (2026-07-11) and S2 PR#14 port contract
+  (2026-07-11) — see `topics/pr14-real-serving-port-contract.md`.
+
 ### 2026-07-09
 
 - Drained `memory/inbox/2026-07-09-e2e-kernel-qa-log.md` into `memory/topics/e2e-kernel-dataflow-and-topology.md` plus this plan. Durable finding: fused e2e carries KV state on-chip, but decode step 0 is seeded by host/config token ids rather than prefill's sampled first token.
