@@ -377,26 +377,33 @@ wins for typical chat ratios.
 Design-only session (M0 subtask S3). Source of truth = `milestones/M0-reuse-foundation.md § S3`
 (this note is reusable background). Two read-only digs grounded it.
 
-**New architectural axis (was missing from GOALS.md): WHERE the keyed store + management policy
-runs — host vs on-chip.** Three placements:
+**Mechanism vs policy (Le, 2026-07-12) — the important separation.** M0's deliverable is the
+on-chip KV **sharing mechanism** (retain-not-discard + key-retrieve: on-chip = the `round_reset`
+conditional-retain seam + the existing ingress/reload transport). The **policy** (when to share,
+hit detection, eviction) is **deferred and not needed yet** — M0/M1 drive **self-constructed
+artificial token ids** where the shared prefix is known by construction, so the store is a trivial
+keyed map. Interesting policy work only begins once reuse patterns are workload-driven.
+
+**New placement axis (was missing from GOALS.md): WHERE the store-lookup + eventual policy runs.**
+**None decided or rejected — not yet explicitly reasoned about; all stay open.**
 - **P1 host (Python):** trivial, growable, arbitrary key type; host is already on the per-round
-  path (§S2.2 reload transport) so no *extra* round-trip today. Cost: host must keep an **accurate
-  model of device KV state** — a synchronized shadow that gets expensive/desync-prone as management
-  adds eviction/compaction/distributed partial retain+extend.
-- **P2 replicate on all compute PEs:** *rejected* — wastes SRAM/program on ~660k PEs, and a global
-  prefix decision needs a cross-PE collective (each PE sees only its slice).
-- **P3 on-chip entrance PE (demux PE 0):** authoritative state co-located (**no host shadow — the
-  "no synchronized view" win**), one entry per request, table on one PE. Cost: SDK/SRAM-bounded,
-  **integer-key only**, fixed compile-time capacity, adds state to a tight design; its round-trip
-  edge over P1 is real only once the reuse loop **closes on-chip** (host out of the per-round KV
-  re-ship path).
+  path (§S2.2 reload transport) so no *extra* round-trip today. Concern: would need an **accurate
+  model of device KV state** (a synchronized shadow) if management later adds eviction/compaction/
+  distributed partial retain+extend.
+- **P2 replicate on all compute PEs:** authoritative state co-located everywhere. Concern (not yet
+  evaluated): replicates a table to ~660k PEs, and a global prefix decision needs a cross-PE
+  collective (each PE sees only its slice). **Kept open**, not rejected.
+- **P3 on-chip entrance PE (demux PE 0):** authoritative state on-device (**no host shadow — the
+  "no synchronized view" property**), one entry per request, table on one PE. Concern: SDK/SRAM-bounded,
+  **integer-key only**, fixed compile-time capacity; its round-trip edge over P1 is real only once
+  the reuse loop **closes on-chip** (host out of the per-round KV re-ship path).
 - *"How is P3 different from host?"* — the round-trip advantage is **illusory today** (host already
   in the loop); the durable difference is **who owns authoritative device-cache state** (P3 needs no
   shadow), which matters more as management complexity rises.
-- **Decision (M0/M1): host (P1).** M0 has no eviction, no hit decision → host model trivially
-  accurate. **Re-evaluation trigger:** move toward P3 when management gains eviction/compaction/
-  distributed partial retain+extend, OR when we want the loop to close on-chip. Escalated to
-  `GOALS.md §7` + WS4.
+- **What we do now (not a rejection): host (P1)** — least-effort home for a mechanism-only
+  demonstration while no policy is needed. **Revisit** all placements when there is real
+  reuse-pattern policy to run (management gains eviction/compaction/distributed partial
+  retain+extend, OR we want the loop to close on-chip). Escalated to `GOALS.md §7` + WS4.
 
 **On-PE keyed-lookup feasibility (SDK v2.10, csl-knowledge KB) — reusable reference:** CSL has
 **no map/dict type, no dynamic allocation/heap, no runtime strings, no recursion**. What works:

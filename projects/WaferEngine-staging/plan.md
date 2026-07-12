@@ -50,11 +50,12 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
   token-vs-block match parked to M1 (block-constrained). Full design in
   `milestones/M0-reuse-foundation.md § S3`; background folded into
   `memory/topics/kv-cache-policy-tradeoffs.md` (2026-07-12 Updates).
-- **New architectural axis surfaced (was missing from GOALS): host vs on-chip policy placement.**
-  P1 host (chosen for M0/M1 — easy but needs an accurate device-state shadow), P2 replicate-on-all-PEs
-  (rejected), P3 on-chip demux entrance PE (deferred — SDK v2.10 allows only a compile-time
-  integer-keyed table; no map/heap/strings/recursion). Re-eval trigger recorded; escalated to
-  `GOALS.md §7` + WS4.
+- **Mechanism vs policy separation (Le):** M0 delivers the on-chip KV *sharing mechanism*; policy
+  (hit detection, eviction) is deferred and not needed yet (M0/M1 use self-constructed artificial
+  token ids). **New placement axis surfaced (was missing from GOALS): where the store + eventual
+  policy runs — host (P1) / on-chip all-PEs (P2) / on-chip entrance PE (P3).** All three **open,
+  nothing rejected**; host **for now** (least-effort, mechanism-only). SDK v2.10 note: on-PE allows
+  only a compile-time integer-keyed table (no map/heap/strings/recursion). Escalated to `GOALS.md §7` + WS4.
 - Prior M0 work (background): S1 status re-check gate (2026-07-11) and S2 PR#14 port contract
   (2026-07-11) — see `topics/pr14-real-serving-port-contract.md`.
 
