@@ -119,6 +119,23 @@ do NOT support relative to the **standalone** kernels (`qwen3_1p7b-decode`,
   cross-request KV-reuse/eviction policy needs
   ([[kv-cache-policy-tradeoffs]]) — neither exists in the integrated homes.
 
+## Superseded for the integration target (2026-07-11, M0/S2)
+
+**This gap list describes `origin/main` (`fcfc8c1`).** Upstream **PR #14** (WaferAGI
+`b9ff52b`, "Real Qwen3 1_7B Serving", base `fcfc8c1`, **unmerged**) already closes gaps
+**#1 (multi-round), #2 (varlen), #3 (chunked prefill), #4 (EOS), #8–9 (numerics), #11
+(oracle + real HF weights)** *for the integrated e2e/pdSeparate homes* (verified on code).
+pdSeparate's KV plumbing was **replaced** (old `kv_mux`/`kv_adaptor`/`kv_demux`/`relay.csl`
+deleted → shared `kv_ingress_adaptor`/`kv_ingress_injector`). What remains unbuilt even on
+PR #14: the **keyed retain-not-discard KV store** (the sole M0 residual gap). The standalone
+kernels themselves are **still mock-weight** at pr14. Full delta + port contract in
+[[pr14-real-serving-port-contract]].
+
+Corrections to this note surfaced in that dig: **item #5's `kickoff_relay.csl` is NOT on the
+KV egress path** (it relays the forward-start timing sentinel); the real egress chain is
+`prefill.csl` (`start_kv_egress`) → `kv_egress_colmux.csl` (+ transparent `kv_fwd.csl`) → host
+stream.
+
 ## Last updated
 
-2026-07-11.
+2026-07-11 (added PR #14 supersession + kickoff_relay correction).
