@@ -194,6 +194,51 @@ from `serve_core.ReplayState`.
 - **round_reset/round_barrier line numbers** are `254`/`272` on pr14 (`265`/`287` on
   fcfc8c1 — still correct for what staging currently builds).
 
+## 2026-07-12 update (M0/S4 design digs) — pr14 e2e is HOST-MEDIATED; adopt-vs-port splits by concern
+
+Four read-only digs while designing M0/S4 reshaped the adopt picture. **Key correction to
+this note's headline:** where the S2 investigation said pr14 "already absorbs the machinery
+into both e2e and pdSeparate" (true), it did **not** flag that pr14 *also* **converts e2e's KV
+path from on-chip relay to host-mediated**. It does.
+
+- **e2e@pr14 is host-mediated (prefill→host DRAM→decode).** New `src/prefill/kv_egress_colmux.csl`
+  (D2H) + host `host/kv_bridge.py::transform_egress_to_inj` + new `src/decode/kv_ingress_adaptor.csl`
+  / `kv_ingress_injector.csl` (H2D). `relay.csl` is byte-identical to fcfc8c1 but **inert**
+  (`KV_TRANSFER` default 0). e2e latency at pr14 literally includes a host stage:
+  `e2e_ms = pf_us + kv_bridge_ms + dec_us`.
+- **The on-chip relay is NOT config-revivable at pr14.** `param kv_transfer` + `kv_xfer_color_0/1`
+  deleted from BOTH kernels; `set_param … kv_transfer` count = 0; decode `init_task_t`
+  (`decode.csl:1746`) calls host-only `kv_ingress()` unconditionally (no seam-ingress branch);
+  `KV_TRANSFER=1` only paints colors 17/21 that nothing feeds/consumes, and those ids collide
+  with the host path. Reviving = re-port the removed on-chip machinery (reference = staging's
+  live fcfc8c1 e2e), not a toggle.
+- **e2e and pdSeparate KV transport are byte-identical at pr14** (matching blob hashes on
+  `kv_bridge.py` / `kv_egress_colmux` / `kv_ingress_adaptor+injector`). Differences are packaging:
+  e2e = 1 co-resident artifact / 1 runtime / in-memory per-request KV / no swap; pdSeparate = 2
+  artifacts / **sequential load on the SAME one card (same cmaddr, time-multiplexed — not two
+  cards, not host-to-host)** / disk-`.npz` phase-batched / ~105 s binary swap / larger per-half
+  capacity. (Refines the "prefill/decode as separate device artifacts bridging KV through host
+  memory" description — it's one card + disk, not two pods.)
+- **Why the relay was dropped: capability, not a bug.** The static, meta-less, single-shot seam
+  cannot carry varlen + per-round meta tile + re-arm; all that lives in the host injector. The
+  whole e2e rework is one squashed commit "Real Qwen3 1_7B Serving" (thin documented rationale;
+  strong inferred-from-structure reason). A device run would validate/measure, not diagnose.
+- **Standalone `qwen3_1p7b-decode` is multi-round but ISOLATION, not retain** (`round_reset`
+  `decode.csl:265-281` rewinds counters + re-seeds RoPE; host re-ships KV each round; bit-identical
+  assert forbids retain). **PE-internal retain is demonstrable on standalone decode alone** (slab
+  SRAM-resident; gate the rewind + host stops re-shipping; no relay/bridge).
+
+**Plan impact (M0 Phase C re-decomposed 2026-07-12, in the durable docs = source of truth):**
+two lines — **Line 1 = PE-internal retain (S6, standalone-demonstrable)**, **Line 2 = KV transport
+(S4 e2e / S5 pdSeparate)**; S4/S5/S6 are **peers** (S6 done first, S5 under separate active dev).
+**S4 = build a metadata-carrying *on-chip* relay** (embed per-round meta + link to KV, reuse pr14's
+injector *logic* but source KV over fabric) — **NOT** adopt pr14's host-mediated e2e (which abandons
+the no-offload corner) and **NOT** revive the static `relay.csl` wire. The rest of the pr14 stack
+(multi-round loop, varlen, chunked prefill, real weights, EOS, fp32 numerics) stays a live
+adopt-vs-port candidate (KV-source-agnostic). Full detail: `milestones/M0-reuse-foundation.md
+§ Phase C` + Verification log; `GOALS.md §7` adopt-vs-port entry (refined). Related:
+[[kv-cache-policy-tradeoffs]], [[e2e-kernel-dataflow-and-topology]], [[standalone-vs-integrated-kernel-parity]].
+
 ## Last updated
 
-2026-07-11 (M0/S2 investigation).
+2026-07-12 (M0/S4 design digs; supersedes the "e2e stays on-chip under pr14" implication of the 2026-07-11 headline).
