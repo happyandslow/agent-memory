@@ -136,6 +136,31 @@ KV egress path** (it relays the forward-start timing sentinel); the real egress 
 `prefill.csl` (`start_kv_egress`) → `kv_egress_colmux.csl` (+ transparent `kv_fwd.csl`) → host
 stream.
 
+## Updates
+
+### 2026-07-13 — KV-management-abstraction digs refine this to "two lineages, not three"
+
+From the pre-S6 abstraction design session (5 read-only digs; detail in
+[[../inbox/2026-07-13-kv-management-abstraction-design]] — pending drain). Refinements to this note:
+
+- **e2e and pdSeparate decode.csl are compute byte-identical in staging** (differ by 83 lines = a
+  WIP TSC profiler) and share the same on-wafer `kv_ingress_phase` north-shift receiver. So their
+  KV difference is **entirely off-chip** (host `kv_adaptor`/`kv_demux` feeder vs on-wafer relay
+  wiring), not a decode-kernel difference. The "gap" in this note is really **standalone vs one
+  frozen integrated lineage**, not three distinct kernels.
+- **KV compute *structure* is genuinely shared across all three** (Le's premise confirmed):
+  `process_kv`/attention-reads/`iter_num`·`step`-banks/RoPE/cache-alloc identical modulo naming.
+  The real divergences are **numerics** (this note's items #8–9: fp32 softmax + fast rsqrt in
+  standalone vs bf16 in integrated) and **lifecycle presence** (this note's #1: integrated has no
+  multi-round loop / `round_reset` / re-arm).
+- **Consequence for KV-reuse work:** retain has **nowhere to attach in integrated** until the
+  multi-round lifecycle is ported — that port ≈ the S4/S5 work (cluster-gated), so retain migration
+  is NOT mechanical, and "abstract now, all inherit retain" is unavailable. Decision: S6 stays
+  **standalone-first + seam-isolated**, extraction deferred to S4/S5.
+- **Prefill also has a persistent resident cache + serve loop** (`K_cache_bank`/`V_cache_bank`,
+  `enter_request` counter-only reset) — so **prefill retain is the same mechanism as decode retain**
+  (MODERATE effort: `start_chunk` warm-start). S6 broadened to cover both kernels (S6a).
+
 ## Last updated
 
-2026-07-11 (added PR #14 supersession + kickoff_relay correction).
+2026-07-13 (added the two-lineages / KV-abstraction refinement; prior: 2026-07-11 PR #14 supersession + kickoff_relay correction).

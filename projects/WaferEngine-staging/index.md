@@ -14,6 +14,7 @@
 ## Topics
 
 - [[memory/topics/agentic-kv-trace-datasets]]
+- [[memory/topics/csl-control-payload-mechanisms]]
 - [[memory/topics/e2e-kernel-dataflow-and-topology]]
 - [[memory/topics/e2e-pdSeparate-device-validation]]
 - [[memory/topics/h2d-host-device-bandwidth]]
@@ -27,6 +28,7 @@
 | Topic | Summary | Tags | Path |
 | --- | --- | --- | --- |
 | Agentic KV-Cache Trace Datasets | Dataset and trace pointers for agentic/request-length KV preserve-vs-evict analysis. | waferengine-staging, kv-cache, datasets, agentic-workloads | `memory/topics/agentic-kv-trace-datasets.md` |
+| CSL Control Payloads — mechanisms that let a transmitted payload instruct a PE | CSL (WSE-3, SDK v2.10) supports control payloads that instruct PE actions — control wavelets (opcode + control-task entrypoint + 16-bit arg), switch-advance/reset/teardown, data-task-by-color, header-peel, and async .on_control termination. Input to the M0/S4 metadata-carrying on-chip KV relay. | waferengine-staging, csl, wse-3, control-wavelet, fabric, switch, s4, kv-relay, metadata | `memory/topics/csl-control-payload-mechanisms.md` |
 | qwen3_1p7b-e2e Kernel Dataflow and Topology Notes | Source-read reference for qwen3_1p7b-e2e token/KV dataflow, decode strips/K-pipe, HT_head/demux seams, and tensor layout findings. | waferengine-staging, qwen3, e2e, dataflow, topology, kpipe, ht-head | `memory/topics/e2e-kernel-dataflow-and-topology.md` |
 | e2e vs pdSeparate — CS-3 Device Validation, Real-Weights Gap, Max-Context | Device-validation and max-context findings for qwen3 e2e and pdSeparate deployments. | waferengine-staging, qwen3, device-validation, pd-disaggregation | `memory/topics/e2e-pdSeparate-device-validation.md` |
 | Host↔Device Bandwidth — the `h2d-playground` series | Findings, techniques and measured numbers from the h2d-playground experiment series (bringup, e1-e16, bandwidth-test, rdma-explore) on host-device and host-host data movement for WSE-3 on the EPCC CS-3 cluster. | waferengine-staging, bandwidth, h2d, d2h, sdklayout, memcpy, cs3-cluster, measurement, latency, networking | `memory/topics/h2d-host-device-bandwidth.md` |
