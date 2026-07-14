@@ -2,6 +2,7 @@
 
 # nc_service Timeline
 
+- 2026-07-14 — gpu-verify-service-eidf-bringup → `memory/inbox/2026-07-14-gpu-verify-service-eidf-bringup.md`
 - 2026-07-09 — kv-handoff-zerocopy-and-rdma-negative → `memory/inbox/2026-07-09-kv-handoff-zerocopy-and-rdma-negative.md`
 - 2026-07-08 — specdec-round-timelines → `artifacts/2026-07-08-specdec-round-timelines.png`
 - 2026-07-08 — specdec-round-timelines → `artifacts/2026-07-08-specdec-round-timelines.html`

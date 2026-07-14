@@ -2,6 +2,8 @@
 
 # WaferEngine Timeline
 
+- 2026-07-14 — h2d-playground-summary → `memory/inbox/2026-07-14-h2d-playground-summary.md`
+- 2026-07-14 — h2d-playground-experiments → `docs/2026-07-14-h2d-playground-experiments.md`
 - 2026-07-06 — pr14-real-qwen3-serving → `memory/inbox/2026-07-06-pr14-real-qwen3-serving.md`
 - 2026-06-30 — specdec-dual-kernels-design → `docs/2026-06-30/2026-06-30-specdec-dual-kernels-design.md`
 - 2026-06-30 — session-specdec-dual-kernels → `memory/transcripts/2026-06-30/2026-06-30-session-specdec-dual-kernels.md`
