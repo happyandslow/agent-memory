@@ -20,6 +20,7 @@ Status: Active
 
 ## Recent changes
 
+- 2026-07-15 M0/S6a-decode DONE + end-to-end sim-verified: added `memory/topics/s6a-decode-kv-retain.md` (retain design = widened KV-ingress meta tile; the `plen==0` heartbeat landmine in the injector/adaptor relay PEs; value-based full-distribution verification via `simprint` vs a teacher-forced oracle — beats rank-based top-k). Source of truth: in-repo `milestones/M0-reuse-foundation.md § S6a` + `PROGRESS.md`. Decode retain code NOT yet committed (Le reviews); S6a-prefill handed to a new session.
 - 2026-07-12 M0/S3 maintain pass: appended the keyed-KV-store skeleton design + the new host-vs-on-chip policy-placement axis (SDK v2.10 on-PE lookup feasibility, keyed-store skeleton, cache-tile storage ground truth) to `memory/topics/kv-cache-policy-tradeoffs.md`; added a 2026-07-12 narrative entry to `plan.md`. Source of truth: in-repo `milestones/M0-reuse-foundation.md § S3`.
 - 2026-07-11 daily maintenance drained `memory/inbox/2026-07-09-e2e-kernel-qa-log.md` into `plan.md`, `memory/topics/e2e-kernel-dataflow-and-topology.md`, and the corrected parity note.
 - Durable new finding: fused e2e carries KV state on-chip, but decode step 0 is seeded by host/config token ids rather than prefill's sampled first token.
