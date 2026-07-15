@@ -2,6 +2,7 @@
 
 # nc_service Timeline
 
+- 2026-07-14 — sglang-remote-verifier-run-recipe → `memory/inbox/2026-07-14-sglang-remote-verifier-run-recipe.md`
 - 2026-07-14 — real-verify-model-deployment-pointers → `memory/inbox/2026-07-14-real-verify-model-deployment-pointers.md`
 - 2026-07-14 — gpu-verify-service-eidf-bringup → `memory/inbox/2026-07-14-gpu-verify-service-eidf-bringup.md`
 - 2026-07-09 — kv-handoff-zerocopy-and-rdma-negative → `memory/inbox/2026-07-09-kv-handoff-zerocopy-and-rdma-negative.md`
