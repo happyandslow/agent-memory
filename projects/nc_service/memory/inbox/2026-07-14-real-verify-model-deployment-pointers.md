@@ -1,6 +1,7 @@
 # Real verify-model deployment — where it lives (for the EIDF sicheng bring-up)
 
 Date: 2026-07-14. Q: "how is the REAL verify model deployed?" (CS-3 down → mock draft).
+Status: drained
 Answer: there are TWO distinct "real verify" surfaces; don't conflate them.
 
 ## 1. nc_service DraftControl **gRPC** verifier (the transport contract)

@@ -15,6 +15,7 @@
 
 - [[memory/topics/specdec-cs3-roadmap]]
 - [[memory/topics/specdec-d2h-latency]]
+- [[memory/topics/specdec-gpu-verifier-eidf]]
 - [[memory/topics/specdec-modeb-drive-path]]
 - [[memory/topics/specdec-modeb-pd-module-trace]]
 
@@ -24,6 +25,7 @@
 | --- | --- | --- | --- |
 | SpecDec-on-CS-3 roadmap (real kernels → PD serving + spec-dec rewind) | Current roadmap for real-kernel SpecDec on CS-3, PD serving, mode-B rewind, and full-loop validation. | nc-service, specdec, cs3, pd-disaggregation, roadmap | `memory/topics/specdec-cs3-roadmap.md` |
 | SpecDec d2h latency + real-GPU verify-side (WSE-3 drafter) | Measured WSE-3 draft-to-host latency and real-GPU verifier integration history for SpecDec. | nc-service, specdec, latency, gpu-verifier, wse3 | `memory/topics/specdec-d2h-latency.md` |
+| SpecDec GPU verifier on EIDF / SGLang REMOTE_STANDALONE | EIDF/Kubernetes SGLang REMOTE_STANDALONE verifier bring-up, dummy and real Kimi K2.5 measurements. | nc-service, specdec, gpu-verifier, eidf, sglang, kimi | `memory/topics/specdec-gpu-verifier-eidf.md` |
 | Mode-B per-round drive path + timing anchors | Mode-B (spec-dec rewind) per-round drive path with file:line annotations + timing anchors — where a ~115ms recurring round actually spends its time. | nc-service, specdec, mode-B, latency, drive-path, wse3, profiling | `memory/topics/specdec-modeb-drive-path.md` |
 | Mode-B PD module trace (architecture map + deliverables) | Module-by-module map of the mode-B PD disaggregation run (run_e2e_pd_modeb_real.sh) — four processes, three couplings, the seam split — plus deliverable locations and two operational gotchas (OAuth refresh, render toolchain). Companion to [[specdec-modeb-drive-path]]. | nc-service, specdec, mode-B, PD-disaggregation, module-map, wse3, io_pipeline, realkv, gotcha | `memory/topics/specdec-modeb-pd-module-trace.md` |
 

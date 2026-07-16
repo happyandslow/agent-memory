@@ -6,12 +6,13 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 
 ## What this project is
 
-- WaferEngine/WaferServe WSE-3 kernel work around qwen3-1.7B decode/prefill, SpecDec, runtime KV loading, and PE-local SRAM/fabric resource limits.
+- WaferEngine/WaferServe WSE-3 kernel work around qwen3-1.7B decode/prefill, SpecDec, runtime KV loading, PE-local SRAM/fabric resource limits, and CS-3 host/device transport.
 
 ## Canonical sources
 
 - `plan.md` — canonical roadmap, decisions, milestones, and next actions.
 - `memory/topics/dynamic-kv-load.md` — runtime KV ingress / compile-once serving contract.
+- `memory/topics/h2d-playground-transport.md` — CS-3 host↔device, host↔host, RDMA, and pipeline latency findings from h2d-playground.
 - `memory/topics/pe-sram-memory-breakdown.md` — device-measured PE SRAM and fabric-resource findings.
 - `tracking/conflicts.md` — manual conflicts Le must resolve before externalizing slide/image-dependent material.
 
@@ -20,4 +21,5 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 1. Verify live repo/server/PR state before acting; memory is not current proof.
 2. Read `plan.md`.
 3. Read only the topic note relevant to the task.
-4. If task mentions WaferOS/session examples, also check `human/2026-06-29-meeting-notes-waferos.md` and `tracking/conflicts.md`.
+4. For transport/H2D/RDMA questions, read `memory/topics/h2d-playground-transport.md` plus the full doc pointer there.
+5. If task mentions WaferOS/session examples, also check `human/2026-06-29-meeting-notes-waferos.md` and `tracking/conflicts.md`.

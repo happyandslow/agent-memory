@@ -1,6 +1,7 @@
 # Real Kimi K2.5 does NOT fit for serving on 8×80GB H100 (OOM) + fork-sglang location gotcha
 
 Date: 2026-07-15. Tried to restart the eidf230ns verifier pod
+Status: drained
 (`kimi-k25-sglang-h100-bdwk4`) from dummy → real Kimi K2.5 for a 32-token verify
 latency measurement. Failed; dummy rig restored.
 

@@ -1,6 +1,7 @@
 # GPU verify_service bring-up on EIDF (sicheng account) — VALIDATED
 
 Date: 2026-07-14. Goal: prove the GPU-host **verify service** builds+runs on the
+Status: drained
 EPCC EIDF GPU cluster, driven by a **mock draft** (CS-3 under maintenance).
 
 ## Access

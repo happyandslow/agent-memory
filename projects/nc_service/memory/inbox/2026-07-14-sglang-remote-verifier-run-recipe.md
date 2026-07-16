@@ -1,6 +1,7 @@
 # How to run the GPU verify service — SGLang REMOTE_STANDALONE (authoritative)
 
 Date: 2026-07-14. Source: repo `lausannel/sglang-remote-spec` (PRIVATE, happyandslow
+Status: drained
 has pull+push), PR #1 "Host remote draft verifier" (branch
 `remote-draft-grpc-tp-broadcast`), doc committed at ee6c3f6 →
 `docs/advanced_features/speculative_decoding.md` § "Remote Standalone Speculative

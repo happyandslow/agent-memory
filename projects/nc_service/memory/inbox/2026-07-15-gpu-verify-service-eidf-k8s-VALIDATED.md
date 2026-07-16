@@ -1,6 +1,7 @@
 # GPU verify service on EIDF k8s — driven by Rust mock draft, VALIDATED
 
 Date: 2026-07-15. The "real GPU service" is deployed on the **EIDF Kubernetes GPU
+Status: drained
 service**, namespace **`eidf230ns`**, NOT a bare GPU host. Drove it end-to-end with
 our Rust mock draft (CS-3 down) — full spec-dec loop proven.
 

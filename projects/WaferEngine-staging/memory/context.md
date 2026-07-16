@@ -11,10 +11,11 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 ## Canonical sources
 
 - `plan.md` — canonical goals, decisions, milestones, and next actions.
+- `memory/topics/s6a-decode-kv-retain.md` — M0/S6a retain design/verification learnings and pre-S6 abstraction decision.
 - `memory/topics/e2e-kernel-dataflow-and-topology.md` — 2026-07-09 source-read reference for e2e token/KV flow, demux/HT_head seams, K-pipe strips, and tensor layout findings.
 - `memory/topics/kv-cache-policy-tradeoffs.md` — preserve/evict/offload tiering and force-decode-in-place direction.
 - `memory/topics/e2e-pdSeparate-device-validation.md` — device results, weights gap, max-context byte model.
-- `memory/topics/standalone-vs-integrated-kernel-parity.md` — feature gap between integrated and standalone kernels, with the 2026-07-09 e2e numerics correction.
+- `memory/topics/standalone-vs-integrated-kernel-parity.md` — feature gap and PR #14 / S6 abstraction refinements.
 - `memory/topics/prefill-decode-transfer-bandwidth.md` — transfer+transform measurement design and floorplan pointers.
 - `memory/topics/h2d-host-device-bandwidth.md` — CS-3 host↔device / host↔host transport findings from `h2d-playground`.
 - `memory/topics/agentic-kv-trace-datasets.md` — traces/datasets for KV policy evaluation.
@@ -24,5 +25,6 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 1. Verify live repo/server state before acting.
 2. Read `plan.md`.
 3. Read only the topic note(s) relevant to the task.
-4. For fused e2e accuracy/topology questions, read `memory/topics/e2e-kernel-dataflow-and-topology.md` before relying on older diagrams or parity notes.
-5. Treat real HF weights/tokenizer/oracle work as deferred unless Le reprioritizes it.
+4. For retain / reuse-abstraction questions, start with `memory/topics/s6a-decode-kv-retain.md` and then `standalone-vs-integrated-kernel-parity.md`.
+5. For fused e2e accuracy/topology questions, read `memory/topics/e2e-kernel-dataflow-and-topology.md` before relying on older diagrams or parity notes.
+6. Treat real HF weights/tokenizer/oracle work as deferred unless Le reprioritizes it.

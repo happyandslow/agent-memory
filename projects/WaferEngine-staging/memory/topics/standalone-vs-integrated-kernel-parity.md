@@ -141,7 +141,7 @@ stream.
 ### 2026-07-13 — KV-management-abstraction digs refine this to "two lineages, not three"
 
 From the pre-S6 abstraction design session (5 read-only digs; detail in
-[[../inbox/2026-07-13-kv-management-abstraction-design]] — pending drain). Refinements to this note:
+`memory/inbox/2026-07-13-kv-management-abstraction-design.md` (drained into `memory/topics/s6a-decode-kv-retain.md`). Refinements to this note:
 
 - **e2e and pdSeparate decode.csl are compute byte-identical in staging** (differ by 83 lines = a
   WIP TSC profiler) and share the same on-wafer `kv_ingress_phase` north-shift receiver. So their

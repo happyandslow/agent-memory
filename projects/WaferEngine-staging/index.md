@@ -21,6 +21,7 @@
 - [[memory/topics/kv-cache-policy-tradeoffs]]
 - [[memory/topics/pr14-real-serving-port-contract]]
 - [[memory/topics/prefill-decode-transfer-bandwidth]]
+- [[memory/topics/s6a-decode-kv-retain]]
 - [[memory/topics/standalone-vs-integrated-kernel-parity]]
 
 ## Topic catalog
@@ -35,5 +36,6 @@
 | KV-Cache Preserve-vs-Evict Policy Tradeoffs (WSE-3) | WSE-3 KV preserve-vs-evict/offload tiering analysis across e2e and pdSeparate deployments. | waferengine-staging, kv-cache, policy, offload, wse3 | `memory/topics/kv-cache-policy-tradeoffs.md` |
 | PR #14 Real-Serving Integration & M0/S2 Port Contract — Investigation Report | PR #14 (WaferAGI, "Real Qwen3 1_7B Serving") pre-integrates the standalone multi-round/varlen/round_reset/KV-bridge machinery into both fused deployments; only the keyed-retain KV store is still a gap. Investigation report backing M0/S2 port contract. | waferengine-staging, qwen3, pr14, serving, port-contract, kv-reuse, nc-service | `memory/topics/pr14-real-serving-port-contract.md` |
 | Prefill→Decode KV-Cache Transfer Bandwidth (qwen3_1p7b-e2e) | Effective-bandwidth study for qwen3 e2e prefill-to-decode KV handoff including transform compute and wire time. | waferengine-staging, kv-cache, bandwidth, prefill-decode, measurement | `memory/topics/prefill-decode-transfer-bandwidth.md` |
+| S6a-decode — PE-internal KV retain (decode kernel): implementation & verification learnings | > Curated, reusable learnings from implementing + verifying decode-side KV retain |  | `memory/topics/s6a-decode-kv-retain.md` |
 | Standalone vs Integrated Kernels — Feature Parity Gap | Feature-parity gap between current standalone qwen3 kernels and integrated e2e/pdSeparate snapshots. | waferengine-staging, qwen3, kernel-parity, serving | `memory/topics/standalone-vs-integrated-kernel-parity.md` |
 

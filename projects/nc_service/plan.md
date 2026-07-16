@@ -17,7 +17,9 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [x] Mode-B adapter increments recorded: sim pass, device window pass, partial-accept accounting fix, full adapter-chain `MODEB_DEV_PASS`, framework factory dispatch, exchange-batch sim pass.
 - [x] Mode-B PD module/process architecture trace delivered to PR #10 and contextbase (`memory/topics/specdec-modeb-pd-module-trace.md`).
 - [ ] Run the full mode-B PD/spec-dec sim loop on CS-3 with `mock_verify_host failures:0`.
-- [ ] Run partial-accept on device and connect the real GPU verifier.
+- [x] Validate hosted GPU verifier transport with EIDF Kubernetes SGLang REMOTE_STANDALONE and Rust mock draft.
+- [x] Boot and measure real Kimi K2.5 verifier on EIDF 8×H100 with known-good flags (17 ms p50 32-token verify_forward).
+- [ ] Run partial-accept on device and connect the real GPU verifier to the real CS-3 draft path.
 - [ ] Complete mode-A transport hardening for `PD_REAL_DAEMON_DEV`.
 - [ ] Split the new prefill `egress` bottleneck (prefill compute + D2H lumped) with on-wafer TSC-at-emit vs host receive timing.
 
@@ -32,13 +34,17 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 ## Next actions
 
 - [ ] Run `waferengine/samples/specdec/realkv/run_e2e_pd_modeb_sim.sh 2` on the CS-3 login node in the `csl` conda env with `export PYTHONPATH=.` and `IOP_REAL_KERNELS_SRC_{PREFILL,DECODE}` set; success criterion is `mock_verify_host` `failures:0`.
-- [ ] After full sim loop passes, run partial-accept on device and connect the real GPU verifier service.
+- [ ] After full sim loop passes, run partial-accept on device and connect the EIDF/SGLang hosted verifier to the real CS-3 draft path.
 - [ ] Re-run real-kernel PD device transport path (`PD_REAL_DAEMON_DEV`) with `READY_TIMEOUT=7200`, the send_x N-header fix, and ingress-502 retry hardening.
 - [ ] If one-time KV handoff remains important after egress is split, replace the npz handoff container with a raw header plus contiguous arrays to reclaim encode/handoff/tobytes overhead.
 - [ ] Periodically rebase `lexu/decode-rewind` against PR #13 head and consider upstreaming rewind.
 - [ ] Verify live repo/server state before acting; memory records branch/test history, not current proof.
 
 ## Narrative progress log
+
+### 2026-07-15
+
+- Drained six EIDF GPU-verifier inbox notes into `memory/topics/specdec-gpu-verifier-eidf.md`. Durable state: the SGLang `REMOTE_STANDALONE` hosted verifier runs in EIDF Kubernetes namespace `eidf230ns`; the Rust mock draft validates the DraftControl loop against dummy SGLang; real Kimi K2.5 **does fit and serve** on the 8×H100 pod with weight-loader prefetch/skip-warmup flags, yielding ~17 ms p50 GPU-side 32-token verify_forward. Earlier “does not fit” note is superseded as a load-phase/CephFS failure, not true OOM.
 
 ### 2026-07-09
 

@@ -15,6 +15,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [x] KV preserve/evict tier ladder captured, including Le's T0.5 in-bank reuse addition and force-decode-in-place direction.
 - [x] Standalone-vs-integrated kernel parity gap documented.
 - [ ] Instrument prefill→decode transfer segments A/B/C with TSC and compute first effective-GB/s number.
+- [x] Resolve pre-S6 KV-management abstraction question: shared compute exists, but retain cannot be abstracted into integrated kernels until S4/S5 lifecycle port.
 - [ ] Scope forced-token decode, T0.5 in-bank reuse, and T1 idle-PE offload prototypes.
 - [ ] Decide whether fused e2e should carry prefill's sampled token into decode (host hop or new on-chip `pf_ht_tail` → HT_head wire) before making end-to-end accuracy claims.
 
@@ -41,6 +42,10 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 > **Canonical M0 plan/state lives in the in-repo durable docs** (`ROADMAP.md`, `PROGRESS.md`,
 > `milestones/M0-reuse-foundation.md`) per repo precedence; entries below are background.
+
+### 2026-07-13
+
+- Drained `memory/inbox/2026-07-13-kv-management-abstraction-design.md` into `memory/topics/s6a-decode-kv-retain.md` and corrected the parity-topic pointer. Durable decision: KV compute is shared enough to keep the seam isolated, but integrated kernels lack the runtime multi-round lifecycle where retain attaches, so S6 stays standalone-first and extraction waits for S4/S5. Prefill retain is viable as a `start_chunk` warm-start; force-decode remains an M2 mechanism.
 
 ### 2026-07-12
 

@@ -106,3 +106,15 @@ bug or noise?" → noise (the full distributions agree to 1.3e-4).
 
 See also: [[standalone-vs-integrated-kernel-parity]], [[pr14-real-serving-port-contract]],
 [[csl-control-payload-mechanisms]], [[kv-cache-policy-tradeoffs]].
+
+## 2026-07-13 pre-S6 abstraction design
+
+Before S6a coding, five read-only digs across standalone decode/prefill and integrated e2e/pdSeparate answered whether a shared KV-management abstraction could make all three decode variants inherit retain automatically.
+
+- KV-touching compute is identical modulo naming across the kernels: `process_kv`, attention reads, `iter_num`/`step` bank handling, RoPE advancement, and cache allocation share the same structure. e2e vs pdSeparate `decode.csl` differ only by a WIP TSC profiler; their KV difference is off-chip feeder/relay wiring, not decode-kernel semantics.
+- Retain touches counters and RoPE only, never `kv_ingress_*`; west-vs-north ingress is irrelevant to retain logic. The blocker is lifecycle: integrated kernels still lack runtime-variable prefill/cached length, `round_reset`, a multi-round loop, and re-arm plumbing, so retain has nowhere to attach until S4/S5 ports that lifecycle.
+- Decision: S6 remains standalone-first and seam-isolated. Retain enters as data into one `round_reset`, through one runtime-capable retained-length accessor, and touches counters/RoPE only so the later S4/S5 extraction is mechanical.
+- Prefill retain is the same mechanism in a different counter: persistent non-zeroed `K_cache_bank`/`V_cache_bank`, multi-round serve loop, and `enter_request` counter reset imply a `start_chunk` warm-start plus host stream-skip path; no inverse transform, cross-PE movement, or RoPE re-derive is needed.
+- Force-decode is the M2 boundary: pure retain covers resume/exact-prefix repeat on decode plus shared-prefix fanout on prefill; realistic multi-turn decode of known new tokens needs an input-token override, not a new cache primitive.
+
+Source/drain note: `memory/inbox/2026-07-13-kv-management-abstraction-design.md`.

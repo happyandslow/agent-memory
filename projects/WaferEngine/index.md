@@ -14,6 +14,7 @@
 ## Topics
 
 - [[memory/topics/dynamic-kv-load]]
+- [[memory/topics/h2d-playground-transport]]
 - [[memory/topics/pe-sram-memory-breakdown]]
 
 ## Topic catalog
@@ -21,5 +22,6 @@
 | Topic | Summary | Tags | Path |
 | --- | --- | --- | --- |
 | Dynamic KV load (qwen3 decode) | Runtime KV ingress for qwen3 decode so one compiled artifact can serve variable-prefill requests. | waferengine, qwen3, decode, kv-cache, serving | `memory/topics/dynamic-kv-load.md` |
+| h2d-playground transport experiments | CS-3 host/device and cross-pod transport experiments from h2d-playground. | waferengine, cs3, h2d, transport, rdma, latency | `memory/topics/h2d-playground-transport.md` |
 | PE SRAM Memory Breakdown (qwen3-1.7B decode + prefill, real WSE-3) | Device-measured WSE-3 per-PE SRAM/fabric resource analysis for qwen3 decode and prefill. | waferengine, wse3, sram, qwen3, resource-analysis | `memory/topics/pe-sram-memory-breakdown.md` |
 

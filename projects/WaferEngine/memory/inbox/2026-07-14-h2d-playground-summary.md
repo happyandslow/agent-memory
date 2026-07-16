@@ -1,6 +1,7 @@
 # h2d-playground experiment summary (branch lexu/h2d-explore)
 
 **Date:** 2026-07-14
+Status: drained
 **Full doc:** `docs/2026-07-14-h2d-playground-experiments.md`
 
 Compiled a single reference summarizing ~25 transport-bandwidth/latency experiment studies under

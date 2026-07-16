@@ -1,6 +1,7 @@
 # KNOWN-GOOD: real Kimi-K2.5 verifier boots + serves on EIDF 8×H100-80GB
 
 Date: 2026-07-15. Supersedes the earlier "does not fit on 80GB H100" claim — that was
+Status: drained
 a LOAD-phase failure (slow/flaky CephFS killing a rank), NOT OOM. With weight-loader
 prefetch, all 8 ranks load, KV pool allocates, CUDA graph captures, server comes up
 with ~1.08 GB/GPU free. Memory fits. See [[2026-07-15-real-kimi-oom-80gb-h100-and-fork-location]].

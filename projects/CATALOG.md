@@ -7,6 +7,7 @@
 | Topic | Summary | Tags | Path |
 | --- | --- | --- | --- |
 | Dynamic KV load (qwen3 decode) | Runtime KV ingress for qwen3 decode so one compiled artifact can serve variable-prefill requests. | waferengine, qwen3, decode, kv-cache, serving | `projects/WaferEngine/memory/topics/dynamic-kv-load.md` |
+| h2d-playground transport experiments | CS-3 host/device and cross-pod transport experiments from h2d-playground. | waferengine, cs3, h2d, transport, rdma, latency | `projects/WaferEngine/memory/topics/h2d-playground-transport.md` |
 | PE SRAM Memory Breakdown (qwen3-1.7B decode + prefill, real WSE-3) | Device-measured WSE-3 per-PE SRAM/fabric resource analysis for qwen3 decode and prefill. | waferengine, wse3, sram, qwen3, resource-analysis | `projects/WaferEngine/memory/topics/pe-sram-memory-breakdown.md` |
 
 ## WaferEngine-staging
@@ -21,6 +22,7 @@
 | KV-Cache Preserve-vs-Evict Policy Tradeoffs (WSE-3) | WSE-3 KV preserve-vs-evict/offload tiering analysis across e2e and pdSeparate deployments. | waferengine-staging, kv-cache, policy, offload, wse3 | `projects/WaferEngine-staging/memory/topics/kv-cache-policy-tradeoffs.md` |
 | PR #14 Real-Serving Integration & M0/S2 Port Contract — Investigation Report | PR #14 (WaferAGI, "Real Qwen3 1_7B Serving") pre-integrates the standalone multi-round/varlen/round_reset/KV-bridge machinery into both fused deployments; only the keyed-retain KV store is still a gap. Investigation report backing M0/S2 port contract. | waferengine-staging, qwen3, pr14, serving, port-contract, kv-reuse, nc-service | `projects/WaferEngine-staging/memory/topics/pr14-real-serving-port-contract.md` |
 | Prefill→Decode KV-Cache Transfer Bandwidth (qwen3_1p7b-e2e) | Effective-bandwidth study for qwen3 e2e prefill-to-decode KV handoff including transform compute and wire time. | waferengine-staging, kv-cache, bandwidth, prefill-decode, measurement | `projects/WaferEngine-staging/memory/topics/prefill-decode-transfer-bandwidth.md` |
+| S6a-decode — PE-internal KV retain (decode kernel): implementation & verification learnings | > Curated, reusable learnings from implementing + verifying decode-side KV retain |  | `projects/WaferEngine-staging/memory/topics/s6a-decode-kv-retain.md` |
 | Standalone vs Integrated Kernels — Feature Parity Gap | Feature-parity gap between current standalone qwen3 kernels and integrated e2e/pdSeparate snapshots. | waferengine-staging, qwen3, kernel-parity, serving | `projects/WaferEngine-staging/memory/topics/standalone-vs-integrated-kernel-parity.md` |
 
 ## contextbase
@@ -33,6 +35,7 @@ _No topics yet._
 | --- | --- | --- | --- |
 | SpecDec-on-CS-3 roadmap (real kernels → PD serving + spec-dec rewind) | Current roadmap for real-kernel SpecDec on CS-3, PD serving, mode-B rewind, and full-loop validation. | nc-service, specdec, cs3, pd-disaggregation, roadmap | `projects/nc_service/memory/topics/specdec-cs3-roadmap.md` |
 | SpecDec d2h latency + real-GPU verify-side (WSE-3 drafter) | Measured WSE-3 draft-to-host latency and real-GPU verifier integration history for SpecDec. | nc-service, specdec, latency, gpu-verifier, wse3 | `projects/nc_service/memory/topics/specdec-d2h-latency.md` |
+| SpecDec GPU verifier on EIDF / SGLang REMOTE_STANDALONE | EIDF/Kubernetes SGLang REMOTE_STANDALONE verifier bring-up, dummy and real Kimi K2.5 measurements. | nc-service, specdec, gpu-verifier, eidf, sglang, kimi | `projects/nc_service/memory/topics/specdec-gpu-verifier-eidf.md` |
 | Mode-B per-round drive path + timing anchors | Mode-B (spec-dec rewind) per-round drive path with file:line annotations + timing anchors — where a ~115ms recurring round actually spends its time. | nc-service, specdec, mode-B, latency, drive-path, wse3, profiling | `projects/nc_service/memory/topics/specdec-modeb-drive-path.md` |
 | Mode-B PD module trace (architecture map + deliverables) | Module-by-module map of the mode-B PD disaggregation run (run_e2e_pd_modeb_real.sh) — four processes, three couplings, the seam split — plus deliverable locations and two operational gotchas (OAuth refresh, render toolchain). Companion to [[specdec-modeb-drive-path]]. | nc-service, specdec, mode-B, PD-disaggregation, module-map, wse3, io_pipeline, realkv, gotcha | `projects/nc_service/memory/topics/specdec-modeb-pd-module-trace.md` |
 

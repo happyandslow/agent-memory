@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured   <!-- captured | drained -->
+**Status:** drained   <!-- captured | drained -->
 
 > Details of the pre-S6 KV-management-abstraction design session (GOALS §7 item).
 > Decisions + links already live in the durable docs (source of truth):

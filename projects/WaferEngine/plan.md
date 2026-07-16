@@ -14,6 +14,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [x] Dynamic-KV-loading design completed for qwen3 decode; runtime KV ingress chosen over compile-time baking.
 - [ ] SpecDec M1: replace the sample `passthrough.csl` oracle with real prefill + decode CSL kernels in one co-resident `SdkLayout` and verify cold-loading path.
 - [ ] SpecDec M2: warm-start via host-routed KV handoff, gated on the dynamic-KV-loading decode kernel.
+- [x] h2d-playground transport experiments summarized into durable docs and topic memory.
 - [ ] Decide whether/how the PE-SRAM analysis should feed WaferOS/session examples and whether to merge `lexu/pe-mem-breakdown`.
 
 ## Decisions
@@ -34,6 +35,10 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Decide whether to merge `lexu/pe-mem-breakdown`; optional follow-up: run seq_len/layers-per-block sweeps.
 
 ## Narrative progress log
+
+### 2026-07-14
+
+- Drained `memory/inbox/2026-07-14-h2d-playground-summary.md` into `memory/topics/h2d-playground-transport.md`. Durable findings: measure device transfer with on-device TSC, pin `io_loc` for multi-stream scaling, prefer 10.27.x underlay over 100.64.x overlay, treat pipeline latency as host/network/queueing dominated, and preserve RDMA as a latency/CPU win that does not fix KV handoff. Full doc: `docs/2026-07-14-h2d-playground-experiments.md`.
 
 ### 2026-07-06
 
