@@ -94,7 +94,7 @@ def node(x,y,w,h,title,sub,fill,stroke):
     for i,ln in enumerate(sub.split("\n")):
         out.append(T(x+w/2,y+37+i*13,ln,9.5,"#34434d","500"))
     return "".join(out)
-ny=py+24; nh=62; w1=220
+ny=py+56; nh=72; w1=220
 col_r="#faddd8"; s_r="#c0392b"
 col_b="#dbeafe"; s_b="#245f96"
 col_p="#ece1f6"; s_p="#7a3fb0"
@@ -112,19 +112,19 @@ ny2=ny+nh+52
 s.append(node(60,ny2,w1,nh,"sync_src  (task 10) — TAIL","source round_sync NORTH;\nno SWITCH_ADV (no south row);\nself re-arm -> peel_meta",col_p,s_p))
 # non-tail branch (right two)
 s.append(node(360,ny2,w1,nh,"sync_wait (task 10) — non-tail","SWITCH_ADV out_color (RAMP->N => S->N);\npark on round_sync (mov32 recv)",col_b,s_b))
-s.append(node(620,ny2,w1,nh,"sync_do (task 11) — non-tail","round_sync arrived (all south drained):\nclear switch -> pos0; re-arm -> peel_meta",col_b,s_b))
+s.append(node(660,ny2,w1,nh,"sync_do (task 11) — non-tail","round_sync arrived (all south drained):\nclear switch -> pos0; re-arm -> peel_meta",col_b,s_b))
 # drain -> branch
 s.append(f'<path d="M {xs[1]+w1/2} {ny+nh} L {xs[1]+w1/2} {ny2-30} L {160} {ny2-30} L {160} {ny2-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
 s.append(f'<path d="M {xs[1]+w1/2} {ny2-30} L {460} {ny2-30} L {460} {ny2-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
-s.append(T(xs[1]+w1/2,ny2-36,"post-drain: branch on is_col_tail",9.5,"#5a6b76","600"))
+s.append(T(xs[1]+w1/2+14,ny2-36,"post-drain: branch on is_col_tail",9.5,"#5a6b76","600","start"))
 s.append(T(160,ny2-18,"tail",9,"#7a3fb0","700"))
 s.append(T(460,ny2-18,"non-tail",9,"#245f96","700"))
 # sync_wait -> sync_do
-s.append(line(360+w1,ny2+nh/2,620-2,ny2+nh/2,"#7a3fb0","ap",1.8))
-s.append(T(360+w1+70,ny2+nh/2-6,"round_sync",9,"#7a3fb0","600"))
+s.append(line(360+w1,ny2+nh/2,660-2,ny2+nh/2,"#7a3fb0","ap",1.8))
+s.append(T((360+w1+660)/2,ny2+nh/2-10,"round_sync",9,"#7a3fb0","600"))
 # re-arm loops back to peel_meta
 s.append(f'<path d="M {60+w1/2} {ny2+nh} L {60+w1/2} {ny2+nh+22} L {30} {ny2+nh+22} L {30} {ny+18} L {58} {ny+18}" fill="none" stroke="#7a3fb0" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ar)"/>')
-s.append(f'<path d="M {620+w1/2} {ny2+nh} L {620+w1/2} {ny2+nh+40} L {20} {ny2+nh+40} L {20} {ny+40} L {58} {ny+40}" fill="none" stroke="#245f96" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ar)"/>')
+s.append(f'<path d="M {660+w1/2} {ny2+nh} L {660+w1/2} {ny2+nh+40} L {20} {ny2+nh+40} L {20} {ny+40} L {58} {ny+40}" fill="none" stroke="#245f96" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ar)"/>')
 s.append(T(300,ny2+nh+36,"re-arm peel_meta for the next request (per-request serve loop)",9.5,"#5a6b76","600","middle"))
 
 s.append(T(60,H-16,"Colors/queues: in_color=21 (in_q2, W->RAMP) - out_color {6,8,9,17} (out_q3, NORTH switch) - round_sync=10 (in_q3/out_q4, S->N). Count-exactness = correctness; a mis-timed SWITCH_ADV silently hangs.",9.5,"#6a7883","400","start"))

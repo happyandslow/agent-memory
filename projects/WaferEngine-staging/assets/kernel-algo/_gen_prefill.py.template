@@ -1,0 +1,261 @@
+#!/usr/bin/env python3
+# prefill.csl algorithm diagram: serpentine layer pipeline + chunked GQA attention.
+# Top panel  = spatial (serpentine 2x4 blocks, sharding, key comms). Bottom panel = flag machine.
+import html
+W, H = 1180, 1112
+def esc(s): return html.escape(s)
+s = []
+s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
+s.append('<defs>'
+  '<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker>'
+  '<marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker>'
+  '<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker>'
+  '<marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker>'
+  '<marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c77d1a"/></marker>'
+  '<marker id="ak" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5a6b76"/></marker>'
+  '</defs>')
+s.append(f'<rect width="{W}" height="{H}" fill="#f7f9fb"/>')
+def T(x,y,t,sz=13,f="#12222f",w="600",a="middle"):
+    return f'<text x="{x}" y="{y}" font-size="{sz}" font-weight="{w}" fill="{f}" text-anchor="{a}">{esc(t)}</text>'
+def box(x,y,w,h,fill,stroke,rx=6,sw=1.6,op=1.0):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" fill-opacity="{op}" stroke="{stroke}" stroke-width="{sw}"/>'
+def line(x1,y1,x2,y2,c,mk,w=2.4,dash=""):
+    d=f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{c}" stroke-width="{w}"{d} marker-end="url(#{mk})"/>'
+def path(d,c,mk,w=2.2,dash=""):
+    da=f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<path d="{d}" fill="none" stroke="{c}" stroke-width="{w}"{da} marker-end="url(#{mk})"/>'
+
+s.append(T(W/2,32,"prefill.csl — serpentine layer pipeline + chunked GQA attention",20,"#0d1b26","700"))
+s.append(T(W/2,52,"一份程序跑在每个 PE 上 = 一段连续 transformer 层;block 沿蛇形(serpentine)当流水级传 X。prefill = seq 切 X / feature 切 Y(与 decode 转置)。ref: 2×4 blocks, 8×8 PE/block, 1 层/block",12,"#4a5b66","500"))
+
+# ================= TOP PANEL: spatial =================
+s.append(T(60,88,"① 空间分布:蛇形 block 流水 + 关键通信",14,"#0d1b26","700","start"))
+
+# west band: HT_head / HT_tail
+wb_x, wb_y, wb_w, wb_h = 60, 120, 92, 300
+s.append(box(wb_x, wb_y, wb_w, wb_h, "#e9dcc4", "#a86a1e", 8, 1.6))
+s.append(T(wb_x+wb_w/2, wb_y+22, "west band", 11, "#7a5010", "700"))
+s.append(T(wb_x+wb_w/2, wb_y+40, "(x=4)", 10, "#7a5010", "500"))
+s.append(box(wb_x+10, wb_y+56, wb_w-20, 46, "#f2e6cf", "#a86a1e", 5, 1.2))
+s.append(T(wb_x+wb_w/2, wb_y+74, "HT_head", 10.5, "#0d1b26", "700"))
+s.append(T(wb_x+wb_w/2, wb_y+90, "embed LUT", 9, "#5a5040", "500"))
+s.append(box(wb_x+10, wb_y+120, wb_w-20, 46, "#f2e6cf", "#a86a1e", 5, 1.2))
+s.append(T(wb_x+wb_w/2, wb_y+138, "HT_tail", 10.5, "#0d1b26", "700"))
+s.append(T(wb_x+wb_w/2, wb_y+154, "lm_head", 9, "#5a5040", "500"))
+s.append(T(wb_x+wb_w/2, wb_y+wb_h-14, "host tokens ↓", 9.5, "#a86a1e", "600"))
+
+# serpentine 2x4 block grid
+gx0, gy0 = 240, 120
+bw, bh = 118, 60
+gapx, gapy = 26, 22
+# pipeline order for a 2x4 snake: rows even L->R, odd R->L
+order = []  # list of (pidx,(bx,by))
+for by in range(4):
+    xr = range(2) if by % 2 == 0 else range(1, -1, -1)
+    for bx in xr:
+        order.append((bx, by))
+def bxy(bx, by):
+    return gx0 + bx*(bw+gapx), gy0 + by*(bh+gapy)
+# draw blocks
+for p,(bx,by) in enumerate(order):
+    x,y = bxy(bx,by)
+    hi = (p==0)  # highlight block 0
+    s.append(box(x,y,bw,bh,"#cfe4f5" if not hi else "#a9d0ef","#245f96",6,1.6))
+    s.append(T(x+bw/2,y+21,f"block p{p}",11.5,"#0d1b26","700"))
+    s.append(T(x+bw/2,y+37,f"layers [{p},{p+1})",9,"#2a4a63","500"))
+    s.append(T(x+bw/2,y+50,"1 layer (ref)",8.5,"#4a6478","500"))
+# serpentine shuttle arrows (blue): consecutive pipeline blocks
+def edge_center(bx,by):
+    x,y=bxy(bx,by); return x,y,x+bw,y+bh
+for i in range(len(order)-1):
+    (bx0,by0),(bx1,by1)=order[i],order[i+1]
+    x0a,y0a,x0b,y0b=edge_center(bx0,by0)
+    x1a,y1a,x1b,y1b=edge_center(bx1,by1)
+    if by0==by1:  # horizontal hop
+        if bx1>bx0:
+            s.append(line(x0b+2,y0a+bh/2,x1a-2,y1a+bh/2,"#2c6fb0","ab",2.4))
+        else:
+            s.append(line(x0a-2,y0a+bh/2,x1b+2,y1a+bh/2,"#2c6fb0","ab",2.4))
+    else:  # south turn
+        cx=x0a+bw/2
+        s.append(line(cx,y0b+2,cx,y1a-2,"#2c6fb0","ab",2.4))
+s.append(T(gx0+bw+gapx/2, gy0+bh+8, "shuttle (P-5)", 9, "#2c6fb0", "700"))
+
+# x_chain in: HT_head -> block0 (green, east)
+bx,by=bxy(0,0)
+s.append(line(wb_x+wb_w+2, by+bh/2, bx-2, by+bh/2, "#2e8b57","ag",2.8))
+s.append(T((wb_x+wb_w+bx)/2, by+bh/2-8, "x_chain →", 9.5, "#2e8b57","700"))
+s.append(T((wb_x+wb_w+bx)/2, by+bh/2+16, "G-1/G-2/P-6", 8.5, "#2e8b57","500"))
+
+# z-emit west: last block p7 (bx0,by3) -> HT_tail (purple)
+bx7,by7=bxy(0,3)
+s.append(path(f"M {bx7-2} {by7+bh-12} L {wb_x+wb_w/2} {by7+bh-12} L {wb_x+wb_w/2} {wb_y+168}", "#7a3fb0","ap",2.4,"6 4"))
+s.append(T((bx7+wb_x+wb_w)/2, by7+bh+6, "z-emit → HT_tail (P-6, z_drain 16)", 9, "#7a3fb0","700"))
+
+# KV egress: from east edge of blocks -> north to host (orange)
+ex = gx0 + 1*(bw+gapx) + bw
+s.append(line(ex+2, gy0+bh/2, ex+66, gy0+bh/2, "#c77d1a","ao",2.6))
+s.append(path(f"M {ex+66} {gy0+bh/2} L {ex+66} {gy0-26}", "#c77d1a","ao",2.6))
+s.append(box(ex+30, gy0-52, 150, 24, "#f3e2c6","#c77d1a",5,1.4))
+s.append(T(ex+105, gy0-36, "KV egress → host", 10, "#7a5010","700"))
+s.append(T(ex+58, gy0+bh/2+16, "switch-gather (P-4)", 8.5, "#c77d1a","600"))
+
+# ---- enlarged block: sharding + attention ring ----
+zbx, zby, zbw, zbh = 620, 120, 500, 300
+s.append(box(zbx, zby, zbw, zbh, "#eef4fa", "#245f96", 10, 1.8))
+s.append(T(zbx+zbw/2, zby+22, "一个 block 内部 (P_BLOCK_SIZE × P_BLOCK_SIZE = 8×8)", 12.5, "#0d1b26","700"))
+# axes
+s.append(line(zbx+30, zby+300-40, zbx+30+180, zby+300-40, "#5a6b76","ak",2))   # X axis
+s.append(T(zbx+30+190, zby+300-36, "X = seq (chunk tokens)", 9.5, "#34434d","600","start"))
+s.append(line(zbx+30, zby+300-40, zbx+30, zby+60, "#5a6b76","ak",2))            # Y axis
+s.append(T(zbx+34, zby+54, "Y = feature (dim / kv_cols / ffn)", 9.5, "#34434d","600","start"))
+# small PE grid
+g0x, g0y, cell = zbx+46, zby+72, 22
+for r in range(6):
+    for c in range(6):
+        op = 0.85 if r==0 else (0.5 if c==0 else 0.28)
+        s.append(box(g0x+c*cell, g0y+r*cell, cell-3, cell-3, "#8fbfe0", "#245f96", 3, 0.9, op))
+s.append(T(g0x, g0y+6*cell+18, "feature-major / seq-minor: X_tile[f·reduce_len + s]", 9, "#2a4a63","500","start"))
+# attention ring (right side of enlarged block)
+ax, ay, ar = zbx+380, zby+150, 62
+import math as _m
+s.append(f'<circle cx="{ax}" cy="{ay}" r="{ar}" fill="none" stroke="#c0392b" stroke-width="2.2" stroke-dasharray="5 4"/>')
+for k in range(6):
+    a0=k/6*2*_m.pi - _m.pi/2
+    a1=(k+0.7)/6*2*_m.pi - _m.pi/2
+    x1,y1=ax+ar*_m.cos(a0), ay+ar*_m.sin(a0)
+    x2,y2=ax+ar*_m.cos(a1), ay+ar*_m.sin(a1)
+    s.append(line(x1,y1,x2,y2,"#c0392b","ar",2.0))
+s.append(T(ax, ay-4, "Score×V", 10.5, "#c0392b","700"))
+s.append(T(ax, ay+12, "ring (P-3)", 9.5, "#c0392b","600"))
+s.append(T(ax, ay+ar+18, "band-shift Y + V-hop X", 8.5, "#c0392b","500"))
+s.append(T(ax, ay-ar-8, "GQA attention", 10, "#0d1b26","700"))
+
+# top-panel legend
+ly = 452
+leg = [
+ ("#2e8b57","ag","x_chain 入 block0 (G-1 parity + G-2 peel;跨区 P-6)  ·  enter_x_chain"),
+ ("#2c6fb0","ab","serpentine shuttle 逐 block 传 X (P-5 / P-6)  ·  enter_source/dest_shuttle"),
+ ("#c0392b","ar","block 内集合通信:Cannon 投影(P-3)+ chain all-reduce(P-1/P-7)+ Score×V ring"),
+ ("#7a3fb0","ap","末 block 末 token 的 dim 分片西送 HT_tail (P-6, z_drain color 16)"),
+ ("#c77d1a","ao","KV cache 东向 switch-gather 到 host colmux (P-4 seam;G-4 头 / G-12 opaque / G-14 rebind)"),
+]
+for i,(c,mk,t) in enumerate(leg):
+    yy=ly+i*20
+    s.append(line(60,yy,86,yy,c,mk,2.4))
+    s.append(T(94,yy+4,t,11,"#26333c","500","start"))
+
+# ================= BOTTOM PANEL: flag machine =================
+py = 578
+s.append(f'<line x1="40" y1="{py-16}" x2="{W-40}" y2="{py-16}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(60,py+2,"② 每 chunk 的 14 态 flag 机 prefill_struct(哪个 task 负责哪一步)+ 每-chunk / 每-request / 每-layer 环",14,"#0d1b26","700","start"))
+
+def node(x,y,w,h,title,sub,fill,stroke,tsz=11):
+    out=[box(x,y,w,h,fill,stroke)]
+    out.append(T(x+w/2,y+18,title,tsz,"#0d1b26","700"))
+    for i,ln in enumerate(sub.split("\n")):
+        out.append(T(x+w/2,y+33+i*12,ln,9,"#34434d","500"))
+    return "".join(out)
+
+col_b="#dbeafe"; s_b="#245f96"     # reduce / norm
+col_r="#faddd8"; s_r="#c0392b"     # matmul (Cannon)
+col_p="#ecdcf6"; s_p="#7a3fb0"     # attention
+col_g="#d7efdb"; s_g="#2e8b57"     # local
+col_o="#f7e3c8"; s_o="#a86a1e"     # entry / loop
+
+# entry row
+ey = py+22
+s.append(node(60, ey, 150, 46, "init_task", "comm.init() paint\n→ enter_request", col_o, s_o))
+s.append(node(230, ey, 168, 46, "enter_request", "reset chunk/serve\nroute X in", col_o, s_o))
+s.append(node(418, ey, 150, 46, "X in", "blk0 enter_x_chain\nelse dest_shuttle", col_g, s_g))
+s.append(node(588, ey, 150, 46, "start_layers", "current_layer=0\nset_layer(0)", col_o, s_o))
+s.append(line(210,ey+23,228,ey+23,"#5a6b76","ak",1.7))
+s.append(line(398,ey+23,416,ey+23,"#5a6b76","ak",1.7))
+s.append(line(568,ey+23,586,ey+23,"#5a6b76","ak",1.7))
+
+# main flag pipeline: two rows
+fy1 = ey+80
+fw, fh, fg = 128, 48, 12
+flags1 = [
+ ("0 rmsnorm","all_reduce_full\nY (P-1)",col_b,s_b),
+ ("1 QKV mm","Cannon (P-3)\ntwo_hop_comm",col_r,s_r),
+ ("2 QK-norm Q","band reduce\n(P-7)",col_b,s_b),
+ ("3 QK-norm K","band reduce\n(P-7)",col_b,s_b),
+ ("4 RoPE Q","local θ=1e6",col_g,s_g),
+ ("5 RoPE K","local + cache_kv\n[layer][chunk]",col_g,s_g),
+]
+x=60
+xs1=[]
+for (t,sub,cf,cs) in flags1:
+    s.append(node(x,fy1,fw,fh,t,sub,cf,cs))
+    xs1.append(x); x+=fw+fg
+for i in range(len(xs1)-1):
+    s.append(line(xs1[i]+fw,fy1+fh/2,xs1[i+1]-1,fy1+fh/2,"#5a6b76","ak",1.7))
+# start_layers -> flag0
+s.append(path(f"M {588+75} {ey+46} L {588+75} {fy1-14} L {xs1[0]+fw/2} {fy1-14} L {xs1[0]+fw/2} {fy1-1}", "#5a6b76","ak",1.7))
+
+# flag 6 attention exploded box
+ay2 = fy1+fh+34
+s.append(box(52, ay2-16, W-104, 118, "#f6eefc", "#7a3fb0", 10, 1.6, 1.0))
+s.append(T(70, ay2, "flag 6 · p_attn_score — 分块 FlashAttention-2:queries of chunk c attend causal pairs 0..c (attn_pair 环)", 11.5, "#5c2e88","700","start"))
+asx = 70; asw=232; ash=58; asy=ay2+14
+s.append(node(asx, asy, asw, ash, "Stage A · Q·Kᵀ", "K X-hop (attn_right_hop, q3)\n+ cycling-root band reduce\n(attn_score_reduce, P-7)", "#ecdcf6","#7a3fb0",10.5))
+s.append(node(asx+asw+22, asy, asw, ash, "Stage B · softmax", "α·score + 因果 mask(仅对角 pair)\nmax-reduce 后 sum-reduce\n(attn_vec_allreduce, P-8)", "#ecdcf6","#7a3fb0",10.5))
+s.append(node(asx+2*(asw+22), asy, asw, ash, "Stage C · Score×V", "rect. Cannon ring (P-3):\nscore band-Y + V full-X\n(left_matrix_shift / attn_right_hop)", "#ecdcf6","#7a3fb0",10.5))
+s.append(node(asx+3*(asw+22), asy, asw-24, ash, "flash_combine", "跨 pair 折叠 (m,l,O)\nFA-2 (m,s) rescale (P-8)\n→ 下个 pair 或 finalize", "#e5d3f2","#7a3fb0",10.5))
+for i in range(3):
+    s.append(line(asx+asw+i*(asw+22)-1,asy+ash/2, asx+(i+1)*(asw+22)+1,asy+ash/2,"#7a3fb0","ap",1.7))
+# per-pair loop (Stage C -> Stage A)
+s.append(path(f"M {asx+2*(asw+22)+asw/2} {asy+ash} L {asx+2*(asw+22)+asw/2} {asy+ash+12} L {asx+asw/2} {asy+ash+12} L {asx+asw/2} {asy+ash}", "#7a3fb0","ap",1.6,"5 3"))
+s.append(T(asx+asw+22, asy+ash+22, "attn_pair < current_chunk → 下个 causal pair", 8.8, "#7a3fb0","600","start"))
+# rope K -> attention
+s.append(path(f"M {xs1[5]+fw/2} {fy1+fh} L {xs1[5]+fw/2} {ay2-16-1}", "#5a6b76","ak",1.7))
+
+# second flag row (7..13)
+fy3 = ay2+118+26
+flags2 = [
+ ("7 O mm","Cannon (P-3)",col_r,s_r),
+ ("8 Z resid","Z = X + O\n(local)",col_g,s_g),
+ ("9 RMSNorm Z","all_reduce_full\nY (P-1)",col_b,s_b),
+ ("10 up/gate mm","Cannon (P-3)",col_r,s_r),
+ ("11 SwiGLU","silu·up (local)",col_g,s_g),
+ ("12 down mm","Cannon (P-3)",col_r,s_r),
+ ("13 resid/next","X = Z + down",col_o,s_o),
+]
+fw2=138
+x=60; xs2=[]
+for (t,sub,cf,cs) in flags2:
+    s.append(node(x,fy3,fw2,fh,t,sub,cf,cs))
+    xs2.append(x); x+=fw2+8
+for i in range(len(xs2)-1):
+    s.append(line(xs2[i]+fw2,fy3+fh/2,xs2[i+1]-1,fy3+fh/2,"#5a6b76","ak",1.7))
+# attention box -> flag 7
+s.append(path(f"M {70+3*(asw+22)+(asw-24)/2} {ay2-16+118} L {70+3*(asw+22)+(asw-24)/2} {fy3-14} L {xs2[0]+fw2/2} {fy3-14} L {xs2[0]+fw2/2} {fy3-1}", "#5a6b76","ak",1.7))
+
+# per-layer loop (flag13 -> flag0), routed through the far-left gutter to avoid crossing content
+s.append(path(f"M {xs2[6]+fw2/2} {fy3+fh} L {xs2[6]+fw2/2} {fy3+fh+20} L {44} {fy3+fh+20} L {44} {fy1+fh/2} L {xs1[0]-1} {fy1+fh/2}", "#2e8b57","ag",1.8,"5 3"))
+s.append(T(xs2[3], fy3+fh+15, "current_layer+1 < layers_in_this_block → set_layer, flag 0 (下一层)", 9, "#2e8b57","700"))
+
+# terminal + loops
+ty = fy3+fh+56
+s.append(node(60, ty, 220, 50, "p_ffn_residual_next_layer", "层跑完:decode metainfo tail\nenter_source_shuttle → 下个 block", col_o, s_o))
+s.append(node(320, ty, 200, 50, "per-chunk loop", "chunk < rnc-1 → seed_chunk_x /\narm_dest_block_and_run", col_g, s_g))
+s.append(node(560, ty, 200, 50, "last chunk", "emit_z_last_token (P-6)\nstart_kv_egress (P-4)", col_p, s_p))
+s.append(node(800, ty, 200, 50, "per-request loop", "queue_flush OQ4 (G-14)\n→ enter_request", col_o, s_o))
+s.append(line(280,ty+25,318,ty+25,"#5a6b76","ak",1.7))
+s.append(line(520,ty+25,558,ty+25,"#5a6b76","ak",1.7))
+s.append(line(760,ty+25,798,ty+25,"#5a6b76","ak",1.7))
+# per-chunk loop back to start_layers/flag0
+s.append(path(f"M {420} {ty} L {420} {ty-14} L {xs1[0]+fw/2} {ty-14}", "#2e8b57","ag",1.7,"5 3"))
+s.append(T(430, ty-18, "同一 chunk 全层跑完 → 下个 chunk 从 flag 0 起", 8.8, "#2e8b57","600","start"))
+# per-request loop back to enter_request (routed out the right edge + far-right gutter to avoid crossing boxes)
+s.append(path(f"M {1000} {ty+25} L {W-24} {ty+25} L {W-24} {ey+68} L {230+84} {ey+68} L {230+84} {ey+46}", "#a86a1e","ao",1.7,"6 4"))
+s.append(T(760, ey+64, "请求完 → 下个 request (serve-loop 常驻)", 9, "#a86a1e","700","start"))
+
+# footer
+s.append(T(60,H-16,"色/队列:reduce 1,2+bcast 5=q5,6,1(P-1/P-7) · Cannon x=6-8/q2, y=9-11/q3(P-3) · Score×V band 18-20 借 q5,6,1 · shuttle N/S 3,4 & E/W 12,13 借 q7,0(P-5) · x_chain 14,15/q4 · z_drain 16/OQ4(egress→OQ7) · KV egress 21/OQ4(P-4)。计数精确=正确性,不匹配则静默挂起。",9.5,"#6a7883","400","start"))
+s.append('</svg>')
+out="/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-prefill.prefill.svg"
+open(out,"w").write("\n".join(s))
+print("ok", W, H, out)

@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+# ht_tail.csl algorithm diagram: lm_head mesh-GEMV + top-K sampling (output head).
+# Top panel = spatial (tail band, vocab-X / dim-Y shard, the 5 acts). Bottom = task state machine.
+import html
+W, H = 1040, 1030
+def esc(s): return html.escape(s)
+s = []
+s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
+s.append('<defs>'
+  '<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker>'
+  '<marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker>'
+  '<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker>'
+  '<marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker>'
+  '<marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker>'
+  '</defs>')
+s.append(f'<rect width="{W}" height="{H}" fill="#f7f9fb"/>')
+def T(x,y,t,sz=13,f="#12222f",w="600",a="middle"):
+    return f'<text x="{x}" y="{y}" font-size="{sz}" font-weight="{w}" fill="{f}" text-anchor="{a}">{esc(t)}</text>'
+def box(x,y,w,h,fill,stroke,rx=6,sw=1.6,op=1.0):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" fill-opacity="{op}" stroke="{stroke}" stroke-width="{sw}"/>'
+def line(x1,y1,x2,y2,c,mk,w=2.4,dash=""):
+    d=f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{c}" stroke-width="{w}"{d} marker-end="url(#{mk})"/>'
+
+s.append(T(W/2,30,"ht_tail.csl — lm_head mesh-GEMV + top-K sampling (output head)",19,"#0d1b26","700"))
+s.append(T(W/2,50,"vocab sharded on X, hidden dim on Y. Two orthogonal 2-phase reductions (Y contract, X top-K merge) reuse the SAME reduce colors — repainted + fenced.",12,"#4a5b66","500"))
+
+# ---------------- TOP PANEL: spatial ----------------
+s.append(T(60,86,"(1) Spatial layout: tail band 4 x 8 (ref) + the 5 acts",14,"#0d1b26","700","start"))
+
+# geometry: 4 vocab cols (X) x rows (show 4 of 8 dim rows). block region east feeds Z west.
+gx0=150; cw=118; gap=10; by0=182; bh=40; rows=4
+xcols=4
+# above-band vertical lanes (absolute, so they stay clear of the pushed-down band)
+vocabX_arrow_y=106; vocabX_text_y=102; xlocal_y=120; vlab_y=134
+zlabel_y=152; zarrow_y=166
+# block region (east) that ships Z
+brx = gx0 + xcols*(cw+gap) + 24
+s.append(box(brx, by0, 92, rows*(bh+8)-8, "#e6d5f2", "#7a3fb0", 6, 1.4))
+s.append(T(brx+46, by0+22, "last", 11, "#4a2a63","700"))
+s.append(T(brx+46, by0+38, "block", 11, "#4a2a63","700"))
+s.append(T(brx+46, by0+56, "ships Z", 9.5, "#4a2a63","500"))
+# vocab column labels + dim-row grid
+vlab=["vocab [0,16)","vocab [16,32)","vocab [32,48)","vocab [48,64)"]
+for c in range(xcols):
+    x=gx0+c*(cw+gap)
+    s.append(T(x+cw/2, xlocal_y, f"x_local={c}", 10, "#245f96","700"))
+    s.append(T(x+cw/2, vlab_y, vlab[c], 9.5, "#245f96","600"))
+    for r in range(rows):
+        y=by0+r*(bh+8)
+        root = (r==rows-1)
+        east = (c==xcols-1)
+        fill = "#8fbfe0"
+        op = 0.9 if r==0 else 0.5
+        if root:
+            fill = "#f2d59a"; op=0.95
+        s.append(box(x,y,cw,bh,fill,"#245f96",5,1.3,op))
+        if r==0:
+            s.append(T(x+cw/2,y+16,"lm_head_tile",9,"#12222f","600"))
+            s.append(T(x+cw/2,y+28,"[dim_pe,V_pe]",8.5,"#2a4a63","500"))
+        elif r==1:
+            s.append(T(x+cw/2,y+25,"dim shard (Y)",9,"#2a4a63","500"))
+        elif not root:
+            s.append(T(x+cw/2,y+25,"partials fp32",9,"#2a4a63","500"))
+        else:
+            lbl = "ROOT: topK"
+            if east: lbl="ROOT+sample+emit"
+            s.append(T(x+cw/2,y+25,lbl,8.5 if east else 9,"#5a3a10","700"))
+band_bot = by0+rows*(bh+8)-8
+# dim-Y arrow (down the left)
+s.append(line(gx0-16, by0, gx0-16, band_bot, "#2c6fb0","ab",2))
+s.append(T(gx0-40, (by0+band_bot)/2, "dim (Y)", 9.5, "#2c6fb0","600","middle"))
+s.append(T(gx0-40, (by0+band_bot)/2+13, "contract", 8.5, "#2c6fb0","500","middle"))
+# vocab-X arrow (top)
+s.append(line(gx0, vocabX_arrow_y, gx0+xcols*(cw+gap)-gap, vocabX_arrow_y, "#245f96","ab",2))
+s.append(T(gx0+xcols*(cw+gap)/2, vocabX_text_y, "vocab (X)", 9.5, "#245f96","700","middle"))
+
+# ACT 1: Z drain west (dedicated lane ABOVE the top row) — orange multicast
+zy = zarrow_y
+# stub connecting the last-block region up into the drain lane
+s.append(f'<line x1="{brx}" y1="{by0}" x2="{brx}" y2="{zy}" stroke="#a86a1e" stroke-width="2"/>')
+s.append(line(brx-2, zy, gx0+xcols*(cw+gap)-gap+2, zy, "#a86a1e","ao",2.6))
+for c in range(xcols-1):
+    xx = gx0+(c+1)*(cw+gap)-gap/2
+    s.append(line(xx+2, zy, xx-2, zy, "#a86a1e","ao",2.0))
+s.append(T(gx0+xcols*(cw+gap)/2, zlabel_y, "(1) Z drain  E->W multicast (z_drain_color, IQ0)", 10, "#a86a1e","700","middle"))
+
+# ACT 3: Y-reduce (vertical, per column) — blue, into root row
+for c in range(xcols):
+    x=gx0+c*(cw+gap)+cw/2
+    s.append(line(x, by0+(rows-1)*(bh+8)-6, x, band_bot-bh+4, "#2c6fb0","ab",1.8,"5 3"))
+s.append(T(gx0, band_bot+16, "(2)/(3) Y 2-phase reduce: RMSNorm sumsq (+bcast) &", 10, "#2c6fb0","700","start"))
+s.append(T(gx0, band_bot+30, "lm_head dim-contract (no bcast) -> logits on root row", 10, "#2c6fb0","700","start"))
+
+# ACT 4: X top-K merge (horizontal, along root row) — red
+ry = band_bot - bh/2
+for c in range(xcols-1):
+    x1=gx0+c*(cw+gap)+cw
+    x2=gx0+(c+1)*(cw+gap)
+    s.append(line(x1+1,ry,x2-1,ry,"#c0392b","ar",2.4))
+    s.append(line(x2-1,ry+9,x1+1,ry+9,"#c0392b","ar",1.6))
+s.append(T(gx0, band_bot+50, "(4) X 2-phase MERGE-reduce (top-K lists, not a sum) — SAME reduce", 10, "#c0392b","700","start"))
+s.append(T(gx0, band_bot+64, "colors, repainted Y->X, fenced by tail_xready barrier", 10, "#c0392b","700","start"))
+
+# ACT 5: south emit from east-most root -> mux -> host
+ex = gx0+(xcols-1)*(cw+gap)+cw/2
+s.append(line(ex, band_bot+2, ex, band_bot+46, "#2e8b57","ag",2.6))
+s.append(box(ex-52, band_bot+48, 104, 26, "#bfe0c4","#2e8b57",5,1.4))
+s.append(T(ex, band_bot+65, "mux -> host", 10.5, "#12222f","700"))
+s.append(T(ex+58, band_bot+65, "(5) topK val+arg+sampled token (OQ0)", 9.5,"#2e8b57","700","start"))
+
+# legend
+ly = band_bot + 96
+leg = [
+ ("#a86a1e","ao","P-2 router multicast: last block ships Z; multicasts E->W, each Y-PE taps its dim shard (tail_init route / z_recv)."),
+ ("#2c6fb0","ab","P-1 two-phase all-reduce on Y: RMSNorm sumsq (with bcast) + lm_head dim-contract (no bcast) (tail_reduce_2phase)."),
+ ("#c0392b","ar","P-1 two-phase reduce on X with a MERGE combiner: per-column top-K merged to global (tail_topk_mergereduce_x); G-3 repaint + G-8 fence."),
+ ("#2e8b57","ag","P-6 p2p south emit: east-most root PE -> mux -> host (logits_south_color, OQ0). One token per request."),
+]
+for i,(c,mk,txt) in enumerate(leg):
+    yy=ly+i*20
+    s.append(line(60,yy,86,yy,c,mk,2.2))
+    s.append(T(94,yy+4,txt,10.5,"#26333c","500","start"))
+
+# ---------------- BOTTOM PANEL: task state machine ----------------
+py = ly + len(leg)*20 + 26
+s.append(f'<line x1="40" y1="{py-14}" x2="{W-40}" y2="{py-14}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(60,py+6,"(2) Task state machine — one-shot per request (prefill = ONE token)",14,"#0d1b26","700","start"))
+
+def node(x,y,w,h,title,sub,fill,stroke):
+    out=[box(x,y,w,h,fill,stroke)]
+    out.append(T(x+w/2,y+19,title,12,"#0d1b26","700"))
+    for i,ln in enumerate(sub.split("\n")):
+        out.append(T(x+w/2,y+35+i*12.5,ln,9,"#34434d","500"))
+    return "".join(out)
+
+col_o="#f7e3c8"; s_o="#a86a1e"
+col_b="#dbeafe"; s_b="#245f96"
+col_r="#faddd8"; s_r="#c0392b"
+col_g="#d7efdb"; s_g="#2e8b57"
+
+ny=py+22; nh=58; w1=205
+# row1: tail_init -> (park Z) -> RMSNorm -> lm_head GEMV
+xs=[60, 305, 550, 795]
+s.append(node(xs[0],ny,w1,nh,"tail_init","derive coords + chain ids\npaint Y/Z/south/barrier routes\nseed PRNG; @activate(tail_main)",col_o,s_o))
+s.append(node(xs[1],ny,w1,nh,"tail_main: drain Z","park on z_recv (event-driven)\nZ multicasts E->W; tap dim shard",col_b,s_b))
+s.append(node(xs[2],ny,w1,nh,"tail_final_rmsnorm","fp32 sumsq -> Y 2-phase\nall-reduce (+bcast); norm in place",col_b,s_b))
+s.append(node(xs[3],ny,w1,nh,"tail_lm_head_matvec","local @fmachs GEMV ->\npartials[V_pe, bsz] (fp32)",col_b,s_b))
+for a in range(3):
+    s.append(line(xs[a]+w1,ny+nh/2,xs[a+1]-2,ny+nh/2,"#5a6b76","ar",1.8))
+
+# row2: Y logits reduce -> (root row) write_X + barrier -> local topK -> X merge-reduce
+ny2=ny+nh+42
+xs2=[60,305,550,795]
+s.append(node(xs2[0],ny2,w1,nh,"tail_logits_reduce","Y 2-phase reduce (no bcast)\nwiden DSD to bsz*V_pe -> root row",col_b,s_b))
+s.append(node(xs2[1],ny2,w1,nh,"write_X_routes + barrier","repaint reduce colors Y->X\ntail_xready 'go' fence (G-8)",col_r,s_r))
+s.append(node(xs2[2],ny2,w1,nh,"tail_local_topk","K masked-argmax over V_pe\nslice; mask padded vocab",col_r,s_r))
+s.append(node(xs2[3],ny2,w1,nh,"tail_topk_mergereduce_x","X 2-phase reduce; per-hop\nK-list MERGE; bcast global topK",col_r,s_r))
+# lm_head -> logits_reduce (down then left)
+s.append(f'<path d="M {xs[3]+w1/2} {ny+nh} L {xs[3]+w1/2} {ny+nh+18} L {xs2[0]+w1/2} {ny+nh+18} L {xs2[0]+w1/2} {ny2-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
+s.append(T(430, ny+nh+14, "root row only (y==root_2nd_phase)", 9.5, "#c0392b","600","start"))
+for a in range(3):
+    s.append(line(xs2[a]+w1,ny2+nh/2,xs2[a+1]-2,ny2+nh/2,"#5a6b76","ar",1.8))
+
+# row3: write_Y restore -> sample -> predtok bcast -> south emit
+ny3=ny2+nh+42
+xs3=[60,305,550,795]
+s.append(node(xs3[0],ny3,w1,nh,"write_Y_routes (restore)","repaint reduce colors X->Y\nfor the next request",col_r,s_r))
+s.append(node(xs3[1],ny3,w1,nh,"tail_sample_token","temp->softmax->top-p->\ncategorical PRNG (1 PE)",col_g,s_g))
+s.append(node(xs3[2],ny3,w1,nh,"predtok X-broadcast","sampled id -> every root col\n(east-most needs it)",col_g,s_g))
+s.append(node(xs3[3],ny3,w1,nh,"south emit -> mux -> host","east-most root PE: topK val+arg\n+ token (OQ0); TSC burst",col_g,s_g))
+# X merge -> write_Y (down then left)
+s.append(f'<path d="M {xs2[3]+w1/2} {ny2+nh} L {xs2[3]+w1/2} {ny2+nh+18} L {xs3[0]+w1/2} {ny2+nh+18} L {xs3[0]+w1/2} {ny3-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
+for a in range(3):
+    s.append(line(xs3[a]+w1,ny3+nh/2,xs3[a+1]-2,ny3+nh/2,"#5a6b76","ar",1.8))
+# per-request loop: south emit -> tail_main (re-park on z_recv)
+# routed through the col0/col1 gap (x=285) so it never cuts through node boxes
+s.append(f'<path d="M {xs3[3]+w1/2} {ny3+nh} L {xs3[3]+w1/2} {ny3+nh+22} L 285 {ny3+nh+22} L 285 {ny+nh+8} L 340 {ny+nh+8} L 340 {ny+nh}" fill="none" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ar)"/>')
+s.append(T((xs[1]+xs3[3])/2+w1/2, ny3+nh+38, "@activate(tail_main): re-park on z_recv for the next request", 9.5, "#a86a1e","600","middle"))
+
+s.append(T(60,H-30,"colors/queues: z_drain=IQ0 (16) - reduce 1st/2nd + bcast = IQ/OQ 2-6 (shared Y & repainted X) - tail_xready = IQ/OQ 1 - logits_south = OQ0 - kickoff = IQ7 (TSC PE).",10,"#6a7883","400","start"))
+s.append(T(60,H-14,"Count-exactness = correctness (mismatch => silent hang).",10,"#6a7883","400","start"))
+s.append('</svg>')
+out="/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-prefill.ht_tail.svg"
+open(out,"w").write("\n".join(s))
+print("ok", W, H, out)

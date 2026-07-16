@@ -3,7 +3,7 @@
 # Minimal: one spatial panel (source -> gap relay -> sink) + a "no task state machine" note.
 import html
 OUT = "/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-prefill.kickoff_relay.svg"
-W, H = 900, 560
+W, H = 980, 500
 def esc(s): return html.escape(s)
 s = []
 s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
@@ -21,8 +21,8 @@ s.append(T(W/2,52,"For >2 block-rows a gap opens in the HT band (x=HT_TAIL_X=4).
 
 s.append(T(60,88,"(1) Spatial — one column, N->S, sentinel from demux PE 0 to the HT_tail TSC PE",13,"#0d1b26","700","start"))
 
-cx = W/2 - 60         # HT band column center
-bw = 150
+cx = W/2 - 70         # HT band column center
+bw = 190
 # demux PE 0 (source, top)
 y0 = 108
 s.append(box(cx-bw/2, y0, bw, 40, "#efe0c6", "#a86a1e", 6, 1.5))
@@ -49,16 +49,25 @@ s.append(box(cx-bw/2, y3, bw, 40, "#cfe0ee", "#245f96", 6, 1.4))
 s.append(T(cx, y3+18, "HT_tail TSC PE", 11.5, "#12356a","700"))
 s.append(T(cx, y3+33, "forward-start anchor (sink)", 9.5, "#245f96","500"))
 
-# the N->S sentinel arrow, drawn on the west column, straight through
-ax = cx - bw/2 + 26
-s.append(f'<line x1="{ax}" y1="{y0+40}" x2="{ax}" y2="{y3-1}" stroke="#2c6fb0" stroke-width="3" stroke-dasharray="6 4" marker-end="url(#ab)"/>')
-s.append(T(ax-8, (y2+gh/2), "1-wavelet", 9.5, "#2c6fb0","700","end"))
-s.append(T(ax-8, (y2+gh/2)+13, "kickoff", 9.5, "#2c6fb0","700","end"))
-s.append(T(ax-8, (y2+gh/2)+26, "N -> S", 9.5, "#2c6fb0","700","end"))
+# the N->S sentinel route, drawn in a dedicated WEST lane outside the boxes so
+# it does not cross any interior text. C-shaped: demux -> west lane -> HT_tail.
+bxL = cx - bw/2       # box left edge
+xL  = bxL - 40        # west lane x (left of the box column)
+ytop = y0+20          # demux mid
+ybot = y3+20          # HT_tail mid
+# top stub: demux -> lane
+s.append(f'<line x1="{bxL}" y1="{ytop}" x2="{xL}" y2="{ytop}" stroke="#2c6fb0" stroke-width="2.4"/>')
+# vertical dashed lane, N->S
+s.append(f'<line x1="{xL}" y1="{ytop}" x2="{xL}" y2="{ybot}" stroke="#2c6fb0" stroke-width="3" stroke-dasharray="6 4"/>')
+# bottom stub: lane -> HT_tail (arrowhead into the sink)
+s.append(f'<line x1="{xL}" y1="{ybot}" x2="{bxL-1}" y2="{ybot}" stroke="#2c6fb0" stroke-width="2.4" marker-end="url(#ab)"/>')
+s.append(T(xL-8, (y2+gh/2)-6, "1-wavelet", 9.5, "#2c6fb0","700","end"))
+s.append(T(xL-8, (y2+gh/2)+7, "kickoff", 9.5, "#2c6fb0","700","end"))
+s.append(T(xL-8, (y2+gh/2)+20, "N -> S", 9.5, "#2c6fb0","700","end"))
 
 # right-side note: no task state machine
 nx = cx + bw/2 + 60
-s.append(box(nx, y1, 250, gh+40, "#fff5e6", "#d0a24a", 8, 1.4))
+s.append(box(nx, y1, 260, gh+120, "#fff5e6", "#d0a24a", 8, 1.4))
 s.append(T(nx+125, y1+22, "(2) No task state machine", 12, "#7a5a1e","700"))
 notes = [
   "Nothing runs on these PEs.",

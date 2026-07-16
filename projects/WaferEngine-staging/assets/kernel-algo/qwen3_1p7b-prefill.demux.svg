@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="760" viewBox="0 0 1000 760" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="760" viewBox="0 0 1180 760" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">
 <defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker><marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker><marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker><marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker></defs>
-<rect width="1000" height="760" fill="#f7f9fb"/>
-<text x="500.0" y="30" font-size="19" font-weight="700" fill="#0d1b26" text-anchor="middle">demux.csl — host token-id ingress: 1xP peel + fan-out</text>
-<text x="500.0" y="50" font-size="11.5" font-weight="500" fill="#4a5b66" text-anchor="middle">Distribute the host token stream ALONG X (sequence dim). Each column peels its OWN block, forwards the rest EAST, emits OWN SOUTH into HT_head. (2x4 config: 4 columns)</text>
+<rect width="1180" height="760" fill="#f7f9fb"/>
+<text x="590.0" y="30" font-size="19" font-weight="700" fill="#0d1b26" text-anchor="middle">demux.csl — host token-id ingress: 1xP peel + fan-out</text>
+<text x="590.0" y="50" font-size="11.5" font-weight="500" fill="#4a5b66" text-anchor="middle">Distribute the host token stream ALONG X (sequence dim). Each column peels its OWN block, forwards the rest EAST, emits OWN SOUTH into HT_head. (2x4 config: 4 columns)</text>
 <text x="70" y="86" font-size="14" font-weight="700" fill="#0d1b26" text-anchor="start">1  Spatial layout + three moves  (demux row = HWh x 1, one row NORTH of HT_head)</text>
 <rect x="70" y="150" width="96" height="40" rx="6" fill="#f0d9b5" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
 <text x="118" y="167" font-size="11" font-weight="700" fill="#7a4d10" text-anchor="middle">host</text>
@@ -12,50 +12,50 @@
 <text x="290.0" y="175" font-size="9.5" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN=11</text>
 <text x="290.0" y="189" font-size="9" font-weight="500" fill="#5a3d10" text-anchor="middle">fwd rest E (FWD_EXTENT)</text>
 <text x="290.0" y="134" font-size="9.5" font-weight="700" fill="#a86a1e" text-anchor="middle">local_px=0  src_q</text>
-<rect x="398" y="141" width="160" height="58" rx="6" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
-<text x="478.0" y="159" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux col1</text>
-<text x="478.0" y="175" font-size="9.5" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN=11</text>
-<text x="478.0" y="189" font-size="9" font-weight="500" fill="#5a3d10" text-anchor="middle">fwd rest E (FWD_EXTENT)</text>
-<text x="478.0" y="134" font-size="9.5" font-weight="700" fill="#a86a1e" text-anchor="middle">local_px=1  src_q</text>
-<rect x="586" y="141" width="160" height="58" rx="6" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
-<text x="666.0" y="159" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux col2</text>
-<text x="666.0" y="175" font-size="9.5" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN=11</text>
-<text x="666.0" y="189" font-size="9" font-weight="500" fill="#5a3d10" text-anchor="middle">fwd rest E (FWD_EXTENT)</text>
-<text x="666.0" y="134" font-size="9.5" font-weight="700" fill="#a86a1e" text-anchor="middle">local_px=2  src_q</text>
-<rect x="774" y="141" width="160" height="58" rx="6" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
-<text x="854.0" y="159" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux col3 (P-1)</text>
-<text x="854.0" y="175" font-size="9.5" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN=11</text>
-<text x="854.0" y="189" font-size="9" font-weight="500" fill="#5a3d10" text-anchor="middle">no forward (last)</text>
-<text x="854.0" y="134" font-size="9.5" font-weight="700" fill="#a86a1e" text-anchor="middle">local_px=3  src_q</text>
+<rect x="414" y="141" width="160" height="58" rx="6" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
+<text x="494.0" y="159" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux col1</text>
+<text x="494.0" y="175" font-size="9.5" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN=11</text>
+<text x="494.0" y="189" font-size="9" font-weight="500" fill="#5a3d10" text-anchor="middle">fwd rest E (FWD_EXTENT)</text>
+<text x="494.0" y="134" font-size="9.5" font-weight="700" fill="#a86a1e" text-anchor="middle">local_px=1  src_q</text>
+<rect x="618" y="141" width="160" height="58" rx="6" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
+<text x="698.0" y="159" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux col2</text>
+<text x="698.0" y="175" font-size="9.5" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN=11</text>
+<text x="698.0" y="189" font-size="9" font-weight="500" fill="#5a3d10" text-anchor="middle">fwd rest E (FWD_EXTENT)</text>
+<text x="698.0" y="134" font-size="9.5" font-weight="700" fill="#a86a1e" text-anchor="middle">local_px=2  src_q</text>
+<rect x="822" y="141" width="160" height="58" rx="6" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
+<text x="902.0" y="159" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux col3 (P-1)</text>
+<text x="902.0" y="175" font-size="9.5" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN=11</text>
+<text x="902.0" y="189" font-size="9" font-weight="500" fill="#5a3d10" text-anchor="middle">no forward (last)</text>
+<text x="902.0" y="134" font-size="9.5" font-weight="700" fill="#a86a1e" text-anchor="middle">local_px=3  src_q</text>
 <line x1="166" y1="170.0" x2="208" y2="170.0" stroke="#a86a1e" stroke-width="2.4" marker-end="url(#ao)"/>
 <text x="188.0" y="148" font-size="9" font-weight="600" fill="#a86a1e" text-anchor="middle">in_color</text>
-<line x1="371" y1="170.0" x2="396" y2="170.0" stroke="#c0392b" stroke-width="2.6" marker-end="url(#ar)"/>
-<text x="384.0" y="163.0" font-size="8.5" font-weight="700" fill="#c0392b" text-anchor="middle">chain_a</text>
-<text x="384.0" y="181.0" font-size="8" font-weight="500" fill="#c0392b" text-anchor="middle">hop 0</text>
-<line x1="559" y1="170.0" x2="584" y2="170.0" stroke="#2c6fb0" stroke-width="2.6" marker-end="url(#ab)"/>
-<text x="572.0" y="163.0" font-size="8.5" font-weight="700" fill="#2c6fb0" text-anchor="middle">chain_b</text>
-<text x="572.0" y="181.0" font-size="8" font-weight="500" fill="#2c6fb0" text-anchor="middle">hop 1</text>
-<line x1="747" y1="170.0" x2="772" y2="170.0" stroke="#c0392b" stroke-width="2.6" marker-end="url(#ar)"/>
-<text x="760.0" y="163.0" font-size="8.5" font-weight="700" fill="#c0392b" text-anchor="middle">chain_a</text>
-<text x="760.0" y="181.0" font-size="8" font-weight="500" fill="#c0392b" text-anchor="middle">hop 2</text>
+<line x1="371" y1="170.0" x2="412" y2="170.0" stroke="#c0392b" stroke-width="2.6" marker-end="url(#ar)"/>
+<text x="392.0" y="163.0" font-size="8.5" font-weight="700" fill="#c0392b" text-anchor="middle">chain_a</text>
+<text x="392.0" y="181.0" font-size="8" font-weight="500" fill="#c0392b" text-anchor="middle">hop 0</text>
+<line x1="575" y1="170.0" x2="616" y2="170.0" stroke="#2c6fb0" stroke-width="2.6" marker-end="url(#ab)"/>
+<text x="596.0" y="163.0" font-size="8.5" font-weight="700" fill="#2c6fb0" text-anchor="middle">chain_b</text>
+<text x="596.0" y="181.0" font-size="8" font-weight="500" fill="#2c6fb0" text-anchor="middle">hop 1</text>
+<line x1="779" y1="170.0" x2="820" y2="170.0" stroke="#c0392b" stroke-width="2.6" marker-end="url(#ar)"/>
+<text x="800.0" y="163.0" font-size="8.5" font-weight="700" fill="#c0392b" text-anchor="middle">chain_a</text>
+<text x="800.0" y="181.0" font-size="8" font-weight="500" fill="#c0392b" text-anchor="middle">hop 2</text>
 <rect x="210" y="250" width="160" height="34" rx="5" fill="#8fbfe0" fill-opacity="0.85" stroke="#245f96" stroke-width="1.3"/>
 <text x="290.0" y="271" font-size="10.5" font-weight="600" fill="#0d1b26" text-anchor="middle">HT_head col 0</text>
 <line x1="290.0" y1="199" x2="290.0" y2="248" stroke="#2e8b57" stroke-width="2.4" marker-end="url(#ag)"/>
 <text x="294.0" y="242" font-size="8.5" font-weight="700" fill="#2e8b57" text-anchor="start">OWN S</text>
-<rect x="398" y="250" width="160" height="34" rx="5" fill="#8fbfe0" fill-opacity="0.85" stroke="#245f96" stroke-width="1.3"/>
-<text x="478.0" y="271" font-size="10.5" font-weight="600" fill="#0d1b26" text-anchor="middle">HT_head col 1</text>
-<line x1="478.0" y1="199" x2="478.0" y2="248" stroke="#2e8b57" stroke-width="2.4" marker-end="url(#ag)"/>
-<text x="482.0" y="242" font-size="8.5" font-weight="700" fill="#2e8b57" text-anchor="start">OWN S</text>
-<rect x="586" y="250" width="160" height="34" rx="5" fill="#8fbfe0" fill-opacity="0.85" stroke="#245f96" stroke-width="1.3"/>
-<text x="666.0" y="271" font-size="10.5" font-weight="600" fill="#0d1b26" text-anchor="middle">HT_head col 2</text>
-<line x1="666.0" y1="199" x2="666.0" y2="248" stroke="#2e8b57" stroke-width="2.4" marker-end="url(#ag)"/>
-<text x="670.0" y="242" font-size="8.5" font-weight="700" fill="#2e8b57" text-anchor="start">OWN S</text>
-<rect x="774" y="250" width="160" height="34" rx="5" fill="#8fbfe0" fill-opacity="0.85" stroke="#245f96" stroke-width="1.3"/>
-<text x="854.0" y="271" font-size="10.5" font-weight="600" fill="#0d1b26" text-anchor="middle">HT_head col 3</text>
-<line x1="854.0" y1="199" x2="854.0" y2="248" stroke="#2e8b57" stroke-width="2.4" marker-end="url(#ag)"/>
-<text x="858.0" y="242" font-size="8.5" font-weight="700" fill="#2e8b57" text-anchor="start">OWN S</text>
+<rect x="414" y="250" width="160" height="34" rx="5" fill="#8fbfe0" fill-opacity="0.85" stroke="#245f96" stroke-width="1.3"/>
+<text x="494.0" y="271" font-size="10.5" font-weight="600" fill="#0d1b26" text-anchor="middle">HT_head col 1</text>
+<line x1="494.0" y1="199" x2="494.0" y2="248" stroke="#2e8b57" stroke-width="2.4" marker-end="url(#ag)"/>
+<text x="498.0" y="242" font-size="8.5" font-weight="700" fill="#2e8b57" text-anchor="start">OWN S</text>
+<rect x="618" y="250" width="160" height="34" rx="5" fill="#8fbfe0" fill-opacity="0.85" stroke="#245f96" stroke-width="1.3"/>
+<text x="698.0" y="271" font-size="10.5" font-weight="600" fill="#0d1b26" text-anchor="middle">HT_head col 2</text>
+<line x1="698.0" y1="199" x2="698.0" y2="248" stroke="#2e8b57" stroke-width="2.4" marker-end="url(#ag)"/>
+<text x="702.0" y="242" font-size="8.5" font-weight="700" fill="#2e8b57" text-anchor="start">OWN S</text>
+<rect x="822" y="250" width="160" height="34" rx="5" fill="#8fbfe0" fill-opacity="0.85" stroke="#245f96" stroke-width="1.3"/>
+<text x="902.0" y="271" font-size="10.5" font-weight="600" fill="#0d1b26" text-anchor="middle">HT_head col 3</text>
+<line x1="902.0" y1="199" x2="902.0" y2="248" stroke="#2e8b57" stroke-width="2.4" marker-end="url(#ag)"/>
+<text x="906.0" y="242" font-size="8.5" font-weight="700" fill="#2e8b57" text-anchor="start">OWN S</text>
 <text x="202" y="271" font-size="9.5" font-weight="700" fill="#245f96" text-anchor="end">tok_bcast</text>
-<text x="940" y="271" font-size="9.5" font-weight="600" fill="#245f96" text-anchor="start">→ bcast multicasts down column (‖Y)</text>
+<text x="988" y="271" font-size="9.5" font-weight="600" fill="#245f96" text-anchor="start">→ bcast multicasts down column (‖Y)</text>
 <path d="M 245.2 199 L 245.2 310" fill="none" stroke="#7a3fb0" stroke-width="2.2" stroke-dasharray="5 3" marker-end="url(#ap)"/>
 <text x="251.2" y="306" font-size="9.5" font-weight="600" fill="#7a3fb0" text-anchor="start">kickoff sentinel (1 wavelet) → transits x=4 column → HT_tail TSC PE</text>
 <line x1="70" y1="340" x2="96" y2="340" stroke="#a86a1e" stroke-width="2.4" marker-end="url(#ao)"/>
@@ -66,19 +66,19 @@
 <text x="104" y="388" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">SOUTH emit: each column drops its OWN block (3 meta + ids) into the HT_head column below; HT_head&#x27;s bcast color multicasts it down the dim axis.</text>
 <line x1="70" y1="406" x2="96" y2="406" stroke="#7a3fb0" stroke-width="2.2" marker-end="url(#ap)"/>
 <text x="104" y="410" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">kickoff (PE0 only): 1-wavelet forward-start barrier SOUTH; anchors the tail&#x27;s TSC timer.</text>
-<line x1="40" y1="432" x2="960" y2="432" stroke="#dce4ea" stroke-width="1.4"/>
+<line x1="40" y1="432" x2="1140" y2="432" stroke="#dce4ea" stroke-width="1.4"/>
 <text x="70" y="452" font-size="14" font-weight="700" fill="#0d1b26" text-anchor="start">2  Task state machine  (which task owns each step; same program on every column)</text>
-<rect x="70" y="472" width="210" height="62" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="175.0" y="492" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">main</text><text x="175.0" y="509" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">peel OWN into own_buf</text><text x="175.0" y="522" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">@mov32 src_q -&gt; own_buf</text>
-<rect x="340" y="472" width="210" height="62" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="445.0" y="492" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">forward_and_out  (px&lt;P-1)</text><text x="445.0" y="509" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">fwd FWD_EXTENT E (unblock done)</text><text x="445.0" y="522" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">emit OWN S (activate done)</text><text x="445.0" y="535" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">2 microthreads, join at done</text>
-<rect x="620" y="472" width="210" height="62" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="725.0" y="492" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">send_out  (px==P-1)</text><text x="725.0" y="509" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">no east forward</text><text x="725.0" y="522" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">emit OWN S (activate done)</text>
-<line x1="280" y1="503.0" x2="338" y2="503.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
-<text x="310.0" y="497.0" font-size="9" font-weight="600" fill="#5a6b76" text-anchor="middle">px &lt; P-1</text>
-<path d="M 175.0 534 L 175.0 560 L 725.0 560 L 725.0 536" fill="none" stroke="#5a6b76" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ar)"/>
-<text x="385.0" y="574" font-size="9.5" font-weight="600" fill="#5a6b76" text-anchor="middle">px == P-1 (is_last_pe): branch in main</text>
-<rect x="340" y="604" width="210" height="54" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="445.0" y="624" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">done</text><text x="445.0" y="641" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">re-arm forward+out join (@block)</text><text x="445.0" y="654" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">@activate(main) for next request</text>
-<path d="M 445.0 534 L 445.0 602" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
-<path d="M 725.0 534 L 725.0 631.0 L 552 631.0" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
-<path d="M 340 631.0 L 175.0 631.0 L 175.0 536" fill="none" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ao)"/>
-<text x="175.0" y="647.0" font-size="9.5" font-weight="600" fill="#a86a1e" text-anchor="middle">per-request re-arm: re-park on host stream</text>
+<rect x="70" y="472" width="210" height="76" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="175.0" y="492" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">main</text><text x="175.0" y="509" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">peel OWN into own_buf</text><text x="175.0" y="522" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">@mov32 src_q -&gt; own_buf</text>
+<rect x="340" y="472" width="210" height="76" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="445.0" y="492" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">forward_and_out  (px&lt;P-1)</text><text x="445.0" y="509" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">fwd FWD_EXTENT E (unblock done)</text><text x="445.0" y="522" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">emit OWN S (activate done)</text><text x="445.0" y="535" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">2 microthreads, join at done</text>
+<rect x="620" y="472" width="210" height="76" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="725.0" y="492" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">send_out  (px==P-1)</text><text x="725.0" y="509" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">no east forward</text><text x="725.0" y="522" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">emit OWN S (activate done)</text>
+<line x1="280" y1="510.0" x2="338" y2="510.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<text x="310.0" y="504.0" font-size="9" font-weight="600" fill="#5a6b76" text-anchor="middle">px &lt; P-1</text>
+<path d="M 175.0 548 L 175.0 574 L 725.0 574 L 725.0 550" fill="none" stroke="#5a6b76" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+<text x="385.0" y="588" font-size="9.5" font-weight="600" fill="#5a6b76" text-anchor="middle">px == P-1 (is_last_pe): branch in main</text>
+<rect x="340" y="618" width="210" height="68" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="445.0" y="638" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">done</text><text x="445.0" y="655" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">re-arm forward+out join (@block)</text><text x="445.0" y="668" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">@activate(main) for next request</text>
+<path d="M 445.0 548 L 445.0 616" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<path d="M 725.0 548 L 725.0 652.0 L 552 652.0" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<path d="M 340 652.0 L 175.0 652.0 L 175.0 550" fill="none" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ao)"/>
+<text x="175.0" y="668.0" font-size="9.5" font-weight="600" fill="#a86a1e" text-anchor="middle">per-request re-arm: re-park on host stream</text>
 <text x="70" y="746" font-size="10" font-weight="400" fill="#6a7883" text-anchor="start">colors/queues:  in_color/chain_a/chain_b -&gt; src_q=iq2 · forward_oq=oq2 · out_color(tok_bcast id7)=oq3 · kickoff(id17)=oq4.  Count-exactness (OWN + FWD_EXTENT) = correctness; a mismatch is a silent hang.</text>
 </svg>

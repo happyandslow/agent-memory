@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+# demux.csl algorithm diagram: host token-id ingress, 1xP store-and-forward peel/fan-out.
+# Top panel = spatial (demux row + host stream + 3 comm moves). Bottom = task state machine.
+import html
+OUT = "/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-prefill.demux.svg"
+W, H = 1180, 760
+def esc(s): return html.escape(s)
+s = []
+s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
+s.append('<defs>'
+  '<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker>'
+  '<marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker>'
+  '<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker>'
+  '<marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker>'
+  '<marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker>'
+  '</defs>')
+s.append(f'<rect width="{W}" height="{H}" fill="#f7f9fb"/>')
+def T(x,y,t,sz=13,f="#12222f",w="600",a="middle"):
+    return f'<text x="{x}" y="{y}" font-size="{sz}" font-weight="{w}" fill="{f}" text-anchor="{a}">{esc(t)}</text>'
+def box(x,y,w,h,fill,stroke,rx=6,sw=1.6,op=1.0):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" fill-opacity="{op}" stroke="{stroke}" stroke-width="{sw}"/>'
+def line(x1,y1,x2,y2,c,mk,w=2.4,dash=""):
+    d=f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{c}" stroke-width="{w}"{d} marker-end="url(#{mk})"/>'
+
+s.append(T(W/2,30,"demux.csl — host token-id ingress: 1xP peel + fan-out",19,"#0d1b26","700"))
+s.append(T(W/2,50,"Distribute the host token stream ALONG X (sequence dim). Each column peels its OWN block, forwards the rest EAST, emits OWN SOUTH into HT_head. (2x4 config: 4 columns)",11.5,"#4a5b66","500"))
+
+# ---------------- TOP PANEL: spatial ----------------
+s.append(T(70,86,"1  Spatial layout + three moves  (demux row = HWh x 1, one row NORTH of HT_head)",14,"#0d1b26","700","start"))
+# host stream box
+hx0,hy=70,150
+s.append(box(hx0,hy,96,40,"#f0d9b5","#a86a1e"))
+s.append(T(hx0+48,hy+17,"host",11,"#7a4d10","700"))
+s.append(T(hx0+48,hy+32,"token stream",9.5,"#7a4d10","500"))
+# demux PE row: 4 columns
+dx0=210; cw,ch=160,58; gap=44
+cols=4
+def cx(c): return dx0+c*(cw+gap)
+for c in range(cols):
+    x=cx(c)
+    last = (c==cols-1)
+    s.append(box(x,hy-9,cw,ch,"#e8b06a","#a86a1e"))
+    s.append(T(x+cw/2,hy+9,f"demux col{c}"+(" (P-1)" if last else ""),11.5,"#0d1b26","700"))
+    s.append(T(x+cw/2,hy+25,"peel OWN=11" if not last else "peel OWN=11",9.5,"#12222f","500"))
+    s.append(T(x+cw/2,hy+39,("fwd rest E (FWD_EXTENT)" if not last else "no forward (last)"),9,"#5a3d10","500"))
+    s.append(T(x+cw/2,hy-16,f"local_px={c}  src_q",9.5,"#a86a1e","700"))
+# host -> col0
+s.append(line(hx0+96,hy+ch/2-9,cx(0)-2,hy+ch/2-9,"#a86a1e","ao",2.4))
+s.append(T((hx0+96+cx(0))/2,hy-2,"in_color",9,"#a86a1e","600"))
+# parity chain arrows between cols (A even hop / B odd hop)
+for c in range(cols-1):
+    x1=cx(c)+cw; x2=cx(c+1)
+    parity = c % 2   # hop c: chain A if even else B
+    col = "#c0392b" if parity==0 else "#2c6fb0"
+    mk  = "ar" if parity==0 else "ab"
+    s.append(line(x1+1,hy+ch/2-9,x2-2,hy+ch/2-9,col,mk,2.6))
+    s.append(T((x1+x2)/2,hy+ch/2-16,("chain_a" if parity==0 else "chain_b"),8.5,col,"700"))
+    s.append(T((x1+x2)/2,hy+ch/2+2,("hop "+str(c)),8,col,"500"))
+# south emit into HT_head band
+by=hy+ch+42
+for c in range(cols):
+    x=cx(c)
+    s.append(box(x,by,cw,34,"#8fbfe0","#245f96",5,1.3,0.85))
+    s.append(T(x+cw/2,by+21,f"HT_head col {c}",10.5,"#0d1b26","600"))
+    s.append(line(x+cw/2,hy+ch-9,x+cw/2,by-2,"#2e8b57","ag",2.4))
+    s.append(T(x+cw/2+4,by-8,"OWN S",8.5,"#2e8b57","700","start"))
+s.append(T(dx0-8,by+21,"tok_bcast",9.5,"#245f96","700","end"))
+# HT_head note: bcast multicasts down column
+s.append(T(cx(cols-1)+cw+6,by+21,"→ bcast multicasts down column (‖Y)",9.5,"#245f96","600","start"))
+# kickoff sentinel from PE0
+ky=by+34
+s.append(f'<path d="M {cx(0)+cw*0.22} {hy+ch-9} L {cx(0)+cw*0.22} {ky+26}" fill="none" stroke="#7a3fb0" stroke-width="2.2" stroke-dasharray="5 3" marker-end="url(#ap)"/>')
+s.append(T(cx(0)+cw*0.22+6,ky+22,"kickoff sentinel (1 wavelet) → transits x=4 column → HT_tail TSC PE",9.5,"#7a3fb0","600","start"))
+
+# legend
+ly=ky+56
+s.append(line(70,ly,96,ly,"#a86a1e","ao",2.4))
+s.append(T(104,ly+4,"host ingress: token stream lands on PE0 (in_color); FIFO order preserved through the row.",11,"#26333c","500","start"))
+s.append(line(70,ly+22,96,ly+22,"#c0392b","ar",2.4))
+s.append(T(104,ly+26,"parity chain (G-1): peel OWN local, forward FWD_EXTENT EAST on alternating chain_a/chain_b (A even hop, B odd) — no adjacent-PE route conflict.",11,"#26333c","500","start"))
+s.append(line(70,ly+44,96,ly+44,"#2e8b57","ag",2.4))
+s.append(T(104,ly+48,"SOUTH emit: each column drops its OWN block (3 meta + ids) into the HT_head column below; HT_head's bcast color multicasts it down the dim axis.",11,"#26333c","500","start"))
+s.append(line(70,ly+66,96,ly+66,"#7a3fb0","ap",2.2))
+s.append(T(104,ly+70,"kickoff (PE0 only): 1-wavelet forward-start barrier SOUTH; anchors the tail's TSC timer.",11,"#26333c","500","start"))
+
+# ---------------- BOTTOM PANEL: task state machine ----------------
+py=ly+108
+s.append(f'<line x1="40" y1="{py-16}" x2="{W-40}" y2="{py-16}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(70,py+4,"2  Task state machine  (which task owns each step; same program on every column)",14,"#0d1b26","700","start"))
+def node(x,y,w,h,title,sub,fill,stroke):
+    out=[box(x,y,w,h,fill,stroke)]
+    out.append(T(x+w/2,y+20,title,12,"#0d1b26","700"))
+    for i,ln in enumerate(sub.split("\n")):
+        out.append(T(x+w/2,y+37+i*13,ln,9.5,"#34434d","500"))
+    return "".join(out)
+ny=py+24; nh=76; w1=210
+col_o="#f7e3c8"; s_o="#a86a1e"
+col_r="#faddd8"; s_r="#c0392b"
+col_g="#d7efdb"; s_g="#2e8b57"
+xs=[70, 340, 620]
+s.append(node(xs[0],ny,w1,nh,"main","peel OWN into own_buf\n@mov32 src_q -> own_buf",col_o,s_o))
+s.append(node(xs[1],ny,w1,nh,"forward_and_out  (px<P-1)","fwd FWD_EXTENT E (unblock done)\nemit OWN S (activate done)\n2 microthreads, join at done",col_r,s_r))
+s.append(node(xs[2],ny,w1,nh,"send_out  (px==P-1)","no east forward\nemit OWN S (activate done)",col_g,s_g))
+# main -> forward_and_out (px<P-1)
+s.append(line(xs[0]+w1,ny+nh/2,xs[1]-2,ny+nh/2,"#5a6b76","ar",1.8))
+s.append(T((xs[0]+w1+xs[1])/2,ny+nh/2-6,"px < P-1",9,"#5a6b76","600"))
+# main -> send_out (branch down/around): draw a routed arrow
+s.append(f'<path d="M {xs[0]+w1/2} {ny+nh} L {xs[0]+w1/2} {ny+nh+26} L {xs[2]+w1/2} {ny+nh+26} L {xs[2]+w1/2} {ny+nh+2}" fill="none" stroke="#5a6b76" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ar)"/>')
+s.append(T((xs[0]+xs[2])/2+40,ny+nh+40,"px == P-1 (is_last_pe): branch in main",9.5,"#5a6b76","600"))
+# done node
+ny2=ny+nh+70
+dnx=xs[1]
+s.append(node(dnx,ny2,w1,nh-8,"done","re-arm forward+out join (@block)\n@activate(main) for next request",col_o,s_o))
+# forward_and_out -> done ; send_out -> done
+s.append(f'<path d="M {xs[1]+w1/2} {ny+nh} L {xs[1]+w1/2} {ny2-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
+s.append(f'<path d="M {xs[2]+w1/2} {ny+nh} L {xs[2]+w1/2} {ny2+(nh-8)/2} L {dnx+w1+2} {ny2+(nh-8)/2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
+# done -> main (per-request re-arm loop)
+s.append(f'<path d="M {dnx} {ny2+(nh-8)/2} L {xs[0]+w1/2} {ny2+(nh-8)/2} L {xs[0]+w1/2} {ny+nh+2}" fill="none" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ao)"/>')
+s.append(T(xs[0]+w1/2, ny2+(nh-8)/2+16,"per-request re-arm: re-park on host stream",9.5,"#a86a1e","600"))
+
+s.append(T(70,H-14,"colors/queues:  in_color/chain_a/chain_b -> src_q=iq2 · forward_oq=oq2 · out_color(tok_bcast id7)=oq3 · kickoff(id17)=oq4.  Count-exactness (OWN + FWD_EXTENT) = correctness; a mismatch is a silent hang.",10,"#6a7883","400","start"))
+s.append('</svg>')
+open(OUT,"w").write("\n".join(s))
+print("wrote", OUT, W, H)

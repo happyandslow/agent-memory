@@ -57,13 +57,13 @@
 <line x1="154" y1="150.0" x2="238" y2="150.0" stroke="#2e8b57" stroke-width="2.8" marker-end="url(#ag)"/>
 <text x="196.0" y="142.0" font-size="9.5" font-weight="700" fill="#2e8b57" text-anchor="middle">x_chain →</text>
 <text x="196.0" y="166.0" font-size="8.5" font-weight="500" fill="#2e8b57" text-anchor="middle">G-1/G-2/P-6</text>
-<path d="M 238 414 L 106.0 414 L 106.0 263" fill="none" stroke="#7a3fb0" stroke-width="2.4" stroke-dasharray="6 4" marker-end="url(#ap)"/>
+<path d="M 238 414 L 106.0 414 L 106.0 288" fill="none" stroke="#7a3fb0" stroke-width="2.4" stroke-dasharray="6 4" marker-end="url(#ap)"/>
 <text x="196.0" y="432" font-size="9" font-weight="700" fill="#7a3fb0" text-anchor="middle">z-emit → HT_tail (P-6, z_drain 16)</text>
 <line x1="504" y1="150.0" x2="568" y2="150.0" stroke="#c77d1a" stroke-width="2.6" marker-end="url(#ao)"/>
 <path d="M 568 150.0 L 568 94" fill="none" stroke="#c77d1a" stroke-width="2.6" marker-end="url(#ao)"/>
 <rect x="532" y="68" width="150" height="24" rx="5" fill="#f3e2c6" fill-opacity="1.0" stroke="#c77d1a" stroke-width="1.4"/>
 <text x="607" y="84" font-size="10" font-weight="700" fill="#7a5010" text-anchor="middle">KV egress → host</text>
-<text x="607" y="166.0" font-size="8.5" font-weight="600" fill="#c77d1a" text-anchor="middle">switch-gather (P-4)</text>
+<text x="560" y="166.0" font-size="8.5" font-weight="600" fill="#c77d1a" text-anchor="middle">switch-gather (P-4)</text>
 <rect x="620" y="120" width="500" height="300" rx="10" fill="#eef4fa" fill-opacity="1.0" stroke="#245f96" stroke-width="1.8"/>
 <text x="870.0" y="142" font-size="12.5" font-weight="700" fill="#0d1b26" text-anchor="middle">一个 block 内部 (P_BLOCK_SIZE × P_BLOCK_SIZE = 8×8)</text>
 <line x1="650" y1="380" x2="830" y2="380" stroke="#5a6b76" stroke-width="2" marker-end="url(#ak)"/>
@@ -106,7 +106,7 @@
 <rect x="732" y="302" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
 <rect x="754" y="302" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
 <rect x="776" y="302" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
-<text x="732" y="342" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">feature-major / seq-minor: X_tile[f·reduce_len + s]</text>
+<text x="666" y="342" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="start">feature-major / seq-minor: X_tile[f·reduce_len + s]</text>
 <circle cx="1000" cy="270" r="62" fill="none" stroke="#c0392b" stroke-width="2.2" stroke-dasharray="5 4"/>
 <line x1="1000.0" y1="208.0" x2="1041.4860975942493" y2="223.92502082040156" stroke="#c0392b" stroke-width="2.0" marker-end="url(#ar)"/>
 <line x1="1053.6935750346352" y1="239.0" x2="1060.645151245496" y2="282.89052483070105" stroke="#c0392b" stroke-width="2.0" marker-end="url(#ar)"/>
@@ -186,7 +186,7 @@
 <line x1="760" y1="1035" x2="798" y2="1035" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
 <path d="M 420 1010 L 420 996 L 124.0 996" fill="none" stroke="#2e8b57" stroke-width="1.7" stroke-dasharray="5 3" marker-end="url(#ag)"/>
 <text x="430" y="992" font-size="8.8" font-weight="600" fill="#2e8b57" text-anchor="start">同一 chunk 全层跑完 → 下个 chunk 从 flag 0 起</text>
-<path d="M 900 1010 L 900 668 L 314 668 L 314 646" fill="none" stroke="#a86a1e" stroke-width="1.7" stroke-dasharray="6 4" marker-end="url(#ao)"/>
+<path d="M 1000 1035 L 1156 1035 L 1156 668 L 314 668 L 314 646" fill="none" stroke="#a86a1e" stroke-width="1.7" stroke-dasharray="6 4" marker-end="url(#ao)"/>
 <text x="760" y="664" font-size="9" font-weight="700" fill="#a86a1e" text-anchor="start">请求完 → 下个 request (serve-loop 常驻)</text>
 <text x="60" y="1096" font-size="9.5" font-weight="400" fill="#6a7883" text-anchor="start">色/队列:reduce 1,2+bcast 5=q5,6,1(P-1/P-7) · Cannon x=6-8/q2, y=9-11/q3(P-3) · Score×V band 18-20 借 q5,6,1 · shuttle N/S 3,4 &amp; E/W 12,13 借 q7,0(P-5) · x_chain 14,15/q4 · z_drain 16/OQ4(egress→OQ7) · KV egress 21/OQ4(P-4)。计数精确=正确性,不匹配则静默挂起。</text>
 </svg>

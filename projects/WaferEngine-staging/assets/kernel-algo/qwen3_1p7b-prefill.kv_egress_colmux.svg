@@ -77,7 +77,7 @@
 <rect x="660" y="726" width="220" height="72" rx="6" fill="#dbeafe" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/><text x="770.0" y="746" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">sync_do (task 11) — non-tail</text><text x="770.0" y="763" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">round_sync arrived (all south drained):</text><text x="770.0" y="776" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">clear switch -&gt; pos0; re-arm -&gt; peel_meta</text>
 <path d="M 430.0 674 L 430.0 696 L 160 696 L 160 724" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
 <path d="M 430.0 696 L 460 696 L 460 724" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
-<text x="430.0" y="690" font-size="9.5" font-weight="600" fill="#5a6b76" text-anchor="middle">post-drain: branch on is_col_tail</text>
+<text x="444.0" y="690" font-size="9.5" font-weight="600" fill="#5a6b76" text-anchor="start">post-drain: branch on is_col_tail</text>
 <text x="160" y="708" font-size="9" font-weight="700" fill="#7a3fb0" text-anchor="middle">tail</text>
 <text x="460" y="708" font-size="9" font-weight="700" fill="#245f96" text-anchor="middle">non-tail</text>
 <line x1="580" y1="762.0" x2="658" y2="762.0" stroke="#7a3fb0" stroke-width="1.8" marker-end="url(#ap)"/>

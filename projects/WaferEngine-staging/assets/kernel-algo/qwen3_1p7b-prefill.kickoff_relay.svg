@@ -1,44 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="500" viewBox="0 0 980 500" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">
 <defs><marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker></defs>
-<rect width="900" height="560" fill="#f7f9fb"/>
-<text x="450.0" y="32" font-size="17" font-weight="700" fill="#0d1b26" text-anchor="middle">kickoff_relay.csl — forward-start TSC sentinel relay (HT-band gap filler)</text>
-<text x="450.0" y="52" font-size="11" font-weight="500" fill="#4a5b66" text-anchor="middle">For &gt;2 block-rows a gap opens in the HT band (x=HT_TAIL_X=4). Paint kickoff_color N-&gt;S so the 1-wavelet sentinel crosses instead of hanging.</text>
+<rect width="980" height="500" fill="#f7f9fb"/>
+<text x="490.0" y="32" font-size="17" font-weight="700" fill="#0d1b26" text-anchor="middle">kickoff_relay.csl — forward-start TSC sentinel relay (HT-band gap filler)</text>
+<text x="490.0" y="52" font-size="11" font-weight="500" fill="#4a5b66" text-anchor="middle">For &gt;2 block-rows a gap opens in the HT band (x=HT_TAIL_X=4). Paint kickoff_color N-&gt;S so the 1-wavelet sentinel crosses instead of hanging.</text>
 <text x="60" y="88" font-size="13" font-weight="700" fill="#0d1b26" text-anchor="start">(1) Spatial — one column, N-&gt;S, sentinel from demux PE 0 to the HT_tail TSC PE</text>
-<rect x="315.0" y="108" width="150" height="40" rx="6" fill="#efe0c6" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.5"/>
-<text x="390.0" y="126" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux PE 0</text>
-<text x="390.0" y="141" font-size="9.5" font-weight="500" fill="#7a5a1e" text-anchor="middle">kickoff source</text>
-<rect x="315.0" y="166" width="150" height="34" rx="6" fill="#cfe0ee" fill-opacity="1.0" stroke="#245f96" stroke-width="1.4"/>
-<text x="390.0" y="188" font-size="10.5" font-weight="700" fill="#12356a" text-anchor="middle">HT_head (block-row 0)</text>
-<rect x="315.0" y="214" width="150" height="150" rx="6" fill="#e9eef2" fill-opacity="1.0" stroke="#8aa0b0" stroke-width="1.5"/>
-<text x="390.0" y="234" font-size="11.5" font-weight="700" fill="#33454f" text-anchor="middle">kickoff_relay region</text>
-<text x="390.0" y="252" font-size="9.5" font-weight="500" fill="#4a5b66" text-anchor="middle">HT_WIDTH_tail x kickoff_gap_h</text>
-<text x="390.0" y="266" font-size="9.5" font-weight="500" fill="#4a5b66" text-anchor="middle">(2x8 = 16 rows tall here)</text>
-<text x="390.0" y="294" font-size="12" font-weight="700" fill="#7a1f18" text-anchor="middle">INERT PEs</text>
-<text x="390.0" y="310" font-size="9.5" font-weight="500" fill="#7a1f18" text-anchor="middle">empty comptime {}</text>
-<text x="390.0" y="326" font-size="9.5" font-weight="500" fill="#7a1f18" text-anchor="middle">no queues / no tasks / 0 data mem</text>
-<text x="390.0" y="344" font-size="9.5" font-weight="600" fill="#2c6fb0" text-anchor="middle">west col painted kickoff_color N-&gt;S</text>
-<rect x="315.0" y="378" width="150" height="40" rx="6" fill="#cfe0ee" fill-opacity="1.0" stroke="#245f96" stroke-width="1.4"/>
-<text x="390.0" y="396" font-size="11.5" font-weight="700" fill="#12356a" text-anchor="middle">HT_tail TSC PE</text>
-<text x="390.0" y="411" font-size="9.5" font-weight="500" fill="#245f96" text-anchor="middle">forward-start anchor (sink)</text>
-<line x1="341.0" y1="148" x2="341.0" y2="377" stroke="#2c6fb0" stroke-width="3" stroke-dasharray="6 4" marker-end="url(#ab)"/>
-<text x="333.0" y="289.0" font-size="9.5" font-weight="700" fill="#2c6fb0" text-anchor="end">1-wavelet</text>
-<text x="333.0" y="302.0" font-size="9.5" font-weight="700" fill="#2c6fb0" text-anchor="end">kickoff</text>
-<text x="333.0" y="315.0" font-size="9.5" font-weight="700" fill="#2c6fb0" text-anchor="end">N -&gt; S</text>
-<rect x="525.0" y="166" width="250" height="190" rx="8" fill="#fff5e6" fill-opacity="1.0" stroke="#d0a24a" stroke-width="1.4"/>
-<text x="650.0" y="188" font-size="12" font-weight="700" fill="#7a5a1e" text-anchor="middle">(2) No task state machine</text>
-<text x="541.0" y="210" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">Nothing runs on these PEs.</text>
-<text x="541.0" y="225" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">The whole kernel body is</text>
-<text x="541.0" y="240" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">  comptime { }</text>
-<text x="541.0" y="255" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start"></text>
-<text x="541.0" y="270" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">The one movement is a HOST-</text>
-<text x="541.0" y="285" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">PAINTED route, not a program:</text>
-<text x="541.0" y="300" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">  paint kickoff_color N-&gt;S</text>
-<text x="541.0" y="315" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">  on the west column.</text>
-<text x="541.0" y="330" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start"></text>
-<text x="541.0" y="345" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">Rule: never leave a transited</text>
-<text x="541.0" y="360" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">color unpainted -&gt; paint an</text>
-<text x="541.0" y="375" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">inert pass-through, else the</text>
-<text x="541.0" y="390" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">wavelet routes into empty tiles</text>
-<text x="541.0" y="405" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">(sim signal 11 / TSC park-hang).</text>
-<text x="60" y="538" font-size="10" font-weight="400" fill="#6a7883" text-anchor="start">Color: kickoff_color (id 17), no queue. One wavelet in, one out per PE, forwarded by the router. Zero PE program, zero data memory.</text>
+<rect x="325.0" y="108" width="190" height="40" rx="6" fill="#efe0c6" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="420.0" y="126" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux PE 0</text>
+<text x="420.0" y="141" font-size="9.5" font-weight="500" fill="#7a5a1e" text-anchor="middle">kickoff source</text>
+<rect x="325.0" y="166" width="190" height="34" rx="6" fill="#cfe0ee" fill-opacity="1.0" stroke="#245f96" stroke-width="1.4"/>
+<text x="420.0" y="188" font-size="10.5" font-weight="700" fill="#12356a" text-anchor="middle">HT_head (block-row 0)</text>
+<rect x="325.0" y="214" width="190" height="150" rx="6" fill="#e9eef2" fill-opacity="1.0" stroke="#8aa0b0" stroke-width="1.5"/>
+<text x="420.0" y="234" font-size="11.5" font-weight="700" fill="#33454f" text-anchor="middle">kickoff_relay region</text>
+<text x="420.0" y="252" font-size="9.5" font-weight="500" fill="#4a5b66" text-anchor="middle">HT_WIDTH_tail x kickoff_gap_h</text>
+<text x="420.0" y="266" font-size="9.5" font-weight="500" fill="#4a5b66" text-anchor="middle">(2x8 = 16 rows tall here)</text>
+<text x="420.0" y="294" font-size="12" font-weight="700" fill="#7a1f18" text-anchor="middle">INERT PEs</text>
+<text x="420.0" y="310" font-size="9.5" font-weight="500" fill="#7a1f18" text-anchor="middle">empty comptime {}</text>
+<text x="420.0" y="326" font-size="9.5" font-weight="500" fill="#7a1f18" text-anchor="middle">no queues / no tasks / 0 data mem</text>
+<text x="420.0" y="344" font-size="9.5" font-weight="600" fill="#2c6fb0" text-anchor="middle">west col painted kickoff_color N-&gt;S</text>
+<rect x="325.0" y="378" width="190" height="40" rx="6" fill="#cfe0ee" fill-opacity="1.0" stroke="#245f96" stroke-width="1.4"/>
+<text x="420.0" y="396" font-size="11.5" font-weight="700" fill="#12356a" text-anchor="middle">HT_tail TSC PE</text>
+<text x="420.0" y="411" font-size="9.5" font-weight="500" fill="#245f96" text-anchor="middle">forward-start anchor (sink)</text>
+<line x1="325.0" y1="128" x2="285.0" y2="128" stroke="#2c6fb0" stroke-width="2.4"/>
+<line x1="285.0" y1="128" x2="285.0" y2="398" stroke="#2c6fb0" stroke-width="3" stroke-dasharray="6 4"/>
+<line x1="285.0" y1="398" x2="324.0" y2="398" stroke="#2c6fb0" stroke-width="2.4" marker-end="url(#ab)"/>
+<text x="277.0" y="283.0" font-size="9.5" font-weight="700" fill="#2c6fb0" text-anchor="end">1-wavelet</text>
+<text x="277.0" y="296.0" font-size="9.5" font-weight="700" fill="#2c6fb0" text-anchor="end">kickoff</text>
+<text x="277.0" y="309.0" font-size="9.5" font-weight="700" fill="#2c6fb0" text-anchor="end">N -&gt; S</text>
+<rect x="575.0" y="166" width="260" height="270" rx="8" fill="#fff5e6" fill-opacity="1.0" stroke="#d0a24a" stroke-width="1.4"/>
+<text x="700.0" y="188" font-size="12" font-weight="700" fill="#7a5a1e" text-anchor="middle">(2) No task state machine</text>
+<text x="591.0" y="210" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">Nothing runs on these PEs.</text>
+<text x="591.0" y="225" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">The whole kernel body is</text>
+<text x="591.0" y="240" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">  comptime { }</text>
+<text x="591.0" y="255" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start"></text>
+<text x="591.0" y="270" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">The one movement is a HOST-</text>
+<text x="591.0" y="285" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">PAINTED route, not a program:</text>
+<text x="591.0" y="300" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">  paint kickoff_color N-&gt;S</text>
+<text x="591.0" y="315" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">  on the west column.</text>
+<text x="591.0" y="330" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start"></text>
+<text x="591.0" y="345" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">Rule: never leave a transited</text>
+<text x="591.0" y="360" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">color unpainted -&gt; paint an</text>
+<text x="591.0" y="375" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">inert pass-through, else the</text>
+<text x="591.0" y="390" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">wavelet routes into empty tiles</text>
+<text x="591.0" y="405" font-size="10" font-weight="500" fill="#4a5b66" text-anchor="start">(sim signal 11 / TSC park-hang).</text>
+<text x="60" y="478" font-size="10" font-weight="400" fill="#6a7883" text-anchor="start">Color: kickoff_color (id 17), no queue. One wavelet in, one out per PE, forwarded by the router. Zero PE program, zero data memory.</text>
 </svg>
