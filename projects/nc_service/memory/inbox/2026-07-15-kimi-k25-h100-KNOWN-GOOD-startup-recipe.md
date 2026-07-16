@@ -73,6 +73,21 @@ Rust draft_service). Keep the prefetch flags — they are what make the load rel
   same INT4 marlin verify at draft=32. So H100 is fine for the verify latency; only the
   ~72-min bring-up (slow storage) is the pain.
 
+## VANILLA decode baseline MEASURED (2026-07-16)
+Relaunched Kimi WITHOUT spec-dec (drop all --speculative-* / --remote-*; keep
+language-only + prefetch + tuned mem). Bring-up again ~80 min (CephFS+repack).
+- **Vanilla decode TPOT = 9.2 ms/token** (steady-state ~108 tok/s, bs=1,
+  cuda_graph=True; e2e 2.747s/256tok=10.7ms incl prefill). Server log:
+  `Decode batch ... gen throughput (token/s): ~108`.
+- Confirms the earlier 8.5ms ESTIMATE (from decomposing verify 17ms). Good.
+- **Two GPU-side anchors now both MEASURED: d(vanilla)=9.2ms, v(verify-32)=17ms.**
+  Ratio v/d = **1.85** → verify(32) costs only 1.85× a single decode but yields
+  up to 32 tokens (fixed cost dominates → spec-dec economically favorable here).
+- Break-even (S=A·d/T_round), A≈10 (K16 reported): serial(T_round~29ms)=3.2×,
+  pipelined(~17ms)=5.4×. Beat GPU spec-dec(~2×) needs A>3.7 (pipelined)/A>6.3
+  (serial); round-latency budget T_round<4.6·A=46ms (met at 17-29ms).
+- Still estimated / need CS-3: draft-compute (~9ms K31) and A on K=32/real data.
+
 ## Restore afterward (dummy rig, so shared service returns to found-state)
 `PYTHONPATH=/tmp/sglang-unit/python python3 -m sglang.launch_server --model-path
 Qwen/Qwen3-0.6B --load-format dummy ... --remote-verify-port 50050 ... --skip-server-warmup`

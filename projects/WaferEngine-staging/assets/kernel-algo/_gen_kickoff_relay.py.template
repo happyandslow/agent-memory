@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+# kickoff_relay.csl algorithm diagram: forward-start TSC sentinel relay across the HT-band gap.
+# Minimal: one spatial panel (source -> gap relay -> sink) + a "no task state machine" note.
+import html
+OUT = "/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-prefill.kickoff_relay.svg"
+W, H = 900, 560
+def esc(s): return html.escape(s)
+s = []
+s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
+s.append('<defs>'
+  '<marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker>'
+  '</defs>')
+s.append(f'<rect width="{W}" height="{H}" fill="#f7f9fb"/>')
+def T(x,y,t,sz=13,f="#12222f",w="600",a="middle"):
+    return f'<text x="{x}" y="{y}" font-size="{sz}" font-weight="{w}" fill="{f}" text-anchor="{a}">{esc(t)}</text>'
+def box(x,y,w,h,fill,stroke,rx=6,sw=1.6,op=1.0):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" fill-opacity="{op}" stroke="{stroke}" stroke-width="{sw}"/>'
+
+s.append(T(W/2,32,"kickoff_relay.csl — forward-start TSC sentinel relay (HT-band gap filler)",17,"#0d1b26","700"))
+s.append(T(W/2,52,"For >2 block-rows a gap opens in the HT band (x=HT_TAIL_X=4). Paint kickoff_color N->S so the 1-wavelet sentinel crosses instead of hanging.",11,"#4a5b66","500"))
+
+s.append(T(60,88,"(1) Spatial — one column, N->S, sentinel from demux PE 0 to the HT_tail TSC PE",13,"#0d1b26","700","start"))
+
+cx = W/2 - 60         # HT band column center
+bw = 150
+# demux PE 0 (source, top)
+y0 = 108
+s.append(box(cx-bw/2, y0, bw, 40, "#efe0c6", "#a86a1e", 6, 1.5))
+s.append(T(cx, y0+18, "demux PE 0", 11.5, "#0d1b26","700"))
+s.append(T(cx, y0+33, "kickoff source", 9.5, "#7a5a1e","500"))
+# HT_head (above the gap)
+y1 = y0+58
+s.append(box(cx-bw/2, y1, bw, 34, "#cfe0ee", "#245f96", 6, 1.4))
+s.append(T(cx, y1+22, "HT_head (block-row 0)", 10.5, "#12356a","700"))
+# relay gap region
+y2 = y1+48
+gh = 150
+s.append(box(cx-bw/2, y2, bw, gh, "#e9eef2", "#8aa0b0", 6, 1.5, 1.0))
+s.append(T(cx, y2+20, "kickoff_relay region", 11.5, "#33454f","700"))
+s.append(T(cx, y2+38, "HT_WIDTH_tail x kickoff_gap_h", 9.5, "#4a5b66","500"))
+s.append(T(cx, y2+52, "(2x8 = 16 rows tall here)", 9.5, "#4a5b66","500"))
+s.append(T(cx, y2+80, "INERT PEs", 12, "#7a1f18","700"))
+s.append(T(cx, y2+96, "empty comptime {}", 9.5, "#7a1f18","500"))
+s.append(T(cx, y2+112, "no queues / no tasks / 0 data mem", 9.5, "#7a1f18","500"))
+s.append(T(cx, y2+130, "west col painted kickoff_color N->S", 9.5, "#2c6fb0","600"))
+# HT_tail TSC PE (sink, bottom)
+y3 = y2+gh+14
+s.append(box(cx-bw/2, y3, bw, 40, "#cfe0ee", "#245f96", 6, 1.4))
+s.append(T(cx, y3+18, "HT_tail TSC PE", 11.5, "#12356a","700"))
+s.append(T(cx, y3+33, "forward-start anchor (sink)", 9.5, "#245f96","500"))
+
+# the N->S sentinel arrow, drawn on the west column, straight through
+ax = cx - bw/2 + 26
+s.append(f'<line x1="{ax}" y1="{y0+40}" x2="{ax}" y2="{y3-1}" stroke="#2c6fb0" stroke-width="3" stroke-dasharray="6 4" marker-end="url(#ab)"/>')
+s.append(T(ax-8, (y2+gh/2), "1-wavelet", 9.5, "#2c6fb0","700","end"))
+s.append(T(ax-8, (y2+gh/2)+13, "kickoff", 9.5, "#2c6fb0","700","end"))
+s.append(T(ax-8, (y2+gh/2)+26, "N -> S", 9.5, "#2c6fb0","700","end"))
+
+# right-side note: no task state machine
+nx = cx + bw/2 + 60
+s.append(box(nx, y1, 250, gh+40, "#fff5e6", "#d0a24a", 8, 1.4))
+s.append(T(nx+125, y1+22, "(2) No task state machine", 12, "#7a5a1e","700"))
+notes = [
+  "Nothing runs on these PEs.",
+  "The whole kernel body is",
+  "  comptime { }",
+  "",
+  "The one movement is a HOST-",
+  "PAINTED route, not a program:",
+  "  paint kickoff_color N->S",
+  "  on the west column.",
+  "",
+  "Rule: never leave a transited",
+  "color unpainted -> paint an",
+  "inert pass-through, else the",
+  "wavelet routes into empty tiles",
+  "(sim signal 11 / TSC park-hang).",
+]
+for i,ln in enumerate(notes):
+    s.append(T(nx+16, y1+44+i*15, ln, 10, "#4a5b66","500","start"))
+
+s.append(T(60,H-22,"Color: kickoff_color (id 17), no queue. One wavelet in, one out per PE, forwarded by the router. Zero PE program, zero data memory.",10,"#6a7883","400","start"))
+s.append('</svg>')
+open(OUT,"w").write("\n".join(s))
+print("ok", OUT, W, H)

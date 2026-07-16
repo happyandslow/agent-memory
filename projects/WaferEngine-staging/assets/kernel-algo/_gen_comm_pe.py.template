@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+# comm_pe.csl algorithm diagram: the prefill block's communication toolbox.
+# Panel A (top) = four movement patterns mapped to physical fabric motion.
+# Panel B (bottom) = the color + queue reuse map (who time-shares which queue).
+import html
+OUT = "/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-prefill.comm_pe.svg"
+W, H = 1180, 1240
+def esc(s): return html.escape(s)
+s = []
+s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
+s.append('<defs>'
+  '<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker>'
+  '<marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker>'
+  '<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker>'
+  '<marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker>'
+  '<marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker>'
+  '</defs>')
+s.append(f'<rect width="{W}" height="{H}" fill="#f7f9fb"/>')
+def T(x,y,t,sz=13,f="#12222f",w="600",a="middle"):
+    return f'<text x="{x}" y="{y}" font-size="{sz}" font-weight="{w}" fill="{f}" text-anchor="{a}">{esc(t)}</text>'
+def box(x,y,w,h,fill,stroke,rx=6,sw=1.5,op=1.0):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" fill-opacity="{op}" stroke="{stroke}" stroke-width="{sw}"/>'
+def line(x1,y1,x2,y2,c,mk="",w=2.2,dash=""):
+    d=f' stroke-dasharray="{dash}"' if dash else ""
+    m=f' marker-end="url(#{mk})"' if mk else ""
+    return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{c}" stroke-width="{w}"{d}{m}/>'
+
+# palette
+C_RED="#c0392b"; C_BLU="#2c6fb0"; C_GRN="#2e8b57"; C_PUR="#7a3fb0"; C_ORG="#a86a1e"
+PE_F="#e9eef3"; PE_S="#9db2c2"; ROOT_F="#cfe0ef"; ROOT_S="#245f96"; BAND_F="#e6dcf3"
+
+s.append(T(W/2,32,"comm_pe.csl — the prefill block's communication toolbox",20,"#0d1b26","700"))
+s.append(T(W/2,54,"One scarce color+queue pool, time-shared across every phase. Correctness = count-exactness + backpressure/parity ordering; every rebind lands on a drained queue.",12.5,"#4a5b66","500"))
+s.append(T(W/2,72,"Block = P_BLOCK_SIZE x P_BLOCK_SIZE (8x8 in ref cfg).  Y (rows) = HIDDEN dim shard.   X (cols) = SEQUENCE (tokens).   kv-band = a run of Y-PEs for one KV head.",11.5,"#4a5b66","500"))
+
+# ============ PANEL A : four movement patterns ============
+s.append(T(40,104,"A.  Each collective / shuttle / matmul mapped to physical fabric motion",14.5,"#0d1b26","700","start"))
+
+# ---- grid drawing helper: a small n x n PE block ----
+def pe_grid(ox, oy, cell, n=5, gap=6, fill=PE_F, stroke=PE_S):
+    out=[]
+    for r in range(n):
+        for c in range(n):
+            x=ox+c*(cell+gap); y=oy+r*(cell+gap)
+            out.append(box(x,y,cell,cell,fill,stroke,3,1.0))
+    return out
+def cc(ox,oy,cell,gap,c,r):  # center of cell (col c,row r)
+    return (ox+c*(cell+gap)+cell/2, oy+r*(cell+gap)+cell/2)
+
+PW=520; PH=310
+pax=[40, 620]
+pay=[124, 470]
+def panel_frame(x,y,title,sub,tc):
+    o=[box(x,y,PW,PH,"#ffffff","#d7dfe6",8,1.4)]
+    o.append(box(x,y,PW,26,"#eef3f7","#d7dfe6",8,1.4))
+    o.append(T(x+14,y+18,title,13.5,tc,"700","start"))
+    o.append(T(x+PW-14,y+18,sub,10.5,"#5a6b76","600","end"))
+    return "".join(o)
+
+# ---- A1: P-1 full-column Y all-reduce (RMSNorm) ----
+x0,y0=pax[0],pay[0]
+s.append(panel_frame(x0,y0,"P-1  full-column Y all-reduce  (all_reduce_full)","RMSNorm  ·  reduce_1st c1/q5,c2/q6 + bcast c5/q1",C_RED))
+cell=30; gap=10; n=5; gx0=x0+70; gy0=y0+70
+s.extend(pe_grid(gx0,gy0,cell,n,gap))
+rootr=2
+# highlight root column-middle
+for r in range(n):
+    xx,yy=cc(gx0,gy0,cell,gap,2,r)
+    s.append(box(gx0+2*(cell+gap),gy0+r*(cell+gap),cell,cell,ROOT_F if r==rootr else PE_F,ROOT_S,3,1.2))
+# vertical chain arrows toward root (col 2)
+colx=gx0+2*(cell+gap)+cell/2
+for r in range(n):
+    yy=gy0+r*(cell+gap)+cell/2
+    if r<rootr:
+        s.append(line(colx,gy0+r*(cell+gap)+cell,colx,gy0+(r+1)*(cell+gap),C_RED,"ar",2.2))
+    elif r>rootr:
+        s.append(line(colx,gy0+r*(cell+gap),colx,gy0+(r-1)*(cell+gap)+cell,C_RED,"ar",2.2))
+s.append(T(colx,gy0-8,"root",10,ROOT_S,"700"))
+# broadcast back (dashed, both directions) on a parallel line
+bx=colx+16
+s.append(line(bx,cc(gx0,gy0,cell,gap,2,rootr)[1],bx,gy0-2,C_BLU,"ar",1.6,"4 3"))
+s.append(line(bx,cc(gx0,gy0,cell,gap,2,rootr)[1],bx,gy0+n*(cell+gap)-4,C_BLU,"ar",1.6,"4 3"))
+s.append(T(x0+14,y0+PH-58,"Bidirectional f32 chain -> root_2nd_phase, then P-2 router",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-42,"multicast broadcast back (blue).  One-phase (not 2-phase);",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-26,"that freed colors 3,4 for the shuttle.",10.5,"#34434d","500","start"))
+s.append(line(gx0-34,gy0+n*(cell+gap)/2,gx0-34,gy0+n*(cell+gap)/2-40,"#7a8a95","ar",1.6))
+s.append(T(gx0-40,gy0+n*(cell+gap)/2+16,"Y",11,"#7a8a95","700","end"))
+
+# ---- A2: P-3 Cannon operand shift (MeshGEMM two_hop_comm) ----
+x0,y0=pax[1],pay[0]
+s.append(panel_frame(x0,y0,"P-3  Cannon operand shift  (two_hop_comm)","MeshGEMM  ·  left x_inter c6-8/q2 · right y_inter c9-11/q3",C_PUR))
+cell=30; gap=10; n=5; gx0=x0+90; gy0=y0+62
+s.extend(pe_grid(gx0,gy0,cell,n,gap))
+# left operand hops along Y (vertical, purple), right along X (horizontal, green)
+for c in range(n):
+    xx=gx0+c*(cell+gap)+cell/2
+    s.append(line(xx,gy0+cell+2,xx,gy0+(cell+gap)+cell/2,C_PUR,"ap",1.9))
+for r in range(n):
+    yy=gy0+r*(cell+gap)+cell/2
+    s.append(line(gx0+cell+2,yy,gx0+(cell+gap)+cell/2,yy,C_GRN,"ag",1.9))
+s.append(T(gx0+n*(cell+gap)+6,gy0+cell/2,"right",10,C_GRN,"700","start"))
+s.append(T(gx0+n*(cell+gap)+6,gy0+cell/2+14,"(weights)",9,C_GRN,"600","start"))
+s.append(T(gx0+cell/2,gy0+n*(cell+gap)+14,"left (activations)",10,C_PUR,"700"))
+s.append(T(x0+14,y0+PH-74,"Both operands cyclically shift 1 ring-pos/step (no",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-58,"broadcast). Left = X-channel hops along Y; right =",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-42,"Y-channel hops along X.  left_matrix_shift skew reuses",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-26,"the x channel (q2).  Ring embedded on line by trace_perm.",10.5,"#34434d","500","start"))
+
+# ---- A3: P-5/P-6 serpentine shuttle across block boundary ----
+x0,y0=pax[0],pay[1]
+s.append(panel_frame(x0,y0,"P-5/P-6  serpentine shuttle  (run_shuttle)","cross-block  ·  N/S c3/q7,c4/q0  ·  E/W c12,c13 reuse q7,q0",C_ORG)
+)
+# two blocks side by side, P-step shift register across the boundary
+cell=26; gap=8; n=5
+bA_x=x0+40; bB_x=x0+40+n*(cell+gap)+56; gy0=y0+62
+s.extend(pe_grid(bA_x,gy0,cell,n,gap,"#f3ece0","#c9a875"))
+s.extend(pe_grid(bB_x,gy0,cell,n,gap,"#e6eef3","#9db2c2"))
+s.append(T(bA_x+n*(cell+gap)/2-4,gy0-8,"block k (source)",10.5,C_ORG,"700"))
+s.append(T(bB_x+n*(cell+gap)/2-4,gy0-8,"block k+1 (dest)",10.5,ROOT_S,"700"))
+# shift register arrows: P steps left->right across boundary at each row
+gapx0=bA_x+n*(cell+gap); gapx1=bB_x
+midx=(gapx0+gapx1)/2
+for r in range(n):
+    yy=gy0+r*(cell+gap)+cell/2
+    s.append(line(gapx0-2,yy,gapx1-cell/2,yy,C_ORG,"ao",1.8,"5 3" if r%2 else ""))
+s.append(box(midx-30,gy0+n*(cell+gap)+8,60,20,"#f7efe2","#c9a875",5,1.1))
+s.append(T(midx,gy0+n*(cell+gap)+22,"P steps",10,C_ORG,"700"))
+s.append(T(x0+14,y0+PH-74,"P-step BLOCKING shift register moves each PE's hidden",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-58,"tile to same-coord PE one block over. Parity ordering",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-42,"(even: send->recv; odd solid vs dashed: recv->send) =",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-26,"deadlock-free.  Turn blocks @queue_flush-drain q7/q0 first.",10.5,"#34434d","500","start"))
+
+# ---- A4: P-7 band-scoped reduce (Q@KT cycling root) ----
+x0,y0=pax[1],pay[1]
+s.append(panel_frame(x0,y0,"P-7  kv-band reduce  (attn_score_reduce)","Q@KT / softmax  ·  S-chain c1,c2/q5,q6 + N-chain c3,c4/q7,q0",C_BLU))
+cell=30; gap=10; n=5; gx0=x0+150; gy0=y0+52
+# draw a single column band of pes_per_kv_head PEs
+band=4; broot=2
+for r in range(band):
+    yy=gy0+r*(cell+gap)
+    fill=ROOT_F if r==broot else BAND_F
+    s.append(box(gx0,yy,cell,cell,fill,ROOT_S,3,1.2))
+    s.append(T(gx0-10,yy+cell/2+4,f"pe {r}",9.5,"#5a6b76","600","end"))
+# south chain (above root) colors 1,2 -> down to root
+for r in range(0,broot):
+    yy=gy0+r*(cell+gap)+cell
+    s.append(line(gx0+cell*0.35,yy,gx0+cell*0.35,gy0+(r+1)*(cell+gap),C_RED,"ar",2.0))
+# north chain (below root) colors 3,4 -> up to root
+for r in range(broot+1,band):
+    yy=gy0+r*(cell+gap)
+    s.append(line(gx0+cell*0.65,yy,gx0+cell*0.65,gy0+(r-1)*(cell+gap)+cell,C_PUR,"ap",2.0))
+s.append(T(gx0+cell/2,gy0-8,"cycling root",9.5,ROOT_S,"700"))
+s.append(T(gx0+cell+16,gy0+cell*0.4,"S-chain (c1,c2)",9.5,C_RED,"700","start"))
+s.append(T(gx0+cell+16,gy0+3*(cell+gap)+cell*0.6,"N-chain (c3,c4)",9.5,C_PUR,"700","start"))
+s.append(T(x0+14,y0+PH-74,"Split the band chain onto TWO disjoint color pairs so",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-58,"each color's rx/tx depends only on band parity (painted",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-42,"ONCE by enter_qkt_reduce). The per-step root then cycles",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-26,"in pure logic with ZERO route repaint.  N-chain borrows q7,q0.",10.5,"#34434d","500","start"))
+
+# ============ PANEL B : color + queue reuse map ============
+byy=832
+s.append(f'<line x1="40" y1="{byy-14}" x2="{W-40}" y2="{byy-14}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(40,byy+6,"B.  Color + queue reuse map — which functions time-share each queue (every rebind is drained-safe)",14.5,"#0d1b26","700","start"))
+
+# columns: queue | color(s) | owner A (phase) | owner B (phase) | rebind fn
+cols=[40, 120, 300, 560, 820, 1140]
+rows_y=byy+30
+rowh=34
+hdr=["queue","color id(s)","owner  (phase 1)","time-shared with  (phase 2)","rebind / drain"]
+s.append(box(40,rows_y,W-80,rowh,"#eef3f7","#c9d4dd",6,1.2))
+for i,htxt in enumerate(hdr):
+    s.append(T(cols[i]+10,rows_y+22,htxt,11.5,"#0d1b26","700","start"))
+data=[
+ ("q7, q0","3,4 / 12,13","N/S shuttle + Q@KT north chain (north_south_aux c3,c4)","E/W shuttle (shuttle_east_west c12,c13)","rebind_shuttle_7_0  (empty, no flush)"),
+ ("q5, q6, q1","1,2,5 / 18,19,20","reduce_1st + broadcast (c1,c2,c5)","Score x V band shift (band c18,c19,c20)","rebind_band_q_to_band/reduce + @queue_flush"),
+ ("q2","6,7,8","two_hop_comm left matrix (x_inter)","left_matrix_shift skew (same x channel)","skew completes before steps"),
+ ("q3","9,10,11","two_hop_comm right matrix (y_inter)","attn_right_hop  K|V tile hop","(none — same channel)"),
+ ("q4","—","free","—","—"),
+]
+rc=["#ffffff","#f5f8fa"]
+for j,row in enumerate(data):
+    ry=rows_y+rowh+j*rowh
+    s.append(box(40,ry,W-80,rowh,rc[j%2],"#e3e9ee",0,1.0))
+    vals=[row[0],row[1],row[2],row[3],row[4]]
+    for i,v in enumerate(vals):
+        col = "#0d1b26" if i<2 else "#34434d"
+        wt = "700" if i==0 else ("600" if i==1 else "500")
+        s.append(T(cols[i]+10,ry+21,v,10.5,col,wt,"start"))
+# footnote
+fy=rows_y+rowh+len(data)*rowh+26
+s.append(T(40,fy,"reconfig()  is the ONE route-switch entry point: RECFG_FULL / RECFG_K paint reduce+bcast (G-3); RECFG_SH_OUT/IN paint the block's shuttle hop; block-edge routes clamped by terminate_dir (G-9).",10.5,"#5a6b76","500","start"))
+s.append(T(40,fy+18,"Legend:  red = reduce chain   blue = broadcast / softmax   purple = Cannon-left / N-chain   green = Cannon-right   orange = inter-block shuttle.   All fabric DSD extents comptime; runtime variation goes in the count.",10.5,"#5a6b76","500","start"))
+
+s.append('</svg>')
+open(OUT,"w").write("\n".join(s))
+print("wrote", OUT, W, H)
