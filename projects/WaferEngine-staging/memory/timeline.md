@@ -2,6 +2,7 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-07-16 — fabric-no-keyed-routing-orchestration → `memory/inbox/2026-07-16-fabric-no-keyed-routing-orchestration.md`
 - 2026-07-13 — kv-management-abstraction-design → `memory/inbox/2026-07-13-kv-management-abstraction-design.md`
 - 2026-07-09 — e2e-kernel-qa-log → `memory/inbox/2026-07-09-e2e-kernel-qa-log.md`
 - 2026-07-08 — h2d-playground-review → `memory/inbox/2026-07-08-h2d-playground-review.md`

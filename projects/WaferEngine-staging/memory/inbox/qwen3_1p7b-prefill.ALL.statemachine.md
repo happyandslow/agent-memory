@@ -1,26 +1,26 @@
 # qwen3_1p7b-prefill — task/fn state machines (all kernels)
 
-> **Aggregate index** of the per-kernel task/fn state-machine set. Each kernel below is an independent Mermaid `stateDiagram-v2` (not merged into one diagram), with links to its standalone detail doc (full per-state prose + `file:line` citations) and its rendered SVG. This is the control-flow companion to the algo walkthroughs (`qwen3_1p7b-prefill.<kernel>.md`). Model `qwen3_1p7b-prefill`, ref config `test_sim_2x4_kv_varlen.json`.
+> **Aggregate index** of the per-kernel task/fn state-machine set for `qwen3_1p7b-prefill`. Each kernel below is an independent Mermaid `stateDiagram-v2` (not merged into one diagram), with links to its standalone detail doc (full per-state prose + `file:line` citations) and its rendered SVG under `assets/kernel-algo/`. Control-flow companion to the algo walkthroughs. Ref config `test_sim_2x4_kv_varlen.json`.
 
-**Edge legend (shared by every diagram):** `call:` = synchronous same-stack `fn` call · `async:` = microthread `.activate`/`@activate` callback (incl. cross-module comm_pe) · `gate:` = `@unblock` of a `@block`-ed task · `event:` = fabric recv park. `[task]` marks a real scheduling unit (`@bind_local_task`/`@get_*_task_id`); unmarked nodes are `fn`s on a task's stack.
+**Edge legend (shared by every diagram):** `call:` = synchronous same-stack `fn` call · `async:` = microthread `.activate`/`@activate` callback (incl. cross-module comm_pe) · `gate:` = `@unblock` of a `@block`-ed task · `event:` = fabric recv park. `[task]` marks a real scheduling unit; unmarked nodes are `fn`s on a task's stack.
 
 ## Index
 
 | Kernel | Detail doc | Rendered | In-page diagram |
 |---|---|---|---|
-| `demux.csl` — Host token-id ingress — 1×P store-and-forward peel chain | [qwen3_1p7b-prefill.demux.statemachine.md](qwen3_1p7b-prefill.demux.statemachine.md) | [svg](qwen3_1p7b-prefill.demux.statemachine.svg) | [↓ diagram](#demux) |
-| `ht_head.csl` — Token→embedding LUT via a vocab-rotation ring | [qwen3_1p7b-prefill.ht_head.statemachine.md](qwen3_1p7b-prefill.ht_head.statemachine.md) | [svg](qwen3_1p7b-prefill.ht_head.statemachine.svg) | [↓ diagram](#ht_head) |
-| `prefill.csl` — Main compute PE — serpentine layer pipeline | [qwen3_1p7b-prefill.prefill.statemachine.md](qwen3_1p7b-prefill.prefill.statemachine.md) | [svg](qwen3_1p7b-prefill.prefill.statemachine.svg) | [↓ diagram](#prefill) |
-| `comm_pe.csl` — Comm library — no main, per-collective sub-machines | [qwen3_1p7b-prefill.comm_pe.statemachine.md](qwen3_1p7b-prefill.comm_pe.statemachine.md) | [svg](qwen3_1p7b-prefill.comm_pe.statemachine.svg) | [↓ diagram](#comm_pe) |
-| `ht_tail.csl` — Output head — RMSNorm → lm_head GEMV → top-K → sampling | [qwen3_1p7b-prefill.ht_tail.statemachine.md](qwen3_1p7b-prefill.ht_tail.statemachine.md) | [svg](qwen3_1p7b-prefill.ht_tail.statemachine.svg) | [↓ diagram](#ht_tail) |
-| `mux.csl` — One-shot logits/token egress — single async chain | [qwen3_1p7b-prefill.mux.statemachine.md](qwen3_1p7b-prefill.mux.statemachine.md) | [svg](qwen3_1p7b-prefill.mux.statemachine.svg) | [↓ diagram](#mux) |
-| `kv_egress_colmux.csl` — KV-cache egress — switch-gather + column-mux drain | [qwen3_1p7b-prefill.kv_egress_colmux.statemachine.md](qwen3_1p7b-prefill.kv_egress_colmux.statemachine.md) | [svg](qwen3_1p7b-prefill.kv_egress_colmux.statemachine.svg) | [↓ diagram](#kv_egress_colmux) |
-| route-only (`kickoff_relay`/`route_util`/`route_calc`) | [qwen3_1p7b-prefill.route-only.statemachine.md](qwen3_1p7b-prefill.route-only.statemachine.md) | — | [↓ note](#route-only) |
+| `demux.csl` — host token-id ingress (peel chain) | [qwen3_1p7b-prefill.demux.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.demux.statemachine.md) | [svg](../../assets/kernel-algo/qwen3_1p7b-prefill.demux.statemachine.svg) | [↓](#demux) |
+| `ht_head.csl` — embedding LUT via vocab-rotation ring | [qwen3_1p7b-prefill.ht_head.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.ht_head.statemachine.md) | [svg](../../assets/kernel-algo/qwen3_1p7b-prefill.ht_head.statemachine.svg) | [↓](#ht_head) |
+| `prefill.csl` — main compute PE (serpentine layers) | [qwen3_1p7b-prefill.prefill.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.prefill.statemachine.md) | [svg](../../assets/kernel-algo/qwen3_1p7b-prefill.prefill.statemachine.svg) | [↓](#prefill) |
+| `comm_pe.csl` — comm library (no main) | [qwen3_1p7b-prefill.comm_pe.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.comm_pe.statemachine.md) | [svg](../../assets/kernel-algo/qwen3_1p7b-prefill.comm_pe.statemachine.svg) | [↓](#comm_pe) |
+| `ht_tail.csl` — output head | [qwen3_1p7b-prefill.ht_tail.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.ht_tail.statemachine.md) | [svg](../../assets/kernel-algo/qwen3_1p7b-prefill.ht_tail.statemachine.svg) | [↓](#ht_tail) |
+| `mux.csl` — one-shot logits/token egress | [qwen3_1p7b-prefill.mux.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.mux.statemachine.md) | [svg](../../assets/kernel-algo/qwen3_1p7b-prefill.mux.statemachine.svg) | [↓](#mux) |
+| `kv_egress_colmux.csl` — KV-cache egress | [qwen3_1p7b-prefill.kv_egress_colmux.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.kv_egress_colmux.statemachine.md) | [svg](../../assets/kernel-algo/qwen3_1p7b-prefill.kv_egress_colmux.statemachine.svg) | [↓](#kv_egress_colmux) |
+| route-only files | — | — | [↓ note](#route-only) |
 
 <a id="demux"></a>
-## `demux.csl` — Host token-id ingress — 1×P store-and-forward peel chain
+## `demux.csl` — host token-id ingress (peel chain)
 
-`main` peels this PE's block, branches to `forward_and_out` (non-last: forward remainder east + emit own block south) or `send_out` (last: emit south only); both join at `done`, which re-arms `main` for the next request. PE 0 also fires the kickoff sentinel.
+1×P store-and-forward peel chain: `main` peels this PE block, forwards remainder east / emits own block south, joins at `done`, re-arms per request. PE 0 fires the kickoff sentinel.
 
 ```mermaid
 stateDiagram-v2
@@ -63,12 +63,12 @@ stateDiagram-v2
     class demux_emit_kickoff leaf
 ```
 
-**Links:** detail doc → [qwen3_1p7b-prefill.demux.statemachine.md](qwen3_1p7b-prefill.demux.statemachine.md) · rendered SVG → [qwen3_1p7b-prefill.demux.statemachine.svg](qwen3_1p7b-prefill.demux.statemachine.svg)
+**Links:** detail doc → [qwen3_1p7b-prefill.demux.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.demux.statemachine.md) · rendered SVG → [qwen3_1p7b-prefill.demux.statemachine.svg](../../assets/kernel-algo/qwen3_1p7b-prefill.demux.statemachine.svg)
 
 <a id="ht_head"></a>
-## `ht_head.csl` — Token→embedding LUT via a vocab-rotation ring
+## `ht_head.csl` — embedding LUT via vocab-rotation ring
 
-Rotate the table, don't route on the key. Per-request token ingress re-arm closes the loop.
+Rotate the table, do not route on the key. Per-request token ingress re-arm closes the loop.
 
 ```mermaid
 stateDiagram-v2
@@ -131,12 +131,12 @@ stateDiagram-v2
     }
 ```
 
-**Links:** detail doc → [qwen3_1p7b-prefill.ht_head.statemachine.md](qwen3_1p7b-prefill.ht_head.statemachine.md) · rendered SVG → [qwen3_1p7b-prefill.ht_head.statemachine.svg](qwen3_1p7b-prefill.ht_head.statemachine.svg)
+**Links:** detail doc → [qwen3_1p7b-prefill.ht_head.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.ht_head.statemachine.md) · rendered SVG → [qwen3_1p7b-prefill.ht_head.statemachine.svg](../../assets/kernel-algo/qwen3_1p7b-prefill.ht_head.statemachine.svg)
 
 <a id="prefill"></a>
-## `prefill.csl` — Main compute PE — serpentine layer pipeline
+## `prefill.csl` — main compute PE (serpentine layers)
 
-`prefill_struct` is a 14-flag dispatch hub over the layer stages; `Cannon` is the shift-MAC matmul sub-machine; `Attention` is chunked FlashAttention-2. Three nested loops: per-layer, per-chunk, per-request.
+`prefill_struct` is a 14-flag dispatch hub over the layer stages; `Cannon` is the shift-MAC matmul sub-machine; `Attention` is chunked FlashAttention-2. Per-layer / per-chunk / per-request loops.
 
 ```mermaid
 stateDiagram-v2
@@ -310,12 +310,12 @@ stateDiagram-v2
     class attn_finish,kv_egress_emit_k,kv_egress_emit_v,kv_egress_adv,kv_egress_drain task
 ```
 
-**Links:** detail doc → [qwen3_1p7b-prefill.prefill.statemachine.md](qwen3_1p7b-prefill.prefill.statemachine.md) · rendered SVG → [qwen3_1p7b-prefill.prefill.statemachine.svg](qwen3_1p7b-prefill.prefill.statemachine.svg)
+**Links:** detail doc → [qwen3_1p7b-prefill.prefill.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.prefill.statemachine.md) · rendered SVG → [qwen3_1p7b-prefill.prefill.statemachine.svg](../../assets/kernel-algo/qwen3_1p7b-prefill.prefill.statemachine.svg)
 
 <a id="comm_pe"></a>
-## `comm_pe.csl` — Comm library — no main, per-collective sub-machines
+## `comm_pe.csl` — comm library (no main)
 
-Each collective is its own sub-machine with its own entry: two-phase all-reduce, Cannon two-hop matmul, band reduce, serpentine shuttle, and the `reconfig` route machine.
+Each collective is its own sub-machine: two-phase all-reduce, Cannon two-hop matmul, band reduce, serpentine shuttle, reconfig route machine.
 
 ```mermaid
 stateDiagram-v2
@@ -484,12 +484,12 @@ stateDiagram-v2
     }
 ```
 
-**Links:** detail doc → [qwen3_1p7b-prefill.comm_pe.statemachine.md](qwen3_1p7b-prefill.comm_pe.statemachine.md) · rendered SVG → [qwen3_1p7b-prefill.comm_pe.statemachine.svg](qwen3_1p7b-prefill.comm_pe.statemachine.svg)
+**Links:** detail doc → [qwen3_1p7b-prefill.comm_pe.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.comm_pe.statemachine.md) · rendered SVG → [qwen3_1p7b-prefill.comm_pe.statemachine.svg](../../assets/kernel-algo/qwen3_1p7b-prefill.comm_pe.statemachine.svg)
 
 <a id="ht_tail"></a>
-## `ht_tail.csl` — Output head — RMSNorm → lm_head GEMV → top-K → sampling
+## `ht_tail.csl` — output head
 
-Plus a TSC start/stop sentinel. A shared two-phase tail reduce serves both the RMSNorm sum-of-squares and the logits reduce. Per-request re-arm.
+RMSNorm to lm_head GEMV to top-K to sampling, plus a TSC sentinel; shared two-phase tail reduce; per-request re-arm.
 
 ```mermaid
 stateDiagram-v2
@@ -605,12 +605,12 @@ stateDiagram-v2
     }
 ```
 
-**Links:** detail doc → [qwen3_1p7b-prefill.ht_tail.statemachine.md](qwen3_1p7b-prefill.ht_tail.statemachine.md) · rendered SVG → [qwen3_1p7b-prefill.ht_tail.statemachine.svg](qwen3_1p7b-prefill.ht_tail.statemachine.svg)
+**Links:** detail doc → [qwen3_1p7b-prefill.ht_tail.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.ht_tail.statemachine.md) · rendered SVG → [qwen3_1p7b-prefill.ht_tail.statemachine.svg](../../assets/kernel-algo/qwen3_1p7b-prefill.ht_tail.statemachine.svg)
 
 <a id="mux"></a>
-## `mux.csl` — One-shot logits/token egress — single async chain
+## `mux.csl` — one-shot logits/token egress
 
-A single async `@mov32` chain serializes the result through the east-most collector PE to the host; the tail re-activates `main` once per request. All non-collector mux PEs are inert.
+Single async @mov32 chain serializes the result through the east-most collector PE; re-armed once per request.
 
 ```mermaid
 stateDiagram-v2
@@ -630,12 +630,12 @@ stateDiagram-v2
     note right of tsc_send : re-armed cycle, one pass per request
 ```
 
-**Links:** detail doc → [qwen3_1p7b-prefill.mux.statemachine.md](qwen3_1p7b-prefill.mux.statemachine.md) · rendered SVG → [qwen3_1p7b-prefill.mux.statemachine.svg](qwen3_1p7b-prefill.mux.statemachine.svg)
+**Links:** detail doc → [qwen3_1p7b-prefill.mux.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.mux.statemachine.md) · rendered SVG → [qwen3_1p7b-prefill.mux.statemachine.svg](../../assets/kernel-algo/qwen3_1p7b-prefill.mux.statemachine.svg)
 
 <a id="kv_egress_colmux"></a>
-## `kv_egress_colmux.csl` — KV-cache egress — switch-gather + column-mux drain
+## `kv_egress_colmux.csl` — KV-cache egress
 
-Switch-gather EAST + column-mux drain NORTH into a D2H stream, with a budget/header word and a column-fence barrier. `kv_fwd.csl` is a task-less pass-through extender.
+Switch-gather EAST + column-mux drain NORTH into a D2H stream, with a header word and a column-fence barrier. kv_fwd.csl is a task-less extender.
 
 ```mermaid
 stateDiagram-v2
@@ -670,13 +670,11 @@ stateDiagram-v2
     end note
 ```
 
-**Links:** detail doc → [qwen3_1p7b-prefill.kv_egress_colmux.statemachine.md](qwen3_1p7b-prefill.kv_egress_colmux.statemachine.md) · rendered SVG → [qwen3_1p7b-prefill.kv_egress_colmux.statemachine.svg](qwen3_1p7b-prefill.kv_egress_colmux.statemachine.svg)
+**Links:** detail doc → [qwen3_1p7b-prefill.kv_egress_colmux.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.kv_egress_colmux.statemachine.md) · rendered SVG → [qwen3_1p7b-prefill.kv_egress_colmux.statemachine.svg](../../assets/kernel-algo/qwen3_1p7b-prefill.kv_egress_colmux.statemachine.svg)
 
 <a id="route-only"></a>
 ## Route-only files (no task/fn state machine)
 
-- **`kickoff_relay.csl`** — empty `comptime { }`, every PE inert; the host paints `kickoff_color` N→S and the router forwards the 1-wavelet forward-start sentinel with no PE program (`kickoff_relay.csl:1-12`).
-- **`route_util.csl`** — synchronous route-config helper `inline fn`s (`set_route_1tx`/`set_route_2tx` `:28-45`, `compute_route_word_*`/`apply_route_word` `:52-74`), called on the caller's stack at init / reconfig. No task graph.
-- **`route_calc.csl`** — init-time per-PE route-direction calculation (`band_dirs`, `terminate_*`, `get_params` `:59-185`) returning `runtime_params_t`. Pure data-flow, no tasks.
-
-Full note: [qwen3_1p7b-prefill.route-only.statemachine.md](qwen3_1p7b-prefill.route-only.statemachine.md). Where these appear inside another kernel's machine (e.g. comm_pe's `reconfig` calling `apply_route_word`), they show up there as `call:` edges.
+- **`kickoff_relay.csl`** — empty `comptime { }`, every PE inert; host paints `kickoff_color` N->S and the router forwards the 1-wavelet sentinel with no PE program (`kickoff_relay.csl:1-12`).
+- **`route_util.csl`** — synchronous route-config helper `inline fn`s (`:28-74`), called on the caller stack at init/reconfig. No task graph.
+- **`route_calc.csl`** — init-time per-PE route-direction calc (`band_dirs`/`terminate_*`/`get_params` `:59-185`) returning `runtime_params_t`. Pure data-flow, no tasks.
