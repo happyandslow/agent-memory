@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+# kv_egress_colmux.csl algorithm diagram: KV egress column-mux NORTH drain + kv_fwd extender.
+# Top panel = spatial (staircase drain columns + host ports). Bottom panel = task state machine.
+import html
+OUT = "/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-prefill.kv_egress_colmux.svg"
+W, H = 1040, 1000
+def esc(s): return html.escape(s)
+s = []
+s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
+s.append('<defs>'
+  '<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker>'
+  '<marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker>'
+  '<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker>'
+  '<marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker>'
+  '</defs>')
+s.append(f'<rect width="{W}" height="{H}" fill="#f7f9fb"/>')
+def T(x,y,t,sz=13,f="#12222f",w="600",a="middle"):
+    return f'<text x="{x}" y="{y}" font-size="{sz}" font-weight="{w}" fill="{f}" text-anchor="{a}">{esc(t)}</text>'
+def box(x,y,w,h,fill,stroke,rx=6,sw=1.6,op=1.0):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" fill-opacity="{op}" stroke="{stroke}" stroke-width="{sw}"/>'
+def line(x1,y1,x2,y2,c,mk,w=2.4,dash=""):
+    d=f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{c}" stroke-width="{w}"{d} marker-end="url(#{mk})"/>'
+
+s.append(T(W/2,30,"kv_egress_colmux.csl — KV-cache egress column-mux (NORTH drain to host)",18,"#0d1b26","700"))
+s.append(T(W/2,50,"Each block-row gathers its KV rows EAST; a 1xP_BLOCK_SIZE mux column drains them NORTH to one D2H stream. kv_fwd = transparent W->E gap extender.",11.5,"#4a5b66","500"))
+
+# ---------------- TOP PANEL: spatial ----------------
+s.append(T(60,84,"(1) Spatial layout — EAST-side staircase (2x4 config: 4 block-rows, P_BLOCK_SIZE=8 tall)",13.5,"#0d1b26","700","start"))
+
+# geometry: 4 block-rows stacked on the left; drain columns fan out to the right (staircase)
+# each further EAST + further SOUTH. Host ports along the top band, one above each column.
+bx0 = 60          # compute block x
+bw  = 150         # compute block width (represents Pw=16)
+rh  = 74          # canvas row pitch
+bh  = 56          # block box height
+gy0 = 124
+colstep = 138     # horizontal separation between drain columns (exaggerated staircase)
+col0x  = 300      # first drain column x
+colw   = 40
+porty  = 100      # host port band (top)
+
+for by in range(4):
+    y = gy0 + by*rh
+    # compute block (all stacked at same x)
+    s.append(box(bx0, y, bw, bh, "#cfe0ee", "#245f96", 6, 1.4))
+    s.append(T(bx0+bw/2, y+20, f"block-row {by}", 11.5, "#0d1b26", "700"))
+    s.append(T(bx0+bw/2, y+36, "KV slice 16x8", 9.5, "#2a4a63", "500"))
+    s.append(T(bx0+bw/2, y+49, "rows gather EAST ->", 9, "#c0392b", "600"))
+    xcm = col0x + by*colstep
+    # extender / gather bar from block east edge to the drain column
+    xbar0 = bx0+bw
+    if by > 0:
+        s.append(box(xbar0+6, y+bh/2-11, xcm-xbar0-12, 22, "#efe0c6", "#a86a1e", 4, 1.2))
+        s.append(T((xbar0+xcm)/2, y+bh/2-14, f"kv_fwd extender ({by} col W->E)", 8.5, "#7a5a1e", "600"))
+    # EAST gather arrow into the drain column (kv_egress_c, W->RAMP)
+    s.append(line(xbar0+1, y+bh/2, xcm-1, y+bh/2, "#c0392b", "ar", 2.2))
+    # colmux column (staircase)
+    s.append(box(xcm, y, colw, bh, "#f6d7d2", "#c0392b", 5, 1.5))
+    s.append(T(xcm+colw/2, y+bh/2-4, "col", 9.5, "#7a1f18", "700"))
+    s.append(T(xcm+colw/2, y+bh/2+9, "mux", 9.5, "#7a1f18", "700"))
+    # NORTH drain arrow up to this column's host port
+    s.append(line(xcm+colw/2, y-1, xcm+colw/2, porty+16, "#2c6fb0", "ab", 2.4, "5 3"))
+    # host port
+    s.append(box(xcm+colw/2-30, porty-4, 60, 20, "#cfe3f6", "#2c6fb0", 4, 1.3))
+    s.append(T(xcm+colw/2, porty+10, f"D2H {by}", 9.5, "#12356a", "700"))
+
+# staircase label
+s.append(T(bx0, gy0+4*rh+6, "Drain column = STAIR_X0 + by (staircase): each region gets a clear vertical path NORTH to its own open top-edge host port.", 10.5, "#26333c","500","start"))
+
+# round_sync vertical illustration on the tail (last) drain column
+xtail = col0x + 3*colstep
+s.append(T(xtail+colw+10, gy0+3*rh+bh/2-6, "SOUTH-most col = tail", 9.5, "#7a3fb0","700","start"))
+s.append(T(xtail+colw+10, gy0+3*rh+bh/2+7, "(last to drain -> sources round_sync N)", 9, "#7a3fb0","500","start"))
+
+# legend
+ly = gy0+4*rh+30
+s.append(line(60,ly,86,ly,"#c0392b","ar",2.2))
+s.append(T(94,ly+4,"EAST row gather (kv_egress_c id 21, W->RAMP into mux) — one shared row color across all 4 y-disjoint regions",10.5,"#26333c","500","start"))
+s.append(line(60,ly+20,86,ly+20,"#2c6fb0","ab",2.4))
+s.append(T(94,ly+24,"NORTH drain to host (out_color {6,8,9,17}, out_q3): RAMP->N own row, then SWITCH_ADV flips to S->N for rows below",10.5,"#26333c","500","start"))
+s.append(line(60,ly+40,86,ly+40,"#a86a1e","ar",2.2))
+s.append(T(94,ly+44,"kv_fwd extender: transparent W->E pass-through (no program, no queues) bridging the by-column staircase gap",10.5,"#26333c","500","start"))
+s.append(line(60,ly+60,86,ly+60,"#7a3fb0","ap",2.2))
+s.append(T(94,ly+64,"round_sync (id 10, S->N): 1-wavelet per-request re-arm barrier; tail sources, middles tap+forward, north sinks",10.5,"#26333c","500","start"))
+
+# ---------------- BOTTOM PANEL: task state machine ----------------
+py = ly+96
+s.append(f'<line x1="40" y1="{py-14}" x2="{W-40}" y2="{py-14}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(60,py+6,"(2) Per-PE task state machine (roles: is_col_tail selects the post-drain branch)",13.5,"#0d1b26","700","start"))
+def node(x,y,w,h,title,sub,fill,stroke):
+    out=[box(x,y,w,h,fill,stroke)]
+    out.append(T(x+w/2,y+20,title,12,"#0d1b26","700"))
+    for i,ln in enumerate(sub.split("\n")):
+        out.append(T(x+w/2,y+37+i*13,ln,9.5,"#34434d","500"))
+    return "".join(out)
+ny=py+24; nh=62; w1=220
+col_r="#faddd8"; s_r="#c0392b"
+col_b="#dbeafe"; s_b="#245f96"
+col_p="#ece1f6"; s_p="#7a3fb0"
+# row1: peel_meta -> drain
+xs=[60,320]
+s.append(node(xs[0],ny,w1,nh,"peel_meta  (task 8)","peel leading request_n_chunks\n(1 u32, NOT forwarded) -> drain",col_r,s_r))
+s.append(node(xs[1],ny,w1,nh,"drain  (task 9)","latch n_segs_rt on seg 0;\nmov32 seg_len NORTH x n_segs_rt\nRAMP->N own; loop; then post-drain",col_r,s_r))
+s.append(line(xs[0]+w1,ny+nh/2,xs[1]-2,ny+nh/2,"#5a6b76","ar",1.8))
+# self-loop on drain
+s.append(f'<path d="M {xs[1]+w1-30} {ny} L {xs[1]+w1-30} {ny-16} L {xs[1]+30} {ny-16} L {xs[1]+30} {ny}" fill="none" stroke="#c0392b" stroke-width="1.6" marker-end="url(#ar)"/>')
+s.append(T(xs[1]+w1/2,ny-22,"x n_segs_rt segments",9,"#c0392b","600"))
+# row2: branch on is_col_tail
+ny2=ny+nh+52
+# tail branch (left)
+s.append(node(60,ny2,w1,nh,"sync_src  (task 10) — TAIL","source round_sync NORTH;\nno SWITCH_ADV (no south row);\nself re-arm -> peel_meta",col_p,s_p))
+# non-tail branch (right two)
+s.append(node(360,ny2,w1,nh,"sync_wait (task 10) — non-tail","SWITCH_ADV out_color (RAMP->N => S->N);\npark on round_sync (mov32 recv)",col_b,s_b))
+s.append(node(620,ny2,w1,nh,"sync_do (task 11) — non-tail","round_sync arrived (all south drained):\nclear switch -> pos0; re-arm -> peel_meta",col_b,s_b))
+# drain -> branch
+s.append(f'<path d="M {xs[1]+w1/2} {ny+nh} L {xs[1]+w1/2} {ny2-30} L {160} {ny2-30} L {160} {ny2-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
+s.append(f'<path d="M {xs[1]+w1/2} {ny2-30} L {460} {ny2-30} L {460} {ny2-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
+s.append(T(xs[1]+w1/2,ny2-36,"post-drain: branch on is_col_tail",9.5,"#5a6b76","600"))
+s.append(T(160,ny2-18,"tail",9,"#7a3fb0","700"))
+s.append(T(460,ny2-18,"non-tail",9,"#245f96","700"))
+# sync_wait -> sync_do
+s.append(line(360+w1,ny2+nh/2,620-2,ny2+nh/2,"#7a3fb0","ap",1.8))
+s.append(T(360+w1+70,ny2+nh/2-6,"round_sync",9,"#7a3fb0","600"))
+# re-arm loops back to peel_meta
+s.append(f'<path d="M {60+w1/2} {ny2+nh} L {60+w1/2} {ny2+nh+22} L {30} {ny2+nh+22} L {30} {ny+18} L {58} {ny+18}" fill="none" stroke="#7a3fb0" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ar)"/>')
+s.append(f'<path d="M {620+w1/2} {ny2+nh} L {620+w1/2} {ny2+nh+40} L {20} {ny2+nh+40} L {20} {ny+40} L {58} {ny+40}" fill="none" stroke="#245f96" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ar)"/>')
+s.append(T(300,ny2+nh+36,"re-arm peel_meta for the next request (per-request serve loop)",9.5,"#5a6b76","600","middle"))
+
+s.append(T(60,H-16,"Colors/queues: in_color=21 (in_q2, W->RAMP) - out_color {6,8,9,17} (out_q3, NORTH switch) - round_sync=10 (in_q3/out_q4, S->N). Count-exactness = correctness; a mis-timed SWITCH_ADV silently hangs.",9.5,"#6a7883","400","start"))
+s.append('</svg>')
+open(OUT,"w").write("\n".join(s))
+print("ok", OUT, W, H)

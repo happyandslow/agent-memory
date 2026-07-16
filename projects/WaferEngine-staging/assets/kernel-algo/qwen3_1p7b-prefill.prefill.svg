@@ -1,0 +1,192 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="1112" viewBox="0 0 1180 1112" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker><marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker><marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker><marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c77d1a"/></marker><marker id="ak" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5a6b76"/></marker></defs>
+<rect width="1180" height="1112" fill="#f7f9fb"/>
+<text x="590.0" y="32" font-size="20" font-weight="700" fill="#0d1b26" text-anchor="middle">prefill.csl — serpentine layer pipeline + chunked GQA attention</text>
+<text x="590.0" y="52" font-size="12" font-weight="500" fill="#4a5b66" text-anchor="middle">一份程序跑在每个 PE 上 = 一段连续 transformer 层;block 沿蛇形(serpentine)当流水级传 X。prefill = seq 切 X / feature 切 Y(与 decode 转置)。ref: 2×4 blocks, 8×8 PE/block, 1 层/block</text>
+<text x="60" y="88" font-size="14" font-weight="700" fill="#0d1b26" text-anchor="start">① 空间分布:蛇形 block 流水 + 关键通信</text>
+<rect x="60" y="120" width="92" height="300" rx="8" fill="#e9dcc4" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
+<text x="106.0" y="142" font-size="11" font-weight="700" fill="#7a5010" text-anchor="middle">west band</text>
+<text x="106.0" y="160" font-size="10" font-weight="500" fill="#7a5010" text-anchor="middle">(x=4)</text>
+<rect x="70" y="176" width="72" height="46" rx="5" fill="#f2e6cf" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.2"/>
+<text x="106.0" y="194" font-size="10.5" font-weight="700" fill="#0d1b26" text-anchor="middle">HT_head</text>
+<text x="106.0" y="210" font-size="9" font-weight="500" fill="#5a5040" text-anchor="middle">embed LUT</text>
+<rect x="70" y="240" width="72" height="46" rx="5" fill="#f2e6cf" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.2"/>
+<text x="106.0" y="258" font-size="10.5" font-weight="700" fill="#0d1b26" text-anchor="middle">HT_tail</text>
+<text x="106.0" y="274" font-size="9" font-weight="500" fill="#5a5040" text-anchor="middle">lm_head</text>
+<text x="106.0" y="406" font-size="9.5" font-weight="600" fill="#a86a1e" text-anchor="middle">host tokens ↓</text>
+<rect x="240" y="120" width="118" height="60" rx="6" fill="#a9d0ef" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/>
+<text x="299.0" y="141" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">block p0</text>
+<text x="299.0" y="157" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">layers [0,1)</text>
+<text x="299.0" y="170" font-size="8.5" font-weight="500" fill="#4a6478" text-anchor="middle">1 layer (ref)</text>
+<rect x="384" y="120" width="118" height="60" rx="6" fill="#cfe4f5" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/>
+<text x="443.0" y="141" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">block p1</text>
+<text x="443.0" y="157" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">layers [1,2)</text>
+<text x="443.0" y="170" font-size="8.5" font-weight="500" fill="#4a6478" text-anchor="middle">1 layer (ref)</text>
+<rect x="384" y="202" width="118" height="60" rx="6" fill="#cfe4f5" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/>
+<text x="443.0" y="223" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">block p2</text>
+<text x="443.0" y="239" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">layers [2,3)</text>
+<text x="443.0" y="252" font-size="8.5" font-weight="500" fill="#4a6478" text-anchor="middle">1 layer (ref)</text>
+<rect x="240" y="202" width="118" height="60" rx="6" fill="#cfe4f5" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/>
+<text x="299.0" y="223" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">block p3</text>
+<text x="299.0" y="239" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">layers [3,4)</text>
+<text x="299.0" y="252" font-size="8.5" font-weight="500" fill="#4a6478" text-anchor="middle">1 layer (ref)</text>
+<rect x="240" y="284" width="118" height="60" rx="6" fill="#cfe4f5" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/>
+<text x="299.0" y="305" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">block p4</text>
+<text x="299.0" y="321" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">layers [4,5)</text>
+<text x="299.0" y="334" font-size="8.5" font-weight="500" fill="#4a6478" text-anchor="middle">1 layer (ref)</text>
+<rect x="384" y="284" width="118" height="60" rx="6" fill="#cfe4f5" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/>
+<text x="443.0" y="305" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">block p5</text>
+<text x="443.0" y="321" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">layers [5,6)</text>
+<text x="443.0" y="334" font-size="8.5" font-weight="500" fill="#4a6478" text-anchor="middle">1 layer (ref)</text>
+<rect x="384" y="366" width="118" height="60" rx="6" fill="#cfe4f5" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/>
+<text x="443.0" y="387" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">block p6</text>
+<text x="443.0" y="403" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">layers [6,7)</text>
+<text x="443.0" y="416" font-size="8.5" font-weight="500" fill="#4a6478" text-anchor="middle">1 layer (ref)</text>
+<rect x="240" y="366" width="118" height="60" rx="6" fill="#cfe4f5" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/>
+<text x="299.0" y="387" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">block p7</text>
+<text x="299.0" y="403" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">layers [7,8)</text>
+<text x="299.0" y="416" font-size="8.5" font-weight="500" fill="#4a6478" text-anchor="middle">1 layer (ref)</text>
+<line x1="360" y1="150.0" x2="382" y2="150.0" stroke="#2c6fb0" stroke-width="2.4" marker-end="url(#ab)"/>
+<line x1="443.0" y1="182" x2="443.0" y2="200" stroke="#2c6fb0" stroke-width="2.4" marker-end="url(#ab)"/>
+<line x1="382" y1="232.0" x2="360" y2="232.0" stroke="#2c6fb0" stroke-width="2.4" marker-end="url(#ab)"/>
+<line x1="299.0" y1="264" x2="299.0" y2="282" stroke="#2c6fb0" stroke-width="2.4" marker-end="url(#ab)"/>
+<line x1="360" y1="314.0" x2="382" y2="314.0" stroke="#2c6fb0" stroke-width="2.4" marker-end="url(#ab)"/>
+<line x1="443.0" y1="346" x2="443.0" y2="364" stroke="#2c6fb0" stroke-width="2.4" marker-end="url(#ab)"/>
+<line x1="382" y1="396.0" x2="360" y2="396.0" stroke="#2c6fb0" stroke-width="2.4" marker-end="url(#ab)"/>
+<text x="371.0" y="188" font-size="9" font-weight="700" fill="#2c6fb0" text-anchor="middle">shuttle (P-5)</text>
+<line x1="154" y1="150.0" x2="238" y2="150.0" stroke="#2e8b57" stroke-width="2.8" marker-end="url(#ag)"/>
+<text x="196.0" y="142.0" font-size="9.5" font-weight="700" fill="#2e8b57" text-anchor="middle">x_chain →</text>
+<text x="196.0" y="166.0" font-size="8.5" font-weight="500" fill="#2e8b57" text-anchor="middle">G-1/G-2/P-6</text>
+<path d="M 238 414 L 106.0 414 L 106.0 263" fill="none" stroke="#7a3fb0" stroke-width="2.4" stroke-dasharray="6 4" marker-end="url(#ap)"/>
+<text x="196.0" y="432" font-size="9" font-weight="700" fill="#7a3fb0" text-anchor="middle">z-emit → HT_tail (P-6, z_drain 16)</text>
+<line x1="504" y1="150.0" x2="568" y2="150.0" stroke="#c77d1a" stroke-width="2.6" marker-end="url(#ao)"/>
+<path d="M 568 150.0 L 568 94" fill="none" stroke="#c77d1a" stroke-width="2.6" marker-end="url(#ao)"/>
+<rect x="532" y="68" width="150" height="24" rx="5" fill="#f3e2c6" fill-opacity="1.0" stroke="#c77d1a" stroke-width="1.4"/>
+<text x="607" y="84" font-size="10" font-weight="700" fill="#7a5010" text-anchor="middle">KV egress → host</text>
+<text x="607" y="166.0" font-size="8.5" font-weight="600" fill="#c77d1a" text-anchor="middle">switch-gather (P-4)</text>
+<rect x="620" y="120" width="500" height="300" rx="10" fill="#eef4fa" fill-opacity="1.0" stroke="#245f96" stroke-width="1.8"/>
+<text x="870.0" y="142" font-size="12.5" font-weight="700" fill="#0d1b26" text-anchor="middle">一个 block 内部 (P_BLOCK_SIZE × P_BLOCK_SIZE = 8×8)</text>
+<line x1="650" y1="380" x2="830" y2="380" stroke="#5a6b76" stroke-width="2" marker-end="url(#ak)"/>
+<text x="840" y="384" font-size="9.5" font-weight="600" fill="#34434d" text-anchor="start">X = seq (chunk tokens)</text>
+<line x1="650" y1="380" x2="650" y2="180" stroke="#5a6b76" stroke-width="2" marker-end="url(#ak)"/>
+<text x="654" y="174" font-size="9.5" font-weight="600" fill="#34434d" text-anchor="start">Y = feature (dim / kv_cols / ffn)</text>
+<rect x="666" y="192" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.85" stroke="#245f96" stroke-width="0.9"/>
+<rect x="688" y="192" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.85" stroke="#245f96" stroke-width="0.9"/>
+<rect x="710" y="192" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.85" stroke="#245f96" stroke-width="0.9"/>
+<rect x="732" y="192" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.85" stroke="#245f96" stroke-width="0.9"/>
+<rect x="754" y="192" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.85" stroke="#245f96" stroke-width="0.9"/>
+<rect x="776" y="192" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.85" stroke="#245f96" stroke-width="0.9"/>
+<rect x="666" y="214" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.5" stroke="#245f96" stroke-width="0.9"/>
+<rect x="688" y="214" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="710" y="214" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="732" y="214" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="754" y="214" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="776" y="214" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="666" y="236" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.5" stroke="#245f96" stroke-width="0.9"/>
+<rect x="688" y="236" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="710" y="236" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="732" y="236" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="754" y="236" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="776" y="236" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="666" y="258" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.5" stroke="#245f96" stroke-width="0.9"/>
+<rect x="688" y="258" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="710" y="258" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="732" y="258" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="754" y="258" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="776" y="258" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="666" y="280" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.5" stroke="#245f96" stroke-width="0.9"/>
+<rect x="688" y="280" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="710" y="280" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="732" y="280" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="754" y="280" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="776" y="280" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="666" y="302" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.5" stroke="#245f96" stroke-width="0.9"/>
+<rect x="688" y="302" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="710" y="302" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="732" y="302" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="754" y="302" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<rect x="776" y="302" width="19" height="19" rx="3" fill="#8fbfe0" fill-opacity="0.28" stroke="#245f96" stroke-width="0.9"/>
+<text x="732" y="342" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">feature-major / seq-minor: X_tile[f·reduce_len + s]</text>
+<circle cx="1000" cy="270" r="62" fill="none" stroke="#c0392b" stroke-width="2.2" stroke-dasharray="5 4"/>
+<line x1="1000.0" y1="208.0" x2="1041.4860975942493" y2="223.92502082040156" stroke="#c0392b" stroke-width="2.0" marker-end="url(#ar)"/>
+<line x1="1053.6935750346352" y1="239.0" x2="1060.645151245496" y2="282.89052483070105" stroke="#c0392b" stroke-width="2.0" marker-end="url(#ar)"/>
+<line x1="1053.6935750346352" y1="301.0" x2="1019.1590536512467" y2="328.9655040102995" stroke="#c0392b" stroke-width="2.0" marker-end="url(#ar)"/>
+<line x1="1000.0" y1="332.0" x2="958.5139024057507" y2="316.0749791795985" stroke="#c0392b" stroke-width="2.0" marker-end="url(#ar)"/>
+<line x1="946.3064249653648" y1="301.0" x2="939.354848754504" y2="257.1094751692989" stroke="#c0392b" stroke-width="2.0" marker-end="url(#ar)"/>
+<line x1="946.3064249653648" y1="239.0" x2="980.8409463487533" y2="211.03449598970047" stroke="#c0392b" stroke-width="2.0" marker-end="url(#ar)"/>
+<text x="1000" y="266" font-size="10.5" font-weight="700" fill="#c0392b" text-anchor="middle">Score×V</text>
+<text x="1000" y="282" font-size="9.5" font-weight="600" fill="#c0392b" text-anchor="middle">ring (P-3)</text>
+<text x="1000" y="350" font-size="8.5" font-weight="500" fill="#c0392b" text-anchor="middle">band-shift Y + V-hop X</text>
+<text x="1000" y="200" font-size="10" font-weight="700" fill="#0d1b26" text-anchor="middle">GQA attention</text>
+<line x1="60" y1="452" x2="86" y2="452" stroke="#2e8b57" stroke-width="2.4" marker-end="url(#ag)"/>
+<text x="94" y="456" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">x_chain 入 block0 (G-1 parity + G-2 peel;跨区 P-6)  ·  enter_x_chain</text>
+<line x1="60" y1="472" x2="86" y2="472" stroke="#2c6fb0" stroke-width="2.4" marker-end="url(#ab)"/>
+<text x="94" y="476" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">serpentine shuttle 逐 block 传 X (P-5 / P-6)  ·  enter_source/dest_shuttle</text>
+<line x1="60" y1="492" x2="86" y2="492" stroke="#c0392b" stroke-width="2.4" marker-end="url(#ar)"/>
+<text x="94" y="496" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">block 内集合通信:Cannon 投影(P-3)+ chain all-reduce(P-1/P-7)+ Score×V ring</text>
+<line x1="60" y1="512" x2="86" y2="512" stroke="#7a3fb0" stroke-width="2.4" marker-end="url(#ap)"/>
+<text x="94" y="516" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">末 block 末 token 的 dim 分片西送 HT_tail (P-6, z_drain color 16)</text>
+<line x1="60" y1="532" x2="86" y2="532" stroke="#c77d1a" stroke-width="2.4" marker-end="url(#ao)"/>
+<text x="94" y="536" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">KV cache 东向 switch-gather 到 host colmux (P-4 seam;G-4 头 / G-12 opaque / G-14 rebind)</text>
+<line x1="40" y1="562" x2="1140" y2="562" stroke="#dce4ea" stroke-width="1.4"/>
+<text x="60" y="580" font-size="14" font-weight="700" fill="#0d1b26" text-anchor="start">② 每 chunk 的 14 态 flag 机 prefill_struct(哪个 task 负责哪一步)+ 每-chunk / 每-request / 每-layer 环</text>
+<rect x="60" y="600" width="150" height="46" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="135.0" y="618" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">init_task</text><text x="135.0" y="633" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">comm.init() paint</text><text x="135.0" y="645" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">→ enter_request</text>
+<rect x="230" y="600" width="168" height="46" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="314.0" y="618" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">enter_request</text><text x="314.0" y="633" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">reset chunk/serve</text><text x="314.0" y="645" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">route X in</text>
+<rect x="418" y="600" width="150" height="46" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="493.0" y="618" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">X in</text><text x="493.0" y="633" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">blk0 enter_x_chain</text><text x="493.0" y="645" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">else dest_shuttle</text>
+<rect x="588" y="600" width="150" height="46" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="663.0" y="618" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">start_layers</text><text x="663.0" y="633" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">current_layer=0</text><text x="663.0" y="645" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">set_layer(0)</text>
+<line x1="210" y1="623" x2="228" y2="623" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<line x1="398" y1="623" x2="416" y2="623" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<line x1="568" y1="623" x2="586" y2="623" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<rect x="60" y="680" width="128" height="48" rx="6" fill="#dbeafe" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/><text x="124.0" y="698" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">0 rmsnorm</text><text x="124.0" y="713" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">all_reduce_full</text><text x="124.0" y="725" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">Y (P-1)</text>
+<rect x="200" y="680" width="128" height="48" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="264.0" y="698" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">1 QKV mm</text><text x="264.0" y="713" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">Cannon (P-3)</text><text x="264.0" y="725" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">two_hop_comm</text>
+<rect x="340" y="680" width="128" height="48" rx="6" fill="#dbeafe" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/><text x="404.0" y="698" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">2 QK-norm Q</text><text x="404.0" y="713" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">band reduce</text><text x="404.0" y="725" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">(P-7)</text>
+<rect x="480" y="680" width="128" height="48" rx="6" fill="#dbeafe" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/><text x="544.0" y="698" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">3 QK-norm K</text><text x="544.0" y="713" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">band reduce</text><text x="544.0" y="725" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">(P-7)</text>
+<rect x="620" y="680" width="128" height="48" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="684.0" y="698" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">4 RoPE Q</text><text x="684.0" y="713" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">local θ=1e6</text>
+<rect x="760" y="680" width="128" height="48" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="824.0" y="698" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">5 RoPE K</text><text x="824.0" y="713" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">local + cache_kv</text><text x="824.0" y="725" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">[layer][chunk]</text>
+<line x1="188" y1="704.0" x2="199" y2="704.0" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<line x1="328" y1="704.0" x2="339" y2="704.0" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<line x1="468" y1="704.0" x2="479" y2="704.0" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<line x1="608" y1="704.0" x2="619" y2="704.0" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<line x1="748" y1="704.0" x2="759" y2="704.0" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<path d="M 663 646 L 663 666 L 124.0 666 L 124.0 679" fill="none" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<rect x="52" y="746" width="1076" height="118" rx="10" fill="#f6eefc" fill-opacity="1.0" stroke="#7a3fb0" stroke-width="1.6"/>
+<text x="70" y="762" font-size="11.5" font-weight="700" fill="#5c2e88" text-anchor="start">flag 6 · p_attn_score — 分块 FlashAttention-2:queries of chunk c attend causal pairs 0..c (attn_pair 环)</text>
+<rect x="70" y="776" width="232" height="58" rx="6" fill="#ecdcf6" fill-opacity="1.0" stroke="#7a3fb0" stroke-width="1.6"/><text x="186.0" y="794" font-size="10.5" font-weight="700" fill="#0d1b26" text-anchor="middle">Stage A · Q·Kᵀ</text><text x="186.0" y="809" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">K X-hop (attn_right_hop, q3)</text><text x="186.0" y="821" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">+ cycling-root band reduce</text><text x="186.0" y="833" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">(attn_score_reduce, P-7)</text>
+<rect x="324" y="776" width="232" height="58" rx="6" fill="#ecdcf6" fill-opacity="1.0" stroke="#7a3fb0" stroke-width="1.6"/><text x="440.0" y="794" font-size="10.5" font-weight="700" fill="#0d1b26" text-anchor="middle">Stage B · softmax</text><text x="440.0" y="809" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">α·score + 因果 mask(仅对角 pair)</text><text x="440.0" y="821" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">max-reduce 后 sum-reduce</text><text x="440.0" y="833" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">(attn_vec_allreduce, P-8)</text>
+<rect x="578" y="776" width="232" height="58" rx="6" fill="#ecdcf6" fill-opacity="1.0" stroke="#7a3fb0" stroke-width="1.6"/><text x="694.0" y="794" font-size="10.5" font-weight="700" fill="#0d1b26" text-anchor="middle">Stage C · Score×V</text><text x="694.0" y="809" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">rect. Cannon ring (P-3):</text><text x="694.0" y="821" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">score band-Y + V full-X</text><text x="694.0" y="833" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">(left_matrix_shift / attn_right_hop)</text>
+<rect x="832" y="776" width="208" height="58" rx="6" fill="#e5d3f2" fill-opacity="1.0" stroke="#7a3fb0" stroke-width="1.6"/><text x="936.0" y="794" font-size="10.5" font-weight="700" fill="#0d1b26" text-anchor="middle">flash_combine</text><text x="936.0" y="809" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">跨 pair 折叠 (m,l,O)</text><text x="936.0" y="821" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">FA-2 (m,s) rescale (P-8)</text><text x="936.0" y="833" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">→ 下个 pair 或 finalize</text>
+<line x1="301" y1="805.0" x2="325" y2="805.0" stroke="#7a3fb0" stroke-width="1.7" marker-end="url(#ap)"/>
+<line x1="555" y1="805.0" x2="579" y2="805.0" stroke="#7a3fb0" stroke-width="1.7" marker-end="url(#ap)"/>
+<line x1="809" y1="805.0" x2="833" y2="805.0" stroke="#7a3fb0" stroke-width="1.7" marker-end="url(#ap)"/>
+<path d="M 694.0 834 L 694.0 846 L 186.0 846 L 186.0 834" fill="none" stroke="#7a3fb0" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ap)"/>
+<text x="324" y="856" font-size="8.8" font-weight="600" fill="#7a3fb0" text-anchor="start">attn_pair &lt; current_chunk → 下个 causal pair</text>
+<path d="M 824.0 728 L 824.0 745" fill="none" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<rect x="60" y="906" width="138" height="48" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="129.0" y="924" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">7 O mm</text><text x="129.0" y="939" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">Cannon (P-3)</text>
+<rect x="206" y="906" width="138" height="48" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="275.0" y="924" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">8 Z resid</text><text x="275.0" y="939" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">Z = X + O</text><text x="275.0" y="951" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">(local)</text>
+<rect x="352" y="906" width="138" height="48" rx="6" fill="#dbeafe" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/><text x="421.0" y="924" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">9 RMSNorm Z</text><text x="421.0" y="939" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">all_reduce_full</text><text x="421.0" y="951" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">Y (P-1)</text>
+<rect x="498" y="906" width="138" height="48" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="567.0" y="924" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">10 up/gate mm</text><text x="567.0" y="939" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">Cannon (P-3)</text>
+<rect x="644" y="906" width="138" height="48" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="713.0" y="924" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">11 SwiGLU</text><text x="713.0" y="939" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">silu·up (local)</text>
+<rect x="790" y="906" width="138" height="48" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="859.0" y="924" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">12 down mm</text><text x="859.0" y="939" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">Cannon (P-3)</text>
+<rect x="936" y="906" width="138" height="48" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="1005.0" y="924" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">13 resid/next</text><text x="1005.0" y="939" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">X = Z + down</text>
+<line x1="198" y1="930.0" x2="205" y2="930.0" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<line x1="344" y1="930.0" x2="351" y2="930.0" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<line x1="490" y1="930.0" x2="497" y2="930.0" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<line x1="636" y1="930.0" x2="643" y2="930.0" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<line x1="782" y1="930.0" x2="789" y2="930.0" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<line x1="928" y1="930.0" x2="935" y2="930.0" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<path d="M 936.0 864 L 936.0 892 L 129.0 892 L 129.0 905" fill="none" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<path d="M 1005.0 954 L 1005.0 974 L 44 974 L 44 704.0 L 59 704.0" fill="none" stroke="#2e8b57" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ag)"/>
+<text x="498" y="969" font-size="9" font-weight="700" fill="#2e8b57" text-anchor="middle">current_layer+1 &lt; layers_in_this_block → set_layer, flag 0 (下一层)</text>
+<rect x="60" y="1010" width="220" height="50" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="170.0" y="1028" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">p_ffn_residual_next_layer</text><text x="170.0" y="1043" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">层跑完:decode metainfo tail</text><text x="170.0" y="1055" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">enter_source_shuttle → 下个 block</text>
+<rect x="320" y="1010" width="200" height="50" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="420.0" y="1028" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">per-chunk loop</text><text x="420.0" y="1043" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">chunk &lt; rnc-1 → seed_chunk_x /</text><text x="420.0" y="1055" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">arm_dest_block_and_run</text>
+<rect x="560" y="1010" width="200" height="50" rx="6" fill="#ecdcf6" fill-opacity="1.0" stroke="#7a3fb0" stroke-width="1.6"/><text x="660.0" y="1028" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">last chunk</text><text x="660.0" y="1043" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">emit_z_last_token (P-6)</text><text x="660.0" y="1055" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">start_kv_egress (P-4)</text>
+<rect x="800" y="1010" width="200" height="50" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="900.0" y="1028" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">per-request loop</text><text x="900.0" y="1043" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">queue_flush OQ4 (G-14)</text><text x="900.0" y="1055" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">→ enter_request</text>
+<line x1="280" y1="1035" x2="318" y2="1035" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<line x1="520" y1="1035" x2="558" y2="1035" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<line x1="760" y1="1035" x2="798" y2="1035" stroke="#5a6b76" stroke-width="1.7" marker-end="url(#ak)"/>
+<path d="M 420 1010 L 420 996 L 124.0 996" fill="none" stroke="#2e8b57" stroke-width="1.7" stroke-dasharray="5 3" marker-end="url(#ag)"/>
+<text x="430" y="992" font-size="8.8" font-weight="600" fill="#2e8b57" text-anchor="start">同一 chunk 全层跑完 → 下个 chunk 从 flag 0 起</text>
+<path d="M 900 1010 L 900 668 L 314 668 L 314 646" fill="none" stroke="#a86a1e" stroke-width="1.7" stroke-dasharray="6 4" marker-end="url(#ao)"/>
+<text x="760" y="664" font-size="9" font-weight="700" fill="#a86a1e" text-anchor="start">请求完 → 下个 request (serve-loop 常驻)</text>
+<text x="60" y="1096" font-size="9.5" font-weight="400" fill="#6a7883" text-anchor="start">色/队列:reduce 1,2+bcast 5=q5,6,1(P-1/P-7) · Cannon x=6-8/q2, y=9-11/q3(P-3) · Score×V band 18-20 借 q5,6,1 · shuttle N/S 3,4 &amp; E/W 12,13 借 q7,0(P-5) · x_chain 14,15/q4 · z_drain 16/OQ4(egress→OQ7) · KV egress 21/OQ4(P-4)。计数精确=正确性,不匹配则静默挂起。</text>
+</svg>

@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+# ht_head.csl algorithm diagram: vocab-rotation embedding LUT.
+# Top panel = spatial (head band, 3 comm patterns). Bottom panel = task state machine.
+import html
+W, H = 1000, 940
+def esc(s): return html.escape(s)
+s = []
+s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
+s.append('<defs>'
+  '<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker>'
+  '<marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker>'
+  '<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker>'
+  '<marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker>'
+  '</defs>')
+s.append(f'<rect width="{W}" height="{H}" fill="#f7f9fb"/>')
+def T(x,y,t,sz=13,f="#12222f",w="600",a="middle"):
+    return f'<text x="{x}" y="{y}" font-size="{sz}" font-weight="{w}" fill="{f}" text-anchor="{a}">{esc(t)}</text>'
+def box(x,y,w,h,fill,stroke,rx=6,sw=1.6,op=1.0):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" fill-opacity="{op}" stroke="{stroke}" stroke-width="{sw}"/>'
+def line(x1,y1,x2,y2,c,mk,w=2.4,dash=""):
+    d=f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{c}" stroke-width="{w}"{d} marker-end="url(#{mk})"/>'
+
+s.append(T(W/2,30,"ht_head.csl — vocab-rotation embedding LUT",19,"#0d1b26","700"))
+s.append(T(W/2,50,"“旋转词表、就地匹配”代替“按 token-id 路由”(skill Gate-1 逃逸 #1)。HEAD 带 = HEAD_WIDTH 列(X,切 vocab) × dim 行(Y,切 dim)",12,"#4a5b66","500"))
+
+# ---------------- TOP PANEL: spatial ----------------
+s.append(T(70,86,"① 空间分布 + 三条通信",14,"#0d1b26","700","start"))
+# demux row
+dx0,dy=150,110; cw,ch=150,34; gap=14
+for c in range(4):
+    x=dx0+c*(cw+gap)
+    s.append(box(x,dy,cw,ch,"#e8b06a","#a86a1e"))
+    s.append(T(x+cw/2,dy+22,f"demux col{c}",11,"#0d1b26","600"))
+s.append(T(dx0-90,dy+22,"host token 流",11,"#a86a1e","600","start"))
+s.append(line(dx0-14,dy+ch/2,dx0-2,dy+ch/2,"#a86a1e","ar",2,""))
+# head band: 4 cols x 3 dim-rows
+by0=180; bh=44; rows=3
+labels=["vocab [0,V)\nseq: bcol 0,1","vocab [V,2V)\nseq: bcol 2,3","vocab [2V,3V)\nseq: bcol 4,5","vocab [3V,4V)\nseq: bcol 6,7"]
+for c in range(4):
+    x=dx0+c*(cw+gap)
+    # multicast arrow demux->col top
+    s.append(line(x+cw/2,dy+ch+2,x+cw/2,by0-4,"#a86a1e","ar",1.8,"4 3"))
+    for r in range(rows):
+        y=by0+r*(bh+6)
+        s.append(box(x,y,cw,bh,"#8fbfe0","#245f96",5,1.3,0.9 if r==0 else 0.45))
+        if r==0:
+            for i,ln in enumerate(labels[c].split("\n")):
+                s.append(T(x+cw/2,y+17+i*14,ln,10,"#0d1b26","600"))
+        elif r==1:
+            s.append(T(x+cw/2,y+27,"dim shard ↓ (Y)",9,"#2a4a63","500"))
+        else:
+            s.append(T(x+cw/2,y+27,"we_buf / X_tile",9,"#2a4a63","500"))
+    s.append(T(x+cw/2,by0-6,f"col local_px={c}",10,"#245f96","700"))
+band_bot=by0+rows*(bh+6)
+# rotation ring arrows (X, cyclic) below the top row
+ry=by0+bh+2
+for c in range(3):
+    x1=dx0+c*(cw+gap)+cw
+    x2=dx0+(c+1)*(cw+gap)
+    s.append(line(x1+1,ry,x2-1,ry,"#c0392b","ar",2.4))
+# wrap arrow col3 -> col0 (curve under)
+wy=band_bot+26
+s.append(f'<path d="M {dx0+3*(cw+gap)+cw/2} {band_bot} L {dx0+3*(cw+gap)+cw/2} {wy} L {dx0+cw/2} {wy} L {dx0+cw/2} {band_bot}" fill="none" stroke="#c0392b" stroke-width="2.4" stroke-dasharray="6 4" marker-end="url(#ar)"/>')
+s.append(T(dx0+2*(cw+gap)+cw/2, wy+16,"vocab rotate ring ×HEAD_WIDTH  (launch_shift / shift_done, 2-hop y_send·y_recv)  — 每步就地 compare_record 匹配",11,"#c0392b","600"))
+# X handoff east -> block0
+hx=dx0+4*(cw+gap)-gap
+s.append(line(hx-2,by0+bh/2,hx+66,by0+bh/2,"#2e8b57","ag",2.6))
+s.append(box(hx+70,by0+6,86,bh-6,"#bfe0c4","#2e8b57"))
+s.append(T(hx+113,by0+bh/2+2,"block0",11,"#12222f","700"))
+s.append(T(hx+30,by0-6,"X handoff",10,"#2e8b57","700","middle"))
+# legend for top
+ly=wy+40
+s.append(line(70,ly,96,ly,"#a86a1e","ar",2))
+s.append(T(104,ly+4,"P-2 router multicast + G-2 FIFO-peel:tokens+meta 从 demux N 向下灌进每列(ingress)",11,"#26333c","500","start"))
+s.append(line(70,ly+22,96,ly+22,"#c0392b","ar",2.4))
+s.append(T(104,ly+26,"cyclic-shift ring:vocab tile 绕 HEAD_WIDTH 列转一圈(像 Cannon 的算子移位),就地 LUT 匹配",11,"#26333c","500","start"))
+s.append(line(70,ly+44,96,ly+44,"#2e8b57","ag",2.4))
+s.append(T(104,ly+48,"G-1 parity 链 + G-2 peel:嵌好的 X tile 沿 X 向东有序拼接,交给 block0(forward/send_own)",11,"#26333c","500","start"))
+
+# ---------------- BOTTOM PANEL: task state machine ----------------
+py=ly+86
+s.append(f'<line x1="40" y1="{py-14}" x2="{W-40}" y2="{py-14}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(70,py+6,"② 任务状态机(每个 task 负责哪一步)",14,"#0d1b26","700","start"))
+# nodes
+def node(x,y,w,h,title,sub,fill,stroke):
+    out=[box(x,y,w,h,fill,stroke)]
+    out.append(T(x+w/2,y+20,title,12,"#0d1b26","700"))
+    for i,ln in enumerate(sub.split("\n")):
+        out.append(T(x+w/2,y+38+i*13,ln,9.5,"#34434d","500"))
+    return "".join(out)
+ny=py+26; nh=58
+col_o="#f7e3c8"; s_o="#a86a1e"
+col_b="#dbeafe"; s_b="#245f96"
+col_r="#faddd8"; s_r="#c0392b"
+col_g="#d7efdb"; s_g="#2e8b57"
+# row1: ingress -> ingress_ids -> init
+xs=[70,300,530]; w1=200
+s.append(node(xs[0],ny,w1,nh,"ingress","peel metainfo(G-2)\ntok_iq / tok_bcast",col_o,s_o))
+s.append(node(xs[1],ny,w1,nh,"ingress_ids","decode rnc/ltcp/start_chunk\n打包 fp16 meta,灌 token_id_buf",col_o,s_o))
+s.append(node(xs[2],ny,w1,nh,"init","算 local_px + 给 vocab 块打标签\ncompare_record(步0)",col_b,s_b))
+for a,b in [(0,1),(1,2)]:
+    s.append(line(xs[a]+w1,ny+nh/2,xs[b]-2,ny+nh/2,"#5a6b76","ar",1.8))
+# row2: rotation loop
+ny2=ny+nh+40
+s.append(node(300,ny2,w1,nh,"launch_shift","一跳环旋转:y_send 发 / y_recv 收\n(2 microthread 并发)",col_r,s_r))
+s.append(node(530,ny2,w1,nh,"shift_done","compare_record(新到的块)\nswap ping-pong,推进",col_r,s_r))
+# init -> launch_shift
+s.append(f'<path d="M {xs[2]+w1/2} {ny+nh} L {xs[2]+w1/2} {ny2-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
+s.append(T(xs[2]+w1/2+70,ny+nh+18,"若 P_BLOCK_SIZE>1",9.5,"#5a6b76","500"))
+# launch_shift <-> shift_done loop
+s.append(line(300+w1,ny2+18,530-2,ny2+18,"#c0392b","ar",1.8))
+s.append(line(530-2,ny2+40,300+w1,ny2+40,"#c0392b","ar",1.8))
+s.append(T(415,ny2+58,"×HEAD_WIDTH 步(环闭合)",9.5,"#c0392b","600"))
+# row3: forward -> send_own -> handoff_done
+ny3=ny2+nh+44
+xs3=[70,300,530]
+s.append(node(xs3[0],ny3,w1,nh,"forward","转发上游列的 chunk 段\n(FIFO peel, my_local_px×len)",col_g,s_g))
+s.append(node(xs3[1],ny3,w1,nh,"send_own","发本列 chunk 向东\nchunk0:拼 [bcol][meta] 尾巴",col_g,s_g))
+s.append(node(xs3[2],ny3,w1,nh,"handoff_done","chunk++;还有 chunk→forward\n请求完→ingress",col_g,s_g))
+for a,b in [(0,1),(1,2)]:
+    s.append(line(xs3[a]+w1,ny3+nh/2,xs3[b]-2,ny3+nh/2,"#5a6b76","ar",1.8))
+# shift_done(last) -> forward
+s.append(f'<path d="M {530+w1/2} {ny2+nh} L {530+w1/2} {ny3-30} L {70+w1/2} {ny3-30} L {70+w1/2} {ny3-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
+s.append(T(400,ny3-36,"P 步转完(全部 token 解析)→ 进 handoff",9.5,"#5a6b76","600"))
+# per-chunk loop: handoff_done -> forward
+s.append(f'<path d="M {xs3[2]+w1/2} {ny3+nh} L {xs3[2]+w1/2} {ny3+nh+22} L {xs3[0]+w1/2} {ny3+nh+22} L {xs3[0]+w1/2} {ny3+nh}" fill="none" stroke="#2e8b57" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ar)"/>')
+s.append(T(400,ny3+nh+38,"每个 chunk 重跑 handoff(current_prefill_chunk < request_n_chunks)",9.5,"#2e8b57","600"))
+# per-request loop: handoff_done -> ingress
+s.append(f'<path d="M {xs3[2]+w1} {ny3+nh/2} L {W-50} {ny3+nh/2} L {W-50} {ny+nh/2} L {xs[0]-14} {ny+nh/2} L {xs[0]-2} {ny+nh/2}" fill="none" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ar)"/>')
+s.append(T(W-140,ny3+nh/2-8,"请求完 → 下个请求",9.5,"#a86a1e","600","middle"))
+
+s.append(T(70,H-16,"色/队列:tok_bcast=queue3(ingress) · y_send/y_recv=queue2(旋转) · x_src=queue4 / x_dst=queue3(东向拼接)。计数精确=正确性(收发字数必须一致,否则静默挂起)。",10,"#6a7883","400","start"))
+s.append('</svg>')
+open("/tmp/claude-1023/-home-lexu-WaferEngine-staging/cfbf66fb-cf81-432b-89c4-7af4f94e610b/scratchpad/hthead_algo.svg","w").write("\n".join(s))
+print("ok", W, H)
