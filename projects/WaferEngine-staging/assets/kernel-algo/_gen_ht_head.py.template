@@ -51,7 +51,7 @@ for c in range(4):
             s.append(T(x+cw/2,y+27,"dim shard ↓ (Y)",9,"#2a4a63","500"))
         else:
             s.append(T(x+cw/2,y+27,"we_buf / X_tile",9,"#2a4a63","500"))
-    s.append(T(x+cw/2,by0-6,f"col local_px={c}",10,"#245f96","700"))
+    s.append(T(x+cw/2-12,by0-6,f"col local_px={c}",10,"#245f96","700","end"))
 band_bot=by0+rows*(bh+6)
 # rotation ring arrows (X, cyclic) below the top row
 ry=by0+bh+2
@@ -111,9 +111,9 @@ s.append(T(xs[2]+w1/2+70,ny+nh+18,"若 P_BLOCK_SIZE>1",9.5,"#5a6b76","500"))
 # launch_shift <-> shift_done loop
 s.append(line(300+w1,ny2+18,530-2,ny2+18,"#c0392b","ar",1.8))
 s.append(line(530-2,ny2+40,300+w1,ny2+40,"#c0392b","ar",1.8))
-s.append(T(415,ny2+58,"×HEAD_WIDTH 步(环闭合)",9.5,"#c0392b","600"))
+s.append(T(415,ny2+74,"×HEAD_WIDTH 步(环闭合)",9.5,"#c0392b","600"))
 # row3: forward -> send_own -> handoff_done
-ny3=ny2+nh+44
+ny3=ny2+nh+80
 xs3=[70,300,530]
 s.append(node(xs3[0],ny3,w1,nh,"forward","转发上游列的 chunk 段\n(FIFO peel, my_local_px×len)",col_g,s_g))
 s.append(node(xs3[1],ny3,w1,nh,"send_own","发本列 chunk 向东\nchunk0:拼 [bcol][meta] 尾巴",col_g,s_g))
@@ -122,7 +122,7 @@ for a,b in [(0,1),(1,2)]:
     s.append(line(xs3[a]+w1,ny3+nh/2,xs3[b]-2,ny3+nh/2,"#5a6b76","ar",1.8))
 # shift_done(last) -> forward
 s.append(f'<path d="M {530+w1/2} {ny2+nh} L {530+w1/2} {ny3-30} L {70+w1/2} {ny3-30} L {70+w1/2} {ny3-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
-s.append(T(400,ny3-36,"P 步转完(全部 token 解析)→ 进 handoff",9.5,"#5a6b76","600"))
+s.append(T(400,ny3-42,"P 步转完(全部 token 解析)→ 进 handoff",9.5,"#5a6b76","600"))
 # per-chunk loop: handoff_done -> forward
 s.append(f'<path d="M {xs3[2]+w1/2} {ny3+nh} L {xs3[2]+w1/2} {ny3+nh+22} L {xs3[0]+w1/2} {ny3+nh+22} L {xs3[0]+w1/2} {ny3+nh}" fill="none" stroke="#2e8b57" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ar)"/>')
 s.append(T(400,ny3+nh+38,"每个 chunk 重跑 handoff(current_prefill_chunk < request_n_chunks)",9.5,"#2e8b57","600"))
@@ -132,5 +132,5 @@ s.append(T(W-140,ny3+nh/2-8,"请求完 → 下个请求",9.5,"#a86a1e","600","mi
 
 s.append(T(70,H-16,"色/队列:tok_bcast=queue3(ingress) · y_send/y_recv=queue2(旋转) · x_src=queue4 / x_dst=queue3(东向拼接)。计数精确=正确性(收发字数必须一致,否则静默挂起)。",10,"#6a7883","400","start"))
 s.append('</svg>')
-open("/tmp/claude-1023/-home-lexu-WaferEngine-staging/cfbf66fb-cf81-432b-89c4-7af4f94e610b/scratchpad/hthead_algo.svg","w").write("\n".join(s))
+open("/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-prefill.ht_head.svg","w").write("\n".join(s))
 print("ok", W, H)
