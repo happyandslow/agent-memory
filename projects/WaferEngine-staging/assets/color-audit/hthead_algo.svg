@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="940" viewBox="0 0 1000 940" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker><marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker><marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker><marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker></defs>
+<rect width="1000" height="940" fill="#f7f9fb"/>
+<text x="500.0" y="30" font-size="19" font-weight="700" fill="#0d1b26" text-anchor="middle">ht_head.csl — vocab-rotation embedding LUT</text>
+<text x="500.0" y="50" font-size="12" font-weight="500" fill="#4a5b66" text-anchor="middle">“旋转词表、就地匹配”代替“按 token-id 路由”(skill Gate-1 逃逸 #1)。HEAD 带 = HEAD_WIDTH 列(X,切 vocab) × dim 行(Y,切 dim)</text>
+<text x="70" y="86" font-size="14" font-weight="700" fill="#0d1b26" text-anchor="start">① 空间分布 + 三条通信</text>
+<rect x="150" y="110" width="150" height="34" rx="6" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
+<text x="225.0" y="132" font-size="11" font-weight="600" fill="#0d1b26" text-anchor="middle">demux col0</text>
+<rect x="314" y="110" width="150" height="34" rx="6" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
+<text x="389.0" y="132" font-size="11" font-weight="600" fill="#0d1b26" text-anchor="middle">demux col1</text>
+<rect x="478" y="110" width="150" height="34" rx="6" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
+<text x="553.0" y="132" font-size="11" font-weight="600" fill="#0d1b26" text-anchor="middle">demux col2</text>
+<rect x="642" y="110" width="150" height="34" rx="6" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
+<text x="717.0" y="132" font-size="11" font-weight="600" fill="#0d1b26" text-anchor="middle">demux col3</text>
+<text x="60" y="132" font-size="11" font-weight="600" fill="#a86a1e" text-anchor="start">host token 流</text>
+<line x1="136" y1="127.0" x2="148" y2="127.0" stroke="#a86a1e" stroke-width="2" marker-end="url(#ar)"/>
+<line x1="225.0" y1="146" x2="225.0" y2="176" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+<rect x="150" y="180" width="150" height="44" rx="5" fill="#8fbfe0" fill-opacity="0.9" stroke="#245f96" stroke-width="1.3"/>
+<text x="225.0" y="197" font-size="10" font-weight="600" fill="#0d1b26" text-anchor="middle">vocab [0,V)</text>
+<text x="225.0" y="211" font-size="10" font-weight="600" fill="#0d1b26" text-anchor="middle">seq: bcol 0,1</text>
+<rect x="150" y="230" width="150" height="44" rx="5" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.3"/>
+<text x="225.0" y="257" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">dim shard ↓ (Y)</text>
+<rect x="150" y="280" width="150" height="44" rx="5" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.3"/>
+<text x="225.0" y="307" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">we_buf / X_tile</text>
+<text x="225.0" y="174" font-size="10" font-weight="700" fill="#245f96" text-anchor="middle">col local_px=0</text>
+<line x1="389.0" y1="146" x2="389.0" y2="176" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+<rect x="314" y="180" width="150" height="44" rx="5" fill="#8fbfe0" fill-opacity="0.9" stroke="#245f96" stroke-width="1.3"/>
+<text x="389.0" y="197" font-size="10" font-weight="600" fill="#0d1b26" text-anchor="middle">vocab [V,2V)</text>
+<text x="389.0" y="211" font-size="10" font-weight="600" fill="#0d1b26" text-anchor="middle">seq: bcol 2,3</text>
+<rect x="314" y="230" width="150" height="44" rx="5" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.3"/>
+<text x="389.0" y="257" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">dim shard ↓ (Y)</text>
+<rect x="314" y="280" width="150" height="44" rx="5" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.3"/>
+<text x="389.0" y="307" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">we_buf / X_tile</text>
+<text x="389.0" y="174" font-size="10" font-weight="700" fill="#245f96" text-anchor="middle">col local_px=1</text>
+<line x1="553.0" y1="146" x2="553.0" y2="176" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+<rect x="478" y="180" width="150" height="44" rx="5" fill="#8fbfe0" fill-opacity="0.9" stroke="#245f96" stroke-width="1.3"/>
+<text x="553.0" y="197" font-size="10" font-weight="600" fill="#0d1b26" text-anchor="middle">vocab [2V,3V)</text>
+<text x="553.0" y="211" font-size="10" font-weight="600" fill="#0d1b26" text-anchor="middle">seq: bcol 4,5</text>
+<rect x="478" y="230" width="150" height="44" rx="5" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.3"/>
+<text x="553.0" y="257" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">dim shard ↓ (Y)</text>
+<rect x="478" y="280" width="150" height="44" rx="5" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.3"/>
+<text x="553.0" y="307" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">we_buf / X_tile</text>
+<text x="553.0" y="174" font-size="10" font-weight="700" fill="#245f96" text-anchor="middle">col local_px=2</text>
+<line x1="717.0" y1="146" x2="717.0" y2="176" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+<rect x="642" y="180" width="150" height="44" rx="5" fill="#8fbfe0" fill-opacity="0.9" stroke="#245f96" stroke-width="1.3"/>
+<text x="717.0" y="197" font-size="10" font-weight="600" fill="#0d1b26" text-anchor="middle">vocab [3V,4V)</text>
+<text x="717.0" y="211" font-size="10" font-weight="600" fill="#0d1b26" text-anchor="middle">seq: bcol 6,7</text>
+<rect x="642" y="230" width="150" height="44" rx="5" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.3"/>
+<text x="717.0" y="257" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">dim shard ↓ (Y)</text>
+<rect x="642" y="280" width="150" height="44" rx="5" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.3"/>
+<text x="717.0" y="307" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">we_buf / X_tile</text>
+<text x="717.0" y="174" font-size="10" font-weight="700" fill="#245f96" text-anchor="middle">col local_px=3</text>
+<line x1="301" y1="226" x2="313" y2="226" stroke="#c0392b" stroke-width="2.4" marker-end="url(#ar)"/>
+<line x1="465" y1="226" x2="477" y2="226" stroke="#c0392b" stroke-width="2.4" marker-end="url(#ar)"/>
+<line x1="629" y1="226" x2="641" y2="226" stroke="#c0392b" stroke-width="2.4" marker-end="url(#ar)"/>
+<path d="M 717.0 330 L 717.0 356 L 225.0 356 L 225.0 330" fill="none" stroke="#c0392b" stroke-width="2.4" stroke-dasharray="6 4" marker-end="url(#ar)"/>
+<text x="553.0" y="372" font-size="11" font-weight="600" fill="#c0392b" text-anchor="middle">vocab rotate ring ×HEAD_WIDTH  (launch_shift / shift_done, 2-hop y_send·y_recv)  — 每步就地 compare_record 匹配</text>
+<line x1="790" y1="202.0" x2="858" y2="202.0" stroke="#2e8b57" stroke-width="2.6" marker-end="url(#ag)"/>
+<rect x="862" y="186" width="86" height="38" rx="6" fill="#bfe0c4" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/>
+<text x="905" y="204.0" font-size="11" font-weight="700" fill="#12222f" text-anchor="middle">block0</text>
+<text x="822" y="174" font-size="10" font-weight="700" fill="#2e8b57" text-anchor="middle">X handoff</text>
+<line x1="70" y1="396" x2="96" y2="396" stroke="#a86a1e" stroke-width="2" marker-end="url(#ar)"/>
+<text x="104" y="400" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">P-2 router multicast + G-2 FIFO-peel:tokens+meta 从 demux N 向下灌进每列(ingress)</text>
+<line x1="70" y1="418" x2="96" y2="418" stroke="#c0392b" stroke-width="2.4" marker-end="url(#ar)"/>
+<text x="104" y="422" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">cyclic-shift ring:vocab tile 绕 HEAD_WIDTH 列转一圈(像 Cannon 的算子移位),就地 LUT 匹配</text>
+<line x1="70" y1="440" x2="96" y2="440" stroke="#2e8b57" stroke-width="2.4" marker-end="url(#ag)"/>
+<text x="104" y="444" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">G-1 parity 链 + G-2 peel:嵌好的 X tile 沿 X 向东有序拼接,交给 block0(forward/send_own)</text>
+<line x1="40" y1="468" x2="960" y2="468" stroke="#dce4ea" stroke-width="1.4"/>
+<text x="70" y="488" font-size="14" font-weight="700" fill="#0d1b26" text-anchor="start">② 任务状态机(每个 task 负责哪一步)</text>
+<rect x="70" y="508" width="200" height="58" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="170.0" y="528" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">ingress</text><text x="170.0" y="546" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">peel metainfo(G-2)</text><text x="170.0" y="559" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">tok_iq / tok_bcast</text>
+<rect x="300" y="508" width="200" height="58" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="400.0" y="528" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">ingress_ids</text><text x="400.0" y="546" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">decode rnc/ltcp/start_chunk</text><text x="400.0" y="559" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">打包 fp16 meta,灌 token_id_buf</text>
+<rect x="530" y="508" width="200" height="58" rx="6" fill="#dbeafe" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/><text x="630.0" y="528" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">init</text><text x="630.0" y="546" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">算 local_px + 给 vocab 块打标签</text><text x="630.0" y="559" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">compare_record(步0)</text>
+<line x1="270" y1="537.0" x2="298" y2="537.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="500" y1="537.0" x2="528" y2="537.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<rect x="300" y="606" width="200" height="58" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="400.0" y="626" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">launch_shift</text><text x="400.0" y="644" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">一跳环旋转:y_send 发 / y_recv 收</text><text x="400.0" y="657" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">(2 microthread 并发)</text>
+<rect x="530" y="606" width="200" height="58" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="630.0" y="626" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">shift_done</text><text x="630.0" y="644" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">compare_record(新到的块)</text><text x="630.0" y="657" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">swap ping-pong,推进</text>
+<path d="M 630.0 566 L 630.0 604" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<text x="700.0" y="584" font-size="9.5" font-weight="500" fill="#5a6b76" text-anchor="middle">若 P_BLOCK_SIZE&gt;1</text>
+<line x1="500" y1="624" x2="528" y2="624" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="528" y1="646" x2="500" y2="646" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<text x="415" y="664" font-size="9.5" font-weight="600" fill="#c0392b" text-anchor="middle">×HEAD_WIDTH 步(环闭合)</text>
+<rect x="70" y="708" width="200" height="58" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="170.0" y="728" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">forward</text><text x="170.0" y="746" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">转发上游列的 chunk 段</text><text x="170.0" y="759" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">(FIFO peel, my_local_px×len)</text>
+<rect x="300" y="708" width="200" height="58" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="400.0" y="728" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">send_own</text><text x="400.0" y="746" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">发本列 chunk 向东</text><text x="400.0" y="759" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">chunk0:拼 [bcol][meta] 尾巴</text>
+<rect x="530" y="708" width="200" height="58" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="630.0" y="728" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">handoff_done</text><text x="630.0" y="746" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">chunk++;还有 chunk→forward</text><text x="630.0" y="759" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">请求完→ingress</text>
+<line x1="270" y1="737.0" x2="298" y2="737.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="500" y1="737.0" x2="528" y2="737.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<path d="M 630.0 664 L 630.0 678 L 170.0 678 L 170.0 706" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<text x="400" y="672" font-size="9.5" font-weight="600" fill="#5a6b76" text-anchor="middle">P 步转完(全部 token 解析)→ 进 handoff</text>
+<path d="M 630.0 766 L 630.0 788 L 170.0 788 L 170.0 766" fill="none" stroke="#2e8b57" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+<text x="400" y="804" font-size="9.5" font-weight="600" fill="#2e8b57" text-anchor="middle">每个 chunk 重跑 handoff(current_prefill_chunk &lt; request_n_chunks)</text>
+<path d="M 730 737.0 L 950 737.0 L 950 537.0 L 56 537.0 L 68 537.0" fill="none" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ar)"/>
+<text x="860" y="729.0" font-size="9.5" font-weight="600" fill="#a86a1e" text-anchor="middle">请求完 → 下个请求</text>
+<text x="70" y="924" font-size="10" font-weight="400" fill="#6a7883" text-anchor="start">色/队列:tok_bcast=queue3(ingress) · y_send/y_recv=queue2(旋转) · x_src=queue4 / x_dst=queue3(东向拼接)。计数精确=正确性(收发字数必须一致,否则静默挂起)。</text>
+</svg>
