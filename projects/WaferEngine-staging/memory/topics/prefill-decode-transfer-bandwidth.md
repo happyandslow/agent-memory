@@ -563,3 +563,74 @@ found + fixed (device-confirmed on `test_device_2x2blk_kv_prof_small` = 16×16, 
   once post-run) gives compile-vs-runtime + which-receive-blocks visibility.
 - **Next:** full-size `test_device_2x2blk_kv_prof.json` (dim 2048, 28 layers,
   PREFILL_LEN 256, ~28 MB KV) running clean for the real GB/s from A/B.
+
+2026-07-17 — **DEVICE BANDWIDTH LADDER: real GB/s at full geometry, no hang.**
+Work on branch `lexu/staging/kv-prof-p2` (worktree `/home/lexu/we-p2`, base `e3814ce`,
+commit `a3ed7ea` = restored **validated P2 piggyback** egress). Main repo stays on
+`lexu/staging/s6a-inner-pe-kv-route-a` (M0 work) — profiler is isolated in the worktree.
+
+**P2 (piggyback) vs P1 (per-module dedicated stream):**
+- **P2 = REUSE the decode logits output channel** (blob rides `logits_stream` after the
+  TSC burst via `is_tsc_pe`). Host: `runtime.receive(logits_stream, prof_blob, 8)`. This
+  is the version that WORKS on device (validated small + the whole ladder below).
+- **P1 = ATTACH a dedicated per-module output stream** (`kv_prof_mux` forwarder → own host
+  stream per module). Device-tested via PROF_LIVE markers: **decode egress works
+  (`DEC_PROF_RECV_DONE`), prefill egress HANGS (`PF_PROF_RECV_START` never completes)**.
+  P1 is parked; bug is in the prefill per-module egress path only.
+
+**The bandwidth ladder (all REAL device TSC numbers; SIM is useless per Le).** Method:
+scale the validated small config proportionally by `k = P_BLOCK/8` so EVERY per-PE dim is
+constant (`dim_per_pe=8`, `kv_dim_per_pe=4`, `ffn_dim_per_pe=16`, `head_dim=16`, small
+vocab `3·P_BLOCK`) → SRAM footprint == validated at every rung, so it always compiles and
+any failure is a real runtime hang. Also `PREFILL_LEN = 2·P_BLOCK` (must be divisible by
+P_BLOCK — launch.py:377) and `MAX_SEQ_LEN = 4·P_BLOCK` → KV volume grows ∝ P_BLOCK².
+
+| Rung | Pw | P_BLK | dim | kv_dim | KV vol | A+B (µs) | Eff. GB/s | compile |
+|------|----|-------|-----|--------|--------|----------|-----------|---------|
+| L0 | 16 | 8 | 64 | 32 | 16 KiB | ~340 | 0.048 | — |
+| L1 | 32 | 16 | 128 | 64 | 32 KiB | 604 | 0.054 | fast |
+| L2 | 64 | 32 | 256 | 128 | 256 KiB | 1208 | 0.217 | 238s |
+| L3 | 128 | 64 | 512 | 256 | 1 MiB | 2344 | 0.447 | 241s |
+| L4 | 256 | 128 | 1024 | 512 | 4 MiB | 4639 | 0.904 | 246s |
+| **L5** | **512** | **256** | **2048** | **1024** | **16 MiB** | **9304** | **1.803** | **275s** |
+
+`Effective bandwidth (bytes / A+B)` uses **aggregate KV bytes over all 262144 PEs**.
+A = prefill gather+transform (states 0-3), B = prefill north shift (state 4), both on the
+SAME prefill reporter PE (so A+B is the true single-PE transfer window, not double-counted).
+C = decode-blocked-on-ingress is WAIT-dominated (grows to ~3.7 s at L4/L5) and is NOT
+additive / not part of the bandwidth.
+
+**Headline findings:**
+1. **No hang anywhere** — P2 scales cleanly L0→L5 (full 512×512 geometry). The two apparent
+   "hangs" en route were config bugs I introduced (local task-id 13 collision with
+   decode_strip.csl; then `PREFILL_LEN` not divisible by `P_BLOCK_SIZE`), NOT the mechanism.
+2. **The ~4.5h full-config compile wall is NOT geometry.** Full-*geometry* L5 compiled in
+   **275 s**. All rungs compiled in ~240-275 s regardless of Pw (64→512). The 4.5h comes from
+   the production config's **per-PE program complexity** (real `head_dim=128`, `vocab=151936`,
+   `n_layers=28`, `ffn=6144`) — NOT the 512×512 footprint. (Refutes the earlier
+   "compile ∝ PE area" hypothesis.)
+3. **Aggregate KV-transfer bandwidth at production geometry ≈ 1.8 GB/s** (16 MiB / 9.3 ms,
+   262144 PEs). BW scales ~linearly with P_BLOCK (more PEs → more parallel throughput through
+   the seam; per-PE critical-path B grows only with hop count). L5 has the SAME `P_BLOCK=256`
+   and `kv_dim_per_pe=4` as the real full config → the transfer payload structure is identical,
+   so 1.8 GB/s is representative. Caveat: L5 uses simplified per-PE compute (head_dim=16,
+   vocab=768, 8 layers), so it is NOT the exact production-config figure.
+
+**Getting the EXACT production number (deferred path):** `layout.compile()` needs only cslc,
+NOT the wafer, and `cmaddr` does not affect the artifact (always WSE3). Local SDK 2.10.0 is at
+`/home/lexu/Cerebras-SDK-2.10.0/`. So: compile the real full config LOCALLY on gala (offline,
+~4.5h, zero cluster → no gRPC 502), ship the ~27 GB artifact, execute via a NEW `--run-only`
+path in launch.py (has `--compile-only`, no `--run-only` yet; SDK supports it via
+`SdkCompileArtifacts(dir)` + `SdkRuntime(artifacts, platform)` + `save_port_map=True`; sole
+risk = reconstructing stream ports). Full-size connected compile hits the ~4.5h gRPC-connection
+lifetime → 502 (confirmed twice: es7j 4h44m, kz5d 4h28m).
+
+**Op notes learned:** `download_artifact` mid-run polling shares the run's gRPC channel and can
+502 it → looks like an on-device hang (gate via `PROF_LIVE`, default OFF). `pkill -f <script>`
+self-matches → exit 144; kill by explicit PID. Shared account `congjiehe`, multiple sessions —
+identify own jobs by wsjob id from the run log, never cancel unconfirmed jobs.
+
+## Last updated
+2026-07-17 — device bandwidth ladder (L0-L5) complete; full-geometry aggregate KV-transfer
+BW ≈ 1.8 GB/s, no hang; compile wall is per-PE complexity not geometry; local-compile +
+run-only path identified for the exact production figure.
