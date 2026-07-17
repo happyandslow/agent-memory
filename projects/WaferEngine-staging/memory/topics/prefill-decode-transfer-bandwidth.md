@@ -634,3 +634,20 @@ identify own jobs by wsjob id from the run log, never cancel unconfirmed jobs.
 2026-07-17 — device bandwidth ladder (L0-L5) complete; full-geometry aggregate KV-transfer
 BW ≈ 1.8 GB/s, no hang; compile wall is per-PE complexity not geometry; local-compile +
 run-only path identified for the exact production figure.
+
+2026-07-17 (cont.) — **KV-transfer full pipeline DIAGRAM** added:
+`assets/prefill-decode-transfer/kv-transfer-pipeline-diagram.md` — numbered steps
+(0-6) with per-step operation / data-move (dir·color·queue) / compute / control /
+hop-count, a mermaid flow (A=steps1-4 intra-block gather+transpose ~7%; B=step5
+north-shift ~93%; step6 decode ingress), a spatial "one tile's journey" schematic,
+and the step table. Companion to the state-machine breakdown above.
+
+**Compile-wall REFRAME (important):** the full config (`test_device_2x2blk_kv_prof.json`,
+Pw=512, dim=2048, head_dim=128, vocab=151936, 28 layers) compiled **LOCALLY on gala
+(SDK 2.10.0) in 179 s** (27 GB artifact, `compile_only`). Since the worker compiles the
+L-ladder in ~250 s too, the earlier "~4.5h full compile → 502" was almost certainly an
+**infra hang (coordinator/ingress: "Could not find coordinator / Empty ingress / falling
+back to 10.27.24.65:443")**, NOT a slow compile — misattributed. Implication: the REAL
+full config should run directly on CS-3 in minutes once the coordinator is healthy; the
+local-compile + `--run-only` workaround (built + sim-validated on `we-p2`, blocked only by
+the 2.10.0↔1.13.2 version gap) is likely unnecessary.
