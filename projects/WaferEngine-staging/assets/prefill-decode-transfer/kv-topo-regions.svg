@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 520" width="560" height="520">
+<defs><marker id="up" markerWidth="9" markerHeight="9" refX="4.5" refY="7" orient="auto"><path d="M0,7 L4.5,0 L9,7 z" fill="#ea4335"/></marker><marker id="ug" markerWidth="9" markerHeight="9" refX="4.5" refY="7" orient="auto"><path d="M0,7 L4.5,0 L9,7 z" fill="#34a853"/></marker></defs>
+<rect x="0" y="0" width="560" height="520" fill="#fafafa"/>
+<rect x="60" y="30" width="440" height="150" fill="#e6f4ea" stroke="#34a853" stroke-width="1.5"/>
+<text x="280" y="52" text-anchor="middle" font-size="15" font-weight="700" fill="#188038">DECODE region (2×2 blocks)</text>
+<rect x="90" y="66" width="180" height="100" fill="none" stroke="#8bc99a"/><rect x="290" y="66" width="180" height="100" fill="none" stroke="#8bc99a"/>
+<text x="280" y="150" text-anchor="middle" font-size="11.5" fill="#188038">State 6: row r recvs r+1, keeps 1, forwards r → unpack XKCache/XVCache</text>
+<line x1="150" y1="160" x2="150" y2="80" stroke="#34a853" stroke-width="1.6" opacity="0.55" marker-end="url(#ug)"/><line x1="350" y1="160" x2="350" y2="80" stroke="#34a853" stroke-width="1.6" opacity="0.55" marker-end="url(#ug)"/>
+<rect x="60" y="196" width="440" height="34" fill="#fff3d6" stroke="#f9ab00" stroke-width="1.5"/><text x="280" y="218" text-anchor="middle" font-size="13" font-weight="700" fill="#b06000">RELAY SEAM (relay.csl) — Pw × 2</text>
+<rect x="60" y="246" width="440" height="230" fill="#e8f0fe" stroke="#4285f4" stroke-width="1.5"/>
+<text x="280" y="268" text-anchor="middle" font-size="15" font-weight="700" fill="#1967d2">PREFILL region (Ph = total_y_pes rows)</text>
+<rect x="90" y="286" width="180" height="170" fill="none" stroke="#a6c3f5"/><rect x="290" y="286" width="180" height="170" fill="none" stroke="#a6c3f5"/>
+<text x="280" y="374" text-anchor="middle" font-size="11.5" fill="#1967d2">each block first does Diagram-1 (gather→diagonal→transpose→kv_transform)</text>
+<line x1="150" y1="300" x2="150" y2="176" stroke="#ea4335" stroke-width="5" opacity="1" marker-end="url(#up)"/>
+<line x1="350" y1="300" x2="350" y2="176" stroke="#ea4335" stroke-width="5" opacity="1" marker-end="url(#up)"/>
+<line x1="230" y1="330" x2="230" y2="176" stroke="#ea4335" stroke-width="3" opacity="0.6" marker-end="url(#up)"/>
+<line x1="410" y1="330" x2="410" y2="176" stroke="#ea4335" stroke-width="3" opacity="0.6" marker-end="url(#up)"/>
+<text x="280" y="500" text-anchor="middle" font-size="12.5" fill="#c5221f" font-weight="600">State 4/5: kv_north_shift — store-and-forward NORTH across FULL prefill height + seam, ×n_ph planes SERIAL (~93%)</text>
+</svg>
