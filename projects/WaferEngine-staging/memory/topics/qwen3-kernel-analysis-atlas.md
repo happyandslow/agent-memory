@@ -46,6 +46,8 @@ Companion skills: `cerebras-kernel-algo-walkthrough` (algorithm), `cerebras-kern
 
 *State machine — task/fn control flow* &nbsp; source: [doc](../../assets/kernel-algo/qwen3_1p7b-prefill.prefill.statemachine.md) · [svg](../../assets/kernel-algo/qwen3_1p7b-prefill.prefill.statemachine.svg)
 
+Detail figures (the above is the overview): [A · boot ingress](../../assets/kernel-algo/qwen3_1p7b-prefill.prefill.statemachine.A-boot-ingress.svg) · [B · layer machine](../../assets/kernel-algo/qwen3_1p7b-prefill.prefill.statemachine.B-layer-machine.svg) · [C · cannon](../../assets/kernel-algo/qwen3_1p7b-prefill.prefill.statemachine.C-cannon.svg) · [D · attention](../../assets/kernel-algo/qwen3_1p7b-prefill.prefill.statemachine.D-attention.svg) · [E · request end](../../assets/kernel-algo/qwen3_1p7b-prefill.prefill.statemachine.E-request-end.svg)
+
 ##### `ht_head` — token->embedding lookup
 
 ![Algorithm](<../../assets/kernel-algo/qwen3_1p7b-prefill.ht_head.svg>)
