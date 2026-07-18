@@ -22,6 +22,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Run partial-accept on device and connect the real GPU verifier to the real CS-3 draft path.
 - [ ] Complete mode-A transport hardening for `PD_REAL_DAEMON_DEV`.
 - [ ] Split the new prefill `egress` bottleneck (prefill compute + D2H lumped) with on-wafer TSC-at-emit vs host receive timing.
+- [ ] Beat the measured GLM-4.6 MTP competitor band (1.47× unoptimized; ~1.8× optimized target) when presenting the CS-3 draft advantage.
 
 ## Decisions
 
@@ -41,6 +42,11 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Verify live repo/server state before acting; memory records branch/test history, not current proof.
 
 ## Narrative progress log
+
+### 2026-07-18
+
+- Drained `memory/inbox/2026-07-16-glm46-mtp-gpu-specdec-baseline.md` into `memory/topics/specdec-gpu-verifier-eidf.md`. Durable result: GLM-4.6-FP8 fits and serves easily on EIDF 8×H100; native MTP measured 85.5 tok/s vs 58 tok/s vanilla (1.47×, accept_len 1.80, accept_rate 0.80), setting the measured GPU-spec-dec competitor band at 1.47–1.8×.
+
 
 ### 2026-07-15
 

@@ -12,7 +12,7 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 
 - `plan.md` — canonical goals, decisions, milestones, and next actions.
 - `memory/topics/specdec-cs3-roadmap.md` — current roadmap, validated branches/tests, mode-A/mode-B details, and gotchas.
-- `memory/topics/specdec-gpu-verifier-eidf.md` — EIDF/SGLang REMOTE_STANDALONE verifier deployment, dummy loop, and real Kimi K2.5 H100 measurement.
+- `memory/topics/specdec-gpu-verifier-eidf.md` — EIDF/SGLang REMOTE_STANDALONE verifier deployment, dummy loop, real Kimi K2.5 H100 measurement, and GLM-4.6 FP8 + native MTP competitor baseline.
 - `memory/topics/specdec-modeb-pd-module-trace.md` — process/module/coupling map for `run_e2e_pd_modeb_real.sh` plus PR/contextbase deliverable pointers.
 - `memory/topics/specdec-modeb-drive-path.md` — per-round timing call chain, KV-transfer findings, RDMA negative result, and zero-copy handoff fix.
 - `memory/topics/specdec-d2h-latency.md` — earlier d2h latency / in-process-patch / real-GPU findings.
@@ -23,7 +23,7 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 1. Verify live repo/server state before acting.
 2. Read `plan.md`.
 3. Read `memory/topics/specdec-cs3-roadmap.md`.
-4. For hosted GPU verifier work, read `memory/topics/specdec-gpu-verifier-eidf.md`.
+4. For hosted GPU verifier work or competitor baselines, read `memory/topics/specdec-gpu-verifier-eidf.md`.
 5. Read `memory/topics/specdec-modeb-pd-module-trace.md` for who-runs-where / seam questions, or `memory/topics/specdec-modeb-drive-path.md` for timing/latency/RDMA/KV-handoff questions.
 6. Read `memory/topics/specdec-d2h-latency.md` only for backbone/latency history.
 7. Never print/copy gateway TOTP secrets; use the `/cs3-runner` workflow for device runs.

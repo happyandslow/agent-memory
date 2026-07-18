@@ -114,7 +114,7 @@ Companion skills: `cerebras-kernel-algo-walkthrough` (algorithm), `cerebras-kern
 
 > Route-only files (no task state machine) for this model: [qwen3_1p7b-prefill.route-only.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.route-only.statemachine.md).
 
-> Full per-kernel state-machine index for this model: `memory/inbox/qwen3_1p7b-prefill.ALL.statemachine.md`.
+> Full per-kernel state-machine index for this model: [qwen3_1p7b-prefill.ALL.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-prefill.ALL.statemachine.md).
 
 ## 2 · Decode (standalone)
 
@@ -184,7 +184,7 @@ Companion skills: `cerebras-kernel-algo-walkthrough` (algorithm), `cerebras-kern
 
 *State machine — task/fn control flow* &nbsp; source: [doc](../../assets/kernel-algo/qwen3_1p7b-decode.kv_ingress_injector.statemachine.md) · [svg](../../assets/kernel-algo/qwen3_1p7b-decode.kv_ingress_injector.statemachine.svg)
 
-> Full per-kernel state-machine index for this model: `memory/inbox/qwen3_1p7b-decode.ALL.statemachine.md`.
+> Full per-kernel state-machine index for this model: [qwen3_1p7b-decode.ALL.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-decode.ALL.statemachine.md).
 
 ## 3 · E2E (fused prefill+decode, one artifact)
 
@@ -289,7 +289,7 @@ Companion skills: `cerebras-kernel-algo-walkthrough` (algorithm), `cerebras-kern
 
 *State machine — task/fn control flow* &nbsp; source: [doc](../../assets/kernel-algo/qwen3_1p7b-e2e.decode-mux.statemachine.md) · [svg](../../assets/kernel-algo/qwen3_1p7b-e2e.decode-mux.statemachine.svg)
 
-> Full per-kernel state-machine index for this model: `memory/inbox/qwen3_1p7b-e2e.ALL.statemachine.md`.
+> Full per-kernel state-machine index for this model: [qwen3_1p7b-e2e.ALL.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-e2e.ALL.statemachine.md).
 
 ## 4 · E2E pd-Separate (prefill & decode as two artifacts, KV bridged via host)
 
@@ -401,4 +401,9 @@ Companion skills: `cerebras-kernel-algo-walkthrough` (algorithm), `cerebras-kern
 
 *State machine — task/fn control flow* &nbsp; source: [doc](../../assets/kernel-algo/qwen3_1p7b-e2e-pdSeparate.decode-kv_demux.statemachine.md) · [svg](../../assets/kernel-algo/qwen3_1p7b-e2e-pdSeparate.decode-kv_demux.statemachine.svg)
 
-> Full per-kernel state-machine index for this model: `memory/inbox/qwen3_1p7b-e2e-pdSeparate.ALL.statemachine.md`.
+> Full per-kernel state-machine index for this model: [qwen3_1p7b-e2e-pdSeparate.ALL.statemachine.md](../../assets/kernel-algo/qwen3_1p7b-e2e-pdSeparate.ALL.statemachine.md).
+
+
+## Maintenance notes
+
+- 2026-07-18 maintenance: moved the four generated `*.ALL.statemachine.md` aggregate indexes from `memory/inbox/` to `assets/kernel-algo/` and updated the atlas pointers. These are generated reference artifacts, not actionable inbox captures.

@@ -1,6 +1,6 @@
 ---
 summary: EIDF/Kubernetes SGLang REMOTE_STANDALONE verifier bring-up, dummy and real Kimi K2.5 measurements.
-tags: [nc-service, specdec, gpu-verifier, eidf, sglang, kimi]
+tags: [nc-service, specdec, gpu-verifier, eidf, sglang, kimi, glm, mtp]
 ---
 
 # SpecDec GPU verifier on EIDF / SGLang REMOTE_STANDALONE
@@ -51,3 +51,16 @@ Validated result on 2026-07-15: server booted and served. Bring-up took roughly 
 - `memory/inbox/2026-07-15-gpu-verify-service-eidf-k8s-VALIDATED.md`
 - `memory/inbox/2026-07-15-kimi-k25-h100-KNOWN-GOOD-startup-recipe.md`
 - `memory/inbox/2026-07-15-real-kimi-oom-80gb-h100-and-fork-location.md` (superseded by the known-good correction above)
+
+## GLM-4.6 FP8 + native MTP baseline on EIDF (2026-07-16)
+
+GLM-4.6-FP8 (`zai-org/GLM-4.6-FP8`, 355B FP8) was validated as an alternative verifier and native MTP competitor baseline on the EIDF 8×H100 pod. Download was fast (~8.5 min at ~675 MB/s) and load was ~4 min, using about 41.9 GB/GPU with ~28 GB free — much easier than Kimi K2.5. Bring-up required disabling custom all-reduce / FlashInfer allreduce fusion because CUDA symmetric-memory multicast/NVLink SHARP was unavailable in the pod; NCCL fallback works but likely penalizes GLM's 92-layer allreduce.
+
+Measured bs=1, cuda-graph, 256-token decode, temp=0 results:
+
+| config | throughput | TPOT | speedup | acceptance |
+|---|---:|---:|---:|---:|
+| GLM-4.6 vanilla | 58 tok/s | 17.2 ms | 1× | — |
+| GLM-4.6 + MTP | 85.5 tok/s | 11.7 ms | 1.47× | accept_len 1.80; accept_rate 0.80 |
+
+Interpretation: this gives a same-hardware measured GPU-spec-dec competitor band of ~1.47× unoptimized, with published/optimized MTP closer to ~1.8×. The CS-3 draft path should compare against 1.47–1.8× if GLM is used as verifier; GLM vocab is 151552 versus Kimi's 163840, so a GLM verifier path would need draft retraining or a compatible draft.

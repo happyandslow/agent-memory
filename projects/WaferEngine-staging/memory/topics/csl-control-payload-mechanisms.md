@@ -66,6 +66,17 @@ payload instruct a PE action* rather than just landing in memory as data:
   filter (§7), never by payload key. "Route KV by request-key" stays a data-task/addressing policy,
   not a fabric feature (consistent with `cerebras-kernel-comm-patterns`).
 
+
+## Architectural framing — no keyed routing; static orchestration primitives (2026-07-16)
+
+The `qwen3_1p7b-prefill` KV-egress baton example sharpened the broader WSE fabric rule: there is no content/key-routed crossbar. A wavelet carries no destination field; routing is the compile-time painted route of its color, and runtime motion is limited to deterministic orchestration such as switch stepping, fixed chains, and control wavelets.
+
+Worked example: the KV egress gather time-multiplexes a fixed WEST→EAST route. Exactly one PE emits (`pos_emit = RAMP→EAST`) while others forward (`pos_fwd = WEST→EAST`). The baton `kv_egress_turn2 = [SWITCH_ADV, SWITCH_ADV]` advances the current emitter to forwarding and the east neighbor to emitting; the tail uses `kv_egress_turn1 = [SWITCH_ADV]`. Correctness is count/order exact, with no key, ack, or runtime destination safety net; the spent tail baton must remain NOCE-filtered rather than delivered as data.
+
+Design implication for KV reuse/tiering: any proposed many→one, route-by-request, retained-pool placement, idle-PE park/reload, or reverse prefill↔decode bridge must be expressed as a static topology plus deterministic stepper/rotate/chain primitive, or moved to the host. The ≤4 switch-position limit and reconfiguration cost are first-class design constraints for scaling gather fan-in.
+
+Related primitives under the same lens: baton-gather (KV egress), rotate-and-match (HT_head vocab LUT), parity shift chains (inter-block shuttle), and chain all-reduce (comm_pe).
+
 ## Design takeaway for M0/S4 (metadata-carrying on-chip relay)
 
 S4 wants to carry a per-round meta header — a **length** + a **`retain` flag** — on-chip *alongside*
@@ -145,6 +156,6 @@ The redesign **removed the standalone Topic 5/6/7 tutorial pages**; several earl
 
 ## Last updated
 
-2026-07-12 (enriched: concrete topic-07 example, task-type limits, switch-vs-control-task routing
+2026-07-18 (added no-keyed-routing/static-orchestration framing from KV egress baton); 2026-07-12 (enriched: concrete topic-07 example, task-type limits, switch-vs-control-task routing
 correction, "non-routable" precision, 16-bit capacity, CE-dispatch/control-bit mechanism, post-redesign
 SDK URL mapping). Original capture same day: M0/S4 design input from csl-knowledge KB v2.10.

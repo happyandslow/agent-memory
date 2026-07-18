@@ -2,6 +2,7 @@
 
 Date: 2026-07-16. Ran GLM-4.6-FP8 as an alternative verifier + its native MTP as the
 GPU-spec-dec competitor baseline (the head-to-head Kimi couldn't do — Kimi has no MTP).
+**Status:** drained
 
 ## Deploy (huge contrast vs Kimi)
 - Downloaded `zai-org/GLM-4.6-FP8` (355B, FP8) → /ckpt in **~8.5 min** (HF fast, ~675MB/s).

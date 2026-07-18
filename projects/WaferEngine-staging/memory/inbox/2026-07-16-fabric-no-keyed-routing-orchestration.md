@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured   <!-- captured | drained; Le wants a NEW SESSION to discuss this -->
+**Status:** drained   <!-- captured | drained; Le wants a NEW SESSION to discuss this -->
 
 ## What happened / finding
 

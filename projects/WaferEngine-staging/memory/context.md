@@ -17,6 +17,8 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 - `memory/topics/e2e-pdSeparate-device-validation.md` — device results, weights gap, max-context byte model.
 - `memory/topics/standalone-vs-integrated-kernel-parity.md` — feature gap and PR #14 / S6 abstraction refinements.
 - `memory/topics/prefill-decode-transfer-bandwidth.md` — transfer+transform measurement design and floorplan pointers.
+- `memory/topics/csl-control-payload-mechanisms.md` — CSL control wavelets/switches and the 2026-07-18 no-keyed-routing/static-orchestration framing.
+- `memory/topics/qwen3-kernel-analysis-atlas.md` — generated floorplan/algorithm/state-machine atlas with links to aggregate state-machine indexes under `assets/kernel-algo/`.
 - `memory/topics/h2d-host-device-bandwidth.md` — CS-3 host↔device / host↔host transport findings from `h2d-playground`.
 - `memory/topics/agentic-kv-trace-datasets.md` — traces/datasets for KV policy evaluation.
 
@@ -27,4 +29,5 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 3. Read only the topic note(s) relevant to the task.
 4. For retain / reuse-abstraction questions, start with `memory/topics/s6a-decode-kv-retain.md` and then `standalone-vs-integrated-kernel-parity.md`.
 5. For fused e2e accuracy/topology questions, read `memory/topics/e2e-kernel-dataflow-and-topology.md` before relying on older diagrams or parity notes.
-6. Treat real HF weights/tokenizer/oracle work as deferred unless Le reprioritizes it.
+6. For fabric routing/control questions, read `memory/topics/csl-control-payload-mechanisms.md`; assume static topology + deterministic orchestration unless live source proves otherwise.
+7. Treat real HF weights/tokenizer/oracle work as deferred unless Le reprioritizes it.

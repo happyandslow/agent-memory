@@ -34,11 +34,18 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Fill byte totals for the 2×2 configs from run printouts (`bsz`, `kv_dim_per_pe`, `seq_len_per_pe`, `max_layers_per_block`) so GB/s denominators are explicit.
 - [ ] Compare fused on-chip seam path against pdSeparate host-DRAM bridge under the same both-segments-counted metric.
 - [ ] Quantify T1 idle-PE offload and scope forced-token decode / T0.5 in-bank reuse.
+- [ ] Discuss the no-keyed-routing/static-orchestration framing as a design constraint for KV reuse/tiering; check whether any retained-store or bridge mechanism implicitly assumes content routing.
 - [ ] Unblock pdSeparate long-context prefill by shrinking/removing the quadratic score buffer; defer real HF weights/tokenizer/oracle unless Le reprioritizes them.
 - [ ] Redraw/annotate `assets/prefill-decode-transfer/e2e-topology-full.svg`: x131 is a decode west strip, and x644 (the real east strip in 2×2) is currently absent.
 - [ ] Fix e2e source/documentation hygiene found in the 2026-07-09 read: stale `route_calc.csl:5` axis comment, prefill vocab-padding asymmetry, K-pipe alias invariant check, and `csl_color_audit` raw `@set_config` parsing.
 
 ## Narrative progress log
+
+### 2026-07-18
+
+- Drained `memory/inbox/2026-07-16-fabric-no-keyed-routing-orchestration.md` into `memory/topics/csl-control-payload-mechanisms.md`. Durable framing: WSE fabric has no keyed/content routing; KV gather and related ML communication patterns are static topologies driven by deterministic steppers/rotations/chains. Added a follow-up to discuss how this constrains KV reuse/tiering designs.
+- Moved generated all-kernel state-machine aggregate indexes from `memory/inbox/` to `assets/kernel-algo/` and updated `memory/topics/qwen3-kernel-analysis-atlas.md` so they stop appearing as un-drained captures.
+
 
 > **Canonical M0 plan/state lives in the in-repo durable docs** (`ROADMAP.md`, `PROGRESS.md`,
 > `milestones/M0-reuse-foundation.md`) per repo precedence; entries below are background.
