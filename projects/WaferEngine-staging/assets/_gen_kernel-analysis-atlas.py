@@ -120,6 +120,19 @@ def fig_block(lines, kind, svg_fn, md_fn, caption):
     if have_svg: srcs.append(f"[svg]({rel_ka(svg_fn)})")
     lines.append(f"*{kind} — {caption}* &nbsp; source: " + " · ".join(srcs))
     lines.append("")
+    # Large machines are split into an overview (svg_fn) + per-component detail figures named
+    # <stem>.<LETTER>-<slug>.svg. List them so the detail set is reachable from the atlas.
+    stem = svg_fn[:-len(".svg")]
+    details = sorted(glob.glob(os.path.join(KA, f"{stem}.?-*.svg")))
+    if details:
+        items = []
+        for d in details:
+            b = os.path.basename(d)
+            tag = b[len(stem) + 1:-len(".svg")]          # e.g. "A-boot-ingress"
+            letter, _, slug = tag.partition("-")
+            items.append(f"[{letter} · {slug.replace('-', ' ')}]({rel_ka(b)})")
+        lines.append(f"Detail figures (the above is the overview): " + " · ".join(items))
+        lines.append("")
 
 L = []
 L.append("---")
