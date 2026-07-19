@@ -16,6 +16,8 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [x] Standalone-vs-integrated kernel parity gap documented.
 - [ ] Instrument prefill→decode transfer segments A/B/C with TSC and compute first effective-GB/s number.
 - [x] Resolve pre-S6 KV-management abstraction question: shared compute exists, but retain cannot be abstracted into integrated kernels until S4/S5 lifecycle port.
+- [x] Bring up prefill warm-start (`START_CHUNKS` prefix reuse): byte-identical PASS in sim and on real WSE-3 after fixing three independent defects.
+- [ ] Re-measure the prefill prefix-reuse saving on real-dim device configs; the (k/n)² scaling is mock-scale only and gates any reuse-value claim.
 - [ ] Scope forced-token decode, T0.5 in-bank reuse, and T1 idle-PE offload prototypes.
 - [ ] Decide whether fused e2e should carry prefill's sampled token into decode (host hop or new on-chip `pf_ht_tail` → HT_head wire) before making end-to-end accuracy claims.
 
@@ -27,9 +29,15 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 | 2026-07-05 | Frame KV preserve-vs-evict as a tier ladder, not a binary on-chip/off-chip choice. | T0/T0.5/T1/T2/T3 have different reuse costs, capacity, and kernel support requirements. | `memory/topics/kv-cache-policy-tradeoffs.md` |
 | 2026-07-06 | Count both transfer and transform compute in prefill→decode bandwidth. | The handoff is not a flat memcpy; gather, transpose, re-layout, seam shift, and decode cache writes all contribute to wall time. | `memory/topics/prefill-decode-transfer-bandwidth.md` |
 | 2026-07-06 | Use WSE-3 TSC at 1.1 GHz for the e2e segment timing design. | The SDK bandwidth-test's 0.85 GHz constant is wrong for WaferEngine; the timing skill was updated with the project-specific reconciliation. | `memory/topics/prefill-decode-transfer-bandwidth.md` |
+| 2026-07-19 | Keep every per-column x-chain payload EVEN (`metainfo_len = 4` = 3 real + 1 pad). | An odd-extent async `fabin → fabout` `@mov16` never fires its completion callback on WSE-3 and silently deadlocks the block; an isolated 8-PE reproducer ruled out queue depth. | `memory/topics/s6a-prefill-warm-start.md` |
+| 2026-07-19 | Treat the mock-scale prefill reuse numbers as mechanism-only; no reuse-value claim until real-dim configs are re-measured. | Saving tracks (k/n)² rather than k/n, so prefix reuse has strong diminishing returns — but the grid ran at dim=64/vocab=64, and the L=2048 rows were invalidated by a host cache-key bug. | `memory/topics/s6a-prefill-warm-start.md` |
 
 ## Next actions
 
+- [ ] Re-run both standalone kernels at **real scale** (`test_device_2x4_kv_varlen`, `test_device_2x4block_kv_varlen`, 524,288 PEs) to confirm they pass on device, then redo the prefix-reuse experiment there. Decode reuse already has knobs (`RETAIN_ROUNDS` / `RETAINED_LENS`, with `repeat` and `chain` semantics), so no new test entry point is needed.
+- [ ] Review and commit the S6a-prefill working tree: three fixes (metainfo even-padding, `ht_head` chunk-slot indexing, two host `start_chunk` assumptions) are unlanded on `lexu/staging/s6a-inner-pe-kv-route-a`.
+- [ ] Strengthen the warm-start gate so it fails when reuse silently never engages — byte-identical KV alone also passes a cold run.
+- [ ] Decide whether to lift decode's `MAX_SEQ_LEN ≤ 1016` wall; it needs a KV access/layout change that keeps the traversal stride inside the DSD's i8 `.stride` field, not a type widening.
 - [ ] Instrument `qwen3_1p7b-e2e` segment timings: t0 `start_kv_transfer`, t1 prefill states 0–3 done, t2 north-shift done, t3 decode `kv_flush_then_init`; validate in sim then on a device-sized config.
 - [ ] Fill byte totals for the 2×2 configs from run printouts (`bsz`, `kv_dim_per_pe`, `seq_len_per_pe`, `max_layers_per_block`) so GB/s denominators are explicit.
 - [ ] Compare fused on-chip seam path against pdSeparate host-DRAM bridge under the same both-segments-counted metric.
@@ -40,6 +48,13 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Fix e2e source/documentation hygiene found in the 2026-07-09 read: stale `route_calc.csl:5` axis comment, prefill vocab-padding asymmetry, K-pipe alias invariant check, and `csl_color_audit` raw `@set_config` parsing.
 
 ## Narrative progress log
+
+### 2026-07-19
+
+- Drained `memory/inbox/2026-07-19-s6a-prefill-warm-start-bringup.md` into the new topic `memory/topics/s6a-prefill-warm-start.md` and this plan. **Prefill warm-start (`START_CHUNKS` prefix reuse) now executes and is byte-identical in sim and on real WSE-3** — it had never actually run before, because a fabric deadlock masked everything downstream.
+- Three independent defects found and fixed: an odd-extent async `fabin → fabout` `@mov16` that silently deadlocks WSE-3 (isolated to an 8-PE reproducer, promoted to the `csl-odd-extent-fabric-forward-hang` skill); an `ht_head.csl` branch hardcoding chunk slot 0; and two host places that assumed `start_chunk == 0`, one of which silently ran warm requests cold.
+- Capacity walls differ by kernel: prefill stops at `MAX_SEQ_LEN = 2048` on PE data memory plus task table, decode at 512/1016 because the DSD `.stride` field is `i8`. The decode wall is an ISA field width, not memory, and is unrelated to the similarly-sized ~512 prefill SRAM figure in `e2e-pdSeparate-device-validation.md`.
+- Headline (mock scale only, **not** a performance result): prefill prefix-reuse saving tracks **(k/n)², not k/n** — the reused prefix chunks are the cheap ones. If it holds at real dim, prefix reuse has strong diminishing returns. Flagged as must-re-measure before use.
 
 ### 2026-07-18
 
