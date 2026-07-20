@@ -253,3 +253,37 @@ and that typing a value beyond a slider's range widens the track instead of clam
 Refactor: introduced `STAGE_KEYS` + `stageTotal()` as the single stage list. Adding
 hostMs required touching five separate places and I missed one (the engine's own
 `stages` literal), which the suite caught — hence the single list.
+
+## Update 6 (r10): what `net.hostOverheadMs` actually is, and the "overhead" ambiguity
+
+Source of truth: `memory/topics/specdec-modeb-drive-path.md:129` (Timeline 2, rewind
+round ~18.1 ms).
+
+**`net.hostOverheadMs` = 0.9 ms is HOST CPU work, not network** — the key name is a
+misnomer (kept for config compatibility; label and note corrected in the UI):
+- `band_build` 0.1 ms — host numpy building the continuation-pack re-arm band
+  (`repack_continuation_band`). **Was 19 ms** before vectorisation; at that point it
+  was ~half the entire round, and the three *hypothesised* levers (batch, nonblock,
+  kernel-merge) all missed it.
+- `band+seed send` 0.6 ms — pushing that band plus the seed token to the wafer.
+- `tsc drain` 0.2 ms — **profiling readback, measured at 0.0 in another run.** So
+  ~0.2 of the 0.9 is measurement cost that a production path likely does not pay.
+
+**The "overhead" figure was ambiguous and I stated it misleadingly.** Two defensible
+definitions at K=16:
+- **5.46 ms** = gateway 3.2 + gpuLeg 1.36 + host 0.9 — "cost outside the draft stage".
+- **8.26 ms** = the above + 2.8 — the honest "fixed per round" number, because
+  `draft.firstTokenMs` (3.5) exceeds `draft.perTokenMs` (0.7) precisely by per-round
+  setup. That 2.8 is overhead by any behavioural definition.
+
+`draft.firstTokenMs` does NOT feed the 5.46; it lives inside the draft stage.
+
+**Fix:** `steadyState` now exposes `fixedMs` / `perTokMs` and the panel shows them, so
+the linear structure is visible instead of relying on me to explain it:
+
+    round = fixedMs + perTokMs * K = 17.46 + 0.9516 * K
+
+    17.46 = 2.8 (draft per-round setup) + 9.2 (verify base) + 5.46 (three overheads)
+    0.9516 = 0.7 (draft/token) + 0.2516 (verify/token)
+
+Verified identical to the five-stage sum for K = 1..128.
