@@ -81,6 +81,8 @@ def set_text(shape, lines):
 S = prs.slides
 title, keypts, twocol, table, barchart = S[0], S[3], S[4], S[11], S[12]
 keypts2 = clone_slide(prs, keypts)
+diag_p = clone_slide(prs, keypts)
+diag_d = clone_slide(prs, keypts)
 table2 = clone_slide(prs, table)
 
 # a caption shape to reuse under the two data tables
@@ -142,25 +144,15 @@ set_text(by_name(keypts2, 'Text 1'), [
     "pending review.",
 ])
 
-# ---------------------------------------------------------- 4. implementation
-set_text(by_name(twocol, 'Text 0'), "What actually changed")
-set_text(by_name(twocol, 'Text 1'), "Prefill — start from chunk k, not chunk 0")
-set_text(by_name(twocol, 'Text 2'),
-         "Prefill processes a prompt in fixed-size chunks. The key observation is that the K/V "
-         "banks already physically hold the previous request's chunks — the per-request reset "
-         "only rewound a counter, it never cleared the data.\n\n"
-         "So a request now carries a start_chunk: keep the resident chunks 0..k-1, compute only "
-         "the suffix, and have the host stream only the suffix tokens.\n\n"
-         "Constraint: the shared prefix must be chunk-aligned, otherwise the boundary chunk has "
-         "to be recomputed.")
-set_text(by_name(twocol, 'Text 3'), "Decode — retain instead of rewind")
-set_text(by_name(twocol, 'Text 4'),
-         "The same idea, the same mechanism. Decode's per-request reset rewound the KV write "
-         "counter, throwing away the previous request's KV while it was still sitting in SRAM.\n\n"
-         "Retain gates that rewind: continue the position encoding, and recompute the remaining "
-         "steps from the retained length.\n\n"
-         "The host then stops re-shipping the prefix each round and sends a metadata-only message "
-         "instead.")
+# ------------------------------- 4a/4b. implementation, as diagrams not prose
+for _sl, _title, _img in (
+        (diag_p, "What changed — prefill: start from chunk k, not chunk 0", "diag_prefill.png"),
+        (diag_d, "What changed — decode: retain the KV instead of rewinding", "diag_decode.png")):
+    set_text(by_name(_sl, 'Text 0'), _title)
+    _body = by_name(_sl, 'Text 1')                     # drop the text placeholder
+    _body._element.getparent().remove(_body._element)
+    _sl.shapes.add_picture(os.path.join(os.path.dirname(os.path.abspath(__file__)), _img),
+                           Inches(1.47), Inches(2.55), width=Inches(17.06))
 
 # ------------------------------------------------------------ 5. prefill perf
 def fill_table(slide, title_text, header, rows, caption):
@@ -221,7 +213,7 @@ fill_table(
 )
 
 # -------------------------------------------------- keep only our six slides
-keep = [title, keypts, keypts2, twocol, table, table2]
+keep = [title, keypts, keypts2, diag_p, diag_d, table, table2]
 keep_ids = {id(s) for s in keep}
 sldIdLst = prs.slides._sldIdLst
 entries = {}

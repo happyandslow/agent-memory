@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1706" height="690" viewBox="0 0 1706 690"><defs><marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker></defs><g transform="translate(0,-60)">
+<text x="470" y="104" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="start">K/V cache banks, one row per PE   →   one cell = one CHUNK_SIZE chunk (32 of them at 8,192 tokens)</text>
+<text x="40" y="234" font-size="19" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#0d1b26" text-anchor="start">Cold request</text>
+<text x="40" y="258" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="start">start_chunk = 0</text>
+<rect x="470" y="166" width="1218" height="22" rx="3" fill="#6aa9e0" fill-opacity="0.55" stroke="#2c6fb0" stroke-width="1.5"/>
+<text x="1079.0" y="181" font-size="17" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="600" fill="#2c6fb0" text-anchor="middle">tokens streamed from host</text>
+<path d="M518.0 188 L518.0 202" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="470" y="208" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="518.0" y="243" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="518.0" y="288" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">0</text>
+<path d="M620.0 188 L620.0 202" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="572" y="208" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="620.0" y="243" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="620.0" y="288" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">1</text>
+<path d="M722.0 188 L722.0 202" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="674" y="208" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="722.0" y="243" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="722.0" y="288" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">2</text>
+<path d="M824.0 188 L824.0 202" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="776" y="208" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="824.0" y="243" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="824.0" y="288" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">3</text>
+<path d="M926.0 188 L926.0 202" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="878" y="208" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="926.0" y="243" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="926.0" y="288" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">4</text>
+<path d="M1028.0 188 L1028.0 202" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="980" y="208" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="1028.0" y="243" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="1028.0" y="288" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">5</text>
+<path d="M1130.0 188 L1130.0 202" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="1082" y="208" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="1130.0" y="243" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="1130.0" y="288" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">6</text>
+<path d="M1232.0 188 L1232.0 202" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="1184" y="208" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="1232.0" y="243" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="1232.0" y="288" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">7</text>
+<path d="M1334.0 188 L1334.0 202" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="1286" y="208" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="1334.0" y="243" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="1334.0" y="288" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">8</text>
+<path d="M1436.0 188 L1436.0 202" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="1388" y="208" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="1436.0" y="243" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="1436.0" y="288" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">9</text>
+<path d="M1538.0 188 L1538.0 202" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="1490" y="208" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="1538.0" y="243" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="1538.0" y="288" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">10</text>
+<path d="M1640.0 188 L1640.0 202" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="1592" y="208" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="1640.0" y="243" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="1640.0" y="288" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">11</text>
+<text x="40" y="474" font-size="19" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#0d1b26" text-anchor="start">Warm request</text>
+<text x="40" y="498" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="start">start_chunk = 6</text>
+<rect x="1082" y="406" width="606" height="22" rx="3" fill="#6aa9e0" fill-opacity="0.55" stroke="#2c6fb0" stroke-width="1.5"/>
+<text x="1385.0" y="421" font-size="17" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="600" fill="#2c6fb0" text-anchor="middle">tokens streamed from host</text>
+<rect x="470" y="448" width="96" height="62" rx="3" fill="#84c98a" fill-opacity="0.75" stroke="#155024" stroke-width="1.5"/>
+<text x="518.0" y="476" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#155024" text-anchor="middle">kept</text>
+<text x="518.0" y="494" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#155024" text-anchor="middle">no work</text>
+<text x="518.0" y="528" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">0</text>
+<rect x="572" y="448" width="96" height="62" rx="3" fill="#84c98a" fill-opacity="0.75" stroke="#155024" stroke-width="1.5"/>
+<text x="620.0" y="476" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#155024" text-anchor="middle">kept</text>
+<text x="620.0" y="494" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#155024" text-anchor="middle">no work</text>
+<text x="620.0" y="528" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">1</text>
+<rect x="674" y="448" width="96" height="62" rx="3" fill="#84c98a" fill-opacity="0.75" stroke="#155024" stroke-width="1.5"/>
+<text x="722.0" y="476" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#155024" text-anchor="middle">kept</text>
+<text x="722.0" y="494" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#155024" text-anchor="middle">no work</text>
+<text x="722.0" y="528" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">2</text>
+<rect x="776" y="448" width="96" height="62" rx="3" fill="#84c98a" fill-opacity="0.75" stroke="#155024" stroke-width="1.5"/>
+<text x="824.0" y="476" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#155024" text-anchor="middle">kept</text>
+<text x="824.0" y="494" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#155024" text-anchor="middle">no work</text>
+<text x="824.0" y="528" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">3</text>
+<rect x="878" y="448" width="96" height="62" rx="3" fill="#84c98a" fill-opacity="0.75" stroke="#155024" stroke-width="1.5"/>
+<text x="926.0" y="476" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#155024" text-anchor="middle">kept</text>
+<text x="926.0" y="494" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#155024" text-anchor="middle">no work</text>
+<text x="926.0" y="528" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">4</text>
+<rect x="980" y="448" width="96" height="62" rx="3" fill="#84c98a" fill-opacity="0.75" stroke="#155024" stroke-width="1.5"/>
+<text x="1028.0" y="476" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#155024" text-anchor="middle">kept</text>
+<text x="1028.0" y="494" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#155024" text-anchor="middle">no work</text>
+<text x="1028.0" y="528" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">5</text>
+<path d="M1130.0 428 L1130.0 442" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="1082" y="448" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="1130.0" y="483" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="1130.0" y="528" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">6</text>
+<path d="M1232.0 428 L1232.0 442" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="1184" y="448" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="1232.0" y="483" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="1232.0" y="528" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">7</text>
+<path d="M1334.0 428 L1334.0 442" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="1286" y="448" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="1334.0" y="483" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="1334.0" y="528" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">8</text>
+<path d="M1436.0 428 L1436.0 442" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="1388" y="448" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="1436.0" y="483" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="1436.0" y="528" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">9</text>
+<path d="M1538.0 428 L1538.0 442" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="1490" y="448" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="1538.0" y="483" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="1538.0" y="528" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">10</text>
+<path d="M1640.0 428 L1640.0 442" stroke="#2c6fb0" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="1592" y="448" width="96" height="62" rx="3" fill="#e8b06a" fill-opacity="0.85" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="1640.0" y="483" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#a86a1e" text-anchor="middle">compute</text>
+<text x="1640.0" y="528" font-size="14" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="middle">11</text>
+<path d="M1082 420 L1082 575" stroke="#c0392b" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="1092" y="571" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#c0392b" text-anchor="start">start_chunk</text>
+<text x="40" y="636" font-size="23" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="700" fill="#c0392b" text-anchor="start">enter_request used to hard-set  current_chunk = 0 ;  it now sets  current_chunk = k.</text>
+<text x="40" y="668" font-size="17" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="start">The banks were never cleared — the per-request reset only rewound a counter, so the previous request's chunks were already sitting in SRAM. Nothing moves and there is no</text>
+<text x="40" y="692" font-size="17" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial" font-weight="500" fill="#4a5b66" text-anchor="start">inverse transform, which is what makes the reuse nearly free. The one constraint: the shared prefix has to be chunk-aligned, otherwise the boundary chunk must be recomputed.</text>
+</g></svg>
