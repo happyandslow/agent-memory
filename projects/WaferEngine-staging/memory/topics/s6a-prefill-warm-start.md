@@ -146,6 +146,8 @@ Decision consequence: prefix reuse's value needs a **position-weighted** model, 
 
 The earlier “decode reuse benefit is unmeasurable” conclusion is retracted. Retain does **not** make an equal-work decode step cheaper: when both arms do the same number of decode steps over the same context, reuse is only ~0.02% slower (fixed bookkeeping cost). Its benefit is **not re-executing decode steps that already ran**.
 
+Read that null result narrowly — the equal-work grid is blind **twice over**. Besides equal decode work by construction, the arms' only real difference (this round re-prefilled the prefix vs inherited it) falls **outside** decode's TSC window, which starts after KV injection. The no-reuse arm genuinely pays a fresh prefill every round; that metric cannot see it. So ~0.02% licenses “a retained step is not a cheaper step”, and nothing stronger.
+
 Correct real-scale comparison at `MAX_SEQ_LEN=1024`, `L=D=256`:
 
 | arm | round 0 | round 1 | total decode |
