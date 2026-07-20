@@ -287,3 +287,53 @@ the linear structure is visible instead of relying on me to explain it:
     0.9516 = 0.7 (draft/token) + 0.2516 (verify/token)
 
 Verified identical to the five-stage sum for K = 1..128.
+
+## Update 7 (r11): the 3.5 ms step0 is NOT measurable on the production path
+
+Le pushed back: "shouldn't every token be 0.7? our timer measures the end-to-end
+batch, it cannot isolate the first token." **He is right, and this is a real
+weakness in the model.** Checking the raw log (`specdec-modeb-drive-path.md:98-99`):
+
+```
+perstep nb=0: recv16=13.9(step0=3.4 rest=10.5)   <- split EXISTS
+batch   nb=1: recv16=14.1                        <- NO split
+```
+
+The step0/rest split only ever existed in **per-step receive mode**. Spec-dec
+production uses **batch** receive, which reports one number. So the 3.5 comes from a
+DIFFERENT receive path than the one that ships, and cannot be confirmed on the
+production path with current instrumentation.
+
+**Two readings fit the measurement equally well at K=16:**
+- A: `2.8 + 0.7K` (fixed startup + steady per-token) -> 14.0 at K=16
+- B: `0.875K` (uniform per-token) -> 14.0 at K=16
+
+They are indistinguishable at K=16 by construction and **diverge up to 11% elsewhere**
+(K=4: A is 10% higher; K=64: B is 11% higher). Speedup at K=64: A 4.78x vs B 4.31x.
+So the choice matters precisely for the K-sweep question Le is planning.
+
+**Is the 2.8 double-counted with gateway/host?** No — they are separate fields on the
+same log line (`band_build=.. band_send=.. | recv16=..(step0=..) | tsc=..`), and
+gateway is `driver_rtt - worker`, measured entirely outside the worker. But whether
+the 2.8 is real wafer arm/pipeline-fill or a per-step-mode measurement artifact is
+**UNRESOLVED**. To settle it: instrument the batch path, or sweep K on device and fit
+the slope/intercept.
+
+Parameter note updated to record this; setting firstTokenMs = perTokenMs models B.
+
+### The physical chain (Le asked what each leg spans)
+
+```
+GPU host (verifier)
+  | 1.36 ms   net.gpuLegMs   = verify-side 3.296 - driver-side 1.932
+CS-3 gateway node (driver runs here)
+  | 3.2 ms    net.gatewayMs  = driver rtt - worker time; L7 HTTPS ingress on :443
+executor pod (worker)
+  |- 0.9 ms   net.hostOverheadMs = pod CPU: band build/send + tsc
+  | 14.0 ms   draft (fabric, includes on-pod d2h)
+WSE-3 wafer
+```
+
+**Campaign inconsistency worth remembering:** the SAME gateway<->worker segment
+measured **1.77 ms** in the passthrough campaign (ping 0.96 + gw overhead 0.81) but
+**3.2 ms** in mode-B. ~1.8x apart for the same physical hop.
