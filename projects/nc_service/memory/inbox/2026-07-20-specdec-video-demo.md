@@ -460,3 +460,47 @@ it matters depends entirely on generation length — amortised over 500 tokens i
 
 NOT yet built — needs a decision on whether the demo covers a whole request or only
 steady-state decode.
+
+## Update 11: the baseline is wrong — GPU-only spec dec is the real competitor
+
+Le asked: "isn't GPU-only spec dec just GPU verification + GPU drafting?" **Yes, and
+this is the most consequential question asked about the demo so far.**
+
+The demo compares against **vanilla GPU decode** (9.2 ms/tok). Nobody deploying
+speculation would run that. The honest baseline is **GPU-only speculative decoding**,
+which we already have a measured point for: **GLM-4.6 + MTP = 85.5 tok/s vs 58 vanilla
+= 1.47x** (`2026-07-16-glm46-mtp-gpu-specdec-baseline.md`).
+
+**The structural difference: GPU-only pays ZERO communication.** Our 3.13 ms/round of
+transport is a cost the competitor simply does not have. Our compensation is a much
+faster drafter (0.70 ms/tok on wafer) that also does not steal the verifier GPU.
+
+Modelling GPU-only at K=16, p=0.62 (round = D*K + verify, comm = 0):
+
+| GPU draft ms/tok | round | speedup | vs ours (3.31x) |
+|---|---|---|---|
+| 0.75 | 25.2 | 3.98x | **they win 1.20x** |
+| 1.00 | 29.2 | 3.44x | **they win 1.04x** |
+| **1.07** | 30.3 | **3.31x** | **break-even** |
+| 1.50 | 37.2 | 2.70x | we win 1.23x |
+| 2.00 | 45.2 | 2.22x | we win 1.49x |
+
+**Break-even: if the GPU can draft faster than ~1.07 ms/token, GPU-only speculative
+decoding beats us.** A 1.7B model in fp16 is ~3.4 GB; at H100 HBM ~3 TB/s that is a
+theoretical floor around **1.1 ms/token** — i.e. we are sitting almost exactly on the
+break-even line, and MTP-style drafting (an extra head on the same forward pass) is
+cheaper still.
+
+**Implications:**
+1. Quoting 3.31x against vanilla decode is not defensible in front of an informed
+   audience; the first question will be "versus GPU-only speculation?"
+2. Communication is not a detail, it is THE competitive variable. Every ms cut from
+   the 3.13 moves the break-even. This reframes the transport work from
+   "optimisation" to "the thing the product depends on".
+3. The real pitch is probably not raw latency but that drafting does not consume the
+   verifier GPU — freeing it for other requests / higher batch throughput. That is a
+   throughput argument, and the demo currently does not model it at all.
+
+**Not yet built:** a third lane (GPU-only spec dec) in the race. Recommended, and it
+needs a measured GPU-draft-model latency for the SAME model as the 9.2 ms baseline —
+we only have GLM's MTP number, which is a different model.
