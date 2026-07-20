@@ -424,3 +424,39 @@ GPU-anchored 3.13, not the mixed 5.46). Verified K = 1..128 scales correctly.
 
 Suites 7/9/10 failed on stale assertions (old key names, old 32.7 ms / 17.46 ms
 constants) — expected after a model change, not regressions. Updated.
+
+## Update 10 (r14): throughput view; are two params per stage necessary?
+
+Le asked three things looking at the panel.
+
+**1. Are two parameters each necessary? Asymmetric answer:**
+- **Verification: YES, required.** fixed/marginal = 37x. Dropping the fixed term makes
+  the model qualitatively wrong (verifying K would cost the same as generating K, and
+  speculation could never win).
+- **Drafting: NO, the second one is optional.** `draft.fixedMs = 2.8` is ESTIMATED, not
+  measured — only visible in per-step receive mode. `2.8 + 0.7K` and `0 + 0.875K` both
+  give exactly 14.0 at K=16. Recommendation: if trimming a knob, trim this one.
+  Divergence: K=4 gives 1.69x vs 1.90x; K=64 gives 4.92x vs 4.43x.
+
+**2. Metric not intuitive — agreed, added a throughput block** to the panel:
+
+```
+drafting (Cerebras)   1429 tok/s  + 2.80 ms/round
+verification (GPU)    3975 tok/s marginal  + 9.20 ms/pass
+GPU alone (baseline)   109 tok/s
+system, end to end     360 tok/s   3.31x
+```
+
+Note verification deliberately reads "marginal" and quotes the fixed pass cost beside
+it — a bare tok/s for verification is meaningless (it swings 17x with K).
+
+**3. "Maybe split each stage into prefill and decode throughput" — this points at a
+real omission: the demo models ONLY the steady-state decode loop.** No prompt
+encoding, no KV handoff, no TTFT. In the PD architecture that is not a rounding error:
+measured round 0 is **~2.2 s** (prefill egress 1520 ms + transform 348 ms + wire 83 ms
++ decode-side unframe/handoff/repack 137 ms) against ~30 ms recurring rounds. Whether
+it matters depends entirely on generation length — amortised over 500 tokens it adds
+~4 ms/token, which would roughly halve the headline speedup.
+
+NOT yet built — needs a decision on whether the demo covers a whole request or only
+steady-state decode.
