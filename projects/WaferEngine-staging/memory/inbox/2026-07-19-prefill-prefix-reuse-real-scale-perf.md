@@ -146,8 +146,19 @@ course. Two such grids were run before the flaw was spotted; a third, where both
 same 2L context with the same 256 decode steps, likewise showed only 1.1 % difference, confirming
 that reuse per se does not change decode compute.
 
-**The null result, in full** (real scale, `MAX_SEQ_LEN = 1024`, D = 256 decode steps in *both* arms,
-same peak context in both arms — i.e. equal work by construction):
+**The null result, in full.** This is the **abandoned first design**, kept as a record of what it
+does and does not show. Real scale, `MAX_SEQ_LEN = 1024`; the reported span is the **last round**
+(decode's TSC variable is overwritten each round):
+
+```
+base  : PREFILL_LENS=[L,L,L]  DECODE_LENS=[256,256,256]  RETAIN=[0,0,0]
+        -> every round is an independent request: fresh prefill L, then decode 256
+reuse : PREFILL_LENS=[L,0,0]  DECODE_LENS=[256,256,256]  RETAIN=[0,1,1]  RETAINED=[L,L,L]
+        -> round 0 prefills L; rounds 1-2 inherit it, then decode 256
+```
+
+Both arms therefore run **256 decode steps over the same peak context** in the measured round —
+equal work by construction:
 
 | prefix L | peak ctx | base span | reuse span | delta |
 |---:|---:|---:|---:|---:|
@@ -158,12 +169,20 @@ same peak context in both arms — i.e. equal work by construction):
 All six rc=0. Reuse is *very slightly slower* — a constant \~29 K cycles, independent of L, i.e. the
 fixed cost of the retain bookkeeping itself, not a per-token effect.
 
-**This is the correct and expected answer to the question that was actually asked, and it is worth
-keeping:** when both arms perform the same number of decode steps over the same context, retain
-changes decode compute by \~0.02 %. Retain does not make a decode step cheaper. Its entire benefit is
-**not executing steps at all** — which is why the comparison had to be redesigned so the no-reuse arm
-redoes the discarded steps (next section). Anyone re-running this experiment will likely build the
-equal-work grid first; these numbers show what that looks like and why it proves nothing about reuse.
+**Read this narrowly.** It says: when both arms run the same number of decode steps over the same
+context, retain changes decode compute by \~0.02 % — i.e. **a retained step is not a cheaper step**.
+
+**It does NOT say retain is worthless here, and the design has a second flaw worth naming.** The only
+thing that differs between the arms is *whether this round re-prefilled the prefix or inherited it* —
+and that difference falls **outside the measurement window**, because decode's TSC starts at
+`tail_step == warmup_cycles`, i.e. after KV injection. The base arm really does pay a fresh prefill
+every round; this metric simply cannot see it. So the grid is blind twice over: equal decode work by
+construction, and the one real difference excluded by the timer.
+
+Retain's benefit is **not executing steps at all**, which is why the comparison was redesigned so the
+no-reuse arm redoes the steps it discarded (next section). Kept because anyone re-running this will
+likely build the equal-work grid first — these numbers show what that looks like and why it settles
+nothing.
 
 Also note the span grows with context even at fixed step count (126.2 M → 129.0 M as peak ctx goes
 512 → 1024, +2.3 %), which is the decode-side echo of the prefill position effect.
