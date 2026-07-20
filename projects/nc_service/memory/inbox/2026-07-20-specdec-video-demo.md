@@ -389,3 +389,38 @@ Raw-data status: driver-side per-round samples (`_runs/full_batch_1000.json`) ar
 on gala2 any more (may survive on CS-3 under ~/rsync/nc_service-rsync/_runs/);
 verify-side raw samples never existed — the GPU service prints aggregates only.
 Full record lives in ContextBase `GOZQ9I8pOe`, far more detailed than the topic file.
+
+## Update 9 (r13): collapsed to three overheads — and why verification needs TWO numbers
+
+Le: simplify to three overheads (drafting / verification / communication), keep
+acceptance rate and block size, "we'll compute GPU and Cerebras performance and fill
+them in". Asked whether that invalidates the simulator.
+
+**It does not.** The simulator only consumes (round total, stage breakdown, accepted
+count). Three stages animate exactly as well as five. Given the cross-campaign
+inflation found in r12, a single communication lump the user owns is *more* honest
+than a five-way split implying precision the data cannot support.
+
+**But I first answered wrong**, assuming they would enter flat per-round totals and
+warning that K-scaling would break. Le corrected: they will supply **per-token latency
+or throughput**, so why can't it scale? The real answer is an asymmetry:
+
+- **Drafting scales linearly.** Sequential generation, so ms/token is meaningful
+  (0.70 ms/tok = ~1430 tok/s).
+- **Verification does NOT.** K tokens are checked in ONE forward pass. Measured:
+  1 tok = 9.2 ms, 32 tok = 17.0 ms => per-token cost is 9.2 vs 0.53 ms, a **17x
+  swing**. Extrapolating from a single per-token figure at K=1 predicts 294 ms at
+  K=32 versus an actual 17.0 — wrong by 17x.
+
+So verification needs `fixed + perToken` (9.2 + 0.2516K). **fixed/marginal = 37x, and
+that ratio IS the mechanism**: speculation wins by amortising one forward pass over K
+tokens. A purely per-token verification model makes speculative decoding impossible in
+principle — verifying K would cost the same as generating K.
+
+Final shape: `draft.perTokenMs` + `draft.fixedMs`, `verify.fixedMs` +
+`verify.perTokenMs`, `comm.roundMs`, `gpu.decodeMsPerToken`, `draft.K`, acceptance.
+Round = 15.13 + 0.9516K; at K=16 that is 30.36 ms and 3.31x (comm now the
+GPU-anchored 3.13, not the mixed 5.46). Verified K = 1..128 scales correctly.
+
+Suites 7/9/10 failed on stale assertions (old key names, old 32.7 ms / 17.46 ms
+constants) — expected after a model change, not regressions. Updated.
