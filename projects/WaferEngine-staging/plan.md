@@ -17,7 +17,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Instrument prefill→decode transfer segments A/B/C with TSC and compute first effective-GB/s number.
 - [x] Resolve pre-S6 KV-management abstraction question: shared compute exists, but retain cannot be abstracted into integrated kernels until S4/S5 lifecycle port.
 - [x] Bring up prefill warm-start (`START_CHUNKS` prefix reuse): byte-identical PASS in sim and on real WSE-3 after fixing three independent defects.
-- [ ] Re-measure the prefill prefix-reuse saving on real-dim device configs; the (k/n)² scaling is mock-scale only and gates any reuse-value claim.
+- [x] Re-measure the prefill prefix-reuse saving on real-dim device configs; real-scale WSE-3 results now show strongly sub-linear savings (25% reuse → 7.7%, 50% → 22.8%, 75% → 45.2%).
 - [ ] Scope forced-token decode, T0.5 in-bank reuse, and T1 idle-PE offload prototypes.
 - [ ] Decide whether fused e2e should carry prefill's sampled token into decode (host hop or new on-chip `pf_ht_tail` → HT_head wire) before making end-to-end accuracy claims.
 
@@ -31,10 +31,12 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 | 2026-07-06 | Use WSE-3 TSC at 1.1 GHz for the e2e segment timing design. | The SDK bandwidth-test's 0.85 GHz constant is wrong for WaferEngine; the timing skill was updated with the project-specific reconciliation. | `memory/topics/prefill-decode-transfer-bandwidth.md` |
 | 2026-07-19 | Keep every per-column x-chain payload EVEN (`metainfo_len = 4` = 3 real + 1 pad). | An odd-extent async `fabin → fabout` `@mov16` never fires its completion callback on WSE-3 and silently deadlocks the block; an isolated 8-PE reproducer ruled out queue depth. | `memory/topics/s6a-prefill-warm-start.md` |
 | 2026-07-19 | Treat the mock-scale prefill reuse numbers as mechanism-only; no reuse-value claim until real-dim configs are re-measured. | Saving tracks (k/n)² rather than k/n, so prefix reuse has strong diminishing returns — but the grid ran at dim=64/vocab=64, and the L=2048 rows were invalidated by a host cache-key bug. | `memory/topics/s6a-prefill-warm-start.md` |
+| 2026-07-20 | Model prefix-reuse value with position weighting, not linear hit rate. | Real-scale WSE-3 results show 50% prefix reuse saves only 22.8% latency and 75% saves 45.2%; reused prefix chunks are the cheapest part, while recomputed suffix chunks dominate. | `memory/topics/s6a-prefill-warm-start.md` |
+| 2026-07-20 | Decode retain's benefit is skipping already-executed decode steps, not making each equal-work step cheaper. | Equal-work decode comparisons differ by only ~0.02% fixed overhead; the correct end-state comparison saves 34.6% total decode work by avoiding redoing discarded steps. | `memory/topics/s6a-prefill-warm-start.md` |
 
 ## Next actions
 
-- [ ] Re-run both standalone kernels at **real scale** (`test_device_2x4_kv_varlen`, `test_device_2x4block_kv_varlen`, 524,288 PEs) to confirm they pass on device, then redo the prefix-reuse experiment there. Decode reuse already has knobs (`RETAIN_ROUNDS` / `RETAINED_LENS`, with `repeat` and `chain` semantics), so no new test entry point is needed.
+- [ ] Finish the in-flight long-sequence follow-up: k>0 prefill reuse points at L=16,384 and the decode L=4096 pair after CS-3 cluster recovery; tee every per-point device log because `out_*` artifact dirs do not return from worker nodes.
 - [ ] Review and commit the S6a-prefill working tree: three fixes (metainfo even-padding, `ht_head` chunk-slot indexing, two host `start_chunk` assumptions) are unlanded on `lexu/staging/s6a-inner-pe-kv-route-a`.
 - [ ] Strengthen the warm-start gate so it fails when reuse silently never engages — byte-identical KV alone also passes a cold run.
 - [ ] Decide whether to lift decode's `MAX_SEQ_LEN ≤ 1016` wall; it needs a KV access/layout change that keeps the traversal stride inside the DSD's i8 `.stride` field, not a type widening.
@@ -48,6 +50,12 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Fix e2e source/documentation hygiene found in the 2026-07-09 read: stale `route_calc.csl:5` axis comment, prefill vocab-padding asymmetry, K-pipe alias invariant check, and `csl_color_audit` raw `@set_config` parsing.
 
 ## Narrative progress log
+
+### 2026-07-20
+
+- Drained `memory/inbox/2026-07-19-prefill-prefix-reuse-real-scale-perf.md` into `memory/topics/s6a-prefill-warm-start.md` and this plan. Real-scale WSE-3 prefill prefix reuse is now measured at Qwen3-1.7B dims / 524,288 PEs / L=8192: 25% reuse saves 7.7%, 50% saves 22.8%, and 75% saves 45.2% (all byte-identical). Prefix reuse is strongly sub-linear in hit fraction because it skips the cheap early chunks and recomputes the expensive suffix.
+- Corrected decode interpretation: retain does not make an equal-work decode step cheaper (~0.02% bookkeeping overhead); it saves by skipping already-executed decode steps. Correct real-scale end-state comparison saves 34.6% total decode work.
+- Captured operational guardrail for device measurements: per-point stdout logs are the durable result because `out_*` artifact dirs stay on worker nodes; quote host wall only as context, not latency.
 
 ### 2026-07-19
 

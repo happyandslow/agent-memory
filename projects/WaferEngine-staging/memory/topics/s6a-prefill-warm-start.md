@@ -1,9 +1,9 @@
 ---
-summary: M0/S6a-prefill warm-start (START_CHUNKS prefix reuse) — verified byte-identical in sim and on WSE-3; three defects found (odd-extent fabric deadlock, hardcoded chunk slot, host start_chunk assumptions); prefill/decode capacity walls differ; prefix-reuse saving scales as (k/n)², not k/n.
+summary: M0/S6a-prefill warm-start (START_CHUNKS prefix reuse) — verified byte-identical in sim and on WSE-3; three defects found (odd-extent fabric deadlock, hardcoded chunk slot, host start_chunk assumptions); real-scale prefill reuse measured and strongly sub-linear; decode retain saves by skipping steps, not by making a decode step cheaper.
 tags: [waferengine-staging, qwen3, prefill, kv-reuse, warm-start, s6a, csl, wse-3, capacity, verification]
 ---
 
-# S6a-prefill — warm-start prefix reuse: bring-up, defects, limits
+# S6a-prefill — warm-start prefix reuse: bring-up, defects, limits, performance
 
 > Curated learnings from the first end-to-end bring-up of prefill warm-start
 > (M0/S6a-prefill, 2026-07-19). **Plan/state live in the in-repo durable docs**
@@ -113,7 +113,56 @@ Note the quadratic attention buffer is quadratic in
 `chunk_len_per_pe = 1` it stays negligible and sequence length costs only linear
 per-chunk banks.
 
-## Prefix-reuse saving scales as (k/n)² — MOCK SCALE, not yet a result
+## Prefix-reuse saving scales sub-linearly — real-scale result now recorded
+
+### 2026-07-20 real-scale WSE-3 grid
+
+Drained from `memory/inbox/2026-07-19-prefill-prefix-reuse-real-scale-perf.md`. This is the first **real-scale** prefill-side prefix-reuse (`START_CHUNKS`) measurement: Qwen3-1.7B real dims, 512 × 1024 = **524,288 PEs**, `PREFILL_LEN = MAX_SEQ_LEN = 8192`, `CHUNK_SIZE = 256` (32 chunks), three 8192-token requests with `START_CHUNKS=[0,k,k]`. The TSC span is the last request's pure device forward window: start when first tokens land on device, end after logits emit; host stream construction and post-processing are outside it. `n=1` per point.
+
+| k | reuse | span_cycles | forward latency | per-request throughput | vs k=0 |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 0% | 1,101,615,635 | 1001.47 ms | 8,180.0 tok/s | — |
+| 8 | 25% | 1,016,462,831 | 924.06 ms | 8,865.3 tok/s | +8.4% |
+| 16 | 50% | 850,635,411 | 773.30 ms | 10,593.5 tok/s | +29.5% |
+| 24 | 75% | 604,117,559 | 549.20 ms | 14,916.3 tok/s | **+82.3%** |
+
+Saving vs reuse fraction: 25% reuse saves **7.7%**, 50% saves **22.8%**, 75% saves **45.2%**. The curve is strongly sub-linear in hit fraction and falls short of the simple `(k/n)^2` approximation at high reuse; fixed per-request work that cannot be skipped puts a floor under latency.
+
+Useful marginal-cost model from skipped 8-chunk bands:
+
+| skipped chunks | saving | per chunk |
+|---|---:|---:|
+| 0–7 | 85.2M cycles | 10.64M |
+| 8–15 | 165.8M cycles | 20.73M |
+| 16–23 | 246.5M cycles | 30.81M |
+
+Linear fit: `cost(chunk c) ≈ 6.2M + 1.26M·c` cycles. The last chunk costs about 45M cycles, ~7× the first. Mechanism: the reused prefix is the cheap beginning of the request; the recomputed suffix is the expensive, longer-context part.
+
+Correctness held at every point: `KV round 1 vs round 0` and `round 2 vs round 0` were **BYTE-IDENTICAL PASS**, tokens `all-equal=True`.
+
+Decision consequence: prefix reuse's value needs a **position-weighted** model, not a linear hit-rate model. The current `R* = Δ·BW/B_tok` framing lacks a term for where the reused span sits.
+
+### Decode addendum from the same capture
+
+The earlier “decode reuse benefit is unmeasurable” conclusion is retracted. Retain does **not** make an equal-work decode step cheaper: when both arms do the same number of decode steps over the same context, reuse is only ~0.02% slower (fixed bookkeeping cost). Its benefit is **not re-executing decode steps that already ran**.
+
+Correct real-scale comparison at `MAX_SEQ_LEN=1024`, `L=D=256`:
+
+| arm | round 0 | round 1 | total decode |
+|---|---:|---:|---:|
+| no-reuse (`DECODE_LENS=[256,512]`, `RETAIN=[0,0]`) | 127.7M | 262,928,666 | 390.6M |
+| reuse (`DECODE_LENS=[256,256]`, `RETAIN=[0,1]`, `RETAINED=[0,-1]`) | 127.7M | 127,696,962 | 255.4M |
+
+Round 1 is **−51.4%** and total decode is **−34.6%**, matching the step-count prediction. Decode's TSC already starts after KV injection, so it is the correct compute metric; do not add a prefill-phase timer for this question. The large host→device KV-volume drop in the standalone harness is not a serving benefit and should not be quoted.
+
+### Sequence-length scaling and operational pitfall
+
+- Compile-only capacity at real scale: prefill compiles at 16,384 (64 chunks) and fails at 32,768 due to an `i16` overflow, not memory. Decode compiles at 4096; the mock-scale `MAX_SEQ_LEN ≤ 1016` bound came from `P_BLOCK_SIZE=8` and does not bind at real scale.
+- One completed cold prefill point at L=16,384: **3144.94 ms**, 5,209.6 tok/s. Doubling L from 8192 more than triples latency (**×3.14**), confirming per-token cost grows with sequence length.
+- Open: k>0 points at L=16,384 and the decode L=4096 pair were resubmitted after cluster recovery and were still in flight as of the capture.
+- Device `out_*` artifact dirs do **not** persist back to the login node. The captured stdout is the result; every device batch must tee per-point logs to local disk, or the measurement is lost and requires a full recompile. Also keep remote `~` literal in paths destined for the remote shell; accidental local expansion causes fast `cd` failures that look like cluster faults.
+
+## Earlier mock-scale observation — now mechanism-only background
 
 **Caveat first:** the 10-point device grid was run on the **mock** config (256–512 PEs,
 dim=64, vocab=64), not the real `test_device_*` configs (262k–524k PEs, dim=2048,

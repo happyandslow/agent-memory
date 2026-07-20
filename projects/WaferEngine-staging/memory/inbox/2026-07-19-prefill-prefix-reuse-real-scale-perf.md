@@ -1,6 +1,7 @@
 # Prefill prefix-reuse — real-scale device measurement (524k PEs, Qwen3-1.7B dims)
 
 Date: 2026-07-19 · Repo: `WaferEngine-staging` · Branch: `lexu/staging/s6a-inner-pe-kv-route-a` (uncommitted)
+Status: drained 2026-07-20 into `plan.md`, `memory/topics/s6a-prefill-warm-start.md`, `memory/context.md`, and `tracking/status.md`.
 Companion capture: `2026-07-19-s6a-prefill-warm-start-bringup.md` (the three defects + bring-up).
 
 First **real-scale** measurement of prefill-side prefix reuse (`START_CHUNKS` warm-start). Supersedes
