@@ -1,0 +1,260 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="1160" viewBox="0 0 1240 1160" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker><marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker><marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker><marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker></defs>
+<rect width="1240" height="1160" fill="#f7f9fb"/>
+<text x="620.0" y="30" font-size="19" font-weight="700" fill="#0d1b26" text-anchor="middle">decode ht_head.csl — static 2-D vocab shard + diagonal-pair W_E gather</text>
+<text x="620.0" y="50" font-size="11.5" font-weight="500" fill="#4a5b66" text-anchor="middle">ONE sampled token per step, fed back on-chip from HT_tail. No vocab-rotation ring (that is prefill): vocab is FIXED on Y, hidden on X, and the one needed W_E row is gathered vertically.</text>
+<text x="620.0" y="68" font-size="11" font-weight="500" fill="#6a7883" text-anchor="middle">ref config test_sim_2x2block_kv_varlen.json:  P_BLOCK_SIZE=8, HT_WIDTH_tail=6, HT_WIDTH_head=4, HT_X_OFFSET=2, dim=64, dim_per_pe=8, bsz=2, vocab=24, V_per_pe_y=3</text>
+<text x="60" y="100" font-size="14" font-weight="700" fill="#0d1b26" text-anchor="start">1  Spatial layout + comms   (band = HT_WIDTH_tail cols x P_BLOCK_SIZE rows; embedding on the EAST 4 cols)</text>
+<rect x="100" y="152" width="118" height="368" rx="6" fill="#f0d9b5" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
+<text x="159" y="170" font-size="12" font-weight="700" fill="#7a4d10" text-anchor="middle">demux</text>
+<text x="159" y="186" font-size="9.5" font-weight="500" fill="#7a4d10" text-anchor="middle">1 x P col</text>
+<text x="159" y="204" font-size="9.5" font-weight="500" fill="#7a4d10" text-anchor="middle">host X[0] seed</text>
+<text x="159" y="220" font-size="9.5" font-weight="500" fill="#7a4d10" text-anchor="middle">(step 0 only)</text>
+<rect x="250" y="152" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="307.0" y="172" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="307.0" y="185" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="368" y="152" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="425.0" y="172" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="425.0" y="185" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="486" y="152" width="114" height="42" rx="4" fill="#bfe0c4" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.2"/>
+<text x="543.0" y="170" font-size="9.5" font-weight="700" fill="#12222f" text-anchor="middle">DIAG upper</text>
+<text x="543.0" y="184" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">embed_buf lo half</text>
+<rect x="604" y="152" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="661.0" y="172" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="661.0" y="185" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="722" y="152" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="779.0" y="172" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="779.0" y="185" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="840" y="152" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="897.0" y="172" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="897.0" y="185" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="250" y="198" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="307.0" y="218" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="307.0" y="231" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="368" y="198" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="425.0" y="218" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="425.0" y="231" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="486" y="198" width="114" height="42" rx="4" fill="#bfe0c4" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.2"/>
+<text x="543.0" y="216" font-size="9.5" font-weight="700" fill="#12222f" text-anchor="middle">DIAG lower</text>
+<text x="543.0" y="230" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">embed_buf hi half</text>
+<rect x="604" y="198" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="661.0" y="218" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="661.0" y="231" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="722" y="198" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="779.0" y="218" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="779.0" y="231" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="840" y="198" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="897.0" y="218" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="897.0" y="231" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="250" y="244" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="307.0" y="264" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="307.0" y="277" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="368" y="244" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="425.0" y="264" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="425.0" y="277" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="486" y="244" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="543.0" y="264" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="543.0" y="277" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="604" y="244" width="114" height="42" rx="4" fill="#bfe0c4" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.2"/>
+<text x="661.0" y="262" font-size="9.5" font-weight="700" fill="#12222f" text-anchor="middle">DIAG upper</text>
+<text x="661.0" y="276" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">embed_buf lo half</text>
+<rect x="722" y="244" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="779.0" y="264" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="779.0" y="277" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="840" y="244" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="897.0" y="264" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="897.0" y="277" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="250" y="290" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="307.0" y="310" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="307.0" y="323" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="368" y="290" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="425.0" y="310" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="425.0" y="323" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="486" y="290" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="543.0" y="310" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="543.0" y="323" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="604" y="290" width="114" height="42" rx="4" fill="#bfe0c4" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.2"/>
+<text x="661.0" y="308" font-size="9.5" font-weight="700" fill="#12222f" text-anchor="middle">DIAG lower</text>
+<text x="661.0" y="322" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">embed_buf hi half</text>
+<rect x="722" y="290" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="779.0" y="310" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="779.0" y="323" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="840" y="290" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="897.0" y="310" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="897.0" y="323" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="250" y="336" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="307.0" y="356" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="307.0" y="369" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="368" y="336" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="425.0" y="356" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="425.0" y="369" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="486" y="336" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="543.0" y="356" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="543.0" y="369" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="604" y="336" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="661.0" y="356" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="661.0" y="369" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="722" y="336" width="114" height="42" rx="4" fill="#bfe0c4" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.2"/>
+<text x="779.0" y="354" font-size="9.5" font-weight="700" fill="#12222f" text-anchor="middle">DIAG upper</text>
+<text x="779.0" y="368" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">embed_buf lo half</text>
+<rect x="840" y="336" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="897.0" y="356" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="897.0" y="369" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="250" y="382" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="307.0" y="402" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="307.0" y="415" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="368" y="382" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="425.0" y="402" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="425.0" y="415" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="486" y="382" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="543.0" y="402" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="543.0" y="415" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="604" y="382" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="661.0" y="402" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="661.0" y="415" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="722" y="382" width="114" height="42" rx="4" fill="#bfe0c4" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.2"/>
+<text x="779.0" y="400" font-size="9.5" font-weight="700" fill="#12222f" text-anchor="middle">DIAG lower</text>
+<text x="779.0" y="414" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">embed_buf hi half</text>
+<rect x="840" y="382" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="897.0" y="402" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="897.0" y="415" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="250" y="428" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="307.0" y="448" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="307.0" y="461" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="368" y="428" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="425.0" y="448" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="425.0" y="461" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="486" y="428" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="543.0" y="448" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="543.0" y="461" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="604" y="428" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="661.0" y="448" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="661.0" y="461" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="722" y="428" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="779.0" y="448" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="779.0" y="461" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="840" y="428" width="114" height="42" rx="4" fill="#bfe0c4" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.2"/>
+<text x="897.0" y="446" font-size="9.5" font-weight="700" fill="#12222f" text-anchor="middle">DIAG upper</text>
+<text x="897.0" y="460" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">embed_buf lo half</text>
+<rect x="250" y="474" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="307.0" y="494" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="307.0" y="507" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="368" y="474" width="114" height="42" rx="4" fill="#d8dee3" fill-opacity="0.55" stroke="#8a99a4" stroke-width="1.2"/>
+<text x="425.0" y="494" font-size="9" font-weight="600" fill="#5c6a73" text-anchor="middle">relay only</text>
+<text x="425.0" y="507" font-size="8" font-weight="500" fill="#5c6a73" text-anchor="middle">C1 east, drop tok</text>
+<rect x="486" y="474" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="543.0" y="494" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="543.0" y="507" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="604" y="474" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="661.0" y="494" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="661.0" y="507" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="722" y="474" width="114" height="42" rx="4" fill="#8fbfe0" fill-opacity="0.45" stroke="#245f96" stroke-width="1.2"/>
+<text x="779.0" y="494" font-size="9" font-weight="600" fill="#2a4a63" text-anchor="middle">W_E_tile</text>
+<text x="779.0" y="507" font-size="8" font-weight="500" fill="#2a4a63" text-anchor="middle">3 vocab x 16 feat</text>
+<rect x="840" y="474" width="114" height="42" rx="4" fill="#bfe0c4" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.2"/>
+<text x="897.0" y="492" font-size="9.5" font-weight="700" fill="#12222f" text-anchor="middle">DIAG lower</text>
+<text x="897.0" y="506" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">embed_buf hi half</text>
+<text x="307.0" y="144" font-size="9.5" font-weight="700" fill="#8a99a4" text-anchor="middle">x_local=0  (west)</text>
+<text x="425.0" y="144" font-size="9.5" font-weight="700" fill="#8a99a4" text-anchor="middle">x_local=1  (west)</text>
+<text x="543.0" y="144" font-size="9.5" font-weight="700" fill="#245f96" text-anchor="middle">x_local=2  eff=0</text>
+<text x="543.0" y="132" font-size="8.5" font-weight="500" fill="#245f96" text-anchor="middle">hidden [0,16)</text>
+<text x="661.0" y="144" font-size="9.5" font-weight="700" fill="#245f96" text-anchor="middle">x_local=3  eff=1</text>
+<text x="661.0" y="132" font-size="8.5" font-weight="500" fill="#245f96" text-anchor="middle">hidden [16,32)</text>
+<text x="779.0" y="144" font-size="9.5" font-weight="700" fill="#245f96" text-anchor="middle">x_local=4  eff=2</text>
+<text x="779.0" y="132" font-size="8.5" font-weight="500" fill="#245f96" text-anchor="middle">hidden [32,48)</text>
+<text x="897.0" y="144" font-size="9.5" font-weight="700" fill="#245f96" text-anchor="middle">x_local=5  eff=3</text>
+<text x="897.0" y="132" font-size="8.5" font-weight="500" fill="#245f96" text-anchor="middle">hidden [48,64)</text>
+<text x="90" y="172" font-size="10" font-weight="700" fill="#245f96" text-anchor="end">py=0</text>
+<text x="90" y="185" font-size="8.5" font-weight="500" fill="#6a7883" text-anchor="end">vocab [0,3)</text>
+<text x="90" y="218" font-size="10" font-weight="700" fill="#245f96" text-anchor="end">py=1</text>
+<text x="90" y="231" font-size="8.5" font-weight="500" fill="#6a7883" text-anchor="end">vocab [3,6)</text>
+<text x="90" y="264" font-size="10" font-weight="700" fill="#245f96" text-anchor="end">py=2</text>
+<text x="90" y="277" font-size="8.5" font-weight="500" fill="#6a7883" text-anchor="end">vocab [6,9)</text>
+<text x="90" y="310" font-size="10" font-weight="700" fill="#245f96" text-anchor="end">py=3</text>
+<text x="90" y="323" font-size="8.5" font-weight="500" fill="#6a7883" text-anchor="end">vocab [9,12)</text>
+<text x="90" y="356" font-size="10" font-weight="700" fill="#245f96" text-anchor="end">py=4</text>
+<text x="90" y="369" font-size="8.5" font-weight="500" fill="#6a7883" text-anchor="end">vocab [12,15)</text>
+<text x="90" y="402" font-size="10" font-weight="700" fill="#245f96" text-anchor="end">py=5</text>
+<text x="90" y="415" font-size="8.5" font-weight="500" fill="#6a7883" text-anchor="end">vocab [15,18)</text>
+<text x="90" y="448" font-size="10" font-weight="700" fill="#245f96" text-anchor="end">py=6</text>
+<text x="90" y="461" font-size="8.5" font-weight="500" fill="#6a7883" text-anchor="end">vocab [18,21)</text>
+<text x="90" y="494" font-size="10" font-weight="700" fill="#245f96" text-anchor="end">py=7</text>
+<text x="90" y="507" font-size="8.5" font-weight="500" fill="#6a7883" text-anchor="end">vocab [21,24)</text>
+<line x1="661.0" y1="432" x2="661.0" y2="386" stroke="#c0392b" stroke-width="2.6" marker-end="url(#ar)"/>
+<line x1="661.0" y1="386" x2="661.0" y2="340" stroke="#2c6fb0" stroke-width="2.6" marker-end="url(#ab)"/>
+<line x1="661.0" y1="340" x2="661.0" y2="294" stroke="#c0392b" stroke-width="2.6" marker-end="url(#ar)"/>
+<line x1="661.0" y1="294" x2="661.0" y2="248" stroke="#2c6fb0" stroke-width="2.6" marker-end="url(#ab)"/>
+<text x="661.0" y="472" font-size="8.5" font-weight="700" fill="#c0392b" text-anchor="middle">SRC py=6</text>
+<line x1="897.0" y1="236" x2="897.0" y2="252" stroke="#2e8b57" stroke-width="2.6" marker-end="url(#ag)"/>
+<line x1="897.0" y1="282" x2="897.0" y2="298" stroke="#7a3fb0" stroke-width="2.6" marker-end="url(#ap)"/>
+<line x1="897.0" y1="328" x2="897.0" y2="344" stroke="#2e8b57" stroke-width="2.6" marker-end="url(#ag)"/>
+<line x1="897.0" y1="374" x2="897.0" y2="390" stroke="#7a3fb0" stroke-width="2.6" marker-end="url(#ap)"/>
+<line x1="897.0" y1="420" x2="897.0" y2="436" stroke="#2e8b57" stroke-width="2.6" marker-end="url(#ag)"/>
+<text x="897.0" y="242" font-size="8.5" font-weight="700" fill="#7a3fb0" text-anchor="middle">SRC py=1</text>
+<line x1="218" y1="172" x2="492" y2="172" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ao)"/>
+<line x1="218" y1="218" x2="492" y2="218" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ao)"/>
+<line x1="218" y1="264" x2="610" y2="264" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ao)"/>
+<line x1="218" y1="310" x2="610" y2="310" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ao)"/>
+<line x1="218" y1="356" x2="728" y2="356" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ao)"/>
+<line x1="218" y1="402" x2="728" y2="402" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ao)"/>
+<line x1="218" y1="448" x2="846" y2="448" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ao)"/>
+<line x1="218" y1="494" x2="846" y2="494" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ao)"/>
+<line x1="307.0" y1="554" x2="307.0" y2="526" stroke="#2c6fb0" stroke-width="2.0" stroke-dasharray="4 3" marker-end="url(#ab)"/>
+<line x1="425.0" y1="554" x2="425.0" y2="526" stroke="#2c6fb0" stroke-width="2.0" stroke-dasharray="4 3" marker-end="url(#ab)"/>
+<line x1="543.0" y1="554" x2="543.0" y2="526" stroke="#2c6fb0" stroke-width="2.0" stroke-dasharray="4 3" marker-end="url(#ab)"/>
+<line x1="661.0" y1="554" x2="661.0" y2="526" stroke="#2c6fb0" stroke-width="2.0" stroke-dasharray="4 3" marker-end="url(#ab)"/>
+<line x1="779.0" y1="554" x2="779.0" y2="526" stroke="#2c6fb0" stroke-width="2.0" stroke-dasharray="4 3" marker-end="url(#ab)"/>
+<line x1="897.0" y1="554" x2="897.0" y2="526" stroke="#2c6fb0" stroke-width="2.0" stroke-dasharray="4 3" marker-end="url(#ab)"/>
+<line x1="596" y1="172" x2="1002" y2="172" stroke="#2e8b57" stroke-width="1.8" marker-end="url(#ag)"/>
+<line x1="596" y1="218" x2="1002" y2="218" stroke="#2e8b57" stroke-width="1.8" marker-end="url(#ag)"/>
+<line x1="714" y1="264" x2="1002" y2="264" stroke="#2e8b57" stroke-width="1.8" marker-end="url(#ag)"/>
+<line x1="714" y1="310" x2="1002" y2="310" stroke="#2e8b57" stroke-width="1.8" marker-end="url(#ag)"/>
+<line x1="832" y1="356" x2="1002" y2="356" stroke="#2e8b57" stroke-width="1.8" marker-end="url(#ag)"/>
+<line x1="832" y1="402" x2="1002" y2="402" stroke="#2e8b57" stroke-width="1.8" marker-end="url(#ag)"/>
+<line x1="950" y1="448" x2="1002" y2="448" stroke="#2e8b57" stroke-width="1.8" marker-end="url(#ag)"/>
+<line x1="950" y1="494" x2="1002" y2="494" stroke="#2e8b57" stroke-width="1.8" marker-end="url(#ag)"/>
+<rect x="1008" y="152" width="96" height="368" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/>
+<text x="1056" y="172" font-size="11.5" font-weight="700" fill="#12222f" text-anchor="middle">decode</text>
+<text x="1056" y="188" font-size="10" font-weight="600" fill="#12222f" text-anchor="middle">block row 0</text>
+<text x="1056" y="208" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">hidden Y-shard</text>
+<text x="1056" y="222" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">py -&gt; [8py, 8py+8)</text>
+<line x1="270" y1="536" x2="216" y2="536" stroke="#7a3fb0" stroke-width="2.0" marker-end="url(#ap)"/>
+<line x1="60" y1="572" x2="88" y2="572" stroke="#a86a1e" stroke-width="2.4" marker-end="url(#ao)"/>
+<text x="96" y="576" font-size="10.5" font-weight="500" fill="#26333c" text-anchor="start">C1 pre_embed_x (id 18), step 0 only: per-row EAST run from the demux, terminates WEST-&gt;RAMP at that row&#x27;s diag col. P-6 p2p, no multicast.</text>
+<line x1="60" y1="592" x2="88" y2="592" stroke="#2c6fb0" stroke-width="2.4" marker-end="url(#ab)"/>
+<text x="96" y="596" font-size="10.5" font-weight="500" fill="#26333c" text-anchor="start">tok_bcast (id 7) from HT_tail: SOUTH -&gt; {RAMP, NORTH} on EVERY column = P-2 router multicast. Per-round N header, then bsz token ids per step.</text>
+<line x1="60" y1="612" x2="88" y2="612" stroke="#c0392b" stroke-width="2.4" marker-end="url(#ar)"/>
+<text x="96" y="616" font-size="10.5" font-weight="500" fill="#26333c" text-anchor="start">W_E gather NORTH on UP_A/UP_B (ids 21/22) — G-1 parity chain + P-5 shuttle. Two dim_per_pe halves per lane; colors alternate by row parity.</text>
+<line x1="60" y1="632" x2="88" y2="632" stroke="#7a3fb0" stroke-width="2.4" marker-end="url(#ap)"/>
+<text x="96" y="636" font-size="10.5" font-weight="500" fill="#26333c" text-anchor="start">W_E gather SOUTH on DOWN_A/DOWN_B (ids 8/9, reused K-pipe ids on a PE-disjoint rectangle). Halves emitted in REVERSE order (consumer order flips).</text>
+<line x1="60" y1="652" x2="88" y2="652" stroke="#2e8b57" stroke-width="2.4" marker-end="url(#ag)"/>
+<text x="96" y="656" font-size="10.5" font-weight="500" fill="#26333c" text-anchor="start">C2 post_embed_x (id 23): both diag PEs emit bsz*dim_per_pe fp16 EAST into decode block row 0, on EVERY step. Also the early-stop sentinel path.</text>
+<text x="60" y="680" font-size="10.5" font-weight="500" fill="#7a3fb0" text-anchor="start">ht_ready (id 0): col-0 PEs send 1 wavelet WEST at the end of init(), after painting C1 — unblocks demux main (first-paint fence).</text>
+<text x="60" y="702" font-size="11" font-weight="600" fill="#26333c" text-anchor="start">Diagonal pairing IS the re-layout (P-4 seam): column eff owns hidden [16eff,16eff+16); upper-diag PE (py=2eff) takes the low 8, lower-diag (py=2eff+1) the high 8.</text>
+<text x="60" y="720" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">Across py that is exactly the hidden Y-shard decode row 0 wants — asserted at launch.py:564 (HT_WIDTH_head * 2 * dim_per_pe == dim). Break it and row 0 hangs on a count mismatch.</text>
+<text x="60" y="738" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">Cost: O(|src_py - diag|) hops per lane per step, run bsz times SERIALLY. Not amortised — that is the price of not rotating, and the right trade for one token per step.</text>
+<line x1="40" y1="754" x2="1200" y2="754" stroke="#dce4ea" stroke-width="1.4"/>
+<text x="60" y="774" font-size="14" font-weight="700" fill="#0d1b26" text-anchor="start">2  Task state machine  (same program on every band PE; coords pick the role)</text>
+<rect x="60" y="794" width="250" height="82" rx="6" fill="#dbeafe" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/><text x="185.0" y="814" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">init  (:243)</text><text x="185.0" y="831" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">derive coords / diag pair / parity</text><text x="185.0" y="844" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">paint C1 + C2 per-PE routes</text><text x="185.0" y="857" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">col 0: 1-wavelet ready sentinel WEST</text>
+<rect x="360" y="794" width="250" height="82" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="485.0" y="814" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">main  (:293)  round header</text><text x="485.0" y="831" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">KV_TRANSFER=1: drain bsz-wide N header</text><text x="485.0" y="844" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">off tok_recv; n_steps = slot 0  (G-4)</text><text x="485.0" y="857" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">replicated -&gt; safe shared loop bound</text>
+<rect x="660" y="794" width="250" height="82" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="785.0" y="814" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">step 0  (:301)</text><text x="785.0" y="831" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">diag PEs only:</text><text x="785.0" y="844" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">@fmovh(embed_buf, pre_embed_x_recv)</text><text x="785.0" y="857" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">host-embedded X[0] seed, no lookup</text>
+<line x1="310" y1="835.0" x2="358" y2="835.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="610" y1="835.0" x2="658" y2="835.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<rect x="60" y="928" width="250" height="82" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="185.0" y="948" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">step &gt;= 1  (:305)</text><text x="185.0" y="965" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">@mov32 bsz token ids from tok_recv</text><text x="185.0" y="978" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">(EVERY column drains; west discards)</text><text x="185.0" y="991" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">STOP_TOK(-2) -&gt; flood C2, break</text>
+<rect x="360" y="928" width="250" height="82" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="485.0" y="948" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">embed_gather_dispatch  (:134)</text><text x="485.0" y="965" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">per lane b: src_py = t / V_per_pe_y</text><text x="485.0" y="978" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">4 cases -&gt; UP_* north / DOWN_* south</text><text x="485.0" y="991" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">1-hop when src_py is on the diag pair</text>
+<rect x="660" y="928" width="250" height="82" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="785.0" y="948" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">emit east  (:340)</text><text x="785.0" y="965" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">diag PEs: @fmovh(post_embed_x_send,</text><text x="785.0" y="978" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">embed_buf) = bsz*dim_per_pe fp16</text><text x="785.0" y="991" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">fires on EVERY step incl. step 0</text>
+<line x1="310" y1="969.0" x2="358" y2="969.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="610" y1="969.0" x2="658" y2="969.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<text x="335.0" y="963.0" font-size="9" font-weight="600" fill="#5a6b76" text-anchor="middle">x bsz</text>
+<path d="M 785.0 876 L 785.0 926" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<text x="869.0" y="902" font-size="9.5" font-weight="600" fill="#5a6b76" text-anchor="middle">ht_step == 0</text>
+<path d="M 485.0 876 L 485.0 902 L 185.0 902 L 185.0 926" fill="none" stroke="#5a6b76" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+<text x="201.0" y="916" font-size="9.5" font-weight="600" fill="#5a6b76" text-anchor="middle">ht_step &gt;= 1</text>
+<path d="M 785.0 1010 L 785.0 1034 L 185.0 1034 L 185.0 1010" fill="none" stroke="#2e8b57" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ag)"/>
+<text x="485.0" y="1050" font-size="10" font-weight="600" fill="#2e8b57" text-anchor="middle">per-step loop: while (ht_step &lt; n_steps)   (:300)</text>
+<rect x="950" y="928" width="210" height="82" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="1055.0" y="948" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">re-arm  (:345)</text><text x="1055.0" y="965" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">kv_stream_ingress: ht_step = 0</text><text x="1055.0" y="978" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">@activate(main) -&gt; next round&#x27;s N</text><text x="1055.0" y="991" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">KV_TRANSFER=0: single-shot</text>
+<path d="M 910 969.0 L 948 969.0" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<path d="M 1055.0 928 L 1055.0 835.0 L 612 835.0" fill="none" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ao)"/>
+<text x="1055.0" y="825.0" font-size="9.5" font-weight="600" fill="#a86a1e" text-anchor="middle">per-round</text>
+<text x="60" y="1144" font-size="9.5" font-weight="400" fill="#6a7883" text-anchor="start">colors/queues:  tok_bcast(7)/iq2 · pre_embed_x(18)/iq3 · UP_A(21)/iq4,oq3 · UP_B(22)/iq5,oq4 · DOWN_A(8)/iq6,oq6 · DOWN_B(9)/iq7,oq7 · post_embed_x(23)/oq2 · ht_ready(0)/oq5.   DOWN_* reuse K-pipe ids on a PE-disjoint rectangle (launch.py:691-694).</text>
+</svg>

@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1140" viewBox="0 0 1120 1140" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker><marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker><marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker><marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker></defs>
+<rect width="1120" height="1140" fill="#f7f9fb"/>
+<text x="560.0" y="30" font-size="18" font-weight="700" fill="#0d1b26" text-anchor="middle">kv_ingress_injector.csl — KV-cache ingress switch column (host -&gt; block, WEST scatter)</text>
+<text x="560.0" y="50" font-size="11.5" font-weight="500" fill="#4a5b66" text-anchor="middle">Mirror of prefill kv_egress_colmux, reversed. Working tree of lexu/staging/s6a-inner-pe-kv-route-a: KV_META_LEN 2-&gt;4, n_segs_rt==0 retain fast-path.</text>
+<text x="50" y="84" font-size="13.5" font-weight="700" fill="#0d1b26" text-anchor="start">(1) Spatial layout — per-band staircase, free column EAST of the block (2x2 config: 2 bands, P_BLOCK_SIZE=8)</text>
+<rect x="50" y="172" width="190" height="210" rx="6" fill="#cfe0ee" fill-opacity="1.0" stroke="#245f96" stroke-width="1.5"/>
+<text x="145.0" y="196" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">decode block (band by)</text>
+<text x="145.0" y="214" font-size="10" font-weight="500" fill="#2a4a63" text-anchor="middle">Pw x P_BLOCK_SIZE = 16 x 8</text>
+<text x="145.0" y="236" font-size="9.5" font-weight="500" fill="#2a4a63" text-anchor="middle">east edge receives; kv_ingress</text>
+<text x="145.0" y="250" font-size="9.5" font-weight="500" fill="#2a4a63" text-anchor="middle">west-shift fans across columns</text>
+<text x="145.0" y="270" font-size="9.5" font-weight="700" fill="#2e8b57" text-anchor="middle">P-5 shift chain, IQ7/OQ7</text>
+<text x="145.0" y="286" font-size="9" font-weight="500" fill="#2a4a63" text-anchor="middle">col c keeps tile c, fwds rest W</text>
+<text x="145.0" y="312" font-size="9.5" font-weight="700" fill="#7a1f18" text-anchor="middle">each PE peels its meta copy:</text>
+<text x="145.0" y="326" font-size="9" font-weight="500" fill="#7a1f18" text-anchor="middle">plen / decode_len / retained_len</text>
+<text x="145.0" y="342" font-size="9.5" font-weight="700" fill="#7a1f18" text-anchor="middle">retain_rt = (plen == 0)</text>
+<text x="145.0" y="356" font-size="8.5" font-weight="400" fill="#6a7883" text-anchor="middle">decode.csl:1577-1580</text>
+<rect x="300" y="172" width="130" height="210" rx="6" fill="#efe0c6" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.4"/>
+<text x="365" y="196" font-size="11" font-weight="700" fill="#7a5a1e" text-anchor="middle">kv_fwd extender</text>
+<text x="365" y="212" font-size="9.5" font-weight="500" fill="#7a5a1e" text-anchor="middle">by cols x 8</text>
+<text x="365" y="232" font-size="9" font-weight="500" fill="#7a5a1e" text-anchor="middle">empty comptime {}</text>
+<text x="365" y="246" font-size="9" font-weight="500" fill="#7a5a1e" text-anchor="middle">no tasks, no queues</text>
+<text x="365" y="266" font-size="9" font-weight="500" fill="#7a5a1e" text-anchor="middle">painted E-&gt;W on BOTH</text>
+<text x="365" y="280" font-size="9" font-weight="500" fill="#7a5a1e" text-anchor="middle">switch positions</text>
+<text x="365" y="300" font-size="9" font-weight="400" fill="#8a7a5e" text-anchor="middle">(none when by == 0)</text>
+<rect x="440" y="128" width="152" height="26" rx="5" fill="#e2f0e4" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.5"/>
+<text x="516.0" y="146" font-size="10" font-weight="700" fill="#1d5c39" text-anchor="middle">kv_ingress_adaptor (1 PE)</text>
+<rect x="474.0" y="94" width="84" height="22" rx="4" fill="#cfe3f6" fill-opacity="1.0" stroke="#2c6fb0" stroke-width="1.3"/>
+<text x="516.0" y="110" font-size="9.5" font-weight="700" fill="#12356a" text-anchor="middle">H2D stream (TOP)</text>
+<line x1="516.0" y1="118" x2="516.0" y2="126" stroke="#2c6fb0" stroke-width="2.2" marker-end="url(#ab)"/>
+<rect x="470" y="172" width="92" height="20" rx="4" fill="#f6d7d2" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.4"/>
+<text x="516.0" y="186" font-size="9.5" font-weight="700" fill="#7a1f18" text-anchor="middle">inj PE 0</text>
+<line x1="468" y1="182.0" x2="432" y2="182.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="298" y1="182.0" x2="242" y2="182.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<rect x="470" y="196" width="92" height="20" rx="4" fill="#f6d7d2" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.4"/>
+<text x="516.0" y="210" font-size="9.5" font-weight="700" fill="#7a1f18" text-anchor="middle">inj PE 1</text>
+<line x1="468" y1="206.0" x2="432" y2="206.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="298" y1="206.0" x2="242" y2="206.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<rect x="470" y="220" width="92" height="20" rx="4" fill="#f6d7d2" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.4"/>
+<text x="516.0" y="234" font-size="9.5" font-weight="700" fill="#7a1f18" text-anchor="middle">inj PE 2</text>
+<line x1="468" y1="230.0" x2="432" y2="230.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="298" y1="230.0" x2="242" y2="230.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<rect x="470" y="244" width="92" height="20" rx="4" fill="#f6d7d2" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.4"/>
+<text x="516.0" y="258" font-size="9.5" font-weight="700" fill="#7a1f18" text-anchor="middle">inj PE 3</text>
+<line x1="468" y1="254.0" x2="432" y2="254.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="298" y1="254.0" x2="242" y2="254.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<rect x="470" y="268" width="92" height="20" rx="4" fill="#f6d7d2" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.4"/>
+<text x="516.0" y="282" font-size="9.5" font-weight="700" fill="#7a1f18" text-anchor="middle">inj PE 4</text>
+<line x1="468" y1="278.0" x2="432" y2="278.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="298" y1="278.0" x2="242" y2="278.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<rect x="470" y="292" width="92" height="20" rx="4" fill="#f6d7d2" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.4"/>
+<text x="516.0" y="306" font-size="9.5" font-weight="700" fill="#7a1f18" text-anchor="middle">inj PE 5</text>
+<line x1="468" y1="302.0" x2="432" y2="302.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="298" y1="302.0" x2="242" y2="302.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<rect x="470" y="316" width="92" height="20" rx="4" fill="#f6d7d2" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.4"/>
+<text x="516.0" y="330" font-size="9.5" font-weight="700" fill="#7a1f18" text-anchor="middle">inj PE 6</text>
+<line x1="468" y1="326.0" x2="432" y2="326.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="298" y1="326.0" x2="242" y2="326.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<rect x="470" y="340" width="92" height="20" rx="4" fill="#ece1f6" fill-opacity="1.0" stroke="#7a3fb0" stroke-width="1.4"/>
+<text x="516.0" y="354" font-size="9.5" font-weight="700" fill="#4a1f6a" text-anchor="middle">inj PE 7  (tail)</text>
+<line x1="468" y1="350.0" x2="432" y2="350.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="298" y1="350.0" x2="242" y2="350.0" stroke="#c0392b" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="440" y1="174" x2="440" y2="376" stroke="#2c6fb0" stroke-width="2.6" stroke-dasharray="6 3" marker-end="url(#ab)"/>
+<text x="586" y="224" font-size="9.5" font-weight="700" fill="#12356a" text-anchor="start">row-slices walk SOUTH</text>
+<text x="586" y="238" font-size="9" font-weight="500" fill="#12356a" text-anchor="start">switch pos0: N-&gt;RAMP (take mine)</text>
+<text x="586" y="252" font-size="9" font-weight="500" fill="#12356a" text-anchor="start">SWITCH_ADV -&gt; pos1: N-&gt;SOUTH (fwd)</text>
+<text x="586" y="266" font-size="9" font-weight="500" fill="#12356a" text-anchor="start">-&gt; row k+1 passes PE k at the ROUTER,</text>
+<text x="586" y="280" font-size="9" font-weight="500" fill="#12356a" text-anchor="start">never buffered (launch.py:1493-1495)</text>
+<line x1="568" y1="374" x2="568" y2="176" stroke="#7a3fb0" stroke-width="2.2" stroke-dasharray="4 3" marker-end="url(#ap)"/>
+<text x="586" y="312" font-size="9.5" font-weight="700" fill="#4a1f6a" text-anchor="start">round_sync (S-&gt;N, 1 sentinel):</text>
+<text x="586" y="326" font-size="9" font-weight="500" fill="#4a1f6a" text-anchor="start">tail RAMP-&gt;N; middles S-&gt;[RAMP,N];</text>
+<text x="586" y="340" font-size="9" font-weight="500" fill="#4a1f6a" text-anchor="start">north-most S-&gt;RAMP sinks it.</text>
+<text x="586" y="354" font-size="9" font-weight="500" fill="#4a1f6a" text-anchor="start">Opposite the data =&gt; never overtakes.</text>
+<text x="586" y="372" font-size="9" font-weight="500" fill="#4a1f6a" text-anchor="start">Each non-tail PE then clears its switch</text>
+<text x="586" y="386" font-size="9" font-weight="500" fill="#4a1f6a" text-anchor="start">to pos0 and re-arms (:130-133).</text>
+<text x="50" y="406" font-size="10" font-weight="500" fill="#26333c" text-anchor="start">Colors: in_color (region-alloc, IQ2, switch N-&gt;RAMP | N-&gt;SOUTH)  -  scatter_color = kv_ingress_color_0 (17) or _1 (21) by east-column parity, OQ3, RAMP-&gt;WEST  -  round_sync (IQ3 / OQ4).</text>
+<text x="50" y="422" font-size="10" font-weight="500" fill="#26333c" text-anchor="start">Ids 17/21 are reused from kpipe_b k7 / UP_A_color, which live on strip &amp; HT_head cells — PE-disjoint from the block columns (launch.py:623-626).</text>
+<line x1="40" y1="436" x2="1080" y2="436" stroke="#dce4ea" stroke-width="1.4"/>
+<text x="50" y="458" font-size="13.5" font-weight="700" fill="#0d1b26" text-anchor="start">(2) The per-round meta tile&#x27;s journey — S6a widened KV_META_LEN 2 -&gt; 4</text>
+<text x="50" y="494" font-size="10.5" font-weight="700" fill="#26333c" text-anchor="start">row-slice on the wire:</text>
+<rect x="200" y="480" width="150" height="44" rx="4" fill="#f6d7d2" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.4"/>
+<text x="275.0" y="499" font-size="9" font-weight="600" fill="#12222f" text-anchor="middle">u32 #0</text>
+<text x="275.0" y="512" font-size="9" font-weight="600" fill="#12222f" text-anchor="middle">[plen | decode_len]</text>
+<rect x="354" y="480" width="150" height="44" rx="4" fill="#fdeecf" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.4"/>
+<text x="429.0" y="499" font-size="9" font-weight="600" fill="#12222f" text-anchor="middle">u32 #1</text>
+<text x="429.0" y="512" font-size="9" font-weight="600" fill="#12222f" text-anchor="middle">[retained_len | pad]</text>
+<rect x="508" y="480" width="300" height="44" rx="4" fill="#e8eef3" fill-opacity="1.0" stroke="#5a6b76" stroke-width="1.4"/>
+<text x="658.0" y="499" font-size="9" font-weight="600" fill="#12222f" text-anchor="middle">u32 #2 .. #31  (cols 1..Pw-1, 2 u32 each)</text>
+<rect x="812" y="480" width="300" height="44" rx="4" fill="#dbeafe" fill-opacity="1.0" stroke="#245f96" stroke-width="1.4"/>
+<text x="962.0" y="499" font-size="9" font-weight="600" fill="#12222f" text-anchor="middle">KV: n_segs_rt x seg_len wavelets</text>
+<text x="200" y="542" font-size="10" font-weight="600" fill="#26333c" text-anchor="start">num_cols = Pw * KV_META_LEN / 2 = 2*Pw = 32 u32   (was Pw = 16 at fcfc8c1)   |   metablk extent num_cols-1 : 15 -&gt; 31</text>
+<rect x="50" y="564" width="250" height="46" rx="5" fill="#e2f0e4" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.4"/>
+<text x="175" y="591" font-size="10.5" font-weight="700" fill="#12222f" text-anchor="middle">kv_ingress_adaptor</text>
+<text x="316" y="583" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="start">PEELS u32 #0, reads ONLY low 16 (plen). @as(u16,u32) truncates away decode_len.</text>
+<text x="316" y="598" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="start">RE-EMITS it, relays the other 31 metas verbatim. Blind to decode_len / retained_len.</text>
+<rect x="50" y="618" width="250" height="46" rx="5" fill="#f6d7d2" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.4"/>
+<text x="175" y="645" font-size="10.5" font-weight="700" fill="#12222f" text-anchor="middle">kv_ingress_injector (this)</text>
+<text x="316" y="637" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="start">PEELS u32 #0, reads ONLY low 16 (plen) -&gt; n_segs_rt = D_kv * plen  (:85).</text>
+<text x="316" y="652" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="start">RE-EMITS it (:87), forwards 31 metas WEST (:91). Peel is wavelet-count-neutral.</text>
+<rect x="50" y="672" width="250" height="46" rx="5" fill="#cfe0ee" fill-opacity="1.0" stroke="#245f96" stroke-width="1.4"/>
+<text x="175" y="699" font-size="10.5" font-weight="700" fill="#12222f" text-anchor="middle">decode block PE (west-shift)</text>
+<text x="316" y="691" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="start">Receives all 4 i16 slots: plen (:1577), decode_len (:1578), retained_len (:1579).</text>
+<text x="316" y="706" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="start">DERIVES retain_rt = (plen == 0) on-device (:1580) — no retain flag is ever transmitted.</text>
+<line x1="40" y1="736" x2="1080" y2="736" stroke="#dce4ea" stroke-width="1.4"/>
+<text x="50" y="756" font-size="13.5" font-weight="700" fill="#0d1b26" text-anchor="start">(3) Per-PE task state machine — is_col_tail selects the post-row branch</text>
+<rect x="50" y="782" width="228" height="68" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="164.0" y="801" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">peel_meta0 (task 12)</text><text x="164.0" y="817.0" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">mov32 extent 1: u32 #0 -&gt; meta0_buf</text><text x="164.0" y="829.5" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">switch held at pos0</text><text x="164.0" y="842.0" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">:80-82</text>
+<rect x="306" y="782" width="228" height="68" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="420.0" y="801" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">scatter_meta (task 13)</text><text x="420.0" y="817.0" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">n_segs_rt = D_kv * @as(u16,meta0_buf[0])</text><text x="420.0" y="829.5" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">seg_idx=0; re-emit u32 #0 WEST</text><text x="420.0" y="842.0" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">:84-88</text>
+<rect x="562" y="782" width="228" height="68" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="676.0" y="801" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">scatter_metablk (task 14)</text><text x="676.0" y="817.0" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">fwd remaining num_cols-1 = 31 metas</text><text x="676.0" y="829.5" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">WEST in one comptime op</text><text x="676.0" y="842.0" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">:90-92</text>
+<rect x="818" y="782" width="228" height="68" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="932.0" y="801" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">emit_scatter (task 8)</text><text x="932.0" y="817.0" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">n_segs_rt x mov32(seg_len) WEST</text><text x="932.0" y="829.5" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">self-chains per segment</text><text x="932.0" y="842.0" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">:94-119</text>
+<line x1="278" y1="816.0" x2="304" y2="816.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="534" y1="816.0" x2="560" y2="816.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="790" y1="816.0" x2="816" y2="816.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<path d="M 1012 782 L 1012 766 L 852 766 L 852 782" fill="none" stroke="#c0392b" stroke-width="1.6" marker-end="url(#ar)"/>
+<text x="932.0" y="760" font-size="9" font-weight="600" fill="#c0392b" text-anchor="middle">x n_segs_rt</text>
+<rect x="50" y="908" width="228" height="68" rx="6" fill="#ece1f6" fill-opacity="1.0" stroke="#7a3fb0" stroke-width="1.6"/><text x="164.0" y="927" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">sync_src (task 9) — TAIL</text><text x="164.0" y="943.0" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">source 1 round_sync wavelet NORTH</text><text x="164.0" y="955.5" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">never left pos0 -&gt; no reset needed</text><text x="164.0" y="968.0" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">re-arm -&gt; peel_meta0   :121-124</text>
+<rect x="400" y="908" width="228" height="68" rx="6" fill="#dbeafe" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/><text x="514.0" y="927" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">sync_wait (task 10) — non-tail</text><text x="514.0" y="943.0" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">park on round_sync RAMP copy (IQ3)</text><text x="514.0" y="955.5" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">:126-128</text>
+<rect x="750" y="908" width="228" height="68" rx="6" fill="#dbeafe" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/><text x="864.0" y="927" font-size="11" font-weight="700" fill="#0d1b26" text-anchor="middle">sync_do (task 11) — non-tail</text><text x="864.0" y="943.0" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">clear_current_position(in_color) -&gt; pos0</text><text x="864.0" y="955.5" font-size="9" font-weight="500" fill="#34434d" text-anchor="middle">re-arm -&gt; peel_meta0   :130-133</text>
+<path d="M 932.0 850 L 932.0 878 L 164 878 L 164 906" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<path d="M 932.0 878 L 514 878 L 514 906" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<text x="922.0" y="872" font-size="9.5" font-weight="600" fill="#5a6b76" text-anchor="end">post-row: branch on is_col_tail</text>
+<text x="164" y="894" font-size="9" font-weight="700" fill="#7a3fb0" text-anchor="middle">tail</text>
+<text x="514" y="894" font-size="9" font-weight="700" fill="#245f96" text-anchor="middle">non-tail</text>
+<line x1="628" y1="942.0" x2="748" y2="942.0" stroke="#7a3fb0" stroke-width="1.8" marker-end="url(#ap)"/>
+<text x="689.0" y="933.0" font-size="9" font-weight="600" fill="#7a3fb0" text-anchor="middle">round_sync arrives</text>
+<text x="689.0" y="958.0" font-size="9" font-weight="500" fill="#7a3fb0" text-anchor="middle">(all rows below done)</text>
+<path d="M 164.0 976 L 164.0 996 L 30 996 L 30 800 L 48 800" fill="none" stroke="#7a3fb0" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+<path d="M 864.0 976 L 864.0 1012 L 20 1012 L 20 824 L 48 824" fill="none" stroke="#245f96" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+<text x="430" y="1008" font-size="9.5" font-weight="600" fill="#5a6b76" text-anchor="middle">re-arm peel_meta0 for the next round&#x27;s row</text>
+<rect x="50" y="1028" width="500" height="78" rx="6" fill="#fff2f0" fill-opacity="1.0" stroke="#c0392b" stroke-width="2.0"/>
+<text x="60" y="1047" font-size="10.5" font-weight="700" fill="#7a1f18" text-anchor="start">S6a FAST-PATH — retain heartbeat (plen == 0 =&gt; n_segs_rt == 0), :98-106</text>
+<text x="60" y="1064" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="start">Retain round = META-ONLY: 32 meta u32, ZERO KV. Skip the segment move entirely and</text>
+<text x="60" y="1078" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="start">jump straight to round-sync. Old code did ONE unconditional mov32 -&gt; phantom seg_len read</text>
+<text x="60" y="1092" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="start">+ undrained wavelets on the ingress color -&gt; round-1 IQ7 remap FATAL at the broadcast rebind.</text>
+<rect x="570" y="1028" width="500" height="78" rx="6" fill="#f2f7fb" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/>
+<text x="580" y="1047" font-size="10.5" font-weight="700" fill="#12356a" text-anchor="start">Invariant preserved by the fast-path</text>
+<text x="580" y="1064" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="start">The switch still advances and round_sync still fires EXACTLY ONCE per row —</text>
+<text x="580" y="1078" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="start">only the data move is elided. Count-exactness holds because the adaptor carries the</text>
+<text x="580" y="1092" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="start">twin fast-path (kv_ingress_adaptor.csl:82-92): both ends compute n_segs_rt = 0.</text>
+<text x="50" y="1126" font-size="9.5" font-weight="400" fill="#6a7883" text-anchor="start">Runtime COUNT x comptime LENGTH: seg_len is comptime (&lt;= 32766; &gt;= 0x7fff = INFINITE_DSD_LEN hangs silently). A mis-timed SWITCH_ADV or a count mismatch is a SILENT HANG, not an error.</text>
+</svg>

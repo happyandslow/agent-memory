@@ -1,0 +1,278 @@
+#!/usr/bin/env python3
+# decode.csl algorithm diagram (WORKING TREE, branch lexu/staging/s6a-inner-pe-kv-route-a, uncommitted).
+# Panel 1 = spatial (2x2 serpentine blocks, sharding, key comms).
+# Panel 2 = the S6a retain metadata path (host -> adaptor -> injector -> west-shift peel -> round_reset).
+# Panel 3 = round machine + per-step layer machine with the G-3 axis repaints.
+import html
+W, H = 1300, 1330
+def esc(s): return html.escape(s)
+s = []
+s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
+s.append('<defs>'
+  '<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker>'
+  '<marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker>'
+  '<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker>'
+  '<marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker>'
+  '<marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c77d1a"/></marker>'
+  '<marker id="ak" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5a6b76"/></marker>'
+  '<marker id="am" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#b5142c"/></marker>'
+  '</defs>')
+s.append(f'<rect width="{W}" height="{H}" fill="#f7f9fb"/>')
+def T(x,y,t,sz=13,f="#12222f",w="600",a="middle"):
+    return f'<text x="{x}" y="{y}" font-size="{sz}" font-weight="{w}" fill="{f}" text-anchor="{a}">{esc(t)}</text>'
+def box(x,y,w,h,fill,stroke,rx=6,sw=1.6,op=1.0):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" fill-opacity="{op}" stroke="{stroke}" stroke-width="{sw}"/>'
+def line(x1,y1,x2,y2,c,mk,w=2.4,dash=""):
+    d=f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{c}" stroke-width="{w}"{d} marker-end="url(#{mk})"/>'
+def path(d,c,mk,w=2.2,dash=""):
+    da=f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<path d="{d}" fill="none" stroke="{c}" stroke-width="{w}"{da} marker-end="url(#{mk})"/>'
+def node(x,y,w,h,title,sub,fill,stroke,tsz=11):
+    out=[box(x,y,w,h,fill,stroke)]
+    out.append(T(x+w/2,y+18,title,tsz,"#0d1b26","700"))
+    for i,ln in enumerate(sub.split("\n")):
+        out.append(T(x+w/2,y+33+i*12,ln,9,"#34434d","500"))
+    return "".join(out)
+
+col_b="#dbeafe"; s_b="#245f96"     # Y-axis reduce
+col_r="#faddd8"; s_r="#c0392b"     # X-axis reduce
+col_p="#ecdcf6"; s_p="#7a3fb0"     # kv-head band / attention
+col_g="#d7efdb"; s_g="#2e8b57"     # local compute
+col_o="#f7e3c8"; s_o="#a86a1e"     # entry / loop
+col_m="#fbdde2"; s_m="#b5142c"     # retain / metadata
+
+s.append(T(W/2,30,"decode.csl — one-token GEMV layer stack + round-resident KV retain (S6a working tree)",20,"#0d1b26","700"))
+s.append(T(W/2,50,"decode = prefill 的转置:m=1(只解一个 token)⇒ 每个 GEMM 退化成 GEMV,靠 P-1 chain all-reduce 收尾,全文件没有 Cannon。ref: test_sim_2x2block_kv_varlen.json, 2×2 blocks, 8×8 PE/block, 7 层 → [1,2,2,2]",11.5,"#4a5b66","500"))
+s.append(T(W/2,68,"⚠ 本图描述未提交的工作区 (branch lexu/staging/s6a-inner-pe-kv-route-a) — 行号与 origin/main 不一致",11,"#b5142c","700"))
+
+# ================= PANEL 1: spatial =================
+s.append(T(52,104,"① 空间分布:两个 row region(蛇形 block 流水)+ 各张量切在哪根轴上",14,"#0d1b26","700","start"))
+
+# west HT band
+wb_x, wb_y, wb_w, wb_h = 52, 128, 86, 258
+s.append(box(wb_x, wb_y, wb_w, wb_h, "#e9dcc4", "#a86a1e", 8, 1.6))
+s.append(T(wb_x+wb_w/2, wb_y+20, "HT band", 11, "#7a5010", "700"))
+s.append(box(wb_x+8, wb_y+34, wb_w-16, 42, "#f2e6cf", "#a86a1e", 5, 1.2))
+s.append(T(wb_x+wb_w/2, wb_y+51, "HT_head", 10.5, "#0d1b26", "700"))
+s.append(T(wb_x+wb_w/2, wb_y+66, "embed → X", 9, "#5a5040", "500"))
+s.append(box(wb_x+8, wb_y+186, wb_w-16, 42, "#f2e6cf", "#a86a1e", 5, 1.2))
+s.append(T(wb_x+wb_w/2, wb_y+203, "HT_tail", 10.5, "#0d1b26", "700"))
+s.append(T(wb_x+wb_w/2, wb_y+218, "lm_head", 9, "#5a5040", "500"))
+
+# 2x2 serpentine blocks in 2 row regions
+gx0, gy0 = 196, 132
+bw, bh = 116, 74
+gapx, gapy = 30, 40
+order = []
+for by in range(2):
+    xr = range(2) if by % 2 == 0 else range(1, -1, -1)
+    for bx in xr:
+        order.append((bx, by))
+def bxy(bx, by):
+    return gx0 + bx*(bw+gapx), gy0 + by*(bh+gapy)
+layers = {0:"[0,1)",1:"[1,3)",2:"[3,5)",3:"[5,7)"}
+for p,(bx,by) in enumerate(order):
+    x,y = bxy(bx,by)
+    s.append(box(x,y,bw,bh,"#a9d0ef" if p==0 else "#cfe4f5","#245f96",6,1.6))
+    s.append(T(x+bw/2,y+20,f"block p{p}",11.5,"#0d1b26","700"))
+    s.append(T(x+bw/2,y+36,f"layers {layers[p]}",9,"#2a4a63","500"))
+    s.append(T(x+bw/2,y+50,"8×8 PE",8.5,"#4a6478","500"))
+    s.append(T(x+bw/2,y+64,"row_"+str(by),8.5,"#4a6478","500"))
+# region boxes
+for by in range(2):
+    x0,y0 = bxy(0,by)
+    s.append(box(x0-14, y0-12, 2*bw+gapx+28, bh+24, "none", "#7a3fb0", 8, 1.4))
+s.append(T(gx0+bw+gapx/2, gy0-20, "region row_0 (18×8 @ (9,1))", 9, "#7a3fb0", "600"))
+s.append(T(gx0+bw+gapx/2, gy0+bh+gapy+bh+22, "region row_1 (18×8 @ (9,9))", 9, "#7a3fb0", "600"))
+# snake arrows
+for i in range(len(order)-1):
+    (bx0,by0),(bx1,by1)=order[i],order[i+1]
+    x0,y0=bxy(bx0,by0); x1,y1=bxy(bx1,by1)
+    if by0==by1:
+        s.append(line(x0+bw+2, y0+bh/2, x1-2, y1+bh/2, "#2c6fb0","ab",2.4))
+    else:
+        s.append(path(f"M {x0+bw/2} {y0+bh+2} L {x0+bw/2} {y1-6}", "#2c6fb0","ab",2.4))
+s.append(T(gx0+bw+gapx/2, gy0+bh/2-8, "Z (P-6)", 9, "#2c6fb0", "700"))
+s.append(T(gx0+bw+gapx/2+118, gy0+bh+gapy/2+4, "strip K-pipe 中继 (P-5)", 8.5, "#2c6fb0", "600"))
+# X in
+bx,by=bxy(0,0)
+s.append(line(wb_x+wb_w+2, by+24, bx-2, by+24, "#2e8b57","ag",2.6))
+s.append(T((wb_x+wb_w+bx)/2, by+16, "X (P-6)", 9, "#2e8b57","700"))
+# Z out to tail
+bx3,by3=bxy(0,1)
+s.append(path(f"M {bx3-2} {by3+bh-14} L {wb_x+wb_w/2} {by3+bh-14} L {wb_x+wb_w/2} {wb_y+228}", "#7a3fb0","ap",2.4,"6 4"))
+s.append(T((bx3+wb_x+wb_w)/2, by3+bh+8, "Z / step → HT_tail (result_color, P-6)", 8.5, "#7a3fb0","700"))
+
+# sharding legend box
+zx, zy, zw, zh = 620, 128, 322, 258
+s.append(box(zx, zy, zw, zh, "#eef4fa", "#245f96", 10, 1.8))
+s.append(T(zx+zw/2, zy+22, "一个 block 内部 (8×8):谁切在哪根轴", 12, "#0d1b26","700"))
+rows = [
+ ("hidden X / Z / RMSNorm gain", "Y 切 (dim_per_pe=8),X 上复制", col_b, s_b),
+ ("Q 输出列 attn_per_pe=8", "X 切", col_r, s_r),
+ ("K/V head-dim kv_cols=4", "X 切,按 kv-head 分带", col_p, s_p),
+ ("FFN 内维 ffn_dim_per_pe=16", "X 切", col_r, s_r),
+ ("KV cache 序列位置", "Y 上 round-robin:PE p 拥有 p, p+8, p+16…", col_m, s_m),
+ ("transformer 层", "按 block 切(连续一段)", col_o, s_o),
+]
+ry = zy+36
+for (a,b,cf,cs) in rows:
+    s.append(box(zx+12, ry, zw-24, 32, cf, cs, 5, 1.2))
+    s.append(T(zx+20, ry+14, a, 9.5, "#0d1b26","700","start"))
+    s.append(T(zx+20, ry+27, b, 8.5, "#34434d","500","start"))
+    ry += 36
+s.append(T(zx+zw/2, zy+zh-8, "六次 reconfig_allreduce_axis 就是在这几行之间切换 (G-3)", 9, "#7a3fb0","700"))
+
+# KV injector staircase east
+ix = 984
+s.append(box(ix, 132, 130, 74, "#f3e2c6", "#c77d1a", 6, 1.6))
+s.append(T(ix+65, 152, "kv_adaptor +", 10.5, "#7a5010","700"))
+s.append(T(ix+65, 167, "kv_injector", 10.5, "#7a5010","700"))
+s.append(T(ix+65, 183, "band 0 @ (27,·)", 8.5, "#5a5040","500"))
+s.append(T(ix+65, 197, "阶梯排布,每 band 一组", 8.5, "#5a5040","500"))
+s.append(box(ix, 246, 130, 74, "#f3e2c6", "#c77d1a", 6, 1.6))
+s.append(T(ix+65, 266, "kv_adaptor +", 10.5, "#7a5010","700"))
+s.append(T(ix+65, 281, "kv_injector", 10.5, "#7a5010","700"))
+s.append(T(ix+65, 297, "band 1 @ (28,·)", 8.5, "#5a5040","500"))
+s.append(T(ix+65, 311, "+ kv_fwd 延长桥", 8.5, "#5a5040","500"))
+s.append(T(ix+65, 340, "host KV ↓ (每轮)", 9.5, "#c77d1a","700"))
+s.append(T(ix+65, 356, "retain 轮:只发 meta,零 KV", 9, "#b5142c","700"))
+
+# ================= PANEL 2: the retain metadata path =================
+py2 = 410
+s.append(f'<line x1="40" y1="{py2-14}" x2="{W-40}" y2="{py2-14}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(box(44, py2, W-88, 214, "#fdf2f4", "#b5142c", 10, 2.0))
+s.append(T(64, py2+22, "② ★ S6a 关键路径:retain 不是编译进去的参数,而是每轮以「数据」形式送到每个 PE 的元信息 (G-13 spare-slot scalar broadcast)",13.5,"#8a0f22","700","start"))
+
+mw, mh, mg = 176, 92, 22
+mx = 64; my = py2+36
+steps = [
+ ("① host 拼 4 槽 tile",
+  "_repack_kv_band\nlaunch.py:2434 / :2459\n[plen, decode_len,\n retained_len, pad] i16"),
+ ("② KV_META_LEN 2→4",
+  "decode.csl:1562\n两端同时改:host\nnum_cols = Pw*4//2\nlaunch.py:1487/1524"),
+ ("③ 零长度行合法化",
+  "n_segs_rt == 0 早退\nadaptor.csl:82-91\ninjector.csl:98-106\n(仍要推 switch / sync)"),
+ ("④ 西移 peel,人手一份",
+  "kv_ingress_meta_phase\ndecode.csl:1571\n列 c 收 c+1 份留最后一份\n@mov16 逐位搬 ⇒ 位级一致"),
+ ("⑤ retain_rt 片上导出",
+  "decode.csl:1577-1580\nretain_rt = (plen == 0)\n位级一致才敢分支\n(Gate 1)"),
+ ("⑥ 省下带宽的分支",
+  "decode.csl:1647-1653\nif (retain_rt == 0) {…}\nretain 轮整个 K/V\n环节跳过 → 零 KV 上网"),
+]
+xs=[]
+for i,(t,sub) in enumerate(steps):
+    x = mx + i*(mw+mg)
+    s.append(node(x, my, mw, mh, t, sub, col_m, s_m, 10.5))
+    xs.append(x)
+for i in range(len(xs)-1):
+    s.append(line(xs[i]+mw, my+mh/2, xs[i+1]-2, my+mh/2, "#b5142c","am",2.2))
+
+# step 7: round_reset table
+ry2 = my+mh+14
+s.append(box(64, ry2, W-128, 60, "#fbe6ea", "#b5142c", 8, 1.6))
+s.append(T(78, ry2+18, "⑦ round_reset (decode.csl:286) — 条件性保留,而不是回绕:", 11, "#8a0f22","700","start"))
+s.append(T(78, ry2+35, "fresh 轮 (retain_rt=0):  retained_len := 本轮 prefill (:290)   ·   iter_num_bank[l] := 本轮 prefill (:305)   ·   n_steps := decode_len × 8 (:298)", 9.5, "#34434d","500","start"))
+s.append(T(78, ry2+50, "retain 轮 (retain_rt=1):  retained_len 保持 host 给的槽 2 值   ·   iter_num_bank[l] := retained_len ⇒ 缓存原地续用   ·   RoPE 仍从 (1,0) 重播,但转 retained_len 次 (:699)", 9.5, "#8a0f22","600","start"))
+
+# the zero-movement callout
+s.append(box(W-406, py2+22, 340, 0.1, "none","none"))
+s.append(T(W-64, py2+22, "Gate 0:KV 窗口只是每个 PE 自己的 iter_num 计数器 ⇒ 回绕/续用 搬 0 个 wavelet", 10.5, "#8a0f22","700","end"))
+
+# ================= PANEL 3: task / step machine =================
+py3 = 660
+s.append(f'<line x1="40" y1="{py3-16}" x2="{W-40}" y2="{py3-16}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(52,py3+2,"③ 任务机:每轮 (round) 循环 → 每 token (step) 循环 → 每层 (layer) 直线序列;斜体 = G-3 换轴重绘",14,"#0d1b26","700","start"))
+
+# round row
+ey = py3+22
+s.append(node(52, ey, 168, 50, "dispatch_init_task", "decode.csl:1657\nblock / strip 分流", col_o, s_o))
+s.append(node(240, ey, 168, 50, "init_task_t", "decode.csl:1736\ninit_once → kv_ingress", col_o, s_o))
+s.append(node(428, ey, 190, 50, "kv_ingress", "decode.csl:1630\nmeta → (retain? skip : K/V)\n→ G-14 drain+rebind", col_m, s_m))
+s.append(node(638, ey, 178, 50, "kv_ingress_resume", "decode.csl:1750\nround_reset → main", col_o, s_o))
+s.append(node(836, ey, 168, 50, "main", "decode.csl:1767\nG-4 发 n_steps 头", col_o, s_o))
+s.append(node(1024, ey, 224, 50, "round_barrier + rebind", "decode.csl:314 / :1825\n列栅栏 → G-14 反向 →\nround_reingress (:1757)", col_o, s_o))
+for a,b in [(220,238),(408,426),(618,636),(816,834),(1004,1022)]:
+    s.append(line(a,ey+25,b,ey+25,"#5a6b76","ak",1.7))
+# round loop back
+s.append(path(f"M {1136} {ey+50} L {1136} {ey+66} L {523} {ey+66} L {523} {ey+50}", "#a86a1e","ao",1.8,"6 4"))
+s.append(T(830, ey+79, "每轮回到 kv_ingress(常驻 serve loop,NUM_ROUNDS 次)", 9.5, "#a86a1e","700"))
+
+# step row
+sy = ey+96
+s.append(node(52, sy, 176, 52, "X 入", "is_x_receiver: IQ0/色23 (P-6)\n其余: inter_block (P-6)", col_g, s_g))
+s.append(node(248, sy, 186, 52, "X 组播", "intra_block_x_broadcast (P-2)\n源 px=root_2nd_phase,路由复制", col_g, s_g))
+s.append(node(454, sy, 176, 52, "早停哨兵 (G-5)", "X[0] < -60000 → 转发后 break\n(先于任何 collective)", col_p, s_p))
+s.append(node(650, sy, 176, 52, "decode_struct", "decode.csl:1489\nrope_step_advance + 逐层", col_o, s_o))
+s.append(node(846, sy, 176, 52, "Z 出", "inter_block_send_z (P-6)\n末列 → HT_tail (result)", col_g, s_g))
+s.append(node(1042, sy, 206, 52, "step 循环", "i < n_steps (= decode_len×8)\n每步 process_kv 追加 1 个位置", col_o, s_o))
+for a,b in [(228,246),(434,452),(630,648),(826,844),(1022,1040)]:
+    s.append(line(a,sy+26,b,sy+26,"#5a6b76","ak",1.7))
+s.append(path(f"M {836} {ey+50} L {836} {sy-10} L {140} {sy-10} L {140} {sy-2}", "#5a6b76","ak",1.7))
+
+# layer rows
+ly1 = sy+76
+fw, fh, fg = 150, 54, 12
+flags1 = [
+ ("RMSNorm(X)", ":970 · 隐维\nY 轴 P-1", col_b, s_b),
+ ("Q/K/V 投影", ":972/978/984 · 隐维\nY 轴 P-1(三路融合)", col_b, s_b),
+ ("重绘 → kv 带", "reconfig(3) :1434\nG-3", col_p, s_p),
+ ("QK-Norm", ":1128 · head_dim\nX 带 P-7(Q/K 融合)", col_p, s_p),
+ ("RoPE Q/K", ":1051/1052\n本地,无通信", col_g, s_g),
+ ("process_kv", ":1148 · 只有\npy==step%8 的 PE 写", col_m, s_m),
+ ("Q·Kᵀ", ":1188 · head_dim\nX 带 P-7", col_p, s_p),
+]
+x=52; xs1=[]
+for (t,sub,cf,cs) in flags1:
+    s.append(node(x,ly1,fw,fh,t,sub,cf,cs,10.5)); xs1.append(x); x+=fw+fg
+for i in range(len(xs1)-1):
+    s.append(line(xs1[i]+fw,ly1+fh/2,xs1[i+1]-1,ly1+fh/2,"#5a6b76","ak",1.7))
+s.append(path(f"M {650+88} {sy+52} L {650+88} {ly1-12} L {xs1[0]+fw/2} {ly1-12} L {xs1[0]+fw/2} {ly1-1}", "#5a6b76","ak",1.7))
+
+ly2 = ly1+fh+30
+flags2 = [
+ ("重绘 → Y", "reconfig(0) :1448\nG-3", col_b, s_b),
+ ("softmax", ":1245 · KV 位置在 Y\n先 max 再 sum (P-8)", col_b, s_b),
+ ("score·V", ":1312 · KV 位置\nY 轴 P-1", col_b, s_b),
+ ("重绘 → X", "reconfig(1) :1454\nG-3", col_r, s_r),
+ ("O 投影 + 残差", ":1350/:1357 · attn 列\nX 轴 P-1", col_r, s_r),
+ ("重绘 → Y", "reconfig(0) :1460\nG-3", col_b, s_b),
+ ("RMSNorm(Z)", ":1364 · 隐维\nY 轴 P-1", col_b, s_b),
+]
+x=52; xs2=[]
+for (t,sub,cf,cs) in flags2:
+    s.append(node(x,ly2,fw,fh,t,sub,cf,cs,10.5)); xs2.append(x); x+=fw+fg
+for i in range(len(xs2)-1):
+    s.append(line(xs2[i]+fw,ly2+fh/2,xs2[i+1]-1,ly2+fh/2,"#5a6b76","ak",1.7))
+s.append(path(f"M {xs1[6]+fw/2} {ly1+fh} L {xs1[6]+fw/2} {ly2-14} L {xs2[0]+fw/2} {ly2-14} L {xs2[0]+fw/2} {ly2-1}", "#5a6b76","ak",1.7))
+
+ly3 = ly2+fh+30
+flags3 = [
+ ("up / gate", ":1366/1371 · 隐维\nY 轴 P-1(融合)", col_b, s_b),
+ ("SwiGLU", ":1376/:1403 · 本地\n6 阶多项式 SiLU", col_g, s_g),
+ ("重绘 → X", "reconfig(1) :1473\nG-3", col_r, s_r),
+ ("down 投影 + 残差", ":1410/:1417 · FFN 维\nX 轴 P-1", col_r, s_r),
+ ("重绘 → Y", "reconfig(0) :1479\nG-3 复位入口轴", col_b, s_b),
+ ("层循环", "l+1 < layers_in_this_block\n存回 iter_num/step bank", col_o, s_o),
+]
+x=52; xs3=[]
+for (t,sub,cf,cs) in flags3:
+    s.append(node(x,ly3,fw,fh,t,sub,cf,cs,10.5)); xs3.append(x); x+=fw+fg
+for i in range(len(xs3)-1):
+    s.append(line(xs3[i]+fw,ly3+fh/2,xs3[i+1]-1,ly3+fh/2,"#5a6b76","ak",1.7))
+s.append(path(f"M {xs2[6]+fw/2} {ly2+fh} L {xs2[6]+fw/2} {ly3-14} L {xs3[0]+fw/2} {ly3-14} L {xs3[0]+fw/2} {ly3-1}", "#5a6b76","ak",1.7))
+# layer loop back through left gutter
+s.append(path(f"M {xs3[5]+fw/2} {ly3+fh} L {xs3[5]+fw/2} {ly3+fh+18} L {40} {ly3+fh+18} L {40} {ly1+fh/2} L {xs1[0]-1} {ly1+fh/2}", "#2e8b57","ag",1.8,"5 3"))
+s.append(T(xs3[2], ly3+fh+32, "同一 token 的下一层:set_layer(l+1),回到 RMSNorm(X)", 9.5, "#2e8b57","700"))
+
+# unfenced-repaint caveat
+s.append(box(700, ly3+fh+22, W-748, 34, "#f6eefc", "#7a3fb0", 6, 1.4))
+s.append(T(716, ly3+fh+36, "G-3 重绘无显式栅栏,安全性靠 all_reduce_* 全同步 + 广播多 tx 自带栅栏", 9.5, "#5c2e88","700","start"))
+s.append(T(716, ly3+fh+49, "(不变式见 comm_pe.csl:1325-1334;破坏任一条 ⇒ 仿真绿、上机静默挂死)", 9, "#5c2e88","500","start"))
+
+s.append(T(52,H-20,"色/队列:reduce 1,2 + 3,4 + bcast 5(P-1/P-7,轴由 G-3 重绘决定) · intra_row_bcast 6/IQ2,OQ0(P-2) · inter_block 19,20/q0,q1(P-6) · x_input 23/IQ0 · kv_ingress 17,21/IQ7,OQ7(P-5+G-13+G-14) · result_color/OQ0(P-6+G-4)。正确性=计数精确:两端计数不一致 ⇒ 静默挂起,不报错。",9.5,"#6a7883","400","start"))
+s.append('</svg>')
+out="/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-decode.decode.svg"
+open(out,"w").write("\n".join(s))
+print("ok", W, H, out)

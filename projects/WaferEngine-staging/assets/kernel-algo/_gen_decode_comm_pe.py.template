@@ -1,0 +1,240 @@
+#!/usr/bin/env python3
+# decode comm_pe.csl algorithm diagram: the decode block's communication toolbox.
+# Panel A (top) = the four movement shapes that actually exist in decode.
+# Panel B (middle) = the per-layer axis schedule (6 repaints/layer).
+# Panel C (bottom) = the color + queue binding map.
+# Adapted from _gen_comm_pe.py.template (prefill counterpart).
+import html
+OUT = "/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-decode.comm_pe.svg"
+W, H = 1320, 1560
+def esc(s): return html.escape(s)
+s = []
+s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
+s.append('<defs>'
+  '<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker>'
+  '<marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker>'
+  '<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker>'
+  '<marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker>'
+  '<marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker>'
+  '</defs>')
+s.append(f'<rect width="{W}" height="{H}" fill="#f7f9fb"/>')
+def T(x,y,t,sz=13,f="#12222f",w="600",a="middle"):
+    return f'<text x="{x}" y="{y}" font-size="{sz}" font-weight="{w}" fill="{f}" text-anchor="{a}">{esc(t)}</text>'
+def box(x,y,w,h,fill,stroke,rx=6,sw=1.5,op=1.0):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" fill-opacity="{op}" stroke="{stroke}" stroke-width="{sw}"/>'
+def line(x1,y1,x2,y2,c,mk="",w=2.2,dash=""):
+    d=f' stroke-dasharray="{dash}"' if dash else ""
+    m=f' marker-end="url(#{mk})"' if mk else ""
+    return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{c}" stroke-width="{w}"{d}{m}/>'
+
+C_RED="#c0392b"; C_BLU="#2c6fb0"; C_GRN="#2e8b57"; C_PUR="#7a3fb0"; C_ORG="#a86a1e"
+PE_F="#e9eef3"; PE_S="#9db2c2"; ROOT_F="#cfe0ef"; ROOT_S="#245f96"; BAND_F="#e6dcf3"
+
+s.append(T(W/2,32,"comm_pe.csl — the decode block's communication toolbox",20,"#0d1b26","700"))
+s.append(T(W/2,54,"One collective shape (2-phase chain all-reduce + multicast broadcast), EIGHT payload extents, THREE axes. m=1 per step => every GEMM is a GEMV => P-1 everywhere, no Cannon, no shuttle.",12.5,"#4a5b66","500"))
+s.append(T(W/2,72,"Block = P_BLOCK_SIZE x P_BLOCK_SIZE (8x8 ref cfg).   Y (rows) = HIDDEN dim shard AND KV-sequence shard.   X (cols) = attention / FFN column width.   kv-band = a run of X-PEs for one KV head.",11.5,"#4a5b66","500"))
+s.append(T(W/2,90,"branch lexu/staging/s6a-inner-pe-kv-route-a, uncommitted working tree  ·  ref config test_sim_2x2block_kv_varlen.json",11,"#7a8a95","500"))
+
+# ============ PANEL A ============
+s.append(T(40,126,"A.  The four movement shapes decode actually uses",14.5,"#0d1b26","700","start"))
+
+def pe_grid(ox, oy, cell, n=5, gap=6, fill=PE_F, stroke=PE_S):
+    out=[]
+    for r in range(n):
+        for c in range(n):
+            out.append(box(ox+c*(cell+gap),oy+r*(cell+gap),cell,cell,fill,stroke,3,1.0))
+    return out
+def cc(ox,oy,cell,gap,c,r):
+    return (ox+c*(cell+gap)+cell/2, oy+r*(cell+gap)+cell/2)
+
+PW=600; PH=380
+HDRH=44
+pax=[40, 680]
+pay=[146, 564]
+def panel_frame(x,y,title,sub,tc):
+    o=[box(x,y,PW,PH,"#ffffff","#d7dfe6",8,1.4)]
+    o.append(box(x,y,PW,HDRH,"#eef3f7","#d7dfe6",8,1.4))
+    o.append(T(x+14,y+18,title,13.5,tc,"700","start"))
+    o.append(T(x+14,y+36,sub,10.5,"#5a6b76","600","start"))
+    return "".join(o)
+
+# ---- A1: P-1 two-phase chain all-reduce ----
+x0,y0=pax[0],pay[0]
+s.append(panel_frame(x0,y0,"P-1  two-phase chain all-reduce  (x6 payload variants)","phase1 c1/q3,c2/q4  ->  phase2 c3/q5,c4/q6  ->  bcast c5/q7",C_RED))
+cell=28; gap=8; n=8; gx0=x0+120; gy0=y0+84
+# one axis line of 8 PEs, split into 4 groups of 2
+for i in range(n):
+    xx=gx0+i*(cell+gap)
+    grp_root = (i % 2 == 1)          # root_1st_phase = 1 within each group of 2
+    fill = ROOT_F if i==5 else (BAND_F if grp_root else PE_F)
+    s.append(box(xx,gy0,cell,cell,fill,ROOT_S if grp_root else PE_S,3,1.2))
+    s.append(T(xx+cell/2,gy0+cell+13,str(i),9.5,"#7a8a95","600"))
+# group brackets
+for g in range(4):
+    bx=gx0+g*2*(cell+gap)-3
+    s.append(box(bx,gy0-9,2*cell+gap+6,cell+18,"none","#c9d4dd",4,1.0))
+# phase-1 arrows: even -> odd (group root)
+for g in range(4):
+    a=gx0+(2*g)*(cell+gap)+cell
+    b=gx0+(2*g+1)*(cell+gap)
+    s.append(line(a+1,gy0+cell/2,b-1,gy0+cell/2,C_RED,"ar",2.2))
+s.append(T(gx0+4*(cell+gap),gy0-20,"phase 1: reduce inside groups of pe_num_per_group -> root_1st_phase",10,C_RED,"700"))
+# phase-2 arrows between group roots (1,3,5,7) toward root_2nd_phase=5
+y2=gy0+cell+34
+roots=[1,3,5,7]
+for r in roots:
+    xx=gx0+r*(cell+gap)+cell/2
+    s.append(line(xx,gy0+cell+2,xx,y2-6,"#c9d4dd","",1.2,"3 3"))
+for r in roots:
+    xx=gx0+r*(cell+gap)+cell/2
+    tx=gx0+5*(cell+gap)+cell/2
+    if r<5: s.append(line(xx,y2,tx-6,y2,C_PUR,"ap",2.0))
+    elif r>5: s.append(line(xx,y2,tx+6,y2,C_PUR,"ap",2.0))
+s.append(T(gx0+4*(cell+gap),y2+18,"phase 2: reduce among group roots -> root_2nd_phase (=5)",10,C_PUR,"700"))
+# broadcast back
+y3=y2+42
+s.append(line(gx0+5*(cell+gap)+cell/2,y3,gx0-6,y3,C_BLU,"ab",1.8,"4 3"))
+s.append(line(gx0+5*(cell+gap)+cell/2,y3,gx0+n*(cell+gap)-gap+6,y3,C_BLU,"ab",1.8,"4 3"))
+s.append(T(gx0+4*(cell+gap),y3+18,"P-2 router multicast broadcast back (only the root sends)",10,C_BLU,"700"))
+s.append(T(x0+14,y0+PH-62,"Depth P/(2g)+g/2, minimized at g=sqrt(P).  Same code, 8 extents:",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-44,"bsz | bsz*dim_per_pe | QKV fusion | ZZ fusion | gqa_group (sum & max).",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-26,"Fusion = two reductions sharing an axis ride ONE chain: 6 collectives/layer, not 9.",10.5,"#34434d","500","start"))
+
+# ---- A2: P-7 kv-band reduce (along X, FIXED root) ----
+x0,y0=pax[1],pay[0]
+s.append(panel_frame(x0,y0,"P-7  kv-head band reduce  (single phase, FIXED root)","QK-Norm + Q.K^T score  ·  c1/q3, c2/q4 + bcast c5/q7  ·  reduce_2nd untouched",C_BLU))
+cell=30; gap=10; band=4; broot=2; gx0=x0+150; gy0=y0+100
+for c in range(band):
+    xx=gx0+c*(cell+gap)
+    s.append(box(xx,gy0,cell,cell,ROOT_F if c==broot else BAND_F,ROOT_S,3,1.2))
+    s.append(T(xx+cell/2,gy0+cell+14,f"px {c}",9.5,"#5a6b76","600"))
+for c in range(0,broot):
+    s.append(line(gx0+c*(cell+gap)+cell,gy0+cell*0.35,gx0+(c+1)*(cell+gap),gy0+cell*0.35,C_RED,"ar",2.0))
+for c in range(broot+1,band):
+    s.append(line(gx0+c*(cell+gap),gy0+cell*0.65,gx0+(c-1)*(cell+gap)+cell,gy0+cell*0.65,C_RED,"ar",2.0))
+s.append(T(gx0+broot*(cell+gap)+cell/2,gy0-10,"kv_head_root (band middle, FIXED)",10,ROOT_S,"700"))
+s.append(line(gx0+broot*(cell+gap)+cell/2,gy0+cell+34,gx0-4,gy0+cell+34,C_BLU,"ab",1.7,"4 3"))
+s.append(line(gx0+broot*(cell+gap)+cell/2,gy0+cell+34,gx0+band*(cell+gap)-gap+4,gy0+cell+34,C_BLU,"ab",1.7,"4 3"))
+s.append(T(gx0+band*(cell+gap)/2,gy0+cell+52,"band-scoped P-2 broadcast",10,C_BLU,"700"))
+s.append(line(gx0,gy0+cell+80,gx0+band*(cell+gap)-gap,gy0+cell+80,"#7a8a95","ag",1.6))
+s.append(T(gx0+band*(cell+gap)/2,gy0+cell+98,"X   (pes_per_kv_head = P/n_kv_heads = 4)",11,"#7a8a95","700"))
+s.append(T(x0+14,y0+PH-80,"AXIS FLIP vs prefill: prefill's kv band runs along Y, decode's along X.",10.5,C_RED,"600","start"))
+s.append(T(x0+14,y0+PH-62,"Root is FIXED, so ONE color pair suffices — no cycling root, hence no",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-44,"two-color-pair split and no enter_qkt_reduce. Colors 3,4 stay free for",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-26,"phase 2. Entire reduce no-ops when pes_per_kv_head == 1 (counts stay exact).",10.5,"#34434d","500","start"))
+
+# ---- A3: P-6 inter-block handoff + P-2 intra-row fan-out ----
+x0,y0=pax[0],pay[1]
+s.append(panel_frame(x0,y0,"P-6 inter-block handoff + P-2 intra-row fan-out","c19/OQ1, c20/OQ2 alternating by edge parity  ·  fan-out c6, IQ2/OQ0",C_ORG))
+cell=24; gap=7; n=5
+bA_x=x0+40; bB_x=x0+40+n*(cell+gap)+96; gy0=y0+76
+s.extend(pe_grid(bA_x,gy0,cell,n,gap,"#f3ece0","#c9a875"))
+s.extend(pe_grid(bB_x,gy0,cell,n,gap,"#e6eef3","#9db2c2"))
+s.append(T(bA_x+n*(cell+gap)/2-4,gy0-10,"block k  (layers L..L+j)",10.5,C_ORG,"700"))
+s.append(T(bB_x+n*(cell+gap)/2-4,gy0-10,"block k+1  (layers L+j+1..)",10.5,ROOT_S,"700"))
+gapx0=bA_x+n*(cell+gap); gapx1=bB_x
+for r in range(n):
+    yy=gy0+r*(cell+gap)+cell/2
+    s.append(line(gapx0-2,yy,gapx1-cell/2,yy,C_ORG,"ao",1.8,"5 3" if r%2 else ""))
+s.append(T((gapx0+gapx1)/2,gy0+n*(cell+gap)+16,"ONE synchronous @fmovh of bsz*dim_per_pe bf16 words",9.8,C_ORG,"700"))
+s.append(T((gapx0+gapx1)/2,gy0+n*(cell+gap)+30,"(solid = color a / dashed = color b, alternating by parity)",9.3,"#7a8a95","600"))
+# fan-out inside block k+1
+fy=gy0+n*(cell+gap)+48
+srccol=2
+for c in range(n):
+    if c==srccol: continue
+    x1=bB_x+srccol*(cell+gap)+cell/2; x2=bB_x+c*(cell+gap)+cell/2
+    s.append(line(x1,fy,x2,fy,C_BLU,"ab",1.5,"3 3"))
+s.append(T(bB_x+n*(cell+gap)/2,fy+18,"intra_row_bcast from root_2nd_phase col",9.5,C_BLU,"700"))
+s.append(T(x0+14,y0+PH-62,"NO shift register, NO run_shuttle: the tile moves once, point-to-point.",10.5,C_RED,"600","start"))
+s.append(T(x0+14,y0+PH-44,"Two globally-pinned ids (19/20) so a wavelet crosses the row_y boundary on the",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-26,"same color; each PE binds BOTH queue pairs at comptime, picks by is_recv_on_a_rt.",10.5,"#34434d","500","start"))
+
+# ---- A4: G-14 KV-ingress queue borrow ----
+x0,y0=pax[1],pay[1]
+s.append(panel_frame(x0,y0,"G-14  KV-ingress borrows the broadcast queues  (the one real drain)","IQ7/OQ7  <->  {broadcast c5}  |  {kv_ingress c17, c21}   ·  S6a: now bidirectional",C_PUR))
+bw=210; bh=58; ax=x0+40; bx=x0+PW-40-bw; my=y0+112
+s.append(box(ax,my,bw,bh,"#efe6f7","#7a3fb0",7,1.5))
+s.append(T(ax+bw/2,my+24,"IQ7/OQ7 = kv_ingress",11.5,C_PUR,"700"))
+s.append(T(ax+bw/2,my+42,"c17 (recv) / c21 (send)",10,"#5a6b76","600"))
+s.append(box(bx,my,bw,bh,"#e0edf7","#245f96",7,1.5))
+s.append(T(bx+bw/2,my+24,"IQ7/OQ7 = broadcast",11.5,ROOT_S,"700"))
+s.append(T(bx+bw/2,my+42,"c5 — reduce bcast",10,"#5a6b76","600"))
+s.append(line(ax+bw+6,my+18,bx-8,my+18,C_GRN,"ag",2.2))
+s.append(T((ax+bw+bx)/2,my+8,"kv_ingress_flush_then_resume  (flag 0)",9.8,C_GRN,"700"))
+s.append(line(bx-8,my+44,ax+bw+6,my+44,C_RED,"ar",2.2))
+s.append(T((ax+bw+bx)/2,my+62,"kv_rebind_to_ingress_flush  (flag 1)  — S6a, per round",9.8,C_RED,"700"))
+s.append(box(x0+40,my+92,PW-80,52,"#f7f4ec","#c9a875",6,1.2))
+s.append(T(x0+PW/2,my+112,"@queue_flush(OQ7)  ->  kv_ingress_oq_empty handler  ->  re-encode IQ7/OQ7  ->  queue_flush.exit  ->  @activate continuation",10,"#6b5a2e","600"))
+s.append(T(x0+PW/2,my+130,"continuation = kv_ingress_resume_id (flag 0)  |  round_reingress_id (flag 1)",10,"#6b5a2e","600"))
+s.append(T(x0+14,y0+PH-62,"Ingress colors REUSE ids 17/21 (kpipe_b k7 / UP_A) — disjoint rectangle:",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-44,"those live on strip/HT_head cells, the KV west-shift on block-column cells.",10.5,"#34434d","500","start"))
+s.append(T(x0+14,y0+PH-26,"Odd fabric COLUMNS swap the two colors, giving the west-shift its parity order.",10.5,"#34434d","500","start"))
+
+# ============ PANEL B : per-layer axis schedule ============
+byy=986
+s.append(f'<line x1="40" y1="{byy-14}" x2="{W-40}" y2="{byy-14}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(40,byy+6,"B.  Per-layer axis schedule — reconfig_allreduce_axis repaints the SAME five colors six times per layer, with NO fence",14.5,"#0d1b26","700","start"))
+s.append(T(40,byy+26,"Race-free ONLY because every all_reduce_* is synchronous and ends in a multi-tx broadcast: per-child router backpressure makes the collective self-fencing (comm_pe.csl:1325-1334).",10.5,"#7a3fb0","600","start"))
+
+steps=[("rmsnorm_x","Y","all_reduce_bsz_f32"),
+       ("Q/K/V matvec","Y","QKV_fusion"),
+       ("qk_norm_q_k","kv","qk_kv_head_scoped"),
+       ("score_matvec","kv","gqa_kv_len_scoped"),
+       ("softmax_score","Y","Max + sum (P-8)"),
+       ("output_matvec","Y","all_reduce_bsz_dim"),
+       ("o_matvec","X","all_reduce_bsz_dim"),
+       ("rmsnorm_z + up/gate","Y","f32 + ZZ_fusion"),
+       ("down_matvec","X","all_reduce_bsz_dim")]
+AXC={"Y":"#c0392b","X":"#2e8b57","kv":"#2c6fb0"}
+sx=60; sw=132; sy=byy+48; sh=54
+for i,(nm,ax,fn) in enumerate(steps):
+    x=sx+i*(sw+6)
+    s.append(box(x,sy,sw,sh,"#ffffff",AXC[ax],7,1.6))
+    s.append(box(x,sy,sw,17,AXC[ax],AXC[ax],7,1.0))
+    s.append(T(x+sw/2,sy+13,{"Y":"axis 0  ·  Y","X":"axis 1  ·  X","kv":"axis 3  ·  kv-band"}[ax],9.5,"#ffffff","700"))
+    s.append(T(x+sw/2,sy+33,nm,10,"#0d1b26","700"))
+    s.append(T(x+sw/2,sy+47,fn,8.8,"#5a6b76","600"))
+    if i<len(steps)-1:
+        nxt=steps[i+1][1]
+        col = "#a86a1e" if nxt!=ax else "#c9d4dd"
+        s.append(line(x+sw+1,sy+sh/2,x+sw+5,sy+sh/2,col,"ao" if nxt!=ax else "",2.0))
+s.append(T(W/2,sy+sh+22,"orange tick = a reconfig_allreduce_axis() repaint (6 per layer, incl. the trailing restore to Y for the next layer)  ·  decode.csl:1424-1484",10.5,C_ORG,"600"))
+
+# ============ PANEL C : color + queue binding map ============
+cyy=sy+sh+50
+s.append(f'<line x1="40" y1="{cyy}" x2="{W-40}" y2="{cyy}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(40,cyy+22,"C.  Color + queue binding map — every queue is bound (contrast prefill, which leaves q4 free)",14.5,"#0d1b26","700","start"))
+cols=[40, 170, 400, 900, 1280]
+rows_y=cyy+40
+rowh=30
+hdr=["queue","color id","carries","note"]
+s.append(box(40,rows_y,W-80,rowh,"#eef3f7","#c9d4dd",6,1.2))
+for i,htxt in enumerate(hdr):
+    s.append(T(cols[i]+10,rows_y+20,htxt,11.5,"#0d1b26","700","start"))
+data=[
+ ("IQ0","19  (or 23)","inter_block_a recv  —  or x_input_color on is_x_receiver","chain-start block reads HT_head's post-embed X"),
+ ("IQ1","20","inter_block_b recv","runtime pick between IQ0/IQ1 via is_recv_on_a_rt"),
+ ("IQ2 / OQ0","6","intra_row_bcast  (P-2 fan-out along X)","OQ0 carries result_color on is_result_sender"),
+ ("IQ3 / OQ3","1","reduce_1st_color_0  —  phase-1 chain, even parity","also K-pipe strip id (disjoint X cells)"),
+ ("IQ4 / OQ4","2","reduce_1st_color_1  —  phase-1 chain, odd parity","also carries both P-7 band chains"),
+ ("IQ5 / OQ5","3","reduce_2nd_color_0  —  phase-2 chain","UNUSED + untouched in kv-band mode"),
+ ("IQ6 / OQ6","4","reduce_2nd_color_1  —  phase-2 chain","UNUSED + untouched in kv-band mode"),
+ ("IQ7 / OQ7","5  |  17, 21","broadcast_color  —  OR kv_ingress colors before the rebind","the only @queue_flush + empty-queue handler in the file"),
+ ("OQ1 / OQ2","19 / 20","inter_block Z send (opposite color from recv)","layout-global ids: same physical id in every row_y region"),
+]
+rc=["#ffffff","#f5f8fa"]
+for j,row in enumerate(data):
+    ry=rows_y+rowh+j*rowh
+    s.append(box(40,ry,W-80,rowh,rc[j%2],"#e3e9ee",0,1.0))
+    for i,v in enumerate(row):
+        col = "#0d1b26" if i<2 else "#34434d"
+        wt = "700" if i==0 else ("600" if i==1 else "500")
+        s.append(T(cols[i]+10,ry+19,v,10.3,col,wt,"start"))
+fy=rows_y+rowh+len(data)*rowh+24
+s.append(T(40,fy,"ABSENT vs prefill: two_hop_comm, left_matrix_shift, attn_right_hop, the Score x V band Cannon, run_shuttle + the whole RECFG_SH_OUT/IN machine, the cycling-root Q.K^T split. Zero microthreads, zero async fabric ops.",10.5,"#5a6b76","500","start"))
+s.append(T(40,fy+18,"Legend:  red = phase-1 / Y axis   purple = phase-2   blue = broadcast / kv-band   green = X axis   orange = inter-block + repaint.   All fabric DSD extents comptime; runtime variation goes in the count, never the length.",10.5,"#5a6b76","500","start"))
+
+s.append('</svg>')
+open(OUT,"w").write("\n".join(s))
+print("wrote", OUT, W, H)

@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1120" viewBox="0 0 1200 1120" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker><marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker><marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker><marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker></defs>
+<rect width="1200" height="1120" fill="#f7f9fb"/>
+<text x="600.0" y="30" font-size="19" font-weight="700" fill="#0d1b26" text-anchor="middle">decode demux.csl — host X[0] seed ingress: 1xP COLUMN peel + EAST fan-out</text>
+<text x="600.0" y="50" font-size="11.5" font-weight="500" fill="#4a5b66" text-anchor="middle">Prefill&#x27;s demux turned on its side: a COLUMN chaining N-&gt;S, emitting EAST, carrying a host-PRE-EMBEDDED hidden seed once per round — not token ids every chunk.</text>
+<text x="600.0" y="68" font-size="11" font-weight="500" fill="#6a7883" text-anchor="middle">ref config test_sim_2x2block_kv_varlen.json:  P_BLOCK_SIZE=8 PEs, OWN_B = bsz*dim_per_pe/2 = 8 u32 (= 2 lanes x 8 fp16, packed 2/u32), host sends 8 x 8 = 64 u32 per round</text>
+<text x="60" y="104" font-size="14" font-weight="700" fill="#0d1b26" text-anchor="start">1  Spatial layout + three moves   (demux = 1 col x P_BLOCK_SIZE rows at fabric_x=2, one col WEST of the HT band)</text>
+<rect x="70" y="196" width="130" height="62" rx="6" fill="#f0d9b5" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
+<text x="135" y="218" font-size="12" font-weight="700" fill="#7a4d10" text-anchor="middle">host</text>
+<text x="135" y="234" font-size="9.5" font-weight="500" fill="#7a4d10" text-anchor="middle">X[0] seed, fp16</text>
+<text x="135" y="248" font-size="9.5" font-weight="500" fill="#7a4d10" text-anchor="middle">embedded in numpy</text>
+<rect x="300" y="196" width="210" height="56" rx="5" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="405.0" y="214" font-size="10.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux PE  my_idx=0</text>
+<text x="405.0" y="229" font-size="9" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN_B=8 u32</text>
+<text x="405.0" y="243" font-size="8.5" font-weight="500" fill="#5a3d10" text-anchor="middle">forward 56 u32 SOUTH</text>
+<rect x="300" y="258" width="210" height="56" rx="5" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="405.0" y="276" font-size="10.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux PE  my_idx=1</text>
+<text x="405.0" y="291" font-size="9" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN_B=8 u32</text>
+<text x="405.0" y="305" font-size="8.5" font-weight="500" fill="#5a3d10" text-anchor="middle">forward 48 u32 SOUTH</text>
+<rect x="300" y="320" width="210" height="56" rx="5" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="405.0" y="338" font-size="10.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux PE  my_idx=2</text>
+<text x="405.0" y="353" font-size="9" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN_B=8 u32</text>
+<text x="405.0" y="367" font-size="8.5" font-weight="500" fill="#5a3d10" text-anchor="middle">forward 40 u32 SOUTH</text>
+<rect x="300" y="382" width="210" height="56" rx="5" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="405.0" y="400" font-size="10.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux PE  my_idx=3</text>
+<text x="405.0" y="415" font-size="9" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN_B=8 u32</text>
+<text x="405.0" y="429" font-size="8.5" font-weight="500" fill="#5a3d10" text-anchor="middle">forward 32 u32 SOUTH</text>
+<rect x="300" y="444" width="210" height="56" rx="5" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="405.0" y="462" font-size="10.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux PE  my_idx=4</text>
+<text x="405.0" y="477" font-size="9" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN_B=8 u32</text>
+<text x="405.0" y="491" font-size="8.5" font-weight="500" fill="#5a3d10" text-anchor="middle">forward 24 u32 SOUTH</text>
+<rect x="300" y="506" width="210" height="56" rx="5" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="405.0" y="524" font-size="10.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux PE  my_idx=5</text>
+<text x="405.0" y="539" font-size="9" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN_B=8 u32</text>
+<text x="405.0" y="553" font-size="8.5" font-weight="500" fill="#5a3d10" text-anchor="middle">forward 16 u32 SOUTH</text>
+<rect x="300" y="568" width="210" height="56" rx="5" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="405.0" y="586" font-size="10.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux PE  my_idx=6</text>
+<text x="405.0" y="601" font-size="9" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN_B=8 u32</text>
+<text x="405.0" y="615" font-size="8.5" font-weight="500" fill="#5a3d10" text-anchor="middle">forward 8 u32 SOUTH</text>
+<rect x="300" y="630" width="210" height="56" rx="5" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.5"/>
+<text x="405.0" y="648" font-size="10.5" font-weight="700" fill="#0d1b26" text-anchor="middle">demux PE  my_idx=7  (last)</text>
+<text x="405.0" y="663" font-size="9" font-weight="500" fill="#12222f" text-anchor="middle">peel OWN_B=8 u32</text>
+<text x="405.0" y="677" font-size="8.5" font-weight="500" fill="#5a3d10" text-anchor="middle">no forward (stub)</text>
+<text x="405.0" y="142" font-size="9.5" font-weight="700" fill="#a86a1e" text-anchor="middle">src_q = iq2 (shared by both fabin DSDs -&gt; G-2 FIFO peel)</text>
+<path d="M 200 227 L 260 227 L 260 162 L 405.0 162 L 405.0 194" fill="none" stroke="#a86a1e" stroke-width="2.4" marker-end="url(#ao)"/>
+<text x="254" y="218" font-size="9.5" font-weight="600" fill="#a86a1e" text-anchor="end">in_color, Edge.TOP</text>
+<line x1="358.8" y1="253" x2="358.8" y2="256" stroke="#c0392b" stroke-width="2.6" marker-end="url(#ar)"/>
+<text x="294" y="259.0" font-size="8.5" font-weight="700" fill="#c0392b" text-anchor="end">chain_a  hop 0</text>
+<line x1="358.8" y1="315" x2="358.8" y2="318" stroke="#2c6fb0" stroke-width="2.6" marker-end="url(#ab)"/>
+<text x="294" y="321.0" font-size="8.5" font-weight="700" fill="#2c6fb0" text-anchor="end">chain_b  hop 1</text>
+<line x1="358.8" y1="377" x2="358.8" y2="380" stroke="#c0392b" stroke-width="2.6" marker-end="url(#ar)"/>
+<text x="294" y="383.0" font-size="8.5" font-weight="700" fill="#c0392b" text-anchor="end">chain_a  hop 2</text>
+<line x1="358.8" y1="439" x2="358.8" y2="442" stroke="#2c6fb0" stroke-width="2.6" marker-end="url(#ab)"/>
+<text x="294" y="445.0" font-size="8.5" font-weight="700" fill="#2c6fb0" text-anchor="end">chain_b  hop 3</text>
+<line x1="358.8" y1="501" x2="358.8" y2="504" stroke="#c0392b" stroke-width="2.6" marker-end="url(#ar)"/>
+<text x="294" y="507.0" font-size="8.5" font-weight="700" fill="#c0392b" text-anchor="end">chain_a  hop 4</text>
+<line x1="358.8" y1="563" x2="358.8" y2="566" stroke="#2c6fb0" stroke-width="2.6" marker-end="url(#ab)"/>
+<text x="294" y="569.0" font-size="8.5" font-weight="700" fill="#2c6fb0" text-anchor="end">chain_b  hop 5</text>
+<line x1="358.8" y1="625" x2="358.8" y2="628" stroke="#c0392b" stroke-width="2.6" marker-end="url(#ar)"/>
+<text x="294" y="631.0" font-size="8.5" font-weight="700" fill="#c0392b" text-anchor="end">chain_a  hop 6</text>
+<rect x="660" y="196" width="190" height="490" rx="6" fill="#8fbfe0" fill-opacity="0.85" stroke="#245f96" stroke-width="1.6"/>
+<text x="755" y="182" font-size="11" font-weight="700" fill="#245f96" text-anchor="middle">HT_head band  (6 cols x 8 rows)</text>
+<line x1="512" y1="222" x2="658" y2="222" stroke="#2e8b57" stroke-width="2.0" marker-end="url(#ag)"/>
+<text x="755" y="240" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">row py=0: C1 runs EAST, dies at diag col 2</text>
+<line x1="512" y1="284" x2="658" y2="284" stroke="#2e8b57" stroke-width="2.0" marker-end="url(#ag)"/>
+<text x="755" y="302" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">row py=1: C1 runs EAST, dies at diag col 2</text>
+<line x1="512" y1="346" x2="658" y2="346" stroke="#2e8b57" stroke-width="2.0" marker-end="url(#ag)"/>
+<text x="755" y="364" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">row py=2: C1 runs EAST, dies at diag col 3</text>
+<line x1="512" y1="408" x2="658" y2="408" stroke="#2e8b57" stroke-width="2.0" marker-end="url(#ag)"/>
+<text x="755" y="426" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">row py=3: C1 runs EAST, dies at diag col 3</text>
+<line x1="512" y1="470" x2="658" y2="470" stroke="#2e8b57" stroke-width="2.0" marker-end="url(#ag)"/>
+<text x="755" y="488" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">row py=4: C1 runs EAST, dies at diag col 4</text>
+<line x1="512" y1="532" x2="658" y2="532" stroke="#2e8b57" stroke-width="2.0" marker-end="url(#ag)"/>
+<text x="755" y="550" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">row py=5: C1 runs EAST, dies at diag col 4</text>
+<line x1="512" y1="594" x2="658" y2="594" stroke="#2e8b57" stroke-width="2.0" marker-end="url(#ag)"/>
+<text x="755" y="612" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">row py=6: C1 runs EAST, dies at diag col 5</text>
+<line x1="512" y1="656" x2="658" y2="656" stroke="#2e8b57" stroke-width="2.0" marker-end="url(#ag)"/>
+<text x="755" y="674" font-size="8.5" font-weight="500" fill="#2a4a63" text-anchor="middle">row py=7: C1 runs EAST, dies at diag col 5</text>
+<text x="585.0" y="162" font-size="9.5" font-weight="700" fill="#2e8b57" text-anchor="middle">out_color = pre_embed_x_color (id 18), RAMP-&gt;EAST</text>
+<path d="M 660 674 L 514 674" fill="none" stroke="#7a3fb0" stroke-width="2.2" stroke-dasharray="5 3" marker-end="url(#ap)"/>
+<text x="60" y="702" font-size="10.5" font-weight="600" fill="#7a3fb0" text-anchor="start">ht_ready (id 0), EAST -&gt; WEST, 1 wavelet per row: HT_head&#x27;s col-0 PE fires it at the end of ITS init(), after painting C1&#x27;s per-row route. demux init() parks on it and only then activates main.</text>
+<text x="60" y="720" font-size="10.5" font-weight="500" fill="#7a3fb0" text-anchor="start">Why: C1&#x27;s route is painted at RUNTIME by ht_head.csl:264-268, but the demux could otherwise emit at load time. The barrier converts that race into an ordering (bsz=1 configs stall without it).</text>
+<line x1="60" y1="748" x2="88" y2="748" stroke="#a86a1e" stroke-width="2.4" marker-end="url(#ao)"/>
+<text x="96" y="752" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">host ingress (P-5 store-and-forward head): the whole P*OWN_B stream lands on PE 0 via Edge.TOP; FIFO order down the column is what makes the peel correct.</text>
+<line x1="60" y1="770" x2="88" y2="770" stroke="#c0392b" stroke-width="2.4" marker-end="url(#ar)"/>
+<text x="96" y="774" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">parity chain (G-1): peel OWN_B locally, stream FWD_EXTENT = (P-1-my_idx)*OWN_B SOUTH on alternating chain_a (even hop) / chain_b (odd) — no adjacent-router color conflict.</text>
+<line x1="60" y1="792" x2="88" y2="792" stroke="#2e8b57" stroke-width="2.4" marker-end="url(#ag)"/>
+<text x="96" y="796" font-size="11" font-weight="500" fill="#26333c" text-anchor="start">EAST emit (P-6 p2p): each row drops its OWN_B slice into HT_head row py. Unlike prefill, this is NOT picked up by a multicast — it is a plain run that terminates at one diag PE.</text>
+<line x1="40" y1="820" x2="1160" y2="820" stroke="#dce4ea" stroke-width="1.4"/>
+<text x="60" y="840" font-size="14" font-weight="700" fill="#0d1b26" text-anchor="start">2  Task state machine  (same program on every row; my_idx picks the peel offset and FWD_EXTENT)</text>
+<rect x="60" y="860" width="240" height="80" rx="6" fill="#ebdcf7" fill-opacity="1.0" stroke="#7a3fb0" stroke-width="1.6"/><text x="180.0" y="880" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">init  (:104)</text><text x="180.0" y="897" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">async @mov32 of 1 ready wavelet</text><text x="180.0" y="910" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">from HT_head col 0</text><text x="180.0" y="923" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">.activate = main</text>
+<rect x="350" y="860" width="240" height="80" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="470.0" y="880" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">main  (:109)</text><text x="470.0" y="897" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">@mov32 OWN_B from src_q -&gt; own_buf</text><text x="470.0" y="910" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">branch on is_last_pe</text>
+<rect x="650" y="860" width="240" height="80" rx="6" fill="#faddd8" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="770.0" y="880" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">forward_and_out  (:127)</text><text x="770.0" y="897" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">2 async ops:</text><text x="770.0" y="910" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">fwd FWD_EXTENT SOUTH (.unblock)</text><text x="770.0" y="923" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">emit own_buf EAST (.activate)</text>
+<rect x="940" y="860" width="200" height="80" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="1040.0" y="880" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">send_out  (:122)</text><text x="1040.0" y="897" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">last PE only:</text><text x="1040.0" y="910" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">no south forward</text><text x="1040.0" y="923" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">emit own_buf EAST</text>
+<line x1="300" y1="900.0" x2="348" y2="900.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="590" y1="900.0" x2="648" y2="900.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<text x="620.0" y="894.0" font-size="9" font-weight="600" fill="#5a6b76" text-anchor="middle">my_idx &lt; P-1</text>
+<path d="M 470.0 940 L 470.0 966 L 1040.0 966 L 1040.0 942" fill="none" stroke="#5a6b76" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+<text x="705.0" y="982" font-size="9.5" font-weight="600" fill="#5a6b76" text-anchor="middle">my_idx == P-1 (is_last_pe)</text>
+<rect x="650" y="1012" width="240" height="70" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="770.0" y="1032" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">next_cycle  (:136)</text><text x="770.0" y="1049" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">join gate for the 2 async ops</text><text x="770.0" y="1062" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">kv_stream_ingress: @block(next_cycle)</text><text x="770.0" y="1075" font-size="9.5" font-weight="500" fill="#34434d" text-anchor="middle">+ @activate(main) for the next round</text>
+<path d="M 770.0 940 L 770.0 1010" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<path d="M 1040.0 940 L 1040.0 1047.0 L 892 1047.0" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<path d="M 650 1047.0 L 470.0 1047.0 L 470.0 942" fill="none" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ao)"/>
+<text x="470.0" y="1065.0" font-size="9.5" font-weight="600" fill="#a86a1e" text-anchor="middle">per-round re-arm (KV_TRANSFER=1); KV_TRANSFER=0 -&gt; idle after one shot</text>
+<text x="60" y="1106" font-size="10" font-weight="400" fill="#6a7883" text-anchor="start">colors/queues:  in_color / chain_color_a / chain_color_b -&gt; src_q=iq2 · forward_oq=oq2 · out_color = pre_embed_x_color(id 18) = oq3 · ht_ready_color(id 0) = ready_iq=iq3.   Count-exactness (OWN_B + FWD_EXTENT) = correctness.</text>
+</svg>

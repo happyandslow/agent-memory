@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="690" viewBox="0 0 1120 690" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker><marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker><marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker><marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker></defs>
+<rect width="1120" height="690" fill="#f7f9fb"/>
+<text x="560.0" y="30" font-size="19" font-weight="700" fill="#0d1b26" text-anchor="middle">decode mux.csl — per-step logits egress (single active PE)</text>
+<text x="560.0" y="50" font-size="10.5" font-weight="500" fill="#6a7883" text-anchor="middle">qwen3_1p7b-decode · ref cfg test_sim_2x2block_kv_varlen.json · working tree of lexu/staging/s6a-inner-pe-kv-route-a (uncommitted S6a KV-retain)</text>
+<text x="560.0" y="68" font-size="11.5" font-weight="500" fill="#4a5b66" text-anchor="middle">ONE blob per decode STEP (unlike prefill&#x27;s one-shot mux); budget header + TSC burst + re-arm are per ROUND (NUM_ROUNDS=3).</text>
+<text x="60" y="102" font-size="14" font-weight="700" fill="#0d1b26" text-anchor="start">1  Spatial layout  (mux row = HT_WIDTH_tail x 1 = 6 PEs, one row SOUTH of HT_tail; only the east-most binds tasks)</text>
+<rect x="110" y="132" width="128" height="42" rx="6" fill="#e8eef2" fill-opacity="0.7" stroke="#9fb0bc" stroke-width="1.2"/>
+<text x="174.0" y="150" font-size="10" font-weight="600" fill="#12222f" text-anchor="middle">HT_tail col 0</text>
+<text x="174.0" y="165" font-size="8.2" font-weight="500" fill="#2a4a63" text-anchor="middle">lm_head / top-K</text>
+<rect x="249" y="132" width="128" height="42" rx="6" fill="#e8eef2" fill-opacity="0.7" stroke="#9fb0bc" stroke-width="1.2"/>
+<text x="313.0" y="150" font-size="10" font-weight="600" fill="#12222f" text-anchor="middle">HT_tail col 1</text>
+<text x="313.0" y="165" font-size="8.2" font-weight="500" fill="#2a4a63" text-anchor="middle">lm_head / top-K</text>
+<rect x="388" y="132" width="128" height="42" rx="6" fill="#e8eef2" fill-opacity="0.7" stroke="#9fb0bc" stroke-width="1.2"/>
+<text x="452.0" y="150" font-size="10" font-weight="600" fill="#12222f" text-anchor="middle">HT_tail col 2</text>
+<text x="452.0" y="165" font-size="8.2" font-weight="500" fill="#2a4a63" text-anchor="middle">lm_head / top-K</text>
+<rect x="527" y="132" width="128" height="42" rx="6" fill="#e8eef2" fill-opacity="0.7" stroke="#9fb0bc" stroke-width="1.2"/>
+<text x="591.0" y="150" font-size="10" font-weight="600" fill="#12222f" text-anchor="middle">HT_tail col 3</text>
+<text x="591.0" y="165" font-size="8.2" font-weight="500" fill="#2a4a63" text-anchor="middle">lm_head / top-K</text>
+<rect x="666" y="132" width="128" height="42" rx="6" fill="#e8eef2" fill-opacity="0.7" stroke="#9fb0bc" stroke-width="1.2"/>
+<text x="730.0" y="150" font-size="10" font-weight="600" fill="#12222f" text-anchor="middle">HT_tail col 4</text>
+<text x="730.0" y="165" font-size="8.2" font-weight="500" fill="#2a4a63" text-anchor="middle">lm_head / top-K</text>
+<rect x="805" y="132" width="128" height="42" rx="6" fill="#bfe0c4" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/>
+<text x="869.0" y="150" font-size="10" font-weight="600" fill="#12222f" text-anchor="middle">HT_tail col 5</text>
+<text x="869.0" y="165" font-size="8.2" font-weight="500" fill="#2a4a63" text-anchor="middle">root-row east = emitter</text>
+<text x="100" y="153" font-size="10" font-weight="700" fill="#2e8b57" text-anchor="end">HT_tail</text>
+<rect x="110" y="248" width="128" height="46" rx="6" fill="#eceff1" fill-opacity="0.55" stroke="#b7c2cb" stroke-width="1.1"/>
+<text x="174.0" y="275" font-size="8.2" font-weight="600" fill="#8a97a1" text-anchor="middle">inert (no tasks bound)</text>
+<rect x="249" y="248" width="128" height="46" rx="6" fill="#eceff1" fill-opacity="0.55" stroke="#b7c2cb" stroke-width="1.1"/>
+<text x="313.0" y="275" font-size="8.2" font-weight="600" fill="#8a97a1" text-anchor="middle">inert (no tasks bound)</text>
+<rect x="388" y="248" width="128" height="46" rx="6" fill="#eceff1" fill-opacity="0.55" stroke="#b7c2cb" stroke-width="1.1"/>
+<text x="452.0" y="275" font-size="8.2" font-weight="600" fill="#8a97a1" text-anchor="middle">inert (no tasks bound)</text>
+<rect x="527" y="248" width="128" height="46" rx="6" fill="#eceff1" fill-opacity="0.55" stroke="#b7c2cb" stroke-width="1.1"/>
+<text x="591.0" y="275" font-size="8.2" font-weight="600" fill="#8a97a1" text-anchor="middle">inert (no tasks bound)</text>
+<rect x="666" y="248" width="128" height="46" rx="6" fill="#eceff1" fill-opacity="0.55" stroke="#b7c2cb" stroke-width="1.1"/>
+<text x="730.0" y="275" font-size="8.2" font-weight="600" fill="#8a97a1" text-anchor="middle">inert (no tasks bound)</text>
+<rect x="805" y="248" width="128" height="46" rx="6" fill="#e8b06a" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
+<text x="869.0" y="267" font-size="9.8" font-weight="700" fill="#0d1b26" text-anchor="middle">mux PE (east-most)</text>
+<text x="869.0" y="283" font-size="8.6" font-weight="600" fill="#5a3d10" text-anchor="middle">is_last_pe=1 · G-11</text>
+<text x="100" y="271" font-size="10" font-weight="700" fill="#a86a1e" text-anchor="end">mux</text>
+<line x1="869.0" y1="174" x2="869.0" y2="246" stroke="#c0392b" stroke-width="2.8" marker-end="url(#ar)"/>
+<text x="879.0" y="197.0" font-size="9.3" font-weight="600" fill="#c0392b" text-anchor="start">in_color / IQ2 : NORTH -&gt; RAMP</text>
+<text x="879.0" y="211.0" font-size="8.4" font-weight="500" fill="#c0392b" text-anchor="start">logits_south_color, S down the east col</text>
+<text x="879.0" y="225.0" font-size="8.4" font-weight="500" fill="#c0392b" text-anchor="start">FIFO: header, blob x N, TSC x 8</text>
+<rect x="999" y="248" width="76" height="46" rx="6" fill="#f0d9b5" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/>
+<text x="1037" y="275" font-size="11" font-weight="700" fill="#7a4d10" text-anchor="middle">host</text>
+<line x1="934" y1="271" x2="997" y2="271" stroke="#a86a1e" stroke-width="2.8" marker-end="url(#ao)"/>
+<text x="966.0" y="262" font-size="8.0" font-weight="700" fill="#a86a1e" text-anchor="middle">host_color / OQ2</text>
+<text x="966.0" y="289" font-size="7.6" font-weight="500" fill="#a86a1e" text-anchor="middle">RAMP-&gt;EAST</text>
+<rect x="110" y="338" width="760" height="60" rx="6" fill="#eef4f9" fill-opacity="1.0" stroke="#245f96" stroke-width="1.2"/>
+<text x="490" y="357" font-size="11" font-weight="700" fill="#12222f" text-anchor="middle">per-step blob = wavelets_per_step u32   (ref cfg: N = 8)</text>
+<text x="490" y="374" font-size="9.4" font-weight="500" fill="#2a4a63" text-anchor="middle">[ 2 packed-f16 top-K values | 4 i32 top-K indices | 2 i32 sampled token ids | even-pad ]</text>
+<text x="490" y="390" font-size="9.4" font-weight="600" fill="#7a3fb0" text-anchor="middle">sampled_off = 6  -&gt;  blob[6] == STOP_TOK (-2) is the early-stop sentinel (G-5, in-band)</text>
+<line x1="110" y1="420" x2="136" y2="420" stroke="#2c6fb0" stroke-width="2.2" marker-end="url(#ab)"/>
+<text x="144" y="424" font-size="10.6" font-weight="500" fill="#26333c" text-anchor="start">count-exactness: in_port = south_total_with_tsc + kv_hdr (mux CONSUMES the header) · host_port = south_total_with_tsc (header NOT forwarded).</text>
+<line x1="40" y1="440" x2="1080" y2="440" stroke="#dce4ea" stroke-width="1.4"/>
+<text x="60" y="460" font-size="14" font-weight="700" fill="#0d1b26" text-anchor="start">2  Task state machine  (east-most PE only) — per-STEP inner loop nested inside a per-ROUND outer loop</text>
+<rect x="46" y="484" width="178" height="62" rx="6" fill="#fdf0c9" fill-opacity="1.0" stroke="#b08a1e" stroke-width="1.6"/><text x="135.0" y="503" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">init</text><text x="135.0" y="519.0" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">read 1-wavelet budget</text><text x="135.0" y="531.5" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">header N (G-4, blocking)</text><text x="135.0" y="544.0" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">step=0  [KV=1 only]</text>
+<rect x="254" y="484" width="178" height="62" rx="6" fill="#dbeafe" fill-opacity="1.0" stroke="#245f96" stroke-width="1.6"/><text x="343.0" y="503" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">main</text><text x="343.0" y="519.0" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">drain blob (N u32)</text><text x="343.0" y="531.5" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">recv_dsd -&gt; blob</text><text x="343.0" y="544.0" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">on in_q = IQ2</text>
+<rect x="462" y="484" width="178" height="62" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="551.0" y="503" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">send</text><text x="551.0" y="519.0" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">forward blob EAST</text><text x="551.0" y="531.5" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">blob -&gt; send_dsd</text><text x="551.0" y="544.0" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">on host_oq = OQ2</text>
+<rect x="670" y="484" width="178" height="62" rx="6" fill="#ecdff6" fill-opacity="1.0" stroke="#7a3fb0" stroke-width="1.6"/><text x="759.0" y="503" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">next</text><text x="759.0" y="519.0" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">step++; if STOP_TOK or</text><text x="759.0" y="531.5" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">step &gt;= n_steps_runtime</text><text x="759.0" y="544.0" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">-&gt; tsc_recv, else -&gt; main</text>
+<rect x="878" y="484" width="178" height="62" rx="6" fill="#f7e3c8" fill-opacity="1.0" stroke="#a86a1e" stroke-width="1.6"/><text x="967.0" y="503" font-size="12" font-weight="700" fill="#0d1b26" text-anchor="middle">tsc_recv / tsc_send</text><text x="967.0" y="519.0" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">drain 8-u32 TSC burst,</text><text x="967.0" y="531.5" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">forward EAST (same queues)</text><text x="967.0" y="544.0" font-size="8.8" font-weight="500" fill="#34434d" text-anchor="middle">KV=1: -&gt; init, KV=0: end</text>
+<line x1="224" y1="515.0" x2="252" y2="515.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="432" y1="515.0" x2="460" y2="515.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="640" y1="515.0" x2="668" y2="515.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="848" y1="515.0" x2="876" y2="515.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<path d="M 759.0 546 L 759.0 572 L 343.0 572 L 343.0 548" fill="none" stroke="#7a3fb0" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#ap)"/>
+<text x="551.0" y="587" font-size="9.6" font-weight="700" fill="#7a3fb0" text-anchor="middle">PER-STEP loop  (up to n_steps_runtime = N)</text>
+<path d="M 967.0 546 L 967.0 608 L 135.0 608 L 135.0 548" fill="none" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="7 4" marker-end="url(#ao)"/>
+<text x="551.0" y="623" font-size="9.6" font-weight="700" fill="#a86a1e" text-anchor="middle">PER-ROUND re-arm (kv_stream_ingress=1): @activate(init) -&gt; park on the next round&#x27;s header  ·  NUM_ROUNDS = 3</text>
+<text x="60" y="658" font-size="9.8" font-weight="400" fill="#6a7883" text-anchor="start">Everything rides ONE queue pair (in_q=IQ2 / host_oq=OQ2) in strict FIFO order per round: header, blob x N, TSC burst x 8. No reordering, no credits — backpressure + count-exactness only.</text>
+<text x="60" y="676" font-size="9.8" font-weight="500" fill="#a8541e" text-anchor="start">NOTE: launch.py:2251-2260&#x27;s banner still describes an older W-&gt;E cut-through chain emitting full bsz*vocab logits. The shipped code does not do that — one PE, top-K blob.</text>
+</svg>

@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+# decode_strip.csl algorithm diagram: the K-pipe strip (inter-region Z handoff).
+# Top panel = spatial (sender strip column -> K-pipe -> receiver strip column -> row multicast).
+# Bottom panel = the two task chains (sender / receiver).
+import html
+OUT = "/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-decode.decode_strip.svg"
+W, H = 1240, 900
+def esc(s): return html.escape(s)
+s = []
+s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
+s.append('<defs>'
+  '<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker>'
+  '<marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker>'
+  '<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker>'
+  '<marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker>'
+  '<marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker>'
+  '<marker id="agr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8a97a1"/></marker>'
+  '</defs>')
+s.append(f'<rect width="{W}" height="{H}" fill="#f7f9fb"/>')
+def T(x,y,t,sz=13,f="#12222f",w="600",a="middle"):
+    return f'<text x="{x}" y="{y}" font-size="{sz}" font-weight="{w}" fill="{f}" text-anchor="{a}">{esc(t)}</text>'
+def box(x,y,w,h,fill,stroke,rx=6,sw=1.6,op=1.0):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" fill-opacity="{op}" stroke="{stroke}" stroke-width="{sw}"/>'
+def line(x1,y1,x2,y2,c,mk,w=2.4,dash=""):
+    d=f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{c}" stroke-width="{w}"{d} marker-end="url(#{mk})"/>'
+
+s.append(T(W/2,30,"decode_strip.csl — the K-pipe strip: inter-region Z handoff as an 8-way interleaved shift register",18.5,"#0d1b26","700"))
+s.append(T(W/2,50,"qwen3_1p7b-decode · ref cfg test_sim_2x2block_kv_varlen.json · working tree of lexu/staging/s6a-inner-pe-kv-route-a (uncommitted S6a KV-retain)",10.5,"#6a7883","500"))
+s.append(T(W/2,68,"Not a region: a module imported by decode.csl, running on the lcl_x=0 / lcl_x=Pw+1 placeholder columns. dispatch_init_task picks block-vs-strip at runtime from fabric coords.",11.3,"#4a5b66","500"))
+
+# ---------------- TOP PANEL: spatial ----------------
+s.append(T(50,102,"1  Spatial layout — one column carries the seam; K=8 pipes interleave on it (M = P_BLOCK_SIZE/K = 2 own-cells per pipe per column)",14,"#0d1b26","700","start"))
+
+# row region 0 (sender) block + east strip
+bx, bw = 120, 300
+r0y, rh = 128, 148
+s.append(box(bx,r0y,bw,rh,"#e8eef2","#9fb0bc",6,1.2))
+s.append(T(bx+bw/2,r0y+20,"row region 0  (even -> snakes EAST)",11,"#12222f","700"))
+s.append(T(bx+bw/2,r0y+38,"Pw block columns · layers L0..Lk",9.2,"#5a6b76","500"))
+s.append(T(bx+bw/2,r0y+62,"snake TAIL exits EAST",9.6,"#c0392b","600"))
+s.append(T(bx+bw/2,r0y+82,"Z sharded on Y: PE at region_py owns",9.0,"#2a4a63","500"))
+s.append(T(bx+bw/2,r0y+96,"bsz*dim_per_pe = 2*4 = 8 f16 wavelets = B",9.0,"#2a4a63","500"))
+
+r1y = r0y+rh+118
+s.append(box(bx,r1y,bw,rh,"#e8eef2","#9fb0bc",6,1.2))
+s.append(T(bx+bw/2,r1y+20,"row region 1  (odd -> snakes WEST)",11,"#12222f","700"))
+s.append(T(bx+bw/2,r1y+38,"Pw block columns · layers Lk+1..L6",9.2,"#5a6b76","500"))
+s.append(T(bx+bw/2,r1y+62,"snake HEAD enters from EAST",9.6,"#2e8b57","600"))
+
+# strip columns (east side of both regions -> SAME fabric column)
+sx, sw_ = bx+bw+40, 118
+s.append(box(sx,r0y,sw_,rh,"#f7dcd0","#c0392b",6,1.8))
+s.append(T(sx+sw_/2,r0y+20,"SENDER strip",10.5,"#7a2318","700"))
+s.append(T(sx+sw_/2,r0y+35,"lcl_x = Pw+1",8.6,"#7a2318","500"))
+s.append(T(sx+sw_/2,r0y+52,"strip_role = 0",8.6,"#7a2318","600"))
+s.append(T(sx+sw_/2,r0y+72,"P_BLOCK_SIZE = 16 cells",8.4,"#5a3a35","500"))
+s.append(T(sx+sw_/2,r0y+88,"own_i forwards i*B,",8.4,"#5a3a35","500"))
+s.append(T(sx+sw_/2,r0y+102,"then injects its own B",8.4,"#5a3a35","500"))
+s.append(T(sx+sw_/2,r0y+124,"i_glob = i_own",8.4,"#7a3fb0","600"))
+
+s.append(box(sx,r1y,sw_,rh,"#d7efdb","#2e8b57",6,1.8))
+s.append(T(sx+sw_/2,r1y+20,"RECEIVER strip",10.5,"#1d5c39","700"))
+s.append(T(sx+sw_/2,r1y+35,"lcl_x = Pw+1",8.6,"#1d5c39","500"))
+s.append(T(sx+sw_/2,r1y+52,"strip_role = 1",8.6,"#1d5c39","600"))
+s.append(T(sx+sw_/2,r1y+72,"own_j peels its B first,",8.4,"#2f4a3c","500"))
+s.append(T(sx+sw_/2,r1y+88,"then forwards (M-1-j)*B",8.4,"#2f4a3c","500"))
+s.append(T(sx+sw_/2,r1y+112,"i_glob = M + i_own",8.4,"#7a3fb0","600"))
+s.append(T(sx+sw_/2,r1y+126,"(keeps parity unbroken)",8.0,"#7a3fb0","500"))
+
+# block -> sender strip
+s.append(line(bx+bw+2,r0y+70,sx-2,r0y+70,"#c0392b","ar",2.6))
+s.append(T((bx+bw+sx)/2,r0y+58,"inter_block_{a,b}",8.0,"#c0392b","700"))
+s.append(T((bx+bw+sx)/2,r0y+86,"IQ0 · W->RAMP",7.6,"#c0392b","500"))
+s.append(T((bx+bw+sx)/2,r0y+100,"P-6 + G-1",7.6,"#c0392b","600"))
+
+# receiver strip -> block (multicast)
+s.append(line(sx-2,r1y+70,bx+bw+2,r1y+70,"#2e8b57","ag",2.6))
+s.append(T((bx+bw+sx)/2,r1y+58,"intra_row_bcast (6)",8.0,"#2e8b57","700"))
+s.append(T((bx+bw+sx)/2,r1y+86,"OQ0 · RAMP->W",7.6,"#2e8b57","500"))
+s.append(T((bx+bw+sx)/2,r1y+100,"P-2 multicast",7.6,"#2e8b57","600"))
+
+# the K-pipe between them
+kx = sx+sw_/2
+s.append(line(kx,r0y+rh+2,kx,r1y-4,"#7a3fb0","ap",3.2))
+s.append(box(kx+18,r0y+rh+14,352,96,"#ecdff6","#7a3fb0",6,1.4))
+s.append(T(kx+194,r0y+rh+32,"K-pipe  (K = 8 pipes, IQ2 -> OQ7)",10.5,"#4a1f6e","700"))
+s.append(T(kx+194,r0y+rh+48,"pipe k owns cells with region_py = k (mod 8)",8.8,"#4a1f6e","500"))
+s.append(T(kx+194,r0y+rh+62,"own cells: N->RAMP (rx_c) / RAMP->S (tx_c)",8.8,"#4a1f6e","500"))
+s.append(T(kx+194,r0y+rh+76,"non-own cells: N->S pass-through, zero state",8.8,"#4a1f6e","500"))
+s.append(T(kx+194,r0y+rh+92,"stream leaving sender = own_0 || own_1 (M*B per pipe/step)",8.8,"#c0392b","600"))
+s.append(T(kx-10,(r0y+rh+r1y)/2,"P-5 shift chain",9.2,"#7a3fb0","700","end"))
+s.append(T(kx-10,(r0y+rh+r1y)/2+14,"+ G-2 FIFO peel",9.2,"#7a3fb0","700","end"))
+
+# right-hand rationale panel
+rxp = sx+sw_+360
+s.append(box(rxp,r0y,300,rh+118+rh,"#eef4f9","#245f96",6,1.3))
+s.append(T(rxp+150,r0y+22,"Why 8 pipes and not one chain",11,"#12222f","700"))
+for i,ln in enumerate([
+  "One column must carry all P=16 Y-shares.",
+  "A single store-and-forward chain would be",
+  "depth P with a top-cell forward extent of",
+  "(P-1)*B — the i16 fabric-DSD extent limit",
+  "at real block sizes, and the skill's",
+  "'no store-and-forward across long spans'",
+  "rule.",
+  "",
+  "Interleaving K=8 pipes on 8 color pairs",
+  "drops relay depth to M = P/K = 2 and the",
+  "worst-case forward extent to (M-1)*B.",
+  "",
+  "It is not bandwidth engineering — it is",
+  "depth and DSD-extent engineering.",
+  "",
+  "Gate 0: Z IS sharded on Y, and this is a",
+  "Y-preserving translation by one region",
+  "height — a permutation, not a reduction.",
+  "Nothing is summed across blocks.",
+  "",
+  "Color ids 1-5 are shared with the block",
+  "collectives; disjointness proof (block vs",
+  "strip cells at disjoint X, disjoint router",
+  "directions) is at launch.py:588-591.",
+]):
+    s.append(T(rxp+14,r0y+46+i*15.5,ln,8.9,"#2a4a63","500","start"))
+
+# ---------------- BOTTOM PANEL: task chains ----------------
+py = r1y+rh+34
+s.append(f'<line x1="40" y1="{py-16}" x2="{W-40}" y2="{py-16}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(50,py+4,"2  The two task chains  (dispatch_init_task rebinds IQ2/OQ7, then calls activate_sender / activate_receiver — decode.csl:1712-1733)",14,"#0d1b26","700","start"))
+def node(x,y,w,h,title,sub,fill,stroke):
+    out=[box(x,y,w,h,fill,stroke)]
+    out.append(T(x+w/2,y+19,title,11.5,"#0d1b26","700"))
+    for i,ln in enumerate(sub.split("\n")):
+        out.append(T(x+w/2,y+35+i*12.5,ln,8.6,"#34434d","500"))
+    return "".join(out)
+ny=py+28; nh=60; w1=232
+xs=[112,394,676]
+s.append(T(50,ny+nh/2-2,"sender",10.5,"#c0392b","700","start"))
+s.append(T(50,ny+nh/2+12,"chain",10.5,"#c0392b","700","start"))
+s.append(node(xs[0],ny,w1,nh,"strip_sender_recv_t","guard iter/stop; pull own B\nfrom the block on IQ0",  "#f7dcd0","#c0392b"))
+s.append(node(xs[1],ny,w1,nh,"strip_sender_fwd_t","relay i_own*B upstream\nwavelets IQ2 -> OQ7","#f7dcd0","#c0392b"))
+s.append(node(xs[2],ny,w1,nh,"strip_sender_inject_t","inject own B onto the pipe\n(RAMP -> SOUTH), then loop","#f7dcd0","#c0392b"))
+for a,b in [(0,1),(1,2)]:
+    s.append(line(xs[a]+w1,ny+nh/2,xs[b]-2,ny+nh/2,"#5a6b76","ar",1.8))
+s.append(f'<path d="M {xs[2]+w1/2} {ny+nh} L {xs[2]+w1/2} {ny+nh+22} L {xs[0]+w1/2} {ny+nh+22} L {xs[0]+w1/2} {ny+nh+2}" fill="none" stroke="#c0392b" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/>')
+s.append(T(xs[2]+w1+90,ny+nh+26,"x MAX_OUTPUT_LEN = W x NUM_ROUNDS = 48",9.4,"#c0392b","600","middle"))
+
+ny2=ny+nh+50
+s.append(T(50,ny2+nh/2-2,"receiver",10.5,"#2e8b57","700","start"))
+s.append(T(50,ny2+nh/2+12,"chain",10.5,"#2e8b57","700","start"))
+s.append(node(xs[0],ny2,w1,nh,"strip_recv_consume_t","peel the FIRST B off IQ2\n= sender own_j's share","#d7efdb","#2e8b57"))
+s.append(node(xs[1],ny2,w1,nh,"strip_recv_postfwd_t","relay (M-1-j)*B downstream\nIQ2 -> OQ7","#d7efdb","#2e8b57"))
+s.append(node(xs[2],ny2,w1,nh,"strip_recv_broadcast_t","multicast own B into the row\non intra_row_bcast (OQ0)","#d7efdb","#2e8b57"))
+for a,b in [(0,1),(1,2)]:
+    s.append(line(xs[a]+w1,ny2+nh/2,xs[b]-2,ny2+nh/2,"#5a6b76","ag",1.8))
+s.append(f'<path d="M {xs[2]+w1/2} {ny2+nh} L {xs[2]+w1/2} {ny2+nh+22} L {xs[0]+w1/2} {ny2+nh+22} L {xs[0]+w1/2} {ny2+nh+2}" fill="none" stroke="#2e8b57" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ag)"/>')
+
+# stop-x note
+sy=ny2+nh+44
+s.append(line(70,sy,96,sy,"#7a3fb0","ap",2.2))
+s.append(T(104,sy+4,"G-5 STOP-X: buf[0] < -60000 sets strip_stop — but the STOP step still runs the FULL relay (every cell injects its own STOP-X) so the per-step wavelet count is unchanged. Skipping it desyncs the shift register = device hang.",10.2,"#26333c","500","start"))
+s.append(line(70,sy+22,96,sy+22,"#a86a1e","ao",2.2))
+s.append(T(104,sy+26,"S6a / kv_stream_ingress=1: on a STOP step the head task CLEARS strip_stop and continues instead of ending — the strip relays continuously across all NUM_ROUNDS rounds.",10.2,"#26333c","500","start"))
+
+s.append(T(50,H-14,"count-exactness: sender own_i emits (i+1)*B, receiver own_j consumes B and passes (M-1-j)*B. Both ends derive the same number from i_own alone. A one-sided change is a SILENT HANG.",9.8,"#6a7883","400","start"))
+s.append('</svg>')
+open(OUT,"w").write("\n".join(s))
+print("wrote", OUT, W, H)

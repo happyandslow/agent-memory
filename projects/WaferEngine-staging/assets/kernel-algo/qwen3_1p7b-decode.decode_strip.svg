@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="900" viewBox="0 0 1240 900" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker><marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker><marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker><marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker><marker id="agr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8a97a1"/></marker></defs>
+<rect width="1240" height="900" fill="#f7f9fb"/>
+<text x="620.0" y="30" font-size="18.5" font-weight="700" fill="#0d1b26" text-anchor="middle">decode_strip.csl — the K-pipe strip: inter-region Z handoff as an 8-way interleaved shift register</text>
+<text x="620.0" y="50" font-size="10.5" font-weight="500" fill="#6a7883" text-anchor="middle">qwen3_1p7b-decode · ref cfg test_sim_2x2block_kv_varlen.json · working tree of lexu/staging/s6a-inner-pe-kv-route-a (uncommitted S6a KV-retain)</text>
+<text x="620.0" y="68" font-size="11.3" font-weight="500" fill="#4a5b66" text-anchor="middle">Not a region: a module imported by decode.csl, running on the lcl_x=0 / lcl_x=Pw+1 placeholder columns. dispatch_init_task picks block-vs-strip at runtime from fabric coords.</text>
+<text x="50" y="102" font-size="14" font-weight="700" fill="#0d1b26" text-anchor="start">1  Spatial layout — one column carries the seam; K=8 pipes interleave on it (M = P_BLOCK_SIZE/K = 2 own-cells per pipe per column)</text>
+<rect x="120" y="128" width="300" height="148" rx="6" fill="#e8eef2" fill-opacity="1.0" stroke="#9fb0bc" stroke-width="1.2"/>
+<text x="270.0" y="148" font-size="11" font-weight="700" fill="#12222f" text-anchor="middle">row region 0  (even -&gt; snakes EAST)</text>
+<text x="270.0" y="166" font-size="9.2" font-weight="500" fill="#5a6b76" text-anchor="middle">Pw block columns · layers L0..Lk</text>
+<text x="270.0" y="190" font-size="9.6" font-weight="600" fill="#c0392b" text-anchor="middle">snake TAIL exits EAST</text>
+<text x="270.0" y="210" font-size="9.0" font-weight="500" fill="#2a4a63" text-anchor="middle">Z sharded on Y: PE at region_py owns</text>
+<text x="270.0" y="224" font-size="9.0" font-weight="500" fill="#2a4a63" text-anchor="middle">bsz*dim_per_pe = 2*4 = 8 f16 wavelets = B</text>
+<rect x="120" y="394" width="300" height="148" rx="6" fill="#e8eef2" fill-opacity="1.0" stroke="#9fb0bc" stroke-width="1.2"/>
+<text x="270.0" y="414" font-size="11" font-weight="700" fill="#12222f" text-anchor="middle">row region 1  (odd -&gt; snakes WEST)</text>
+<text x="270.0" y="432" font-size="9.2" font-weight="500" fill="#5a6b76" text-anchor="middle">Pw block columns · layers Lk+1..L6</text>
+<text x="270.0" y="456" font-size="9.6" font-weight="600" fill="#2e8b57" text-anchor="middle">snake HEAD enters from EAST</text>
+<rect x="460" y="128" width="118" height="148" rx="6" fill="#f7dcd0" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.8"/>
+<text x="519.0" y="148" font-size="10.5" font-weight="700" fill="#7a2318" text-anchor="middle">SENDER strip</text>
+<text x="519.0" y="163" font-size="8.6" font-weight="500" fill="#7a2318" text-anchor="middle">lcl_x = Pw+1</text>
+<text x="519.0" y="180" font-size="8.6" font-weight="600" fill="#7a2318" text-anchor="middle">strip_role = 0</text>
+<text x="519.0" y="200" font-size="8.4" font-weight="500" fill="#5a3a35" text-anchor="middle">P_BLOCK_SIZE = 16 cells</text>
+<text x="519.0" y="216" font-size="8.4" font-weight="500" fill="#5a3a35" text-anchor="middle">own_i forwards i*B,</text>
+<text x="519.0" y="230" font-size="8.4" font-weight="500" fill="#5a3a35" text-anchor="middle">then injects its own B</text>
+<text x="519.0" y="252" font-size="8.4" font-weight="600" fill="#7a3fb0" text-anchor="middle">i_glob = i_own</text>
+<rect x="460" y="394" width="118" height="148" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.8"/>
+<text x="519.0" y="414" font-size="10.5" font-weight="700" fill="#1d5c39" text-anchor="middle">RECEIVER strip</text>
+<text x="519.0" y="429" font-size="8.6" font-weight="500" fill="#1d5c39" text-anchor="middle">lcl_x = Pw+1</text>
+<text x="519.0" y="446" font-size="8.6" font-weight="600" fill="#1d5c39" text-anchor="middle">strip_role = 1</text>
+<text x="519.0" y="466" font-size="8.4" font-weight="500" fill="#2f4a3c" text-anchor="middle">own_j peels its B first,</text>
+<text x="519.0" y="482" font-size="8.4" font-weight="500" fill="#2f4a3c" text-anchor="middle">then forwards (M-1-j)*B</text>
+<text x="519.0" y="506" font-size="8.4" font-weight="600" fill="#7a3fb0" text-anchor="middle">i_glob = M + i_own</text>
+<text x="519.0" y="520" font-size="8.0" font-weight="500" fill="#7a3fb0" text-anchor="middle">(keeps parity unbroken)</text>
+<line x1="422" y1="198" x2="458" y2="198" stroke="#c0392b" stroke-width="2.6" marker-end="url(#ar)"/>
+<text x="440.0" y="186" font-size="8.0" font-weight="700" fill="#c0392b" text-anchor="middle">inter_block_{a,b}</text>
+<text x="440.0" y="214" font-size="7.6" font-weight="500" fill="#c0392b" text-anchor="middle">IQ0 · W-&gt;RAMP</text>
+<text x="440.0" y="228" font-size="7.6" font-weight="600" fill="#c0392b" text-anchor="middle">P-6 + G-1</text>
+<line x1="458" y1="464" x2="422" y2="464" stroke="#2e8b57" stroke-width="2.6" marker-end="url(#ag)"/>
+<text x="440.0" y="452" font-size="8.0" font-weight="700" fill="#2e8b57" text-anchor="middle">intra_row_bcast (6)</text>
+<text x="440.0" y="480" font-size="7.6" font-weight="500" fill="#2e8b57" text-anchor="middle">OQ0 · RAMP-&gt;W</text>
+<text x="440.0" y="494" font-size="7.6" font-weight="600" fill="#2e8b57" text-anchor="middle">P-2 multicast</text>
+<line x1="519.0" y1="278" x2="519.0" y2="390" stroke="#7a3fb0" stroke-width="3.2" marker-end="url(#ap)"/>
+<rect x="537.0" y="290" width="352" height="96" rx="6" fill="#ecdff6" fill-opacity="1.0" stroke="#7a3fb0" stroke-width="1.4"/>
+<text x="713.0" y="308" font-size="10.5" font-weight="700" fill="#4a1f6e" text-anchor="middle">K-pipe  (K = 8 pipes, IQ2 -&gt; OQ7)</text>
+<text x="713.0" y="324" font-size="8.8" font-weight="500" fill="#4a1f6e" text-anchor="middle">pipe k owns cells with region_py = k (mod 8)</text>
+<text x="713.0" y="338" font-size="8.8" font-weight="500" fill="#4a1f6e" text-anchor="middle">own cells: N-&gt;RAMP (rx_c) / RAMP-&gt;S (tx_c)</text>
+<text x="713.0" y="352" font-size="8.8" font-weight="500" fill="#4a1f6e" text-anchor="middle">non-own cells: N-&gt;S pass-through, zero state</text>
+<text x="713.0" y="368" font-size="8.8" font-weight="600" fill="#c0392b" text-anchor="middle">stream leaving sender = own_0 || own_1 (M*B per pipe/step)</text>
+<text x="509.0" y="335.0" font-size="9.2" font-weight="700" fill="#7a3fb0" text-anchor="end">P-5 shift chain</text>
+<text x="509.0" y="349.0" font-size="9.2" font-weight="700" fill="#7a3fb0" text-anchor="end">+ G-2 FIFO peel</text>
+<rect x="938" y="128" width="300" height="414" rx="6" fill="#eef4f9" fill-opacity="1.0" stroke="#245f96" stroke-width="1.3"/>
+<text x="1088" y="150" font-size="11" font-weight="700" fill="#12222f" text-anchor="middle">Why 8 pipes and not one chain</text>
+<text x="952" y="174.0" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">One column must carry all P=16 Y-shares.</text>
+<text x="952" y="189.5" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">A single store-and-forward chain would be</text>
+<text x="952" y="205.0" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">depth P with a top-cell forward extent of</text>
+<text x="952" y="220.5" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">(P-1)*B — the i16 fabric-DSD extent limit</text>
+<text x="952" y="236.0" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">at real block sizes, and the skill&#x27;s</text>
+<text x="952" y="251.5" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">&#x27;no store-and-forward across long spans&#x27;</text>
+<text x="952" y="267.0" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">rule.</text>
+<text x="952" y="282.5" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start"></text>
+<text x="952" y="298.0" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">Interleaving K=8 pipes on 8 color pairs</text>
+<text x="952" y="313.5" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">drops relay depth to M = P/K = 2 and the</text>
+<text x="952" y="329.0" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">worst-case forward extent to (M-1)*B.</text>
+<text x="952" y="344.5" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start"></text>
+<text x="952" y="360.0" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">It is not bandwidth engineering — it is</text>
+<text x="952" y="375.5" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">depth and DSD-extent engineering.</text>
+<text x="952" y="391.0" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start"></text>
+<text x="952" y="406.5" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">Gate 0: Z IS sharded on Y, and this is a</text>
+<text x="952" y="422.0" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">Y-preserving translation by one region</text>
+<text x="952" y="437.5" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">height — a permutation, not a reduction.</text>
+<text x="952" y="453.0" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">Nothing is summed across blocks.</text>
+<text x="952" y="468.5" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start"></text>
+<text x="952" y="484.0" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">Color ids 1-5 are shared with the block</text>
+<text x="952" y="499.5" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">collectives; disjointness proof (block vs</text>
+<text x="952" y="515.0" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">strip cells at disjoint X, disjoint router</text>
+<text x="952" y="530.5" font-size="8.9" font-weight="500" fill="#2a4a63" text-anchor="start">directions) is at launch.py:588-591.</text>
+<line x1="40" y1="560" x2="1200" y2="560" stroke="#dce4ea" stroke-width="1.4"/>
+<text x="50" y="580" font-size="14" font-weight="700" fill="#0d1b26" text-anchor="start">2  The two task chains  (dispatch_init_task rebinds IQ2/OQ7, then calls activate_sender / activate_receiver — decode.csl:1712-1733)</text>
+<text x="50" y="632.0" font-size="10.5" font-weight="700" fill="#c0392b" text-anchor="start">sender</text>
+<text x="50" y="646.0" font-size="10.5" font-weight="700" fill="#c0392b" text-anchor="start">chain</text>
+<rect x="112" y="604" width="232" height="60" rx="6" fill="#f7dcd0" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="228.0" y="623" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">strip_sender_recv_t</text><text x="228.0" y="639.0" font-size="8.6" font-weight="500" fill="#34434d" text-anchor="middle">guard iter/stop; pull own B</text><text x="228.0" y="651.5" font-size="8.6" font-weight="500" fill="#34434d" text-anchor="middle">from the block on IQ0</text>
+<rect x="394" y="604" width="232" height="60" rx="6" fill="#f7dcd0" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="510.0" y="623" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">strip_sender_fwd_t</text><text x="510.0" y="639.0" font-size="8.6" font-weight="500" fill="#34434d" text-anchor="middle">relay i_own*B upstream</text><text x="510.0" y="651.5" font-size="8.6" font-weight="500" fill="#34434d" text-anchor="middle">wavelets IQ2 -&gt; OQ7</text>
+<rect x="676" y="604" width="232" height="60" rx="6" fill="#f7dcd0" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/><text x="792.0" y="623" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">strip_sender_inject_t</text><text x="792.0" y="639.0" font-size="8.6" font-weight="500" fill="#34434d" text-anchor="middle">inject own B onto the pipe</text><text x="792.0" y="651.5" font-size="8.6" font-weight="500" fill="#34434d" text-anchor="middle">(RAMP -&gt; SOUTH), then loop</text>
+<line x1="344" y1="634.0" x2="392" y2="634.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<line x1="626" y1="634.0" x2="674" y2="634.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>
+<path d="M 792.0 664 L 792.0 686 L 228.0 686 L 228.0 666" fill="none" stroke="#c0392b" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+<text x="998" y="690" font-size="9.4" font-weight="600" fill="#c0392b" text-anchor="middle">x MAX_OUTPUT_LEN = W x NUM_ROUNDS = 48</text>
+<text x="50" y="742.0" font-size="10.5" font-weight="700" fill="#2e8b57" text-anchor="start">receiver</text>
+<text x="50" y="756.0" font-size="10.5" font-weight="700" fill="#2e8b57" text-anchor="start">chain</text>
+<rect x="112" y="714" width="232" height="60" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="228.0" y="733" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">strip_recv_consume_t</text><text x="228.0" y="749.0" font-size="8.6" font-weight="500" fill="#34434d" text-anchor="middle">peel the FIRST B off IQ2</text><text x="228.0" y="761.5" font-size="8.6" font-weight="500" fill="#34434d" text-anchor="middle">= sender own_j&#x27;s share</text>
+<rect x="394" y="714" width="232" height="60" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="510.0" y="733" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">strip_recv_postfwd_t</text><text x="510.0" y="749.0" font-size="8.6" font-weight="500" fill="#34434d" text-anchor="middle">relay (M-1-j)*B downstream</text><text x="510.0" y="761.5" font-size="8.6" font-weight="500" fill="#34434d" text-anchor="middle">IQ2 -&gt; OQ7</text>
+<rect x="676" y="714" width="232" height="60" rx="6" fill="#d7efdb" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/><text x="792.0" y="733" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="middle">strip_recv_broadcast_t</text><text x="792.0" y="749.0" font-size="8.6" font-weight="500" fill="#34434d" text-anchor="middle">multicast own B into the row</text><text x="792.0" y="761.5" font-size="8.6" font-weight="500" fill="#34434d" text-anchor="middle">on intra_row_bcast (OQ0)</text>
+<line x1="344" y1="744.0" x2="392" y2="744.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ag)"/>
+<line x1="626" y1="744.0" x2="674" y2="744.0" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ag)"/>
+<path d="M 792.0 774 L 792.0 796 L 228.0 796 L 228.0 776" fill="none" stroke="#2e8b57" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ag)"/>
+<line x1="70" y1="818" x2="96" y2="818" stroke="#7a3fb0" stroke-width="2.2" marker-end="url(#ap)"/>
+<text x="104" y="822" font-size="10.2" font-weight="500" fill="#26333c" text-anchor="start">G-5 STOP-X: buf[0] &lt; -60000 sets strip_stop — but the STOP step still runs the FULL relay (every cell injects its own STOP-X) so the per-step wavelet count is unchanged. Skipping it desyncs the shift register = device hang.</text>
+<line x1="70" y1="840" x2="96" y2="840" stroke="#a86a1e" stroke-width="2.2" marker-end="url(#ao)"/>
+<text x="104" y="844" font-size="10.2" font-weight="500" fill="#26333c" text-anchor="start">S6a / kv_stream_ingress=1: on a STOP step the head task CLEARS strip_stop and continues instead of ending — the strip relays continuously across all NUM_ROUNDS rounds.</text>
+<text x="50" y="886" font-size="9.8" font-weight="400" fill="#6a7883" text-anchor="start">count-exactness: sender own_i emits (i+1)*B, receiver own_j consumes B and passes (M-1-j)*B. Both ends derive the same number from i_own alone. A one-sided change is a SILENT HANG.</text>
+</svg>

@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+# decode mux.csl algorithm diagram: per-step logits egress, single-active-PE region.
+# Top panel = spatial (tail east-most -> mux east-most -> host). Bottom = task state machine.
+import html
+OUT = "/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-decode.mux.svg"
+W, H = 1120, 690
+def esc(s): return html.escape(s)
+s = []
+s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
+s.append('<defs>'
+  '<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker>'
+  '<marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker>'
+  '<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker>'
+  '<marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker>'
+  '<marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker>'
+  '</defs>')
+s.append(f'<rect width="{W}" height="{H}" fill="#f7f9fb"/>')
+def T(x,y,t,sz=13,f="#12222f",w="600",a="middle"):
+    return f'<text x="{x}" y="{y}" font-size="{sz}" font-weight="{w}" fill="{f}" text-anchor="{a}">{esc(t)}</text>'
+def box(x,y,w,h,fill,stroke,rx=6,sw=1.6,op=1.0):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" fill-opacity="{op}" stroke="{stroke}" stroke-width="{sw}"/>'
+def line(x1,y1,x2,y2,c,mk,w=2.4,dash=""):
+    d=f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{c}" stroke-width="{w}"{d} marker-end="url(#{mk})"/>'
+
+s.append(T(W/2,30,"decode mux.csl — per-step logits egress (single active PE)",19,"#0d1b26","700"))
+s.append(T(W/2,50,"qwen3_1p7b-decode · ref cfg test_sim_2x2block_kv_varlen.json · working tree of lexu/staging/s6a-inner-pe-kv-route-a (uncommitted S6a KV-retain)",10.5,"#6a7883","500"))
+s.append(T(W/2,68,"ONE blob per decode STEP (unlike prefill's one-shot mux); budget header + TSC burst + re-arm are per ROUND (NUM_ROUNDS=3).",11.5,"#4a5b66","500"))
+
+# ---------------- TOP PANEL: spatial ----------------
+s.append(T(60,102,"1  Spatial layout  (mux row = HT_WIDTH_tail x 1 = 6 PEs, one row SOUTH of HT_tail; only the east-most binds tasks)",14,"#0d1b26","700","start"))
+tcols=6; tx0=110; tw,tth=128,42; gap=11
+def tx(c): return tx0+c*(tw+gap)
+ty=132
+for c in range(tcols):
+    x=tx(c); active=(c==tcols-1)
+    s.append(box(x,ty,tw,tth,"#bfe0c4" if active else "#e8eef2","#2e8b57" if active else "#9fb0bc",6,1.6 if active else 1.2,1.0 if active else 0.7))
+    s.append(T(x+tw/2,ty+18,f"HT_tail col {c}",10,"#12222f","600"))
+    s.append(T(x+tw/2,ty+33,("root-row east = emitter" if active else "lm_head / top-K"),8.2,"#2a4a63","500"))
+s.append(T(tx0-10,ty+21,"HT_tail",10,"#2e8b57","700","end"))
+my=ty+tth+74
+for c in range(tcols):
+    x=tx(c); active=(c==tcols-1)
+    s.append(box(x,my,tw,46,"#e8b06a" if active else "#eceff1","#a86a1e" if active else "#b7c2cb",6,1.6 if active else 1.1,1.0 if active else 0.55))
+    if active:
+        s.append(T(x+tw/2,my+19,"mux PE (east-most)",9.8,"#0d1b26","700"))
+        s.append(T(x+tw/2,my+35,"is_last_pe=1 · G-11",8.6,"#5a3d10","600"))
+    else:
+        s.append(T(x+tw/2,my+27,"inert (no tasks bound)",8.2,"#8a97a1","600"))
+s.append(T(tx0-10,my+23,"mux",10,"#a86a1e","700","end"))
+ex=tx(tcols-1)+tw/2
+s.append(line(ex,ty+tth,ex,my-2,"#c0392b","ar",2.8))
+s.append(T(ex+10,(ty+tth+my)/2-14,"in_color / IQ2 : NORTH -> RAMP",9.3,"#c0392b","600","start"))
+s.append(T(ex+10,(ty+tth+my)/2+0,"logits_south_color, S down the east col",8.4,"#c0392b","500","start"))
+s.append(T(ex+10,(ty+tth+my)/2+14,"FIFO: header, blob x N, TSC x 8",8.4,"#c0392b","500","start"))
+hostx=tx(tcols-1)+tw+66
+s.append(box(hostx,my,76,46,"#f0d9b5","#a86a1e"))
+s.append(T(hostx+38,my+27,"host",11,"#7a4d10","700"))
+s.append(line(tx(tcols-1)+tw+1,my+23,hostx-2,my+23,"#a86a1e","ao",2.8))
+s.append(T((tx(tcols-1)+tw+hostx)/2,my+14,"host_color / OQ2",8.0,"#a86a1e","700"))
+s.append(T((tx(tcols-1)+tw+hostx)/2,my+41,"RAMP->EAST",7.6,"#a86a1e","500"))
+
+cy=my+90
+s.append(box(110,cy,760,60,"#eef4f9","#245f96",6,1.2))
+s.append(T(490,cy+19,"per-step blob = wavelets_per_step u32   (ref cfg: N = 8)",11,"#12222f","700"))
+s.append(T(490,cy+36,"[ 2 packed-f16 top-K values | 4 i32 top-K indices | 2 i32 sampled token ids | even-pad ]",9.4,"#2a4a63","500"))
+s.append(T(490,cy+52,"sampled_off = 6  ->  blob[6] == STOP_TOK (-2) is the early-stop sentinel (G-5, in-band)",9.4,"#7a3fb0","600"))
+# port counts
+py0=cy+82
+s.append(line(110,py0,136,py0,"#2c6fb0","ab",2.2))
+s.append(T(144,py0+4,"count-exactness: in_port = south_total_with_tsc + kv_hdr (mux CONSUMES the header) · host_port = south_total_with_tsc (header NOT forwarded).",10.6,"#26333c","500","start"))
+
+# ---------------- BOTTOM PANEL: task state machine ----------------
+py=py0+34
+s.append(f'<line x1="40" y1="{py-14}" x2="{W-40}" y2="{py-14}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(60,py+6,"2  Task state machine  (east-most PE only) — per-STEP inner loop nested inside a per-ROUND outer loop",14,"#0d1b26","700","start"))
+def node(x,y,w,h,title,sub,fill,stroke):
+    out=[box(x,y,w,h,fill,stroke)]
+    out.append(T(x+w/2,y+19,title,12,"#0d1b26","700"))
+    for i,ln in enumerate(sub.split("\n")):
+        out.append(T(x+w/2,y+35+i*12.5,ln,8.8,"#34434d","500"))
+    return "".join(out)
+ny=py+30; nh=62; w1=178
+col_b="#dbeafe"; s_b="#245f96"
+col_g="#d7efdb"; s_g="#2e8b57"
+col_p="#ecdff6"; s_p="#7a3fb0"
+col_o="#f7e3c8"; s_o="#a86a1e"
+col_y="#fdf0c9"; s_y="#b08a1e"
+xs=[46,254,462,670,878]
+s.append(node(xs[0],ny,w1,nh,"init","read 1-wavelet budget\nheader N (G-4, blocking)\nstep=0  [KV=1 only]",col_y,s_y))
+s.append(node(xs[1],ny,w1,nh,"main","drain blob (N u32)\nrecv_dsd -> blob\non in_q = IQ2",col_b,s_b))
+s.append(node(xs[2],ny,w1,nh,"send","forward blob EAST\nblob -> send_dsd\non host_oq = OQ2",col_g,s_g))
+s.append(node(xs[3],ny,w1,nh,"next","step++; if STOP_TOK or\nstep >= n_steps_runtime\n-> tsc_recv, else -> main",col_p,s_p))
+s.append(node(xs[4],ny,w1,nh,"tsc_recv / tsc_send","drain 8-u32 TSC burst,\nforward EAST (same queues)\nKV=1: -> init, KV=0: end",col_o,s_o))
+for a,b in [(0,1),(1,2),(2,3),(3,4)]:
+    s.append(line(xs[a]+w1,ny+nh/2,xs[b]-2,ny+nh/2,"#5a6b76","ar",1.8))
+# per-step loop next -> main
+s.append(f'<path d="M {xs[3]+w1/2} {ny+nh} L {xs[3]+w1/2} {ny+nh+26} L {xs[1]+w1/2} {ny+nh+26} L {xs[1]+w1/2} {ny+nh+2}" fill="none" stroke="#7a3fb0" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#ap)"/>')
+s.append(T((xs[1]+xs[3])/2+w1/2,ny+nh+41,"PER-STEP loop  (up to n_steps_runtime = N)",9.6,"#7a3fb0","700"))
+# per-round loop tsc_send -> init
+s.append(f'<path d="M {xs[4]+w1/2} {ny+nh} L {xs[4]+w1/2} {ny+nh+62} L {xs[0]+w1/2} {ny+nh+62} L {xs[0]+w1/2} {ny+nh+2}" fill="none" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="7 4" marker-end="url(#ao)"/>')
+s.append(T((xs[0]+xs[4])/2+w1/2,ny+nh+77,"PER-ROUND re-arm (kv_stream_ingress=1): @activate(init) -> park on the next round's header  ·  NUM_ROUNDS = 3",9.6,"#a86a1e","700"))
+
+s.append(T(60,H-32,"Everything rides ONE queue pair (in_q=IQ2 / host_oq=OQ2) in strict FIFO order per round: header, blob x N, TSC burst x 8. No reordering, no credits — backpressure + count-exactness only.",9.8,"#6a7883","400","start"))
+s.append(T(60,H-14,"NOTE: launch.py:2251-2260's banner still describes an older W->E cut-through chain emitting full bsz*vocab logits. The shipped code does not do that — one PE, top-K blob.",9.8,"#a8541e","500","start"))
+s.append('</svg>')
+open(OUT,"w").write("\n".join(s))
+print("wrote", OUT, W, H)

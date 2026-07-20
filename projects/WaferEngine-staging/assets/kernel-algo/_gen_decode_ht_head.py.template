@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+# decode ht_head.csl algorithm diagram: static 2-D vocab shard + diagonal-pair W_E gather.
+# Top panel = spatial (HT_head band, the 4-color gather chains). Bottom = task state machine.
+import html
+OUT = "/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-decode.ht_head.svg"
+W, H = 1240, 1160
+def esc(s): return html.escape(s)
+s = []
+s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
+s.append('<defs>'
+  '<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker>'
+  '<marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker>'
+  '<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker>'
+  '<marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker>'
+  '<marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker>'
+  '</defs>')
+s.append(f'<rect width="{W}" height="{H}" fill="#f7f9fb"/>')
+def T(x,y,t,sz=13,f="#12222f",w="600",a="middle"):
+    return f'<text x="{x}" y="{y}" font-size="{sz}" font-weight="{w}" fill="{f}" text-anchor="{a}">{esc(t)}</text>'
+def box(x,y,w,h,fill,stroke,rx=6,sw=1.6,op=1.0):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" fill-opacity="{op}" stroke="{stroke}" stroke-width="{sw}"/>'
+def line(x1,y1,x2,y2,c,mk,w=2.4,dash=""):
+    d=f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{c}" stroke-width="{w}"{d} marker-end="url(#{mk})"/>'
+
+s.append(T(W/2,30,"decode ht_head.csl — static 2-D vocab shard + diagonal-pair W_E gather",19,"#0d1b26","700"))
+s.append(T(W/2,50,"ONE sampled token per step, fed back on-chip from HT_tail. No vocab-rotation ring (that is prefill): vocab is FIXED on Y, hidden on X, and the one needed W_E row is gathered vertically.",11.5,"#4a5b66","500"))
+s.append(T(W/2,68,"ref config test_sim_2x2block_kv_varlen.json:  P_BLOCK_SIZE=8, HT_WIDTH_tail=6, HT_WIDTH_head=4, HT_X_OFFSET=2, dim=64, dim_per_pe=8, bsz=2, vocab=24, V_per_pe_y=3",11,"#6a7883","500"))
+
+# ---------------- TOP PANEL: spatial ----------------
+s.append(T(60,100,"1  Spatial layout + comms   (band = HT_WIDTH_tail cols x P_BLOCK_SIZE rows; embedding on the EAST 4 cols)",14,"#0d1b26","700","start"))
+
+gx0, gy0 = 250, 152           # grid origin
+cw, chh  = 118, 46            # cell size
+cols, rows = 6, 8
+def cx(c): return gx0 + c*cw
+def cy(r): return gy0 + r*chh
+
+# demux column (west of the band)
+s.append(box(gx0-150, gy0, 118, rows*chh, "#f0d9b5", "#a86a1e", 6, 1.6))
+s.append(T(gx0-91, gy0+18, "demux", 12, "#7a4d10", "700"))
+s.append(T(gx0-91, gy0+34, "1 x P col", 9.5, "#7a4d10", "500"))
+s.append(T(gx0-91, gy0+52, "host X[0] seed", 9.5, "#7a4d10", "500"))
+s.append(T(gx0-91, gy0+68, "(step 0 only)", 9.5, "#7a4d10", "500"))
+
+# band cells
+for r in range(rows):
+    for c in range(cols):
+        eff = c - 2
+        active = eff >= 0
+        is_up = active and (r == 2*eff)
+        is_lo = active and (r == 2*eff+1)
+        if is_up or is_lo:
+            fill, stroke, op = "#bfe0c4", "#2e8b57", 1.0
+        elif active:
+            fill, stroke, op = "#8fbfe0", "#245f96", 0.45
+        else:
+            fill, stroke, op = "#d8dee3", "#8a99a4", 0.55
+        s.append(box(cx(c), cy(r), cw-4, chh-4, fill, stroke, 4, 1.2, op))
+        if is_up:
+            s.append(T(cx(c)+(cw-4)/2, cy(r)+18, "DIAG upper", 9.5, "#12222f", "700"))
+            s.append(T(cx(c)+(cw-4)/2, cy(r)+32, "embed_buf lo half", 8.5, "#2a4a63", "500"))
+        elif is_lo:
+            s.append(T(cx(c)+(cw-4)/2, cy(r)+18, "DIAG lower", 9.5, "#12222f", "700"))
+            s.append(T(cx(c)+(cw-4)/2, cy(r)+32, "embed_buf hi half", 8.5, "#2a4a63", "500"))
+        elif active:
+            s.append(T(cx(c)+(cw-4)/2, cy(r)+20, "W_E_tile", 9, "#2a4a63", "600"))
+            s.append(T(cx(c)+(cw-4)/2, cy(r)+33, "3 vocab x 16 feat", 8, "#2a4a63", "500"))
+        else:
+            s.append(T(cx(c)+(cw-4)/2, cy(r)+20, "relay only", 9, "#5c6a73", "600"))
+            s.append(T(cx(c)+(cw-4)/2, cy(r)+33, "C1 east, drop tok", 8, "#5c6a73", "500"))
+
+# column headers
+for c in range(cols):
+    eff = c-2
+    lab = f"x_local={c}" + (f"  eff={eff}" if eff >= 0 else "  (west)")
+    s.append(T(cx(c)+(cw-4)/2, gy0-8, lab, 9.5, "#245f96" if eff>=0 else "#8a99a4", "700"))
+    if eff >= 0:
+        s.append(T(cx(c)+(cw-4)/2, gy0-20, f"hidden [{eff*16},{eff*16+16})", 8.5, "#245f96", "500"))
+# row headers
+for r in range(rows):
+    s.append(T(gx0-160, cy(r)+20, f"py={r}", 10, "#245f96", "700", "end"))
+    s.append(T(gx0-160, cy(r)+33, f"vocab [{r*3},{r*3+3})", 8.5, "#6a7883", "500", "end"))
+
+band_bot = cy(rows)
+
+# gather chain arrows inside column eff=1 (x_local=3): source at py=6 -> diag pair (2,3), NORTH on UP_*
+cgx = cx(3)+(cw-4)/2
+for r in range(6, 2, -1):
+    y1 = cy(r); y2 = cy(r-1)+chh-6
+    par = "#c0392b" if r % 2 == 0 else "#2c6fb0"
+    mk  = "ar" if r % 2 == 0 else "ab"
+    s.append(line(cgx, y1+4, cgx, y2-chh+10, par, mk, 2.6))
+s.append(T(cgx, cy(6)+44, "SRC py=6", 8.5, "#c0392b", "700"))
+
+# gather chain in column eff=3 (x_local=5): source at py=1 -> diag pair (6,7), SOUTH on DOWN_*
+dgx = cx(5)+(cw-4)/2
+for r in range(1, 6):
+    par = "#7a3fb0" if r % 2 == 0 else "#2e8b57"
+    mk  = "ap" if r % 2 == 0 else "ag"
+    s.append(line(dgx, cy(r)+chh-8, dgx, cy(r+1)+8, par, mk, 2.6))
+s.append(T(dgx, cy(1)+44, "SRC py=1", 8.5, "#7a3fb0", "700"))
+
+# C1 from demux into each row (terminating at diag col)
+for r in range(rows):
+    diag_c = r//2 + 2
+    s.append(line(gx0-32, cy(r)+20, cx(diag_c)+6, cy(r)+20, "#a86a1e", "ao", 1.8, "5 3"))
+# tok_bcast up every column
+for c in range(cols):
+    s.append(line(cx(c)+(cw-4)/2, band_bot+34, cx(c)+(cw-4)/2, band_bot+6, "#2c6fb0", "ab", 2.0, "4 3"))
+
+# C2 east out of diag PEs
+for r in range(rows):
+    diag_c = r//2 + 2
+    s.append(line(cx(diag_c)+cw-8, cy(r)+20, cx(cols-1)+cw+44, cy(r)+20, "#2e8b57", "ag", 1.8))
+s.append(box(cx(cols-1)+cw+50, gy0, 96, rows*chh, "#d7efdb", "#2e8b57"))
+s.append(T(cx(cols-1)+cw+98, gy0+20, "decode", 11.5, "#12222f", "700"))
+s.append(T(cx(cols-1)+cw+98, gy0+36, "block row 0", 10, "#12222f", "600"))
+s.append(T(cx(cols-1)+cw+98, gy0+56, "hidden Y-shard", 9, "#2a4a63", "500"))
+s.append(T(cx(cols-1)+cw+98, gy0+70, "py -> [8py, 8py+8)", 8.5, "#2a4a63", "500"))
+
+# ready sentinel (WEST out of col 0, drawn just under the band)
+s.append(line(cx(0)+20, band_bot+16, gx0-34, band_bot+16, "#7a3fb0", "ap", 2.0))
+
+# legend
+ly = band_bot + 56
+def leg(y, c, mk, txt, wt="500"):
+    s.append(line(60, y-4, 88, y-4, c, mk, 2.4))
+    s.append(T(96, y, txt, 10.5, "#26333c", wt, "start"))
+leg(ly,      "#a86a1e", "ao", "C1 pre_embed_x (id 18), step 0 only: per-row EAST run from the demux, terminates WEST->RAMP at that row's diag col. P-6 p2p, no multicast.")
+leg(ly+20,   "#2c6fb0", "ab", "tok_bcast (id 7) from HT_tail: SOUTH -> {RAMP, NORTH} on EVERY column = P-2 router multicast. Per-round N header, then bsz token ids per step.")
+leg(ly+40,   "#c0392b", "ar", "W_E gather NORTH on UP_A/UP_B (ids 21/22) — G-1 parity chain + P-5 shuttle. Two dim_per_pe halves per lane; colors alternate by row parity.")
+leg(ly+60,   "#7a3fb0", "ap", "W_E gather SOUTH on DOWN_A/DOWN_B (ids 8/9, reused K-pipe ids on a PE-disjoint rectangle). Halves emitted in REVERSE order (consumer order flips).")
+leg(ly+80,   "#2e8b57", "ag", "C2 post_embed_x (id 23): both diag PEs emit bsz*dim_per_pe fp16 EAST into decode block row 0, on EVERY step. Also the early-stop sentinel path.")
+s.append(T(60, ly+104, "ht_ready (id 0): col-0 PEs send 1 wavelet WEST at the end of init(), after painting C1 — unblocks demux main (first-paint fence).", 10.5, "#7a3fb0", "500", "start"))
+s.append(T(60, ly+126, "Diagonal pairing IS the re-layout (P-4 seam): column eff owns hidden [16eff,16eff+16); upper-diag PE (py=2eff) takes the low 8, lower-diag (py=2eff+1) the high 8.", 11, "#26333c", "600", "start"))
+s.append(T(60, ly+144, "Across py that is exactly the hidden Y-shard decode row 0 wants — asserted at launch.py:564 (HT_WIDTH_head * 2 * dim_per_pe == dim). Break it and row 0 hangs on a count mismatch.", 11, "#26333c", "500", "start"))
+s.append(T(60, ly+162, "Cost: O(|src_py - diag|) hops per lane per step, run bsz times SERIALLY. Not amortised — that is the price of not rotating, and the right trade for one token per step.", 11, "#26333c", "500", "start"))
+
+# ---------------- BOTTOM PANEL: task state machine ----------------
+py0 = ly + 192
+s.append(f'<line x1="40" y1="{py0-14}" x2="{W-40}" y2="{py0-14}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(60, py0+6, "2  Task state machine  (same program on every band PE; coords pick the role)", 14, "#0d1b26", "700", "start"))
+def node(x,y,w,h,title,sub,fill,stroke):
+    out=[box(x,y,w,h,fill,stroke)]
+    out.append(T(x+w/2,y+20,title,12,"#0d1b26","700"))
+    for i,ln in enumerate(sub.split("\n")):
+        out.append(T(x+w/2,y+37+i*13,ln,9.5,"#34434d","500"))
+    return "".join(out)
+ny = py0+26; nh = 82; w1 = 250
+col_o="#f7e3c8"; s_o="#a86a1e"
+col_b="#dbeafe"; s_b="#245f96"
+col_r="#faddd8"; s_r="#c0392b"
+col_g="#d7efdb"; s_g="#2e8b57"
+xs=[60, 360, 660, 950]
+s.append(node(xs[0],ny,w1,nh,"init  (:243)","derive coords / diag pair / parity\npaint C1 + C2 per-PE routes\ncol 0: 1-wavelet ready sentinel WEST",col_b,s_b))
+s.append(node(xs[1],ny,w1,nh,"main  (:293)  round header","KV_TRANSFER=1: drain bsz-wide N header\noff tok_recv; n_steps = slot 0  (G-4)\nreplicated -> safe shared loop bound",col_o,s_o))
+s.append(node(xs[2],ny,w1,nh,"step 0  (:301)","diag PEs only:\n@fmovh(embed_buf, pre_embed_x_recv)\nhost-embedded X[0] seed, no lookup",col_o,s_o))
+for a,b in [(0,1),(1,2)]:
+    s.append(line(xs[a]+w1,ny+nh/2,xs[b]-2,ny+nh/2,"#5a6b76","ar",1.8))
+
+ny2 = ny+nh+52
+s.append(node(xs[0],ny2,w1,nh,"step >= 1  (:305)","@mov32 bsz token ids from tok_recv\n(EVERY column drains; west discards)\nSTOP_TOK(-2) -> flood C2, break",col_r,s_r))
+s.append(node(xs[1],ny2,w1,nh,"embed_gather_dispatch  (:134)","per lane b: src_py = t / V_per_pe_y\n4 cases -> UP_* north / DOWN_* south\n1-hop when src_py is on the diag pair",col_r,s_r))
+s.append(node(xs[2],ny2,w1,nh,"emit east  (:340)","diag PEs: @fmovh(post_embed_x_send,\nembed_buf) = bsz*dim_per_pe fp16\nfires on EVERY step incl. step 0",col_g,s_g))
+s.append(line(xs[0]+w1,ny2+nh/2,xs[1]-2,ny2+nh/2,"#5a6b76","ar",1.8))
+s.append(line(xs[1]+w1,ny2+nh/2,xs[2]-2,ny2+nh/2,"#5a6b76","ar",1.8))
+s.append(T((xs[0]+w1+xs[1])/2, ny2+nh/2-6, "x bsz", 9, "#5a6b76", "600"))
+# step0 -> emit east ; header -> step>=1 loop
+s.append(f'<path d="M {xs[2]+w1/2} {ny+nh} L {xs[2]+w1/2} {ny2-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
+s.append(T(xs[2]+w1/2+84, ny+nh+26, "ht_step == 0", 9.5, "#5a6b76", "600"))
+s.append(f'<path d="M {xs[1]+w1/2} {ny+nh} L {xs[1]+w1/2} {ny+nh+26} L {xs[0]+w1/2} {ny+nh+26} L {xs[0]+w1/2} {ny2-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ar)"/>')
+s.append(T(xs[0]+w1/2+16, ny+nh+40, "ht_step >= 1", 9.5, "#5a6b76", "600"))
+# per-step loop back
+s.append(f'<path d="M {xs[2]+w1/2} {ny2+nh} L {xs[2]+w1/2} {ny2+nh+24} L {xs[0]+w1/2} {ny2+nh+24} L {xs[0]+w1/2} {ny2+nh}" fill="none" stroke="#2e8b57" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ag)"/>')
+s.append(T((xs[0]+xs[2])/2+w1/2, ny2+nh+40, "per-step loop: while (ht_step < n_steps)   (:300)", 10, "#2e8b57", "600"))
+# per-round re-arm
+s.append(node(xs[3],ny2,w1-40,nh,"re-arm  (:345)","kv_stream_ingress: ht_step = 0\n@activate(main) -> next round's N\nKV_TRANSFER=0: single-shot",col_o,s_o))
+s.append(f'<path d="M {xs[2]+w1} {ny2+nh/2} L {xs[3]-2} {ny2+nh/2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
+s.append(f'<path d="M {xs[3]+(w1-40)/2} {ny2} L {xs[3]+(w1-40)/2} {ny+nh/2} L {xs[1]+w1+2} {ny+nh/2}" fill="none" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ao)"/>')
+s.append(T(xs[3]+(w1-40)/2, ny+nh/2-10, "per-round", 9.5, "#a86a1e", "600"))
+
+s.append(T(60,H-16,"colors/queues:  tok_bcast(7)/iq2 · pre_embed_x(18)/iq3 · UP_A(21)/iq4,oq3 · UP_B(22)/iq5,oq4 · DOWN_A(8)/iq6,oq6 · DOWN_B(9)/iq7,oq7 · post_embed_x(23)/oq2 · ht_ready(0)/oq5.   DOWN_* reuse K-pipe ids on a PE-disjoint rectangle (launch.py:691-694).",9.5,"#6a7883","400","start"))
+s.append('</svg>')
+open(OUT,"w").write("\n".join(s))
+print("wrote", OUT, W, H)

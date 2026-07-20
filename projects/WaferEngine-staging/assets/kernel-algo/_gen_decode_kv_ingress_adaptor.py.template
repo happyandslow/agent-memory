@@ -1,0 +1,174 @@
+#!/usr/bin/env python3
+# kv_ingress_adaptor.csl algorithm diagram: 1-PE host->injector-column relay (+ kv_fwd extender).
+# Panel 1 = spatial band chain. Panel 2 = the meta tile's journey / wire format.
+# Panel 3 = task state machine with the S6a n_segs_rt==0 retain fast-path.
+import html
+OUT = "/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-decode.kv_ingress_adaptor.svg"
+W, H = 1120, 1070
+def esc(s): return html.escape(s)
+s = []
+s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
+s.append('<defs>'
+  '<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker>'
+  '<marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker>'
+  '<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker>'
+  '<marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker>'
+  '<marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker>'
+  '</defs>')
+s.append(f'<rect width="{W}" height="{H}" fill="#f7f9fb"/>')
+def T(x,y,t,sz=13,f="#12222f",w="600",a="middle"):
+    return f'<text x="{x}" y="{y}" font-size="{sz}" font-weight="{w}" fill="{f}" text-anchor="{a}">{esc(t)}</text>'
+def box(x,y,w,h,fill,stroke,rx=6,sw=1.6,op=1.0):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" fill-opacity="{op}" stroke="{stroke}" stroke-width="{sw}"/>'
+def line(x1,y1,x2,y2,c,mk,w=2.4,dash=""):
+    d=f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{c}" stroke-width="{w}"{d} marker-end="url(#{mk})"/>'
+
+s.append(T(W/2,30,"kv_ingress_adaptor.csl — host stream -> injector column relay (1 PE per band)  +  kv_fwd extender",17,"#0d1b26","700"))
+s.append(T(W/2,50,"Cuts one host blob into P_BLOCK_SIZE row-slices, SWITCH_ADV between rows. Working tree of lexu/staging/s6a-inner-pe-kv-route-a: KV_META_LEN 2->4, n_segs_rt==0 fast-path.",11.5,"#4a5b66","500"))
+
+# ---------------- PANEL 1: spatial chain ----------------
+s.append(T(50,86,"(1) The per-band ingress chain — host TOP port -> adaptor -> injector column -> kv_fwd -> decode block",13.5,"#0d1b26","700","start"))
+
+cy = 132     # chain band top
+ch = 132
+def stage(x,w,title,lines,fill,stroke):
+    out=[box(x,cy,w,ch,fill,stroke,6,1.6)]
+    out.append(T(x+w/2,cy+22,title,11.5,"#0d1b26","700"))
+    for i,ln in enumerate(lines):
+        out.append(T(x+w/2,cy+42+i*14,ln,9,"#34434d","500"))
+    return "".join(out)
+
+s.append(box(50,cy+40,140,44,"#cfe3f6","#2c6fb0",6,1.5))
+s.append(T(120,cy+58,"host H2D stream",10.5,"#12356a","700"))
+s.append(T(120,cy+74,"TOP-edge port, band by",9,"#12356a","500"))
+s.append(line(192,cy+62,238,cy+62,"#2c6fb0","ab",2.4))
+
+s.append(stage(240,220,"kv_ingress_adaptor  (1x1)",
+  ["at (STAIR_X0+by, y0-1)",
+   "IQ2 <- host_in_color (RAMP)",
+   "OQ2 -> inj_out_color (RAMP->S)",
+   "peel u32 #0, re-emit, relay",
+   "num_cols-1 metas + KV segs",
+   "SWITCH_ADV between rows",
+   "buffers ONE u32 (meta0_buf)"],"#e2f0e4","#2e8b57"))
+s.append(line(462,cy+62,508,cy+62,"#2e8b57","ag",2.4))
+s.append(T(485,cy+50,"SOUTH",8.5,"#1d5c39","700"))
+
+s.append(stage(510,210,"kv_ingress_injector column",
+  ["1 col x P_BLOCK_SIZE = 8",
+   "at (STAIR_X0+by, y0)",
+   "switch pos0 N->RAMP (take)",
+   "pos1 N->SOUTH (forward)",
+   "PE ly takes row-slice ly,",
+   "scatters it WEST (OQ3)",
+   "round_sync S->N re-arm"],"#f6d7d2","#c0392b"))
+s.append(line(732,cy+62,778,cy+62,"#c0392b","ar",2.4))
+s.append(T(755,cy+50,"WEST",8.5,"#7a1f18","700"))
+
+s.append(stage(780,150,"kv_fwd extender",
+  ["by cols x 8 at (STAIR_X0, y0)",
+   "empty comptime { }",
+   "no tasks / queues / memory",
+   "painted E->W on BOTH",
+   "switch positions",
+   "bridges the staircase gap",
+   "(absent when by == 0)"],"#efe0c6","#a86a1e"))
+s.append(line(932,cy+62,972,cy+62,"#a86a1e","ao",2.4))
+
+s.append(stage(974,96,"decode block",
+  ["16 x 8","east edge","kv_ingress","west-shift","P-5 chain","IQ7/OQ7","peels metas"],"#cfe0ee","#245f96"))
+
+py1 = cy+ch+26
+s.append(T(50,py1,"STAIR_X0 = PLACE_X + Pw + 1. The +by staircase gives each band's TOP host port a short, non-degenerate routing rectangle to a top LVDS site (the §7.3 host-stream placer OOM avoidance, kv_fwd.csl:5-9).",10,"#26333c","500","start"))
+s.append(T(50,py1+16,"NS = P_Y_BLOCK_NUM parallel bands (2 here) => ~NS x aggregate ingress bandwidth vs the old single SOUTH adaptor+demux that funnelled every band through one port (launch.py:1396-1403).",10,"#26333c","500","start"))
+s.append(T(50,py1+32,"The adaptor has NO switch and NO barrier: it re-arms on IQ2 backpressure alone (:112-117). Only the injector column needs the round_sync fence, because its switch position is round-carried state.",10,"#26333c","500","start"))
+
+# ---------------- PANEL 2: meta tile journey ----------------
+py = py1 + 62
+s.append(f'<line x1="40" y1="{py-14}" x2="{W-40}" y2="{py-14}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(50,py+8,"(2) The per-round meta tile's journey — S6a widened KV_META_LEN 2 -> 4  [plen, decode_len, retained_len, pad]",13.5,"#0d1b26","700","start"))
+
+mty = py + 30
+s.append(T(50, mty+14, "row-slice on the wire:", 10.5, "#26333c", "700", "start"))
+wx = 200
+seg = [("u32 #0\n[plen | decode_len]", 150, "#f6d7d2", "#c0392b"),
+       ("u32 #1\n[retained_len | pad]", 150, "#fdeecf", "#a86a1e"),
+       ("u32 #2 .. #31  (cols 1..Pw-1, 2 u32 each)", 300, "#e8eef3", "#5a6b76"),
+       ("KV: n_segs_rt x seg_len wavelets", 300, "#dbeafe", "#245f96")]
+cx = wx
+for lbl, wd, fill, st in seg:
+    s.append(box(cx, mty, wd, 44, fill, st, 4, 1.4))
+    for i, ln in enumerate(lbl.split("\n")):
+        s.append(T(cx+wd/2, mty+19+i*13, ln, 9, "#12222f", "600"))
+    cx += wd + 4
+s.append(line(wx+75, mty+52, wx+75, mty+70, "#c0392b", "ar", 2.0))
+s.append(T(wx+82, mty+74, "the ONLY word this PE reads — and only its LOW 16 bits (plen). @as(u16,u32) truncates decode_len away (:69). Then re-emitted (:71): the peel is wavelet-count-neutral.", 9.5, "#7a1f18", "600", "start"))
+s.append(T(wx, mty+94, "num_cols = Pw * KV_META_LEN / 2 = 2*Pw = 32 u32   (was Pw = 16 at fcfc8c1)   |   metablk_in/out_dsd extent num_cols-1 : 15 -> 31   |   per-row u32 : Pw + C_kv*plen -> 2*Pw + C_kv*plen", 10, "#26333c", "600", "start"))
+
+ry = mty + 112
+rows = [
+  ("kv_ingress_adaptor (this)", "PEELS u32 #0, reads plen only. RE-EMITS it, relays the other 31 metas verbatim (:75).\nBLIND to decode_len and retained_len — they are never interpreted on the transport path.", "#e2f0e4", "#2e8b57"),
+  ("kv_ingress_injector", "Same peel, same truncation: n_segs_rt = D_kv * plen (:85). Re-emits (:87), fwds 31 WEST (:91).\nSwitch held at pos0 for the WHOLE row — peel, both meta ops, every KV segment.", "#f6d7d2", "#c0392b"),
+  ("decode block PE (west-shift)", "First consumer of the wide tile: plen (:1577), decode_len (:1578), retained_len (:1579).\nDERIVES retain_rt = (plen == 0) on-device (:1580) — no retain flag is ever transmitted.", "#cfe0ee", "#245f96"),
+]
+for i,(who,what,fill,st) in enumerate(rows):
+    y = ry + i*54
+    s.append(box(50, y, 260, 46, fill, st, 5, 1.4))
+    s.append(T(180, y+27, who, 10.5, "#12222f", "700"))
+    for j,ln in enumerate(what.split("\n")):
+        s.append(T(326, y+19+j*15, ln, 9.5, "#34434d", "500", "start"))
+
+# ---------------- PANEL 3: task state machine ----------------
+py2 = ry + 3*54 + 20
+s.append(f'<line x1="40" y1="{py2-12}" x2="{W-40}" y2="{py2-12}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(50,py2+8,"(3) Task state machine — per row-slice, x num_rows rows, x rounds",13.5,"#0d1b26","700","start"))
+def node(x,y,w,h,title,sub,fill,stroke):
+    out=[box(x,y,w,h,fill,stroke)]
+    out.append(T(x+w/2,y+19,title,11,"#0d1b26","700"))
+    for i,ln in enumerate(sub.split("\n")):
+        out.append(T(x+w/2,y+35+i*12.5,ln,9,"#34434d","500"))
+    return "".join(out)
+ny = py2+34; nh=68; w1=228
+col_g="#e2f0e4"; s_g="#2e8b57"
+col_b="#dbeafe"; s_b="#245f96"
+col_p="#ece1f6"; s_p="#7a3fb0"
+xs=[50, 306, 562, 818]
+s.append(node(xs[0],ny,w1,nh,"peel_meta0 (task 8)","mov32 extent 1: u32 #0 -> meta0_buf\n:63-65",col_g,s_g))
+s.append(node(xs[1],ny,w1,nh,"relay_meta (task 9)","n_segs_rt = D_kv * @as(u16,meta0_buf[0])\nseg_idx=0; re-emit u32 #0 SOUTH\n:68-72",col_g,s_g))
+s.append(node(xs[2],ny,w1,nh,"relay_metablk (task 11)","relay remaining num_cols-1 = 31\nmetas in one comptime op   :74-76",col_g,s_g))
+s.append(node(xs[3],ny,w1,nh,"relay_kv (task 12)","n_segs_rt x mov32(seg_len) SOUTH\nself-chains per segment   :81-106",col_g,s_g))
+for i in range(3):
+    s.append(line(xs[i]+w1,ny+nh/2,xs[i+1]-2,ny+nh/2,"#5a6b76","ar",1.8))
+s.append(f'<path d="M {xs[3]+w1-34} {ny} L {xs[3]+w1-34} {ny-16} L {xs[3]+34} {ny-16} L {xs[3]+34} {ny}" fill="none" stroke="#2e8b57" stroke-width="1.6" marker-end="url(#ag)"/>')
+s.append(T(xs[3]+w1/2,ny-22,"x n_segs_rt",9,"#1d5c39","600"))
+
+ny2 = ny+nh+58
+s.append(node(280,ny2,w1,nh,"advance_switch (task 13)","emit 1 CONTROL wavelet on OQ2:\nSWITCH_ADV -> next injector PE\nrow_idx += 1; -> peel_meta0  :108-110",col_b,s_b))
+s.append(node(640,ny2,w1,nh,"rearm (task 10)","row_idx = seg_idx = n_segs_rt = 0\nNO barrier: IQ2 backpressures on the\nhost port until next round   :112-117",col_p,s_p))
+s.append(f'<path d="M {xs[3]+w1/2} {ny+nh} L {xs[3]+w1/2} {ny2-30} L {394} {ny2-30} L {394} {ny2-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
+s.append(f'<path d="M {xs[3]+w1/2} {ny2-30} L {754} {ny2-30} L {754} {ny2-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
+s.append(T(xs[3]+w1/2-10,ny2-36,"row complete: branch on row_idx",9.5,"#5a6b76","600","end"))
+s.append(T(394,ny2-14,"row_idx < num_rows-1",9,"#245f96","700"))
+s.append(T(754,ny2-14,"LAST row (no SWITCH_ADV)",9,"#7a3fb0","700"))
+s.append(f'<path d="M {280+w1/2} {ny2+nh} L {280+w1/2} {ny2+nh+20} L {30} {ny2+nh+20} L {30} {ny+18} L {48} {ny+18}" fill="none" stroke="#245f96" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ab)"/>')
+s.append(f'<path d="M {640+w1/2} {ny2+nh} L {640+w1/2} {ny2+nh+36} L {20} {ny2+nh+36} L {20} {ny+42} L {48} {ny+42}" fill="none" stroke="#7a3fb0" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ap)"/>')
+s.append(T(300,ny2+nh+16,"next row-slice",9.5,"#245f96","600","middle"))
+s.append(T(360,ny2+nh+32,"next round's blob (backpressure)",9.5,"#7a3fb0","600","middle"))
+
+fy = ny2+nh+52
+s.append(box(50, fy, 500, 78, "#fff2f0", "#c0392b", 6, 2.0))
+s.append(T(60, fy+19, "S6a FAST-PATH — retain heartbeat (plen == 0 => n_segs_rt == 0), :82-92", 10.5, "#7a1f18", "700", "start"))
+s.append(T(60, fy+36, "Retain round = META-ONLY: 32 meta u32, ZERO KV. Old code fell into seg_idx+=1; 1<0 false", 9.5, "#34434d", "500", "start"))
+s.append(T(60, fy+50, "-> ONE unconditional seg_len relay -> phantom read + undrained wavelets on the ingress color", 9.5, "#34434d", "500", "start"))
+s.append(T(60, fy+64, "-> round-1 IQ7 remap FATAL (decode.csl:1654 rebinds IQ7/OQ7 to broadcast; must be drained).", 9.5, "#34434d", "500", "start"))
+s.append(box(570, fy, 500, 78, "#f2f7fb", "#245f96", 6, 1.6))
+s.append(T(580, fy+19, "The fast-path reproduces BOTH exits", 10.5, "#12356a", "700", "start"))
+s.append(T(580, fy+36, "if last row -> rearm; else -> advance_switch + row_idx += 1. So the column's switch still", 9.5, "#34434d", "500", "start"))
+s.append(T(580, fy+50, "walks exactly num_rows-1 positions and the round re-arms exactly once, KV or no KV.", 9.5, "#34434d", "500", "start"))
+s.append(T(580, fy+64, "Injector carries the twin (:98-106): both ends compute n_segs_rt = 0 -> count-exact.", 9.5, "#34434d", "500", "start"))
+
+s.append(T(50,H-14,"Segmentation is a FABRIC limit, not chunked prefill: seg_len comptime <= 32766 (>= 0x7fff = INFINITE_DSD_LEN hangs silently, §11.7). C_kv = Pw*layers*bsz*kv_cols; D_kv = C_kv/seg_len; n_segs_rt = D_kv*plen, u16-guarded at launch.py:1453.",9.5,"#6a7883","400","start"))
+s.append('</svg>')
+open(OUT,"w").write("\n".join(s))
+print("ok", OUT, W, H)

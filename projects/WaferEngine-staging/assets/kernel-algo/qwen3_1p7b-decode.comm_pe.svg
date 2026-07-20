@@ -1,0 +1,267 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="1560" viewBox="0 0 1320 1560" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker><marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker><marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker><marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker></defs>
+<rect width="1320" height="1560" fill="#f7f9fb"/>
+<text x="660.0" y="32" font-size="20" font-weight="700" fill="#0d1b26" text-anchor="middle">comm_pe.csl — the decode block&#x27;s communication toolbox</text>
+<text x="660.0" y="54" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="middle">One collective shape (2-phase chain all-reduce + multicast broadcast), EIGHT payload extents, THREE axes. m=1 per step =&gt; every GEMM is a GEMV =&gt; P-1 everywhere, no Cannon, no shuttle.</text>
+<text x="660.0" y="72" font-size="11.5" font-weight="500" fill="#4a5b66" text-anchor="middle">Block = P_BLOCK_SIZE x P_BLOCK_SIZE (8x8 ref cfg).   Y (rows) = HIDDEN dim shard AND KV-sequence shard.   X (cols) = attention / FFN column width.   kv-band = a run of X-PEs for one KV head.</text>
+<text x="660.0" y="90" font-size="11" font-weight="500" fill="#7a8a95" text-anchor="middle">branch lexu/staging/s6a-inner-pe-kv-route-a, uncommitted working tree  ·  ref config test_sim_2x2block_kv_varlen.json</text>
+<text x="40" y="126" font-size="14.5" font-weight="700" fill="#0d1b26" text-anchor="start">A.  The four movement shapes decode actually uses</text>
+<rect x="40" y="146" width="600" height="380" rx="8" fill="#ffffff" fill-opacity="1.0" stroke="#d7dfe6" stroke-width="1.4"/><rect x="40" y="146" width="600" height="44" rx="8" fill="#eef3f7" fill-opacity="1.0" stroke="#d7dfe6" stroke-width="1.4"/><text x="54" y="164" font-size="13.5" font-weight="700" fill="#c0392b" text-anchor="start">P-1  two-phase chain all-reduce  (x6 payload variants)</text><text x="54" y="182" font-size="10.5" font-weight="600" fill="#5a6b76" text-anchor="start">phase1 c1/q3,c2/q4  -&gt;  phase2 c3/q5,c4/q6  -&gt;  bcast c5/q7</text>
+<rect x="160" y="230" width="28" height="28" rx="3" fill="#e9eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.2"/>
+<text x="174.0" y="271" font-size="9.5" font-weight="600" fill="#7a8a95" text-anchor="middle">0</text>
+<rect x="196" y="230" width="28" height="28" rx="3" fill="#e6dcf3" fill-opacity="1.0" stroke="#245f96" stroke-width="1.2"/>
+<text x="210.0" y="271" font-size="9.5" font-weight="600" fill="#7a8a95" text-anchor="middle">1</text>
+<rect x="232" y="230" width="28" height="28" rx="3" fill="#e9eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.2"/>
+<text x="246.0" y="271" font-size="9.5" font-weight="600" fill="#7a8a95" text-anchor="middle">2</text>
+<rect x="268" y="230" width="28" height="28" rx="3" fill="#e6dcf3" fill-opacity="1.0" stroke="#245f96" stroke-width="1.2"/>
+<text x="282.0" y="271" font-size="9.5" font-weight="600" fill="#7a8a95" text-anchor="middle">3</text>
+<rect x="304" y="230" width="28" height="28" rx="3" fill="#e9eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.2"/>
+<text x="318.0" y="271" font-size="9.5" font-weight="600" fill="#7a8a95" text-anchor="middle">4</text>
+<rect x="340" y="230" width="28" height="28" rx="3" fill="#cfe0ef" fill-opacity="1.0" stroke="#245f96" stroke-width="1.2"/>
+<text x="354.0" y="271" font-size="9.5" font-weight="600" fill="#7a8a95" text-anchor="middle">5</text>
+<rect x="376" y="230" width="28" height="28" rx="3" fill="#e9eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.2"/>
+<text x="390.0" y="271" font-size="9.5" font-weight="600" fill="#7a8a95" text-anchor="middle">6</text>
+<rect x="412" y="230" width="28" height="28" rx="3" fill="#e6dcf3" fill-opacity="1.0" stroke="#245f96" stroke-width="1.2"/>
+<text x="426.0" y="271" font-size="9.5" font-weight="600" fill="#7a8a95" text-anchor="middle">7</text>
+<rect x="157" y="221" width="70" height="46" rx="4" fill="none" fill-opacity="1.0" stroke="#c9d4dd" stroke-width="1.0"/>
+<rect x="229" y="221" width="70" height="46" rx="4" fill="none" fill-opacity="1.0" stroke="#c9d4dd" stroke-width="1.0"/>
+<rect x="301" y="221" width="70" height="46" rx="4" fill="none" fill-opacity="1.0" stroke="#c9d4dd" stroke-width="1.0"/>
+<rect x="373" y="221" width="70" height="46" rx="4" fill="none" fill-opacity="1.0" stroke="#c9d4dd" stroke-width="1.0"/>
+<line x1="189" y1="244.0" x2="195" y2="244.0" stroke="#c0392b" stroke-width="2.2" marker-end="url(#ar)"/>
+<line x1="261" y1="244.0" x2="267" y2="244.0" stroke="#c0392b" stroke-width="2.2" marker-end="url(#ar)"/>
+<line x1="333" y1="244.0" x2="339" y2="244.0" stroke="#c0392b" stroke-width="2.2" marker-end="url(#ar)"/>
+<line x1="405" y1="244.0" x2="411" y2="244.0" stroke="#c0392b" stroke-width="2.2" marker-end="url(#ar)"/>
+<text x="304" y="210" font-size="10" font-weight="700" fill="#c0392b" text-anchor="middle">phase 1: reduce inside groups of pe_num_per_group -&gt; root_1st_phase</text>
+<line x1="210.0" y1="260" x2="210.0" y2="286" stroke="#c9d4dd" stroke-width="1.2" stroke-dasharray="3 3"/>
+<line x1="282.0" y1="260" x2="282.0" y2="286" stroke="#c9d4dd" stroke-width="1.2" stroke-dasharray="3 3"/>
+<line x1="354.0" y1="260" x2="354.0" y2="286" stroke="#c9d4dd" stroke-width="1.2" stroke-dasharray="3 3"/>
+<line x1="426.0" y1="260" x2="426.0" y2="286" stroke="#c9d4dd" stroke-width="1.2" stroke-dasharray="3 3"/>
+<line x1="210.0" y1="292" x2="348.0" y2="292" stroke="#7a3fb0" stroke-width="2.0" marker-end="url(#ap)"/>
+<line x1="282.0" y1="292" x2="348.0" y2="292" stroke="#7a3fb0" stroke-width="2.0" marker-end="url(#ap)"/>
+<line x1="426.0" y1="292" x2="360.0" y2="292" stroke="#7a3fb0" stroke-width="2.0" marker-end="url(#ap)"/>
+<text x="304" y="310" font-size="10" font-weight="700" fill="#7a3fb0" text-anchor="middle">phase 2: reduce among group roots -&gt; root_2nd_phase (=5)</text>
+<line x1="354.0" y1="334" x2="154" y2="334" stroke="#2c6fb0" stroke-width="1.8" stroke-dasharray="4 3" marker-end="url(#ab)"/>
+<line x1="354.0" y1="334" x2="446" y2="334" stroke="#2c6fb0" stroke-width="1.8" stroke-dasharray="4 3" marker-end="url(#ab)"/>
+<text x="304" y="352" font-size="10" font-weight="700" fill="#2c6fb0" text-anchor="middle">P-2 router multicast broadcast back (only the root sends)</text>
+<text x="54" y="464" font-size="10.5" font-weight="500" fill="#34434d" text-anchor="start">Depth P/(2g)+g/2, minimized at g=sqrt(P).  Same code, 8 extents:</text>
+<text x="54" y="482" font-size="10.5" font-weight="500" fill="#34434d" text-anchor="start">bsz | bsz*dim_per_pe | QKV fusion | ZZ fusion | gqa_group (sum &amp; max).</text>
+<text x="54" y="500" font-size="10.5" font-weight="500" fill="#34434d" text-anchor="start">Fusion = two reductions sharing an axis ride ONE chain: 6 collectives/layer, not 9.</text>
+<rect x="680" y="146" width="600" height="380" rx="8" fill="#ffffff" fill-opacity="1.0" stroke="#d7dfe6" stroke-width="1.4"/><rect x="680" y="146" width="600" height="44" rx="8" fill="#eef3f7" fill-opacity="1.0" stroke="#d7dfe6" stroke-width="1.4"/><text x="694" y="164" font-size="13.5" font-weight="700" fill="#2c6fb0" text-anchor="start">P-7  kv-head band reduce  (single phase, FIXED root)</text><text x="694" y="182" font-size="10.5" font-weight="600" fill="#5a6b76" text-anchor="start">QK-Norm + Q.K^T score  ·  c1/q3, c2/q4 + bcast c5/q7  ·  reduce_2nd untouched</text>
+<rect x="830" y="246" width="30" height="30" rx="3" fill="#e6dcf3" fill-opacity="1.0" stroke="#245f96" stroke-width="1.2"/>
+<text x="845.0" y="290" font-size="9.5" font-weight="600" fill="#5a6b76" text-anchor="middle">px 0</text>
+<rect x="870" y="246" width="30" height="30" rx="3" fill="#e6dcf3" fill-opacity="1.0" stroke="#245f96" stroke-width="1.2"/>
+<text x="885.0" y="290" font-size="9.5" font-weight="600" fill="#5a6b76" text-anchor="middle">px 1</text>
+<rect x="910" y="246" width="30" height="30" rx="3" fill="#cfe0ef" fill-opacity="1.0" stroke="#245f96" stroke-width="1.2"/>
+<text x="925.0" y="290" font-size="9.5" font-weight="600" fill="#5a6b76" text-anchor="middle">px 2</text>
+<rect x="950" y="246" width="30" height="30" rx="3" fill="#e6dcf3" fill-opacity="1.0" stroke="#245f96" stroke-width="1.2"/>
+<text x="965.0" y="290" font-size="9.5" font-weight="600" fill="#5a6b76" text-anchor="middle">px 3</text>
+<line x1="860" y1="256.5" x2="870" y2="256.5" stroke="#c0392b" stroke-width="2.0" marker-end="url(#ar)"/>
+<line x1="900" y1="256.5" x2="910" y2="256.5" stroke="#c0392b" stroke-width="2.0" marker-end="url(#ar)"/>
+<line x1="950" y1="265.5" x2="940" y2="265.5" stroke="#c0392b" stroke-width="2.0" marker-end="url(#ar)"/>
+<text x="925.0" y="236" font-size="10" font-weight="700" fill="#245f96" text-anchor="middle">kv_head_root (band middle, FIXED)</text>
+<line x1="925.0" y1="310" x2="826" y2="310" stroke="#2c6fb0" stroke-width="1.7" stroke-dasharray="4 3" marker-end="url(#ab)"/>
+<line x1="925.0" y1="310" x2="984" y2="310" stroke="#2c6fb0" stroke-width="1.7" stroke-dasharray="4 3" marker-end="url(#ab)"/>
+<text x="910.0" y="328" font-size="10" font-weight="700" fill="#2c6fb0" text-anchor="middle">band-scoped P-2 broadcast</text>
+<line x1="830" y1="356" x2="980" y2="356" stroke="#7a8a95" stroke-width="1.6" marker-end="url(#ag)"/>
+<text x="910.0" y="374" font-size="11" font-weight="700" fill="#7a8a95" text-anchor="middle">X   (pes_per_kv_head = P/n_kv_heads = 4)</text>
+<text x="694" y="446" font-size="10.5" font-weight="600" fill="#c0392b" text-anchor="start">AXIS FLIP vs prefill: prefill&#x27;s kv band runs along Y, decode&#x27;s along X.</text>
+<text x="694" y="464" font-size="10.5" font-weight="500" fill="#34434d" text-anchor="start">Root is FIXED, so ONE color pair suffices — no cycling root, hence no</text>
+<text x="694" y="482" font-size="10.5" font-weight="500" fill="#34434d" text-anchor="start">two-color-pair split and no enter_qkt_reduce. Colors 3,4 stay free for</text>
+<text x="694" y="500" font-size="10.5" font-weight="500" fill="#34434d" text-anchor="start">phase 2. Entire reduce no-ops when pes_per_kv_head == 1 (counts stay exact).</text>
+<rect x="40" y="564" width="600" height="380" rx="8" fill="#ffffff" fill-opacity="1.0" stroke="#d7dfe6" stroke-width="1.4"/><rect x="40" y="564" width="600" height="44" rx="8" fill="#eef3f7" fill-opacity="1.0" stroke="#d7dfe6" stroke-width="1.4"/><text x="54" y="582" font-size="13.5" font-weight="700" fill="#a86a1e" text-anchor="start">P-6 inter-block handoff + P-2 intra-row fan-out</text><text x="54" y="600" font-size="10.5" font-weight="600" fill="#5a6b76" text-anchor="start">c19/OQ1, c20/OQ2 alternating by edge parity  ·  fan-out c6, IQ2/OQ0</text>
+<rect x="80" y="640" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="111" y="640" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="142" y="640" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="173" y="640" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="204" y="640" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="80" y="671" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="111" y="671" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="142" y="671" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="173" y="671" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="204" y="671" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="80" y="702" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="111" y="702" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="142" y="702" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="173" y="702" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="204" y="702" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="80" y="733" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="111" y="733" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="142" y="733" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="173" y="733" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="204" y="733" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="80" y="764" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="111" y="764" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="142" y="764" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="173" y="764" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="204" y="764" width="24" height="24" rx="3" fill="#f3ece0" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.0"/>
+<rect x="331" y="640" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="362" y="640" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="393" y="640" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="424" y="640" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="455" y="640" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="331" y="671" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="362" y="671" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="393" y="671" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="424" y="671" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="455" y="671" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="331" y="702" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="362" y="702" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="393" y="702" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="424" y="702" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="455" y="702" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="331" y="733" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="362" y="733" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="393" y="733" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="424" y="733" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="455" y="733" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="331" y="764" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="362" y="764" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="393" y="764" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="424" y="764" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<rect x="455" y="764" width="24" height="24" rx="3" fill="#e6eef3" fill-opacity="1.0" stroke="#9db2c2" stroke-width="1.0"/>
+<text x="153.5" y="630" font-size="10.5" font-weight="700" fill="#a86a1e" text-anchor="middle">block k  (layers L..L+j)</text>
+<text x="404.5" y="630" font-size="10.5" font-weight="700" fill="#245f96" text-anchor="middle">block k+1  (layers L+j+1..)</text>
+<line x1="233" y1="652.0" x2="319.0" y2="652.0" stroke="#a86a1e" stroke-width="1.8" marker-end="url(#ao)"/>
+<line x1="233" y1="683.0" x2="319.0" y2="683.0" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ao)"/>
+<line x1="233" y1="714.0" x2="319.0" y2="714.0" stroke="#a86a1e" stroke-width="1.8" marker-end="url(#ao)"/>
+<line x1="233" y1="745.0" x2="319.0" y2="745.0" stroke="#a86a1e" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ao)"/>
+<line x1="233" y1="776.0" x2="319.0" y2="776.0" stroke="#a86a1e" stroke-width="1.8" marker-end="url(#ao)"/>
+<text x="283.0" y="811" font-size="9.8" font-weight="700" fill="#a86a1e" text-anchor="middle">ONE synchronous @fmovh of bsz*dim_per_pe bf16 words</text>
+<text x="283.0" y="825" font-size="9.3" font-weight="600" fill="#7a8a95" text-anchor="middle">(solid = color a / dashed = color b, alternating by parity)</text>
+<line x1="405.0" y1="843" x2="343.0" y2="843" stroke="#2c6fb0" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#ab)"/>
+<line x1="405.0" y1="843" x2="374.0" y2="843" stroke="#2c6fb0" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#ab)"/>
+<line x1="405.0" y1="843" x2="436.0" y2="843" stroke="#2c6fb0" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#ab)"/>
+<line x1="405.0" y1="843" x2="467.0" y2="843" stroke="#2c6fb0" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#ab)"/>
+<text x="408.5" y="861" font-size="9.5" font-weight="700" fill="#2c6fb0" text-anchor="middle">intra_row_bcast from root_2nd_phase col</text>
+<text x="54" y="882" font-size="10.5" font-weight="600" fill="#c0392b" text-anchor="start">NO shift register, NO run_shuttle: the tile moves once, point-to-point.</text>
+<text x="54" y="900" font-size="10.5" font-weight="500" fill="#34434d" text-anchor="start">Two globally-pinned ids (19/20) so a wavelet crosses the row_y boundary on the</text>
+<text x="54" y="918" font-size="10.5" font-weight="500" fill="#34434d" text-anchor="start">same color; each PE binds BOTH queue pairs at comptime, picks by is_recv_on_a_rt.</text>
+<rect x="680" y="564" width="600" height="380" rx="8" fill="#ffffff" fill-opacity="1.0" stroke="#d7dfe6" stroke-width="1.4"/><rect x="680" y="564" width="600" height="44" rx="8" fill="#eef3f7" fill-opacity="1.0" stroke="#d7dfe6" stroke-width="1.4"/><text x="694" y="582" font-size="13.5" font-weight="700" fill="#7a3fb0" text-anchor="start">G-14  KV-ingress borrows the broadcast queues  (the one real drain)</text><text x="694" y="600" font-size="10.5" font-weight="600" fill="#5a6b76" text-anchor="start">IQ7/OQ7  &lt;-&gt;  {broadcast c5}  |  {kv_ingress c17, c21}   ·  S6a: now bidirectional</text>
+<rect x="720" y="676" width="210" height="58" rx="7" fill="#efe6f7" fill-opacity="1.0" stroke="#7a3fb0" stroke-width="1.5"/>
+<text x="825.0" y="700" font-size="11.5" font-weight="700" fill="#7a3fb0" text-anchor="middle">IQ7/OQ7 = kv_ingress</text>
+<text x="825.0" y="718" font-size="10" font-weight="600" fill="#5a6b76" text-anchor="middle">c17 (recv) / c21 (send)</text>
+<rect x="1030" y="676" width="210" height="58" rx="7" fill="#e0edf7" fill-opacity="1.0" stroke="#245f96" stroke-width="1.5"/>
+<text x="1135.0" y="700" font-size="11.5" font-weight="700" fill="#245f96" text-anchor="middle">IQ7/OQ7 = broadcast</text>
+<text x="1135.0" y="718" font-size="10" font-weight="600" fill="#5a6b76" text-anchor="middle">c5 — reduce bcast</text>
+<line x1="936" y1="694" x2="1022" y2="694" stroke="#2e8b57" stroke-width="2.2" marker-end="url(#ag)"/>
+<text x="980.0" y="684" font-size="9.8" font-weight="700" fill="#2e8b57" text-anchor="middle">kv_ingress_flush_then_resume  (flag 0)</text>
+<line x1="1022" y1="720" x2="936" y2="720" stroke="#c0392b" stroke-width="2.2" marker-end="url(#ar)"/>
+<text x="980.0" y="738" font-size="9.8" font-weight="700" fill="#c0392b" text-anchor="middle">kv_rebind_to_ingress_flush  (flag 1)  — S6a, per round</text>
+<rect x="720" y="768" width="520" height="52" rx="6" fill="#f7f4ec" fill-opacity="1.0" stroke="#c9a875" stroke-width="1.2"/>
+<text x="980.0" y="788" font-size="10" font-weight="600" fill="#6b5a2e" text-anchor="middle">@queue_flush(OQ7)  -&gt;  kv_ingress_oq_empty handler  -&gt;  re-encode IQ7/OQ7  -&gt;  queue_flush.exit  -&gt;  @activate continuation</text>
+<text x="980.0" y="806" font-size="10" font-weight="600" fill="#6b5a2e" text-anchor="middle">continuation = kv_ingress_resume_id (flag 0)  |  round_reingress_id (flag 1)</text>
+<text x="694" y="882" font-size="10.5" font-weight="500" fill="#34434d" text-anchor="start">Ingress colors REUSE ids 17/21 (kpipe_b k7 / UP_A) — disjoint rectangle:</text>
+<text x="694" y="900" font-size="10.5" font-weight="500" fill="#34434d" text-anchor="start">those live on strip/HT_head cells, the KV west-shift on block-column cells.</text>
+<text x="694" y="918" font-size="10.5" font-weight="500" fill="#34434d" text-anchor="start">Odd fabric COLUMNS swap the two colors, giving the west-shift its parity order.</text>
+<line x1="40" y1="972" x2="1280" y2="972" stroke="#dce4ea" stroke-width="1.4"/>
+<text x="40" y="992" font-size="14.5" font-weight="700" fill="#0d1b26" text-anchor="start">B.  Per-layer axis schedule — reconfig_allreduce_axis repaints the SAME five colors six times per layer, with NO fence</text>
+<text x="40" y="1012" font-size="10.5" font-weight="600" fill="#7a3fb0" text-anchor="start">Race-free ONLY because every all_reduce_* is synchronous and ends in a multi-tx broadcast: per-child router backpressure makes the collective self-fencing (comm_pe.csl:1325-1334).</text>
+<rect x="60" y="1034" width="132" height="54" rx="7" fill="#ffffff" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/>
+<rect x="60" y="1034" width="132" height="17" rx="7" fill="#c0392b" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.0"/>
+<text x="126.0" y="1047" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle">axis 0  ·  Y</text>
+<text x="126.0" y="1067" font-size="10" font-weight="700" fill="#0d1b26" text-anchor="middle">rmsnorm_x</text>
+<text x="126.0" y="1081" font-size="8.8" font-weight="600" fill="#5a6b76" text-anchor="middle">all_reduce_bsz_f32</text>
+<line x1="193" y1="1061.0" x2="197" y2="1061.0" stroke="#c9d4dd" stroke-width="2.0"/>
+<rect x="198" y="1034" width="132" height="54" rx="7" fill="#ffffff" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/>
+<rect x="198" y="1034" width="132" height="17" rx="7" fill="#c0392b" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.0"/>
+<text x="264.0" y="1047" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle">axis 0  ·  Y</text>
+<text x="264.0" y="1067" font-size="10" font-weight="700" fill="#0d1b26" text-anchor="middle">Q/K/V matvec</text>
+<text x="264.0" y="1081" font-size="8.8" font-weight="600" fill="#5a6b76" text-anchor="middle">QKV_fusion</text>
+<line x1="331" y1="1061.0" x2="335" y2="1061.0" stroke="#a86a1e" stroke-width="2.0" marker-end="url(#ao)"/>
+<rect x="336" y="1034" width="132" height="54" rx="7" fill="#ffffff" fill-opacity="1.0" stroke="#2c6fb0" stroke-width="1.6"/>
+<rect x="336" y="1034" width="132" height="17" rx="7" fill="#2c6fb0" fill-opacity="1.0" stroke="#2c6fb0" stroke-width="1.0"/>
+<text x="402.0" y="1047" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle">axis 3  ·  kv-band</text>
+<text x="402.0" y="1067" font-size="10" font-weight="700" fill="#0d1b26" text-anchor="middle">qk_norm_q_k</text>
+<text x="402.0" y="1081" font-size="8.8" font-weight="600" fill="#5a6b76" text-anchor="middle">qk_kv_head_scoped</text>
+<line x1="469" y1="1061.0" x2="473" y2="1061.0" stroke="#c9d4dd" stroke-width="2.0"/>
+<rect x="474" y="1034" width="132" height="54" rx="7" fill="#ffffff" fill-opacity="1.0" stroke="#2c6fb0" stroke-width="1.6"/>
+<rect x="474" y="1034" width="132" height="17" rx="7" fill="#2c6fb0" fill-opacity="1.0" stroke="#2c6fb0" stroke-width="1.0"/>
+<text x="540.0" y="1047" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle">axis 3  ·  kv-band</text>
+<text x="540.0" y="1067" font-size="10" font-weight="700" fill="#0d1b26" text-anchor="middle">score_matvec</text>
+<text x="540.0" y="1081" font-size="8.8" font-weight="600" fill="#5a6b76" text-anchor="middle">gqa_kv_len_scoped</text>
+<line x1="607" y1="1061.0" x2="611" y2="1061.0" stroke="#a86a1e" stroke-width="2.0" marker-end="url(#ao)"/>
+<rect x="612" y="1034" width="132" height="54" rx="7" fill="#ffffff" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/>
+<rect x="612" y="1034" width="132" height="17" rx="7" fill="#c0392b" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.0"/>
+<text x="678.0" y="1047" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle">axis 0  ·  Y</text>
+<text x="678.0" y="1067" font-size="10" font-weight="700" fill="#0d1b26" text-anchor="middle">softmax_score</text>
+<text x="678.0" y="1081" font-size="8.8" font-weight="600" fill="#5a6b76" text-anchor="middle">Max + sum (P-8)</text>
+<line x1="745" y1="1061.0" x2="749" y2="1061.0" stroke="#c9d4dd" stroke-width="2.0"/>
+<rect x="750" y="1034" width="132" height="54" rx="7" fill="#ffffff" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/>
+<rect x="750" y="1034" width="132" height="17" rx="7" fill="#c0392b" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.0"/>
+<text x="816.0" y="1047" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle">axis 0  ·  Y</text>
+<text x="816.0" y="1067" font-size="10" font-weight="700" fill="#0d1b26" text-anchor="middle">output_matvec</text>
+<text x="816.0" y="1081" font-size="8.8" font-weight="600" fill="#5a6b76" text-anchor="middle">all_reduce_bsz_dim</text>
+<line x1="883" y1="1061.0" x2="887" y2="1061.0" stroke="#a86a1e" stroke-width="2.0" marker-end="url(#ao)"/>
+<rect x="888" y="1034" width="132" height="54" rx="7" fill="#ffffff" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/>
+<rect x="888" y="1034" width="132" height="17" rx="7" fill="#2e8b57" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.0"/>
+<text x="954.0" y="1047" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle">axis 1  ·  X</text>
+<text x="954.0" y="1067" font-size="10" font-weight="700" fill="#0d1b26" text-anchor="middle">o_matvec</text>
+<text x="954.0" y="1081" font-size="8.8" font-weight="600" fill="#5a6b76" text-anchor="middle">all_reduce_bsz_dim</text>
+<line x1="1021" y1="1061.0" x2="1025" y2="1061.0" stroke="#a86a1e" stroke-width="2.0" marker-end="url(#ao)"/>
+<rect x="1026" y="1034" width="132" height="54" rx="7" fill="#ffffff" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.6"/>
+<rect x="1026" y="1034" width="132" height="17" rx="7" fill="#c0392b" fill-opacity="1.0" stroke="#c0392b" stroke-width="1.0"/>
+<text x="1092.0" y="1047" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle">axis 0  ·  Y</text>
+<text x="1092.0" y="1067" font-size="10" font-weight="700" fill="#0d1b26" text-anchor="middle">rmsnorm_z + up/gate</text>
+<text x="1092.0" y="1081" font-size="8.8" font-weight="600" fill="#5a6b76" text-anchor="middle">f32 + ZZ_fusion</text>
+<line x1="1159" y1="1061.0" x2="1163" y2="1061.0" stroke="#a86a1e" stroke-width="2.0" marker-end="url(#ao)"/>
+<rect x="1164" y="1034" width="132" height="54" rx="7" fill="#ffffff" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.6"/>
+<rect x="1164" y="1034" width="132" height="17" rx="7" fill="#2e8b57" fill-opacity="1.0" stroke="#2e8b57" stroke-width="1.0"/>
+<text x="1230.0" y="1047" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle">axis 1  ·  X</text>
+<text x="1230.0" y="1067" font-size="10" font-weight="700" fill="#0d1b26" text-anchor="middle">down_matvec</text>
+<text x="1230.0" y="1081" font-size="8.8" font-weight="600" fill="#5a6b76" text-anchor="middle">all_reduce_bsz_dim</text>
+<text x="660.0" y="1110" font-size="10.5" font-weight="600" fill="#a86a1e" text-anchor="middle">orange tick = a reconfig_allreduce_axis() repaint (6 per layer, incl. the trailing restore to Y for the next layer)  ·  decode.csl:1424-1484</text>
+<line x1="40" y1="1138" x2="1280" y2="1138" stroke="#dce4ea" stroke-width="1.4"/>
+<text x="40" y="1160" font-size="14.5" font-weight="700" fill="#0d1b26" text-anchor="start">C.  Color + queue binding map — every queue is bound (contrast prefill, which leaves q4 free)</text>
+<rect x="40" y="1178" width="1240" height="30" rx="6" fill="#eef3f7" fill-opacity="1.0" stroke="#c9d4dd" stroke-width="1.2"/>
+<text x="50" y="1198" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="start">queue</text>
+<text x="180" y="1198" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="start">color id</text>
+<text x="410" y="1198" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="start">carries</text>
+<text x="910" y="1198" font-size="11.5" font-weight="700" fill="#0d1b26" text-anchor="start">note</text>
+<rect x="40" y="1208" width="1240" height="30" rx="0" fill="#ffffff" fill-opacity="1.0" stroke="#e3e9ee" stroke-width="1.0"/>
+<text x="50" y="1227" font-size="10.3" font-weight="700" fill="#0d1b26" text-anchor="start">IQ0</text>
+<text x="180" y="1227" font-size="10.3" font-weight="600" fill="#0d1b26" text-anchor="start">19  (or 23)</text>
+<text x="410" y="1227" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">inter_block_a recv  —  or x_input_color on is_x_receiver</text>
+<text x="910" y="1227" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">chain-start block reads HT_head&#x27;s post-embed X</text>
+<rect x="40" y="1238" width="1240" height="30" rx="0" fill="#f5f8fa" fill-opacity="1.0" stroke="#e3e9ee" stroke-width="1.0"/>
+<text x="50" y="1257" font-size="10.3" font-weight="700" fill="#0d1b26" text-anchor="start">IQ1</text>
+<text x="180" y="1257" font-size="10.3" font-weight="600" fill="#0d1b26" text-anchor="start">20</text>
+<text x="410" y="1257" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">inter_block_b recv</text>
+<text x="910" y="1257" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">runtime pick between IQ0/IQ1 via is_recv_on_a_rt</text>
+<rect x="40" y="1268" width="1240" height="30" rx="0" fill="#ffffff" fill-opacity="1.0" stroke="#e3e9ee" stroke-width="1.0"/>
+<text x="50" y="1287" font-size="10.3" font-weight="700" fill="#0d1b26" text-anchor="start">IQ2 / OQ0</text>
+<text x="180" y="1287" font-size="10.3" font-weight="600" fill="#0d1b26" text-anchor="start">6</text>
+<text x="410" y="1287" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">intra_row_bcast  (P-2 fan-out along X)</text>
+<text x="910" y="1287" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">OQ0 carries result_color on is_result_sender</text>
+<rect x="40" y="1298" width="1240" height="30" rx="0" fill="#f5f8fa" fill-opacity="1.0" stroke="#e3e9ee" stroke-width="1.0"/>
+<text x="50" y="1317" font-size="10.3" font-weight="700" fill="#0d1b26" text-anchor="start">IQ3 / OQ3</text>
+<text x="180" y="1317" font-size="10.3" font-weight="600" fill="#0d1b26" text-anchor="start">1</text>
+<text x="410" y="1317" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">reduce_1st_color_0  —  phase-1 chain, even parity</text>
+<text x="910" y="1317" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">also K-pipe strip id (disjoint X cells)</text>
+<rect x="40" y="1328" width="1240" height="30" rx="0" fill="#ffffff" fill-opacity="1.0" stroke="#e3e9ee" stroke-width="1.0"/>
+<text x="50" y="1347" font-size="10.3" font-weight="700" fill="#0d1b26" text-anchor="start">IQ4 / OQ4</text>
+<text x="180" y="1347" font-size="10.3" font-weight="600" fill="#0d1b26" text-anchor="start">2</text>
+<text x="410" y="1347" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">reduce_1st_color_1  —  phase-1 chain, odd parity</text>
+<text x="910" y="1347" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">also carries both P-7 band chains</text>
+<rect x="40" y="1358" width="1240" height="30" rx="0" fill="#f5f8fa" fill-opacity="1.0" stroke="#e3e9ee" stroke-width="1.0"/>
+<text x="50" y="1377" font-size="10.3" font-weight="700" fill="#0d1b26" text-anchor="start">IQ5 / OQ5</text>
+<text x="180" y="1377" font-size="10.3" font-weight="600" fill="#0d1b26" text-anchor="start">3</text>
+<text x="410" y="1377" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">reduce_2nd_color_0  —  phase-2 chain</text>
+<text x="910" y="1377" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">UNUSED + untouched in kv-band mode</text>
+<rect x="40" y="1388" width="1240" height="30" rx="0" fill="#ffffff" fill-opacity="1.0" stroke="#e3e9ee" stroke-width="1.0"/>
+<text x="50" y="1407" font-size="10.3" font-weight="700" fill="#0d1b26" text-anchor="start">IQ6 / OQ6</text>
+<text x="180" y="1407" font-size="10.3" font-weight="600" fill="#0d1b26" text-anchor="start">4</text>
+<text x="410" y="1407" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">reduce_2nd_color_1  —  phase-2 chain</text>
+<text x="910" y="1407" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">UNUSED + untouched in kv-band mode</text>
+<rect x="40" y="1418" width="1240" height="30" rx="0" fill="#f5f8fa" fill-opacity="1.0" stroke="#e3e9ee" stroke-width="1.0"/>
+<text x="50" y="1437" font-size="10.3" font-weight="700" fill="#0d1b26" text-anchor="start">IQ7 / OQ7</text>
+<text x="180" y="1437" font-size="10.3" font-weight="600" fill="#0d1b26" text-anchor="start">5  |  17, 21</text>
+<text x="410" y="1437" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">broadcast_color  —  OR kv_ingress colors before the rebind</text>
+<text x="910" y="1437" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">the only @queue_flush + empty-queue handler in the file</text>
+<rect x="40" y="1448" width="1240" height="30" rx="0" fill="#ffffff" fill-opacity="1.0" stroke="#e3e9ee" stroke-width="1.0"/>
+<text x="50" y="1467" font-size="10.3" font-weight="700" fill="#0d1b26" text-anchor="start">OQ1 / OQ2</text>
+<text x="180" y="1467" font-size="10.3" font-weight="600" fill="#0d1b26" text-anchor="start">19 / 20</text>
+<text x="410" y="1467" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">inter_block Z send (opposite color from recv)</text>
+<text x="910" y="1467" font-size="10.3" font-weight="500" fill="#34434d" text-anchor="start">layout-global ids: same physical id in every row_y region</text>
+<text x="40" y="1502" font-size="10.5" font-weight="500" fill="#5a6b76" text-anchor="start">ABSENT vs prefill: two_hop_comm, left_matrix_shift, attn_right_hop, the Score x V band Cannon, run_shuttle + the whole RECFG_SH_OUT/IN machine, the cycling-root Q.K^T split. Zero microthreads, zero async fabric ops.</text>
+<text x="40" y="1520" font-size="10.5" font-weight="500" fill="#5a6b76" text-anchor="start">Legend:  red = phase-1 / Y axis   purple = phase-2   blue = broadcast / kv-band   green = X axis   orange = inter-block + repaint.   All fabric DSD extents comptime; runtime variation goes in the count, never the length.</text>
+</svg>

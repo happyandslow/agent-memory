@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+# kv_ingress_injector.csl algorithm diagram: KV ingress switch column (SOUTH walk, WEST scatter).
+# Panel 1 = spatial (band staircase + injector column). Panel 2 = the meta tile's journey.
+# Panel 3 = task state machine (with the S6a n_segs_rt==0 retain fast-path).
+import html
+OUT = "/home/lexu/agent-memory/projects/WaferEngine-staging/assets/kernel-algo/qwen3_1p7b-decode.kv_ingress_injector.svg"
+W, H = 1120, 1140
+def esc(s): return html.escape(s)
+s = []
+s.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial">')
+s.append('<defs>'
+  '<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/></marker>'
+  '<marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2c6fb0"/></marker>'
+  '<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2e8b57"/></marker>'
+  '<marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7a3fb0"/></marker>'
+  '<marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a86a1e"/></marker>'
+  '</defs>')
+s.append(f'<rect width="{W}" height="{H}" fill="#f7f9fb"/>')
+def T(x,y,t,sz=13,f="#12222f",w="600",a="middle"):
+    return f'<text x="{x}" y="{y}" font-size="{sz}" font-weight="{w}" fill="{f}" text-anchor="{a}">{esc(t)}</text>'
+def box(x,y,w,h,fill,stroke,rx=6,sw=1.6,op=1.0):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" fill-opacity="{op}" stroke="{stroke}" stroke-width="{sw}"/>'
+def line(x1,y1,x2,y2,c,mk,w=2.4,dash=""):
+    d=f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{c}" stroke-width="{w}"{d} marker-end="url(#{mk})"/>'
+
+s.append(T(W/2,30,"kv_ingress_injector.csl — KV-cache ingress switch column (host -> block, WEST scatter)",18,"#0d1b26","700"))
+s.append(T(W/2,50,"Mirror of prefill kv_egress_colmux, reversed. Working tree of lexu/staging/s6a-inner-pe-kv-route-a: KV_META_LEN 2->4, n_segs_rt==0 retain fast-path.",11.5,"#4a5b66","500"))
+
+# ---------------- PANEL 1: spatial ----------------
+s.append(T(50,84,"(1) Spatial layout — per-band staircase, free column EAST of the block (2x2 config: 2 bands, P_BLOCK_SIZE=8)",13.5,"#0d1b26","700","start"))
+
+bx0, bw, bh = 50, 190, 210     # decode block box
+gy0 = 172
+rowh = 24                      # injector PE pitch
+colw = 92
+extx = 300                     # kv_fwd extender x
+injx = 470                     # injector column x
+adpy = gy0 - 40
+
+# decode block
+s.append(box(bx0, gy0, bw, bh, "#cfe0ee", "#245f96", 6, 1.5))
+s.append(T(bx0+bw/2, gy0+24, "decode block (band by)", 12, "#0d1b26", "700"))
+s.append(T(bx0+bw/2, gy0+42, "Pw x P_BLOCK_SIZE = 16 x 8", 10, "#2a4a63", "500"))
+s.append(T(bx0+bw/2, gy0+64, "east edge receives; kv_ingress", 9.5, "#2a4a63", "500"))
+s.append(T(bx0+bw/2, gy0+78, "west-shift fans across columns", 9.5, "#2a4a63", "500"))
+s.append(T(bx0+bw/2, gy0+98, "P-5 shift chain, IQ7/OQ7", 9.5, "#2e8b57", "700"))
+s.append(T(bx0+bw/2, gy0+114, "col c keeps tile c, fwds rest W", 9, "#2a4a63", "500"))
+s.append(T(bx0+bw/2, gy0+140, "each PE peels its meta copy:", 9.5, "#7a1f18", "700"))
+s.append(T(bx0+bw/2, gy0+154, "plen / decode_len / retained_len", 9, "#7a1f18", "500"))
+s.append(T(bx0+bw/2, gy0+170, "retain_rt = (plen == 0)", 9.5, "#7a1f18", "700"))
+s.append(T(bx0+bw/2, gy0+184, "decode.csl:1577-1580", 8.5, "#6a7883", "400"))
+
+# kv_fwd extender
+s.append(box(extx, gy0, 130, bh, "#efe0c6", "#a86a1e", 6, 1.4))
+s.append(T(extx+65, gy0+24, "kv_fwd extender", 11, "#7a5a1e", "700"))
+s.append(T(extx+65, gy0+40, "by cols x 8", 9.5, "#7a5a1e", "500"))
+s.append(T(extx+65, gy0+60, "empty comptime {}", 9, "#7a5a1e", "500"))
+s.append(T(extx+65, gy0+74, "no tasks, no queues", 9, "#7a5a1e", "500"))
+s.append(T(extx+65, gy0+94, "painted E->W on BOTH", 9, "#7a5a1e", "500"))
+s.append(T(extx+65, gy0+108, "switch positions", 9, "#7a5a1e", "500"))
+s.append(T(extx+65, gy0+128, "(none when by == 0)", 9, "#8a7a5e", "400"))
+
+# adaptor
+s.append(box(injx-30, adpy-4, colw+60, 26, "#e2f0e4", "#2e8b57", 5, 1.5))
+s.append(T(injx+colw/2, adpy+14, "kv_ingress_adaptor (1 PE)", 10, "#1d5c39", "700"))
+# host port
+s.append(box(injx+colw/2-42, adpy-38, 84, 22, "#cfe3f6", "#2c6fb0", 4, 1.3))
+s.append(T(injx+colw/2, adpy-22, "H2D stream (TOP)", 9.5, "#12356a", "700"))
+s.append(line(injx+colw/2, adpy-14, injx+colw/2, adpy-6, "#2c6fb0", "ab", 2.2))
+
+# injector column: 8 PEs
+for ly in range(8):
+    y = gy0 + ly*rowh
+    tail = (ly == 7)
+    s.append(box(injx, y, colw, rowh-4, "#f6d7d2" if not tail else "#ece1f6",
+                 "#c0392b" if not tail else "#7a3fb0", 4, 1.4))
+    lbl = f"inj PE {ly}" + ("  (tail)" if tail else "")
+    s.append(T(injx+colw/2, y+14, lbl, 9.5, "#7a1f18" if not tail else "#4a1f6a", "700"))
+    # WEST scatter arrow
+    s.append(line(injx-2, y+(rowh-4)/2, extx+132, y+(rowh-4)/2, "#c0392b", "ar", 1.8))
+    # west of extender into block
+    s.append(line(extx-2, y+(rowh-4)/2, bx0+bw+2, y+(rowh-4)/2, "#c0392b", "ar", 1.8))
+# SOUTH walk arrow
+s.append(line(injx-30, gy0+2, injx-30, gy0+bh-6, "#2c6fb0", "ab", 2.6, "6 3"))
+s.append(T(injx+colw+24, gy0+52, "row-slices walk SOUTH", 9.5, "#12356a", "700", "start"))
+s.append(T(injx+colw+24, gy0+66, "switch pos0: N->RAMP (take mine)", 9, "#12356a", "500", "start"))
+s.append(T(injx+colw+24, gy0+80, "SWITCH_ADV -> pos1: N->SOUTH (fwd)", 9, "#12356a", "500", "start"))
+s.append(T(injx+colw+24, gy0+94, "-> row k+1 passes PE k at the ROUTER,", 9, "#12356a", "500", "start"))
+s.append(T(injx+colw+24, gy0+108, "never buffered (launch.py:1493-1495)", 9, "#12356a", "500", "start"))
+# round_sync S->N
+s.append(line(injx+colw+6, gy0+bh-8, injx+colw+6, gy0+4, "#7a3fb0", "ap", 2.2, "4 3"))
+s.append(T(injx+colw+24, gy0+140, "round_sync (S->N, 1 sentinel):", 9.5, "#4a1f6a", "700", "start"))
+s.append(T(injx+colw+24, gy0+154, "tail RAMP->N; middles S->[RAMP,N];", 9, "#4a1f6a", "500", "start"))
+s.append(T(injx+colw+24, gy0+168, "north-most S->RAMP sinks it.", 9, "#4a1f6a", "500", "start"))
+s.append(T(injx+colw+24, gy0+182, "Opposite the data => never overtakes.", 9, "#4a1f6a", "500", "start"))
+s.append(T(injx+colw+24, gy0+200, "Each non-tail PE then clears its switch", 9, "#4a1f6a", "500", "start"))
+s.append(T(injx+colw+24, gy0+214, "to pos0 and re-arms (:130-133).", 9, "#4a1f6a", "500", "start"))
+
+py1 = gy0 + bh + 24
+s.append(T(50, py1, "Colors: in_color (region-alloc, IQ2, switch N->RAMP | N->SOUTH)  -  scatter_color = kv_ingress_color_0 (17) or _1 (21) by east-column parity, OQ3, RAMP->WEST  -  round_sync (IQ3 / OQ4).", 10, "#26333c","500","start"))
+s.append(T(50, py1+16, "Ids 17/21 are reused from kpipe_b k7 / UP_A_color, which live on strip & HT_head cells — PE-disjoint from the block columns (launch.py:623-626).", 10, "#26333c","500","start"))
+
+# ---------------- PANEL 2: the meta tile's journey ----------------
+py = py1 + 44
+s.append(f'<line x1="40" y1="{py-14}" x2="{W-40}" y2="{py-14}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(50,py+8,"(2) The per-round meta tile's journey — S6a widened KV_META_LEN 2 -> 4",13.5,"#0d1b26","700","start"))
+
+mty = py + 30
+# wire format bar
+s.append(T(50, mty+14, "row-slice on the wire:", 10.5, "#26333c", "700", "start"))
+wx = 200
+seg = [("u32 #0\n[plen | decode_len]", 150, "#f6d7d2", "#c0392b"),
+       ("u32 #1\n[retained_len | pad]", 150, "#fdeecf", "#a86a1e"),
+       ("u32 #2 .. #31  (cols 1..Pw-1, 2 u32 each)", 300, "#e8eef3", "#5a6b76"),
+       ("KV: n_segs_rt x seg_len wavelets", 300, "#dbeafe", "#245f96")]
+cx = wx
+for lbl, wd, fill, st in seg:
+    s.append(box(cx, mty, wd, 44, fill, st, 4, 1.4))
+    for i, ln in enumerate(lbl.split("\n")):
+        s.append(T(cx+wd/2, mty+19+i*13, ln, 9, "#12222f", "600"))
+    cx += wd + 4
+s.append(T(wx, mty+62, "num_cols = Pw * KV_META_LEN / 2 = 2*Pw = 32 u32   (was Pw = 16 at fcfc8c1)   |   metablk extent num_cols-1 : 15 -> 31", 10, "#26333c", "600", "start"))
+
+# who reads what
+ry = mty + 84
+rows = [
+  ("kv_ingress_adaptor", "PEELS u32 #0, reads ONLY low 16 (plen). @as(u16,u32) truncates away decode_len.\nRE-EMITS it, relays the other 31 metas verbatim. Blind to decode_len / retained_len.", "#e2f0e4", "#2e8b57"),
+  ("kv_ingress_injector (this)", "PEELS u32 #0, reads ONLY low 16 (plen) -> n_segs_rt = D_kv * plen  (:85).\nRE-EMITS it (:87), forwards 31 metas WEST (:91). Peel is wavelet-count-neutral.", "#f6d7d2", "#c0392b"),
+  ("decode block PE (west-shift)", "Receives all 4 i16 slots: plen (:1577), decode_len (:1578), retained_len (:1579).\nDERIVES retain_rt = (plen == 0) on-device (:1580) — no retain flag is ever transmitted.", "#cfe0ee", "#245f96"),
+]
+for i,(who,what,fill,st) in enumerate(rows):
+    y = ry + i*54
+    s.append(box(50, y, 250, 46, fill, st, 5, 1.4))
+    s.append(T(175, y+27, who, 10.5, "#12222f", "700"))
+    for j,ln in enumerate(what.split("\n")):
+        s.append(T(316, y+19+j*15, ln, 9.5, "#34434d", "500", "start"))
+
+# ---------------- PANEL 3: task state machine ----------------
+py2 = ry + 3*54 + 22
+s.append(f'<line x1="40" y1="{py2-12}" x2="{W-40}" y2="{py2-12}" stroke="#dce4ea" stroke-width="1.4"/>')
+s.append(T(50,py2+8,"(3) Per-PE task state machine — is_col_tail selects the post-row branch",13.5,"#0d1b26","700","start"))
+def node(x,y,w,h,title,sub,fill,stroke):
+    out=[box(x,y,w,h,fill,stroke)]
+    out.append(T(x+w/2,y+19,title,11,"#0d1b26","700"))
+    for i,ln in enumerate(sub.split("\n")):
+        out.append(T(x+w/2,y+35+i*12.5,ln,9,"#34434d","500"))
+    return "".join(out)
+ny = py2+34; nh=68; w1=228
+col_r="#faddd8"; s_r="#c0392b"
+col_b="#dbeafe"; s_b="#245f96"
+col_p="#ece1f6"; s_p="#7a3fb0"
+xs=[50, 306, 562, 818]
+s.append(node(xs[0],ny,w1,nh,"peel_meta0 (task 12)","mov32 extent 1: u32 #0 -> meta0_buf\nswitch held at pos0\n:80-82",col_r,s_r))
+s.append(node(xs[1],ny,w1,nh,"scatter_meta (task 13)","n_segs_rt = D_kv * @as(u16,meta0_buf[0])\nseg_idx=0; re-emit u32 #0 WEST\n:84-88",col_r,s_r))
+s.append(node(xs[2],ny,w1,nh,"scatter_metablk (task 14)","fwd remaining num_cols-1 = 31 metas\nWEST in one comptime op\n:90-92",col_r,s_r))
+s.append(node(xs[3],ny,w1,nh,"emit_scatter (task 8)","n_segs_rt x mov32(seg_len) WEST\nself-chains per segment\n:94-119",col_r,s_r))
+for i in range(3):
+    s.append(line(xs[i]+w1,ny+nh/2,xs[i+1]-2,ny+nh/2,"#5a6b76","ar",1.8))
+s.append(f'<path d="M {xs[3]+w1-34} {ny} L {xs[3]+w1-34} {ny-16} L {xs[3]+34} {ny-16} L {xs[3]+34} {ny}" fill="none" stroke="#c0392b" stroke-width="1.6" marker-end="url(#ar)"/>')
+s.append(T(xs[3]+w1/2,ny-22,"x n_segs_rt",9,"#c0392b","600"))
+
+ny2 = ny+nh+58
+s.append(node(50,ny2,w1,nh,"sync_src (task 9) — TAIL","source 1 round_sync wavelet NORTH\nnever left pos0 -> no reset needed\nre-arm -> peel_meta0   :121-124",col_p,s_p))
+s.append(node(400,ny2,w1,nh,"sync_wait (task 10) — non-tail","park on round_sync RAMP copy (IQ3)\n:126-128",col_b,s_b))
+s.append(node(750,ny2,w1,nh,"sync_do (task 11) — non-tail","clear_current_position(in_color) -> pos0\nre-arm -> peel_meta0   :130-133",col_b,s_b))
+s.append(f'<path d="M {xs[3]+w1/2} {ny+nh} L {xs[3]+w1/2} {ny2-30} L {164} {ny2-30} L {164} {ny2-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
+s.append(f'<path d="M {xs[3]+w1/2} {ny2-30} L {514} {ny2-30} L {514} {ny2-2}" fill="none" stroke="#5a6b76" stroke-width="1.8" marker-end="url(#ar)"/>')
+s.append(T(xs[3]+w1/2-10,ny2-36,"post-row: branch on is_col_tail",9.5,"#5a6b76","600","end"))
+s.append(T(164,ny2-14,"tail",9,"#7a3fb0","700"))
+s.append(T(514,ny2-14,"non-tail",9,"#245f96","700"))
+s.append(line(400+w1,ny2+nh/2,750-2,ny2+nh/2,"#7a3fb0","ap",1.8))
+s.append(T((400+w1+750)/2,ny2+nh/2-9,"round_sync arrives",9,"#7a3fb0","600"))
+s.append(T((400+w1+750)/2,ny2+nh/2+16,"(all rows below done)",9,"#7a3fb0","500"))
+s.append(f'<path d="M {50+w1/2} {ny2+nh} L {50+w1/2} {ny2+nh+20} L {30} {ny2+nh+20} L {30} {ny+18} L {48} {ny+18}" fill="none" stroke="#7a3fb0" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ar)"/>')
+s.append(f'<path d="M {750+w1/2} {ny2+nh} L {750+w1/2} {ny2+nh+36} L {20} {ny2+nh+36} L {20} {ny+42} L {48} {ny+42}" fill="none" stroke="#245f96" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ar)"/>')
+s.append(T(430,ny2+nh+32,"re-arm peel_meta0 for the next round's row",9.5,"#5a6b76","600","middle"))
+
+# the fast-path callouts (below the machine, so they cross no edges)
+fy = ny2+nh+52
+s.append(box(50, fy, 500, 78, "#fff2f0", "#c0392b", 6, 2.0))
+s.append(T(60, fy+19, "S6a FAST-PATH — retain heartbeat (plen == 0 => n_segs_rt == 0), :98-106", 10.5, "#7a1f18", "700", "start"))
+s.append(T(60, fy+36, "Retain round = META-ONLY: 32 meta u32, ZERO KV. Skip the segment move entirely and", 9.5, "#34434d", "500", "start"))
+s.append(T(60, fy+50, "jump straight to round-sync. Old code did ONE unconditional mov32 -> phantom seg_len read", 9.5, "#34434d", "500", "start"))
+s.append(T(60, fy+64, "+ undrained wavelets on the ingress color -> round-1 IQ7 remap FATAL at the broadcast rebind.", 9.5, "#34434d", "500", "start"))
+s.append(box(570, fy, 500, 78, "#f2f7fb", "#245f96", 6, 1.6))
+s.append(T(580, fy+19, "Invariant preserved by the fast-path", 10.5, "#12356a", "700", "start"))
+s.append(T(580, fy+36, "The switch still advances and round_sync still fires EXACTLY ONCE per row —", 9.5, "#34434d", "500", "start"))
+s.append(T(580, fy+50, "only the data move is elided. Count-exactness holds because the adaptor carries the", 9.5, "#34434d", "500", "start"))
+s.append(T(580, fy+64, "twin fast-path (kv_ingress_adaptor.csl:82-92): both ends compute n_segs_rt = 0.", 9.5, "#34434d", "500", "start"))
+
+s.append(T(50,H-14,"Runtime COUNT x comptime LENGTH: seg_len is comptime (<= 32766; >= 0x7fff = INFINITE_DSD_LEN hangs silently). A mis-timed SWITCH_ADV or a count mismatch is a SILENT HANG, not an error.",9.5,"#6a7883","400","start"))
+s.append('</svg>')
+open(OUT,"w").write("\n".join(s))
+print("ok", OUT, W, H)
