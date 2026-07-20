@@ -543,3 +543,28 @@ break-even (1.07 ms/tok) with a warning when GPU-only wins.
 
 **Tests now live with the demo** at `demo/specdec_race/tests/` (`./run.sh`).
 Observed 109 / 286 / 350 tok/s against predicted 109 / 293 / 360.
+
+## Update 13 (r17): the trace was drawing the FUTURE
+
+Le's screenshot: the timing strip had blocks only on the right, left half permanently
+empty.
+
+**Cause:** `drawTrace` walked `host.queue`, but `drain()` REMOVES completed rounds
+from that queue. So the only rounds it could draw were the current one and the 64
+rounds the engine had planned ahead — i.e. the strip rendered the *future*, and the
+past (everything left of the now-line) was never drawn at all.
+
+**Fix:** drained rounds are pushed to `L.history`, and the trace draws
+`history.concat(queue)`, pruning history once it scrolls out of view. The strip now
+does what it looked like it was doing: rounds flow right-to-left past a fixed now-line.
+
+Also skipped block creation for rounds outside the visible strip — the engine's
+64-round lookahead was materialising ~64 nodes per lane and transforming them every
+frame, nearly all off-screen. Drawn nodes per lane dropped 76/66/68 -> 34/9/11.
+
+**No auto-start (Le's request).** The page now boots paused with a primary `start`
+button at bottom right; it becomes pause/resume once running. Space also toggles it.
+A recording should begin on the presenter's cue, not while they are still talking.
+
+Suite extended to assert `history.length > 0` per lane — the same shape of bug as the
+previous two: the page animated convincingly while showing the wrong thing.
