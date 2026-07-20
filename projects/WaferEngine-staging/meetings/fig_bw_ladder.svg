@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="660" viewBox="0 0 1560 660" font-family='system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif'>
+<rect width="1560" height="660" fill="#ffffff"/>
+<line x1="96" y1="552.0" x2="1520" y2="552.0" stroke="#e1e0d9" stroke-width="1"/>
+<text x="82" y="557.0" text-anchor="end" font-size="20" fill="#898781">0</text>
+<line x1="96" y1="450.8" x2="1520" y2="450.8" stroke="#e1e0d9" stroke-width="1"/>
+<text x="82" y="455.8" text-anchor="end" font-size="20" fill="#898781">1</text>
+<line x1="96" y1="349.5" x2="1520" y2="349.5" stroke="#e1e0d9" stroke-width="1"/>
+<text x="82" y="354.5" text-anchor="end" font-size="20" fill="#898781">2</text>
+<line x1="96" y1="248.2" x2="1520" y2="248.2" stroke="#e1e0d9" stroke-width="1"/>
+<text x="82" y="253.2" text-anchor="end" font-size="20" fill="#898781">3</text>
+<line x1="96" y1="147.0" x2="1520" y2="147.0" stroke="#e1e0d9" stroke-width="1"/>
+<text x="82" y="152.0" text-anchor="end" font-size="20" fill="#898781">4</text>
+<text x="82" y="40" text-anchor="end" font-size="20" fill="#52514e">GB/s</text>
+<path d="M160.1,552.0 L160.1,551.1 Q160.1,547.1 164.1,547.1 L265.3,547.1 Q269.3,547.1 269.3,551.1 L269.3,552.0 Z" fill="#2a78d6"/>
+<text x="214.7" y="535.1" text-anchor="middle" font-size="23" font-weight="700" fill="#0b0b0b">0.048</text>
+<text x="214.7" y="582.0" text-anchor="middle" font-size="23" font-weight="700" fill="#0b0b0b">L0</text>
+<text x="214.7" y="606.0" text-anchor="middle" font-size="18" fill="#52514e">Pw 16 · blk 8</text>
+<text x="214.7" y="628.0" text-anchor="middle" font-size="18" fill="#898781">16 KiB in 0.3 ms</text>
+<path d="M397.4,552.0 L397.4,550.5 Q397.4,546.5 401.4,546.5 L502.6,546.5 Q506.6,546.5 506.6,550.5 L506.6,552.0 Z" fill="#2a78d6"/>
+<text x="452.0" y="534.5" text-anchor="middle" font-size="23" font-weight="700" fill="#0b0b0b">0.054</text>
+<text x="452.0" y="582.0" text-anchor="middle" font-size="23" font-weight="700" fill="#0b0b0b">L1</text>
+<text x="452.0" y="606.0" text-anchor="middle" font-size="18" fill="#52514e">Pw 32 · blk 16</text>
+<text x="452.0" y="628.0" text-anchor="middle" font-size="18" fill="#898781">32 KiB in 0.6 ms</text>
+<path d="M634.7,552.0 L634.7,534.0 Q634.7,530.0 638.7,530.0 L739.9,530.0 Q743.9,530.0 743.9,534.0 L743.9,552.0 Z" fill="#2a78d6"/>
+<text x="689.3" y="518.0" text-anchor="middle" font-size="23" font-weight="700" fill="#0b0b0b">0.217</text>
+<text x="689.3" y="582.0" text-anchor="middle" font-size="23" font-weight="700" fill="#0b0b0b">L2</text>
+<text x="689.3" y="606.0" text-anchor="middle" font-size="18" fill="#52514e">Pw 64 · blk 32</text>
+<text x="689.3" y="628.0" text-anchor="middle" font-size="18" fill="#898781">256 KiB in 1.2 ms</text>
+<path d="M872.1,552.0 L872.1,510.7 Q872.1,506.7 876.1,506.7 L977.3,506.7 Q981.3,506.7 981.3,510.7 L981.3,552.0 Z" fill="#2a78d6"/>
+<text x="926.7" y="494.7" text-anchor="middle" font-size="23" font-weight="700" fill="#0b0b0b">0.447</text>
+<text x="926.7" y="582.0" text-anchor="middle" font-size="23" font-weight="700" fill="#0b0b0b">L3</text>
+<text x="926.7" y="606.0" text-anchor="middle" font-size="18" fill="#52514e">Pw 128 · blk 64</text>
+<text x="926.7" y="628.0" text-anchor="middle" font-size="18" fill="#898781">1 MiB in 2.3 ms</text>
+<path d="M1109.4,552.0 L1109.4,464.5 Q1109.4,460.5 1113.4,460.5 L1214.6,460.5 Q1218.6,460.5 1218.6,464.5 L1218.6,552.0 Z" fill="#2a78d6"/>
+<text x="1164.0" y="448.5" text-anchor="middle" font-size="23" font-weight="700" fill="#0b0b0b">0.904</text>
+<text x="1164.0" y="582.0" text-anchor="middle" font-size="23" font-weight="700" fill="#0b0b0b">L4</text>
+<text x="1164.0" y="606.0" text-anchor="middle" font-size="18" fill="#52514e">Pw 256 · blk 128</text>
+<text x="1164.0" y="628.0" text-anchor="middle" font-size="18" fill="#898781">4 MiB in 4.6 ms</text>
+<path d="M1346.7,552.0 L1346.7,373.4 Q1346.7,369.4 1350.7,369.4 L1451.9,369.4 Q1455.9,369.4 1455.9,373.4 L1455.9,552.0 Z" fill="#2a78d6"/>
+<text x="1401.3" y="357.4" text-anchor="middle" font-size="23" font-weight="700" fill="#0b0b0b">1.803</text>
+<text x="1401.3" y="582.0" text-anchor="middle" font-size="23" font-weight="700" fill="#0b0b0b">L5</text>
+<text x="1401.3" y="606.0" text-anchor="middle" font-size="18" fill="#52514e">Pw 512 · blk 256</text>
+<text x="1401.3" y="628.0" text-anchor="middle" font-size="18" fill="#898781">16 MiB in 9.3 ms</text>
+<line x1="96" y1="552.0" x2="1520" y2="552.0" stroke="#c3c2b7" stroke-width="1.5"/>
+<line x1="96" y1="106.5" x2="1520" y2="106.5" stroke="#898781" stroke-width="2" stroke-dasharray="2 6"/>
+<text x="1514" y="96.5" text-anchor="end" font-size="19" fill="#52514e">spec ~4.4 GB/s per link</text>
+<line x1="96" y1="156.2" x2="1520" y2="156.2" stroke="#898781" stroke-width="2" stroke-dasharray="8 5"/>
+<text x="1514" y="146.2" text-anchor="end" font-size="19" fill="#52514e">one fabric link, clean stream — measured 3.91 GB/s</text>
+<line x1="1401.3" y1="156.2" x2="1401.3" y2="369.4" stroke="#52514e" stroke-width="2" marker-start="url(#a)" marker-end="url(#a)"/>
+<defs><marker id="a" markerWidth="9" markerHeight="9" refX="4.5" refY="4.5" orient="auto"><circle cx="4.5" cy="4.5" r="3" fill="#52514e"/></marker></defs>
+<text x="1385.3" y="258.8" text-anchor="end" font-size="20" font-weight="700" fill="#0b0b0b">2.2x below</text>
+<text x="1385.3" y="282.8" text-anchor="end" font-size="18" fill="#52514e">a single clean link</text>
+</svg>
