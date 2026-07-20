@@ -141,3 +141,36 @@ Also added, because this class of failure is silent:
 the condition self-correcting and detectable rather than proving what caused it.
 
 Test suites now: race/finish, determinism+accept-models, node-retention, skew-recovery.
+
+## Update 3 (r7): continuous mode — the demo is a BACKDROP, not a clip
+
+Corrected requirement from Le: keep the PACE as-is (it is the realistic UX), but
+make the OUTPUT long, so the page is still scrolling while the room is talking.
+My earlier reading ("too fast") was wrong; the complaint was that the text ran out.
+
+- `sim.endless` (default ON): `maxTok = Infinity`, so neither pane ever crosses a
+  finish line and both scroll indefinitely. Turn it off for the fixed-distance
+  race with a winner and a frozen final frame.
+- Speed restored to 0.07x, landing/entrance animations restored to r5 values.
+- Passage expanded to **646 tokens** of on-message prose. It still loops: GPU pane
+  every ~85 s, spec pane every ~27 s (it consumes ~3x faster). Acceptable for a
+  backdrop, but that is the repeat period if it ever needs to be longer.
+- `trimStream` caps each pane at 700 nodes AND compensates `scrollTop` by the
+  height removed — without that, pruning yanks the view upward every few seconds.
+
+### Two real bugs surfaced by the 6-minute soak
+
+1. **`LOOKAHEAD` 8 was too shallow.** Under producer starvation the spec pane
+   under-produced and the speedup sagged 3.14x -> 2.09x *without any visible
+   error*. Raised to 64. A live network-backed engine will starve far more easily
+   than the simulated one, so this matters beyond the test.
+2. **Negative frame delta.** `dtReal = Math.min(now - last, 100)` had no lower
+   bound. A backwards clock drives `vnow` negative, which puts the entire round
+   queue in the future — **exactly the r5 "spec pane frozen at 0 tokens" symptom**.
+   Now clamped to `Math.max(0, ...)`, and `reset()` re-seeds `lastFrameMs`. This is
+   a plausible root cause for that browser freeze, though still not proven to be
+   the one that fired.
+
+Suites 2-5 had to be told `sim.endless=false` — they assert a race that finishes.
+Failing suites after a default change are not automatically regressions; check the
+assumption before "fixing" the code.
