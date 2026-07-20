@@ -504,3 +504,42 @@ cheaper still.
 **Not yet built:** a third lane (GPU-only spec dec) in the race. Recommended, and it
 needs a measured GPU-draft-model latency for the SAME model as the 9.2 ms baseline —
 we only have GLM's MTP number, which is a different model.
+
+## Update 12 (r16): three vertical lanes, dual theme, parameter panel merged
+
+Final shape after design iteration with Le (mockups shown and approved before any
+page change — he asked for that explicitly after the earlier churn).
+
+**Layout:** three vertical columns, GPU alone / GPU + GPU draft / GPU + Cerebras.
+Vertical won because the text flows downward and the right column visibly advances
+3.3x faster — the ranking is self-evident without reading a number. Horizontal lanes
+made the same comparison harder.
+
+**Visual language:** channel hues taken from wafer iridescence (gold / magenta /
+cyan), on graphite. Deliberately not the near-black + one-neon-accent default.
+Serif for the generated text (it is *language*), sans + mono for the instrument
+chrome (those are *readings*). Signature element is the per-lane scrolling timing
+trace: three different heartbeats side by side — dense even ticks, slow big blocks,
+short draft + comm + verify.
+
+**Dual theme**, following `prefers-color-scheme` with a manual override that
+persists. The light set is not an inversion: the three hues are pushed to ink
+density, since the dark-set brights wash out on a light ground.
+
+**Token states made unmistakable** (Le: "rejected with strikethrough is hard to
+see"). The real cause was NOT styling: rejected tokens were marked at round end and
+cleared when the next round began — and rounds are back-to-back, so they lived about
+one frame (~16 ms) and were never visible. Now each one gets a full round on screen
+(~434 ms at 0.07x), red flash on rejection, red tint + 2px strike, then a short fade.
+Same bug class as the earlier "committed tokens vanish": *timing assertions do not
+test rendering.*
+
+**Parameters:** 15, all live, one number per stage as Le asked — K, Cerebras/token,
+GPU-draft/token, verify/token, comm/round, GPU baseline, acceptance (model + p +
+bonus), overlap, jitter, endless, distance, speed, seed. Panel keeps exact numeric
+entry, clickable provenance badges, presets, config JSON round-trip, localStorage.
+Derived block shows throughput, all three lanes, break-even p, and the GPU-draft
+break-even (1.07 ms/tok) with a warning when GPU-only wins.
+
+**Tests now live with the demo** at `demo/specdec_race/tests/` (`./run.sh`).
+Observed 109 / 286 / 350 tok/s against predicted 109 / 293 / 360.
