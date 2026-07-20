@@ -568,3 +568,53 @@ A recording should begin on the presenter's cue, not while they are still talkin
 
 Suite extended to assert `history.length > 0` per lane — the same shape of bug as the
 previous two: the page animated convincingly while showing the wrong thing.
+
+## Update 14 (r18): K=32 defaults — and the acceptance rate turns out to be MEASURED
+
+Le set K=32, acceptance 25/32, Cerebras 1600 tok/s. Two things fell out.
+
+**1. Verification had to move with K.** `verify.perTokenMs` was 0.827, calibrated at
+K=16. At K=32 there is a DIRECT measurement — 17.0 ms for a 32-token verify_forward —
+so 17.0/32 = **0.53125**, and its provenance goes from derived to **measured**. Leaving
+0.827 would have overstated verify by 56%. This is exactly the failure mode the
+parameter note warns about: the "average per token" is not constant.
+
+**2. The acceptance rate is no longer a guess.** Searching ContextBase for the demo
+write-up surfaced `Topic Threads › V1 Draft Training › K32 Round08 Best Model Report`:
+**code-region accept length 25.720285** per 32-token draft (97,377 accepted tokens over
+3,786 rounds), i.e. p = 0.804. Le's 25/32 = 0.78125 is that number, slightly
+conservative. `accept.p` is now labelled **measured**, which retires the single largest
+caveat the demo has carried since it was built.
+
+**But the same report contains the number that matters more:**
+
+| metric | value |
+|---|---|
+| code avg accept/draft | **25.72** |
+| **all rows** avg accept/draft | **0.915** |
+
+Outside fenced code regions the draft model accepts **less than one token per 32-token
+draft**. Consequences at the new defaults (round = 20.0 + 3.13 + 17.0 = 40.13 ms):
+
+| regime | tokens/round | ms/tok | speedup |
+|---|---|---|---|
+| code region (25.72) | 26.72 | 1.50 | **6.13x** |
+| demo default (25/32) | 26.00 | 1.54 | **5.96x** |
+| all rows (0.915) | 1.91 | 20.96 | **0.44x — SLOWER than GPU alone** |
+
+**The demo shows a coding-workload best case.** Break-even is 4.36 tokens/round
+(p ~ 10.5%). Any external claim must state which regime it quotes. Both configs are
+documented as paste-able JSON on the ContextBase page.
+
+Note `draft.perTokenMs` 0.625 (1600 tok/s) is a TARGET, not a measurement — the real
+28-layer kernel figure on record is 0.875 ms/tok (1143 tok/s). Marked estimated.
+
+New lane numbers: 109 / 400 / 648 tok/s = 1.00x / 3.68x / 5.96x. GPU-draft break-even
+tightened from 1.07 to **0.72 ms/tok** — the GPU-only competitor now has to be
+noticeably faster to win.
+
+**Published to ContextBase**: "SpecDec demo (GPU + Cerebras) — how to run it, how to
+tune it, what every parameter means", under Topic Threads › Speculative Decode &
+Drafting Model. https://context.ed-aisys.com/doc/specdec-demo-gpu-cerebras-how-to-run-it-how-to-tune-it-what-every-parameter-means-UUYyJTKb4Z
+Attachment upload failed (files.create needs an interactive session token, curl gets
+401), so the page points at the repo path instead.
