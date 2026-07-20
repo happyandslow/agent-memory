@@ -72,3 +72,39 @@ distance.
 
 - Measure real acceptance rate on CS-3 — everything above hinges on it.
 - Implement `LiveEngine` against the real verify service when it is wired up.
+
+## Update (same day): two rendering bugs the screenshot caught
+
+Screenshot showed the spec pane **completely empty** at 400/400 tokens. Two
+distinct bugs, both invisible to the node/DOM harness until I checked node
+retention explicitly:
+
+1. **CSS animation clobber.** `.tok` held itself on screen with
+   `animation: pop ... forwards` over a base `opacity: 0`. Promoting an accepted
+   token to `.landed` replaced that animation with `flash .6s` (no `forwards`),
+   so every committed token reverted to the base `opacity: 0` and vanished ~0.6 s
+   after landing. Lesson: never let an animation be the thing that HOLDS an
+   element visible — make the base state visible and let animations only handle
+   the entrance.
+
+2. **Commit-after-reveal ordering.** `advance()` revealed the in-flight round's
+   drafts BEFORE draining completed rounds. On the tick where the clock crosses a
+   round boundary, `inFlight()` already returns the NEXT round, so the
+   round-change branch called `clearDrafts()` and wiped the completing round's
+   draft nodes before they could be promoted to committed. Only the bonus token
+   survived per round — 14 disjointed words for 120 tokens. Fix: drain/commit
+   first, reveal second, plus `revealDrafts(done, done.draftedCount)` at commit
+   so a slow frame straddling the drafting phase still materialises every node.
+
+Also: rejected tokens were being cleared ~16 ms after being struck through
+(invisible). Now retired one full round later, so the correction is readable.
+
+**Pacing.** Defaults were unreadable: 400 tokens at 0.25x meant a 31.8 ms round
+completed in 127 ms real, i.e. 8 accept/reject cycles per second. New defaults
+120 tokens at 0.07x -> round ~454 ms real, race records in ~16 s. Streams now
+ease-scroll toward the newest line (lerp per frame) instead of snapping, font
+up to 17px.
+
+**Harness lesson:** the stubbed-DOM harness passed all timing/finish/determinism
+checks while the pane was visually empty. Only an explicit *node retention +
+class census* check caught it. Timing assertions do not test rendering.
