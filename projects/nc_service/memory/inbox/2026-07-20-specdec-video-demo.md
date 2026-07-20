@@ -108,3 +108,36 @@ up to 17px.
 **Harness lesson:** the stubbed-DOM harness passed all timing/finish/determinism
 checks while the pane was visually empty. Only an explicit *node retention +
 class census* check caught it. Timing assertions do not test rendering.
+
+## Update 2: the "spec pane frozen at 0 tokens" failure (r5)
+
+Second screenshot: right pane stuck at 0 tokens / 0.00x while the mechanism strip
+kept advancing to round #11 and the GPU pane ran normally.
+
+**Root cause class: the round queue drifting AHEAD of the virtual clock.** If
+every queued round has `startMs > vnow`, then simultaneously: `drain()` returns
+nothing (nothing ever commits, counter stays 0), the draft reveal fraction clamps
+to 0 (no dim draft tokens drawn), and `renderMech()` still animates because it
+reads `inFlight()` off the queue directly. All four observed symptoms fall out of
+that one condition.
+
+Reproduced by injecting a 500 ms queue skew into a live run. Without the fix the
+pane froze at 11 tokens and the final speedup degraded 3.04x -> **1.30x** — which
+also retro-explains the **1.46x** anomaly in the FIRST screenshot. Same bug, milder
+instance.
+
+Fix: `EngineHost.align(nowMs)` called at the top of `advance()` — if the queue head
+is in the future, slide the whole queue (and `nextStartMs`) back so the next round
+starts now. No-op in the normal case, self-healing otherwise.
+
+Also added, because this class of failure is silent:
+- `BUILD` stamp in the footer (`build r5 · 2026-07-20`). The demo is hand-synced to
+  a Mac (`/Users/lexu/Projects/nc_service/...`) and browsers cache `file://`
+  aggressively, so "is this even the new build" was unanswerable.
+- A visible stall banner when the GPU is >30 tokens in and the spec pane has
+  produced nothing.
+
+**Caveat: the original trigger in the browser is still unidentified.** The fix makes
+the condition self-correcting and detectable rather than proving what caused it.
+
+Test suites now: race/finish, determinism+accept-models, node-retention, skew-recovery.
