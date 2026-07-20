@@ -3,6 +3,7 @@
 # WaferEngine-staging Timeline
 
 - 2026-07-19 — s6a-prefill-warm-start-bringup → `memory/inbox/2026-07-19-s6a-prefill-warm-start-bringup.md`
+- 2026-07-19 — prefill-prefix-reuse-real-scale-perf → `memory/inbox/2026-07-19-prefill-prefix-reuse-real-scale-perf.md`
 - 2026-07-16 — fabric-no-keyed-routing-orchestration → `memory/inbox/2026-07-16-fabric-no-keyed-routing-orchestration.md`
 - 2026-07-13 — kv-management-abstraction-design → `memory/inbox/2026-07-13-kv-management-abstraction-design.md`
 - 2026-07-09 — e2e-kernel-qa-log → `memory/inbox/2026-07-09-e2e-kernel-qa-log.md`
