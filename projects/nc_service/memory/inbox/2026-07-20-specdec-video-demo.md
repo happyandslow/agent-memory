@@ -174,3 +174,42 @@ My earlier reading ("too fast") was wrong; the complaint was that the text ran o
 Suites 2-5 had to be told `sim.endless=false` — they assert a race that finishes.
 Failing suites after a default change are not automatically regressions; check the
 assumption before "fixing" the code.
+
+## Update 4 (r8): every number is an editable, persistable, shareable interface
+
+Le's point: the architecture is still changing, so all these constants WILL change —
+don't bury them in sliders. Added:
+
+- **Exact numeric entry** next to every slider. A slider cannot express 14.03, and
+  measured values arrive as exact numbers. Typing a value outside a slider's design
+  range widens the track instead of silently clamping the entry.
+- **Editable provenance.** Click the measured/derived/estimated badge to cycle it.
+  The footer honesty note reads the acceptance rate's *current* label, so once that
+  number is genuinely measured on CS-3 the warning stops shouting by itself.
+- **localStorage persistence** (guarded — some browsers block it on `file://`; the
+  panel says so and falls back to copy/apply).
+- **Config JSON round-trip.** Export/import the whole config. Accepts a full export,
+  a bare `{"key": value}` map (send only what changed), or a provenance-only update.
+- **Named presets** — bank one per architecture revision, switch live on stage.
+
+Two design bugs the tests caught, both the same shape: `applyConfigJson` rejected
+legitimate inputs because it counted only changed *params*. A provenance-only update
+("we measured it, relabel it") and an explicit empty `provenance: {}` ("clear the
+labels") both threw. Fix: key on the *presence* of the field, not its size.
+
+Also refactored the panel row from `innerHTML` string building to DOM calls — it was
+untestable under the stub, and the code is cleaner for it.
+
+### Parameter-tuning guidance worked out for Le (sweeps in scratchpad/sweep.js)
+
+- **The two acceptance models disagree about K in OPPOSITE DIRECTIONS.** Block
+  fraction rewards larger K without bound (4.83x at K=64) because it assumes accepted
+  scales linearly with K — a modelling artifact. Geometric has a real optimum at
+  **K≈8-12** and DEGRADES past it (0.79x at K=64), because everything after the first
+  rejection is discarded. Any "what K should we pick" discussion must use geometric.
+- **Stage ablation at K=16 (blockFraction 0.62), zeroing each stage:** GPU<->gw leg
+  3.16 -> 3.30x, gateway 3.16 -> 3.51x, verify base 3.16 -> 4.45x, overlap ON
+  3.16 -> 5.65x.
+- **NARRATIVE CORRECTION:** "network is 41%, wafer is 5%" was the PASSTHROUGH-kernel
+  result. With the real 28-layer kernel, draft 14.0 + verify 13.2 = **85%** of the
+  round and gateway+leg is only ~14%. Stop using the old framing in talks.
