@@ -213,3 +213,43 @@ untestable under the stub, and the code is cleaner for it.
 - **NARRATIVE CORRECTION:** "network is 41%, wafer is 5%" was the PASSTHROUGH-kernel
   result. With the real 28-layer kernel, draft 14.0 + verify 13.2 = **85%** of the
   round and gateway+leg is only ~14%. Stop using the old framing in talks.
+
+## Update 5 (r9): TTFT/TPOT naming, and the round decomposition audited for double-counting
+
+Le asked whether `draft.firstTokenMs` (3.5) and `draft.perTokenMs` (0.7) are TTFT
+and TPOT. Answer: **one is, one is not.**
+
+- 0.7 ms **is** the draft model's TPOT (steady-state per-token).
+- 3.5 ms is **NOT** TTFT. TTFT includes prefill; this is the first step of EVERY
+  draft round, paid once per round. It is dearer than 0.7 because per-round fixed
+  cost (re-arm, seed/band send, pipeline fill) is lumped into it. *Inference, not a
+  measured breakdown.*
+- Expanding: `draft = 3.5 + (K-1)*0.7 = **2.8 + 0.7K**` — i.e. 2.8 ms fixed per
+  round plus 0.7 ms per token. The fixed part does NOT scale with K, which is
+  exactly why larger blocks amortise better.
+- **The demo models no prefill/TTFT at all** — both panes start mid-generation.
+
+### Double-counting audit (Le's follow-up: how does 3.5 relate to the transfer overhead?)
+
+They are **disjoint**. The measured mode-B round decomposes as fabric 14.0 +
+gateway 3.2 + band/seed 0.6 + TSC drain 0.2 + band build 0.1 = 18.1 ms, and those
+sum to the observed round. The 3.5 sits **inside** the 14.0 fabric segment, which
+was measured *inside the worker*; the 3.2 gateway hop was measured as
+round-minus-worker. No overlap. Likewise `net.gpuLegMs` 1.36 was derived as
+verify-side minus driver-side, so it is the segment BEYOND the gateway hop.
+
+Caveat kept on the record: 3.5 is a host-observed receive time, so it already
+contains the on-pod d2h movement — it is not pure wafer compute.
+
+**Gap found and fixed:** the model was missing the 0.9 ms of measured host-side
+per-round work (band/seed 0.6 + TSC drain 0.2 + band build 0.1). Added as
+`net.hostOverheadMs`, a fifth timeline stage. Round 31.8 -> 32.7 ms, headline
+3.16x -> 3.07x.
+
+Also: block length was already fully adjustable — no hardcoded 16 anywhere except
+the default. Verified draft time stays exactly linear (`2.8 + 0.7K`) for K = 1..256,
+and that typing a value beyond a slider's range widens the track instead of clamping.
+
+Refactor: introduced `STAGE_KEYS` + `stageTotal()` as the single stage list. Adding
+hostMs required touching five separate places and I missed one (the engine's own
+`stages` literal), which the suite caught — hence the single list.
