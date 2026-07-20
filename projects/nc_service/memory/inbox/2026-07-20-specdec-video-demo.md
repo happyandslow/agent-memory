@@ -337,3 +337,55 @@ WSE-3 wafer
 **Campaign inconsistency worth remembering:** the SAME gateway<->worker segment
 measured **1.77 ms** in the passthrough campaign (ping 0.96 + gw overhead 0.81) but
 **3.2 ms** in mode-B. ~1.8x apart for the same physical hop.
+
+## Update 8 (r12): the GPU-anchored bound catches a cross-campaign inflation
+
+Le's challenge: the verify-side RTT is read inside sglang at the verifier, so by
+construction it must contain every overhead except on-wafer compute. **Correct, and
+it invalidates the overhead figure I had been quoting.**
+
+```
+verify-side 3.296  -  appliance ring 0.166  =  3.13 ms
+```
+
+That is the total non-wafer overhead of the draft path, measured AT THE CONSUMER,
+so it cannot omit a segment. My demo was carrying **5.46 ms** — 1.75x more than the
+entire measured end-to-end overhead.
+
+**Localised exactly.** Same segment (gateway <-> worker, incl. gateway overhead and
+worker host work):
+
+| campaign | composition | total |
+|---|---|---|
+| passthrough | ping 0.96 + gw overhead 0.806 | **1.77** |
+| mode-B | gateway 3.2 + host 0.9 | **4.10** |
+
+`gpuLeg` 1.364 exists only in the passthrough campaign. So:
+- passthrough-consistent: 1.77 + 1.36 = **3.13** — matches the GPU anchor exactly
+- what I had: 4.10 + 1.36 = **5.46** — supported by no single measurement
+
+**Root cause: mixing campaigns.** mode-B's (worse, less stable) transport combined
+with passthrough's cross-cluster leg. Round 32.69 -> 30.36 ms and 3.07x -> 3.31x if
+the passthrough set is used consistently.
+
+**Added to the panel:** a `non-wafer overhead` row plus a warning whenever it exceeds
+3.13 ms, explaining that the bound is passthrough-derived.
+
+### The real caveat
+
+**mode-B never had a GPU verifier attached, so the real 28-layer kernel has NO
+verify-side measurement and therefore no bound of its own.** 3.13 bounds the
+passthrough system only. The real kernel additionally does per-round band build/send
+that passthrough never did, so its true overhead is probably *between* 3.13 and 5.46.
+Unproven hypothesis for why mode-B transport is worse: the re-arm band payload is far
+larger than passthrough's ~75 bytes, possibly past the latency-bound/payload-invariant
+regime.
+
+**The one measurement that would settle it: run the real kernel against a GPU verifier
+and read the verify-side RTT.** That is TODO 2(c) in specdec-cs3-roadmap.md and it is
+now the highest-value missing number after the acceptance rate.
+
+Raw-data status: driver-side per-round samples (`_runs/full_batch_1000.json`) are NOT
+on gala2 any more (may survive on CS-3 under ~/rsync/nc_service-rsync/_runs/);
+verify-side raw samples never existed — the GPU service prints aggregates only.
+Full record lives in ContextBase `GOZQ9I8pOe`, far more detailed than the topic file.
