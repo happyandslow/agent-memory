@@ -40,8 +40,9 @@
 <line class="grid" x1="62.0" y1="1036.0" x2="764.0" y2="1036.0"/>
 <text class="ax" x="54.0" y="1039.0" text-anchor="end">36</text>
 <rect x="62.0" y="126.0" width="26.0" height="208.0" fill="#e2e8f0" stroke="#475569" stroke-width="1.6" rx="2" opacity=".93"/>
-<circle cx="75.0" cy="230.0" r="7" fill="#475569"/>
-<text class="bdg" x="75.0" y="233.0" text-anchor="middle">1</text>
+<text class="rd" x="75.0" y="131.0" text-anchor="start" transform="rotate(90 75.0 131.0)" fill="#475569">x_demux</text>
+<circle cx="75.0" cy="325.0" r="7" fill="#475569"/>
+<text class="bdg" x="75.0" y="328.0" text-anchor="middle">1</text>
 <rect x="88.0" y="126.0" width="156.0" height="208.0" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.6" rx="2" opacity=".93"/>
 <text class="rl" x="166.0" y="229.0" text-anchor="middle">ht_head</text>
 <text class="rd sub" x="166.0" y="244.0" text-anchor="middle">6×8</text>
@@ -62,17 +63,20 @@
 <text class="rl" x="478.0" y="437.0" text-anchor="middle">row_1</text>
 <text class="rd sub" x="478.0" y="452.0" text-anchor="middle">18×8</text>
 <rect x="712.0" y="126.0" width="26.0" height="208.0" fill="#fce7f3" stroke="#be185d" stroke-width="1.6" rx="2" opacity=".93"/>
-<circle cx="725.0" cy="230.0" r="7" fill="#be185d"/>
-<text class="bdg" x="725.0" y="233.0" text-anchor="middle">5</text>
+<text class="rd" x="725.0" y="131.0" text-anchor="start" transform="rotate(90 725.0 131.0)" fill="#be185d">kv_inj_0</text>
+<circle cx="725.0" cy="325.0" r="7" fill="#be185d"/>
+<text class="bdg" x="725.0" y="328.0" text-anchor="middle">5</text>
 <rect x="712.0" y="100.0" width="26.0" height="26.0" fill="#fce7f3" stroke="#be185d" stroke-width="1.6" rx="2" opacity=".93"/>
 <circle cx="725.0" cy="113.0" r="7" fill="#be185d"/>
 <text class="bdg" x="725.0" y="116.0" text-anchor="middle">6</text>
 <rect x="712.0" y="334.0" width="26.0" height="208.0" fill="#fce7f3" stroke="#be185d" stroke-width="1.6" rx="2" opacity=".93"/>
-<circle cx="725.0" cy="438.0" r="7" fill="#be185d"/>
-<text class="bdg" x="725.0" y="441.0" text-anchor="middle">7</text>
+<text class="rd" x="725.0" y="339.0" text-anchor="start" transform="rotate(90 725.0 339.0)" fill="#be185d">kv_fwd_1</text>
+<circle cx="725.0" cy="533.0" r="7" fill="#be185d"/>
+<text class="bdg" x="725.0" y="536.0" text-anchor="middle">7</text>
 <rect x="738.0" y="334.0" width="26.0" height="208.0" fill="#fce7f3" stroke="#be185d" stroke-width="1.6" rx="2" opacity=".93"/>
-<circle cx="751.0" cy="438.0" r="7" fill="#be185d"/>
-<text class="bdg" x="751.0" y="441.0" text-anchor="middle">8</text>
+<text class="rd" x="751.0" y="339.0" text-anchor="start" transform="rotate(90 751.0 339.0)" fill="#be185d">kv_inj_1</text>
+<circle cx="751.0" cy="533.0" r="7" fill="#be185d"/>
+<text class="bdg" x="751.0" y="536.0" text-anchor="middle">8</text>
 <rect x="738.0" y="308.0" width="26.0" height="26.0" fill="#fce7f3" stroke="#be185d" stroke-width="1.6" rx="2" opacity=".93"/>
 <circle cx="751.0" cy="321.0" r="7" fill="#be185d"/>
 <text class="bdg" x="751.0" y="324.0" text-anchor="middle">9</text>
