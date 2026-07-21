@@ -2,6 +2,9 @@
 
 # nc_service Timeline
 
+- 2026-07-21 — pdsep-kv-contract-adopt → `memory/inbox/2026-07-21-pdsep-kv-contract-adopt.md`
+- 2026-07-21 — cs3-elf-extract-reload-scale → `memory/inbox/2026-07-21-cs3-elf-extract-reload-scale.md`
+- 2026-07-20 — specdec-video-demo → `memory/inbox/2026-07-20-specdec-video-demo.md`
 - 2026-07-16 — glm46-mtp-gpu-specdec-baseline → `memory/inbox/2026-07-16-glm46-mtp-gpu-specdec-baseline.md`
 - 2026-07-15 — real-kimi-oom-80gb-h100-and-fork-location → `memory/inbox/2026-07-15-real-kimi-oom-80gb-h100-and-fork-location.md`
 - 2026-07-15 — kimi-k25-h100-KNOWN-GOOD-startup-recipe → `memory/inbox/2026-07-15-kimi-k25-h100-KNOWN-GOOD-startup-recipe.md`

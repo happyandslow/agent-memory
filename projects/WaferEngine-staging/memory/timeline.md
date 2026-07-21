@@ -2,6 +2,12 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-07-21 — s6b-force-decode-design → `memory/inbox/2026-07-21-s6b-force-decode-design.md`
+- 2026-07-21 — retain-phase-state-recomputed-not-carried → `memory/inbox/2026-07-21-retain-phase-state-recomputed-not-carried.md`
+- 2026-07-21 — per-step-profiler-hang-not-full-geometry-bug → `memory/inbox/2026-07-21-per-step-profiler-hang-not-full-geometry-bug.md`
+- 2026-07-21 — fabric-link-ceiling-kv-transfer-latency-bound → `memory/inbox/2026-07-21-fabric-link-ceiling-kv-transfer-latency-bound.md`
+- 2026-07-21 — e2e-device-tsc-timing-gotchas → `memory/inbox/2026-07-21-e2e-device-tsc-timing-gotchas.md`
+- 2026-07-21 — cs3-ssh-death-orphans-wafer-job → `memory/inbox/2026-07-21-cs3-ssh-death-orphans-wafer-job.md`
 - 2026-07-19 — s6a-prefill-warm-start-bringup → `memory/inbox/2026-07-19-s6a-prefill-warm-start-bringup.md`
 - 2026-07-19 — prefill-prefix-reuse-real-scale-perf → `memory/inbox/2026-07-19-prefill-prefix-reuse-real-scale-perf.md`
 - 2026-07-16 — fabric-no-keyed-routing-orchestration → `memory/inbox/2026-07-16-fabric-no-keyed-routing-orchestration.md`
