@@ -30,14 +30,13 @@
 <circle cx="229.3" cy="438.4" r="5" fill="#2a78d6" stroke="#f7f9fb" stroke-width="2"/>
 <circle cx="362.7" cy="454.2" r="5" fill="#2a78d6" stroke="#f7f9fb" stroke-width="2"/>
 <circle cx="496.0" cy="477.6" r="5" fill="#2a78d6" stroke="#f7f9fb" stroke-width="2"/>
-<text x="507.0" y="481.6" font-size="12.5" font-weight="700" fill="#0d1b26">549 ms</text>
-<polyline points="96.0,206.2 229.3,230.1 362.7,284.6" fill="none" stroke="#008300" stroke-width="2"/>
+<text x="507.0" y="492.6" font-size="12.5" font-weight="700" fill="#0d1b26">549 ms</text>
+<polyline points="96.0,206.2 229.3,230.1 362.7,284.6 496.0,369.8" fill="none" stroke="#008300" stroke-width="2"/>
 <circle cx="96.0" cy="206.2" r="5" fill="#008300" stroke="#f7f9fb" stroke-width="2"/>
 <circle cx="229.3" cy="230.1" r="5" fill="#008300" stroke="#f7f9fb" stroke-width="2"/>
 <circle cx="362.7" cy="284.6" r="5" fill="#008300" stroke="#f7f9fb" stroke-width="2"/>
-<text x="362.7" y="271.6" font-size="12.5" font-weight="700" fill="#0d1b26" text-anchor="middle">2,395 ms</text>
-<line x1="362.7" y1="284.6" x2="496.0" y2="284.6" stroke="#008300" stroke-width="1.4" stroke-dasharray="3 4" opacity="0.5"/>
-<circle cx="496.0" cy="284.6" r="4.5" fill="none" stroke="#008300" stroke-width="1.6" stroke-dasharray="2 2"/>
+<circle cx="496.0" cy="369.8" r="5" fill="#008300" stroke="#f7f9fb" stroke-width="2"/>
+<text x="507.0" y="357.8" font-size="12.5" font-weight="700" fill="#0d1b26">1,580 ms</text>
 <line x1="596" y1="190" x2="596" y2="535" stroke="#dce4ea" stroke-width="1.2"/>
 <line x1="596" y1="535" x2="996" y2="535" stroke="#dce4ea" stroke-width="1.2"/>
 <text x="596" y="156" font-size="16" font-weight="700" fill="#0d1b26" text-anchor="start">Throughput per request</text>
@@ -61,14 +60,13 @@
 <circle cx="729.3" cy="343.8" r="5" fill="#2a78d6" stroke="#f7f9fb" stroke-width="2"/>
 <circle cx="862.7" cy="306.6" r="5" fill="#2a78d6" stroke="#f7f9fb" stroke-width="2"/>
 <circle cx="996.0" cy="213.4" r="5" fill="#2a78d6" stroke="#f7f9fb" stroke-width="2"/>
-<text x="1007.0" y="217.4" font-size="12.5" font-weight="700" fill="#0d1b26">14,916</text>
-<polyline points="596.0,422.7 729.3,413.9 862.7,387.5" fill="none" stroke="#008300" stroke-width="2"/>
+<text x="1007.0" y="228.4" font-size="12.5" font-weight="700" fill="#0d1b26">14,916</text>
+<polyline points="596.0,422.7 729.3,413.9 862.7,387.5 996.0,311.4" fill="none" stroke="#008300" stroke-width="2"/>
 <circle cx="596.0" cy="422.7" r="5" fill="#008300" stroke="#f7f9fb" stroke-width="2"/>
 <circle cx="729.3" cy="413.9" r="5" fill="#008300" stroke="#f7f9fb" stroke-width="2"/>
 <circle cx="862.7" cy="387.5" r="5" fill="#008300" stroke="#f7f9fb" stroke-width="2"/>
-<text x="862.7" y="374.5" font-size="12.5" font-weight="700" fill="#0d1b26" text-anchor="middle">6,840</text>
-<line x1="862.7" y1="387.5" x2="996.0" y2="387.5" stroke="#008300" stroke-width="1.4" stroke-dasharray="3 4" opacity="0.5"/>
-<circle cx="996.0" cy="387.5" r="4.5" fill="none" stroke="#008300" stroke-width="1.6" stroke-dasharray="2 2"/>
+<circle cx="996.0" cy="311.4" r="5" fill="#008300" stroke="#f7f9fb" stroke-width="2"/>
+<text x="1007.0" y="299.4" font-size="12.5" font-weight="700" fill="#0d1b26">10,368</text>
 <line x1="1096" y1="190" x2="1096" y2="535" stroke="#dce4ea" stroke-width="1.2"/>
 <line x1="1096" y1="535" x2="1496" y2="535" stroke="#dce4ea" stroke-width="1.2"/>
 <text x="1096" y="156" font-size="16" font-weight="700" fill="#0d1b26" text-anchor="start">Time saved vs no reuse</text>
@@ -94,24 +92,24 @@
 <circle cx="1229.3" cy="481.7" r="5" fill="#2a78d6" stroke="#f7f9fb" stroke-width="2"/>
 <circle cx="1362.7" cy="377.8" r="5" fill="#2a78d6" stroke="#f7f9fb" stroke-width="2"/>
 <circle cx="1496.0" cy="223.4" r="5" fill="#2a78d6" stroke="#f7f9fb" stroke-width="2"/>
-<text x="1507.0" y="227.4" font-size="12.5" font-weight="700" fill="#0d1b26">45.2%</text>
-<polyline points="1096.0,535.0 1229.3,485.0 1362.7,370.5" fill="none" stroke="#008300" stroke-width="2"/>
+<text x="1507.0" y="238.4" font-size="12.5" font-weight="700" fill="#0d1b26">45.2%</text>
+<polyline points="1096.0,535.0 1229.3,485.0 1362.7,370.5 1496.0,191.7" fill="none" stroke="#008300" stroke-width="2"/>
 <circle cx="1096.0" cy="535.0" r="5" fill="#008300" stroke="#f7f9fb" stroke-width="2"/>
 <circle cx="1229.3" cy="485.0" r="5" fill="#008300" stroke="#f7f9fb" stroke-width="2"/>
 <circle cx="1362.7" cy="370.5" r="5" fill="#008300" stroke="#f7f9fb" stroke-width="2"/>
-<text x="1362.7" y="357.5" font-size="12.5" font-weight="700" fill="#0d1b26" text-anchor="middle">23.8%</text>
-<line x1="1362.7" y1="370.5" x2="1496.0" y2="370.5" stroke="#008300" stroke-width="1.4" stroke-dasharray="3 4" opacity="0.5"/>
-<circle cx="1496.0" cy="370.5" r="4.5" fill="none" stroke="#008300" stroke-width="1.6" stroke-dasharray="2 2"/>
-<rect x="1096" y="599" width="460" height="72" rx="6" fill="#eef4fa" stroke="#245f96" stroke-width="1.4"/>
-<text x="1110" y="621" font-size="13" font-weight="700" fill="#12356a" text-anchor="start">The two lengths fall on the same curve.</text>
-<text x="1110" y="639" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">At 25% reuse: 7.7% vs 7.3%.  At 50%: 22.8% vs 23.8%.</text>
-<text x="1110" y="656" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">So the saving tracks the reuse FRACTION, not the prompt length.</text>
+<circle cx="1496.0" cy="191.7" r="5" fill="#008300" stroke="#f7f9fb" stroke-width="2"/>
+<text x="1507.0" y="179.7" font-size="12.5" font-weight="700" fill="#0d1b26">49.8%</text>
+<rect x="1096" y="599" width="460" height="90" rx="6" fill="#eef4fa" stroke="#245f96" stroke-width="1.4"/>
+<text x="1110" y="620" font-size="13" font-weight="700" fill="#12356a" text-anchor="start">Fraction sets the saving; length is a second-order effect.</text>
+<text x="1110" y="638" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">Saving  L=8192 vs 16384:  25% -> 7.7/7.3,  50% -> 22.8/23.8,</text>
+<text x="1110" y="655" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">75% -> 45.2/49.8.  The gap grows with reuse and favours</text>
+<text x="1110" y="672" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">the LONGER prompt — its skipped chunks are the pricier ones.</text>
 <text x="96" y="613" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">Reuse is strongly sub-linear: half the prompt cached</text>
 <text x="96" y="630" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">buys well under a quarter of the time. A chunk's cost</text>
 <text x="96" y="647" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">grows with the text before it, so the reused prefix is</text>
 <text x="96" y="664" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">always the cheapest part of the request.</text>
-<text x="596" y="613" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">Dashed stub + hollow marker = the 75% point at</text>
-<text x="596" y="630" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">16,384 tokens was NOT measured (the CS-3 gateway</text>
-<text x="596" y="647" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">dropped mid-batch). It is not interpolated — the line</text>
-<text x="596" y="664" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">simply stops at the last real measurement.</text>
+<text x="596" y="613" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">Both prompt lengths now measured at all four reuse</text>
+<text x="596" y="630" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">fractions (0 / 25 / 50 / 75%), 524,288 PEs, n=1 each.</text>
+<text x="596" y="647" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">Decode side (not shown): retain saves -49.3% at</text>
+<text x="596" y="664" font-size="12.5" font-weight="500" fill="#4a5b66" text-anchor="start">MAX_SEQ 4096, -34.6% at 1024 — set by the redo pattern.</text>
 </svg>

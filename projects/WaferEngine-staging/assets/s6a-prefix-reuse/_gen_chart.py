@@ -24,9 +24,9 @@ RUNS = {
     8192:  {"n": 32, "color": S1, "pts": [(0, 1101615635), (8, 1016462831),
                                           (16, 850635411), (24, 604117559)]},
     16384: {"n": 64, "color": S2, "pts": [(0, 3459432815), (16, 3208533364),
-                                          (32, 2634720942)]},
+                                          (32, 2634720942), (48, 1738254665)]},
 }
-MISSING = (16384, 48)                   # k=48 never ran — cluster dropped
+MISSING = None                          # complete 2026-07-21; k48 measured
 
 for L, r in RUNS.items():
     base = r["pts"][0][1]
@@ -93,19 +93,11 @@ def panel(px, title, sub, key, ymax, fmt, ticks, note=None):
                        f'stroke="{SURF}" stroke-width="2"/>')
         # direct label on the last point (secondary encoding; not every point)
         d = r["rows"][-1]
-        if L == MISSING[0]:      # label above, so it clears the dashed stub
-            out.append(f'<text x="{pts[-1][0]:.1f}" y="{pts[-1][1]-13:.1f}" font-size="12.5" '
-                       f'font-weight="700" fill="{INK}" text-anchor="middle">{fmt(d[key])}</text>')
-        else:
-            out.append(f'<text x="{pts[-1][0]+11:.1f}" y="{pts[-1][1]+4:.1f}" font-size="12.5" '
-                       f'font-weight="700" fill="{INK}">{fmt(d[key])}</text>')
-        if L == MISSING[0]:                             # show the gap as a gap
-            xm = px + (100.0 * MISSING[1] / r["n"] / 75.0) * PW
-            out.append(f'<line x1="{pts[-1][0]:.1f}" y1="{pts[-1][1]:.1f}" x2="{xm:.1f}" '
-                       f'y2="{pts[-1][1]:.1f}" stroke="{r["color"]}" stroke-width="1.4" '
-                       f'stroke-dasharray="3 4" opacity="0.5"/>')
-            out.append(f'<circle cx="{xm:.1f}" cy="{pts[-1][1]:.1f}" r="4.5" fill="none" '
-                       f'stroke="{r["color"]}" stroke-width="1.6" stroke-dasharray="2 2"/>')
+        # both series now reach 75%; nudge the upper series' label up, lower down,
+        # so the two end labels (near-coincident on the saving panel) don't collide
+        dy = -12 if L == 16384 else 15
+        out.append(f'<text x="{pts[-1][0]+11:.1f}" y="{pts[-1][1]+dy:.1f}" font-size="12.5" '
+                   f'font-weight="700" fill="{INK}">{fmt(d[key])}</text>')
     if note:
         T(px, PY + PH + 74, note, 12, MUTE)
 
@@ -118,21 +110,22 @@ panel(PXS[2], "Time saved vs no reuse", "percent of the cold-run latency", "savi
       50, lambda v: f"{v:.1f}%" if v else "0%", [0, 10, 20, 30, 40, 50])
 
 # the finding, stated on the panel that shows it
-out.append(f'<rect x="{PXS[2]}" y="{PY+PH+64}" width="{PW+60}" height="72" rx="6" '
+out.append(f'<rect x="{PXS[2]}" y="{PY+PH+64}" width="{PW+60}" height="90" rx="6" '
            f'fill="#eef4fa" stroke="#245f96" stroke-width="1.4"/>')
-T(PXS[2] + 14, PY + PH + 86, "The two lengths fall on the same curve.", 13, "#12356a", "700")
-T(PXS[2] + 14, PY + PH + 104, "At 25% reuse: 7.7% vs 7.3%.  At 50%: 22.8% vs 23.8%.", 12.5, MUTE)
-T(PXS[2] + 14, PY + PH + 121, "So the saving tracks the reuse FRACTION, not the prompt length.", 12.5, MUTE)
+T(PXS[2] + 14, PY + PH + 85, "Fraction sets the saving; length is a second-order effect.", 13, "#12356a", "700")
+T(PXS[2] + 14, PY + PH + 103, "Saving  L=8192 vs 16384:  25% -> 7.7/7.3,  50% -> 22.8/23.8,", 12.5, MUTE)
+T(PXS[2] + 14, PY + PH + 120, "75% -> 45.2/49.8.  The gap grows with reuse and favours", 12.5, MUTE)
+T(PXS[2] + 14, PY + PH + 137, "the LONGER prompt — its skipped chunks are the pricier ones.", 12.5, MUTE)
 
 T(PXS[0], PY + PH + 78, "Reuse is strongly sub-linear: half the prompt cached", 12.5, MUTE)
 T(PXS[0], PY + PH + 95, "buys well under a quarter of the time. A chunk's cost", 12.5, MUTE)
 T(PXS[0], PY + PH + 112, "grows with the text before it, so the reused prefix is", 12.5, MUTE)
 T(PXS[0], PY + PH + 129, "always the cheapest part of the request.", 12.5, MUTE)
 
-T(PXS[1], PY + PH + 78, "Dashed stub + hollow marker = the 75% point at", 12.5, MUTE)
-T(PXS[1], PY + PH + 95, "16,384 tokens was NOT measured (the CS-3 gateway", 12.5, MUTE)
-T(PXS[1], PY + PH + 112, "dropped mid-batch). It is not interpolated — the line", 12.5, MUTE)
-T(PXS[1], PY + PH + 129, "simply stops at the last real measurement.", 12.5, MUTE)
+T(PXS[1], PY + PH + 78, "Both prompt lengths now measured at all four reuse", 12.5, MUTE)
+T(PXS[1], PY + PH + 95, "fractions (0 / 25 / 50 / 75%), 524,288 PEs, n=1 each.", 12.5, MUTE)
+T(PXS[1], PY + PH + 112, "Decode side (not shown): retain saves -49.3% at", 12.5, MUTE)
+T(PXS[1], PY + PH + 129, "MAX_SEQ 4096, -34.6% at 1024 — set by the redo pattern.", 12.5, MUTE)
 
 out.append('</svg>')
 p = os.path.join(OUT, "prefill-prefix-reuse-latency-throughput.svg")
