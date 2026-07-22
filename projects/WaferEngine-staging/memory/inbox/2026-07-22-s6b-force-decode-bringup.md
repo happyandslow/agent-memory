@@ -108,3 +108,49 @@ make the test meaningful — a repeated token can't distinguish "KV appended at 
 "at L+0", so it masks position/RoPE/iter_num bugs. Same value-based full-distribution method as
 S6a, but the deterministic comparison point is step F-1 (first free token, depends on all forced
 KV), = step 0 when F=1.
+
+## Update 2026-07-23 (2) — Step 2 pipelined + F-sweep: the pipelining hypothesis is (partly) WRONG at this scale
+
+S6b Step 2 (skip ht_tail compute on forced steps to open pipelining) landed and verified:
+same correctness (F=4 → 9.8e-5), no hang, and **−24% cyc** vs Step 1 on the same config
+(17149→13096). The Step-2 boundaries that keep color-7 balanced: ht_tail
+emit/compute on `tail_step >= F-1`, ht_head drain on `ht_step >= F` (swap-gate); south
+emit left OUTSIDE the skip so the stale buffer is a natural dummy — host receive count
+stays `n_steps`, no explicit zero-fill needed.
+
+**The load-bearing finding (a designed controlled experiment overturning my own hypothesis):**
+I had claimed force-decode is faster because forced tokens let ht_head run ahead and the
+*layer pipeline* fills (a structural gain independent of skipping lm_head). The **F-sweep**
+(fix N, vary F, measure round-1 per-token TSC) falsifies that at this scale:
+
+  cyc ≈ 17138 − 2040·(#forced steps in the timed window)   — dead LINEAR, no knee.
+
+A pipelining gain would *saturate* (diminishing returns once the pipeline of depth ≈
+block-count fills). A constant ~2040-cyc saving per forced step is the signature of
+**skip-compute** (each forced step just drops its lm_head + sample + Y-reduce + route
+repaints). So on this 2×2/dim64/vocab24 toy, **skip-compute dominates and pipelining is
+negligible** — force-decode is still cheaper per token (forced step ≈ 28% of a plain step;
+the direction strengthens with vocab because lm_head grows), but NOT for the reason I gave.
+
+**Two reusable lessons:**
+
+1. **F-sweep curve SHAPE is the clean way to attribute a speedup to skip-compute vs
+   pipelining.** Linear-in-count ⇒ per-item fixed saving (skip-compute). Saturating/knee ⇒
+   a shared bounded resource filling (pipeline). Cheaper and cleaner than isolating the
+   mechanisms directly.
+
+2. **These two effects are KERNEL-COUPLED and cannot be toggled apart in the kernel** without
+   a hang: skipping ht_tail compute *requires* removing the ht_head token-drain (else color-7
+   imbalance), and vice versa — so there is no "pipeline but still compute" or "skip but still
+   serialize" kernel variant. A host-side valve (gate the next forced embedding on the prior
+   dummy reply) *can* serialize to isolate pipelining, but the device TSC then counts the host
+   round-trip STALL → it over-estimates the pipelining benefit (upper bound only). Prefer the
+   sweep-shape method; treat the valve as a bound.
+
+3. **Don't trust a single mixed data point for a mechanism claim.** The first "−24%" number
+   mixed forced+free steps and skip-compute+pipelining; it looked like it confirmed pipelining
+   but the controlled sweep showed the −24% is ~all skip-compute. Always design the isolation.
+
+**Caveat kept honest:** toy scale has tiny block compute, so "even if pipelined, little to
+overlap" — whether pipelining matters at real scale (heavy block compute, deep pipeline) is
+UNRESOLVED; needs a block-compute-dominated config.
