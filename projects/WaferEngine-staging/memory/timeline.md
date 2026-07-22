@@ -2,8 +2,11 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-07-22 — s6b-force-decode-bringup → `memory/inbox/2026-07-22-s6b-force-decode-bringup.md`
+- 2026-07-22 — color-audit-floorplan-decode-gotchas → `memory/inbox/2026-07-22-color-audit-floorplan-decode-gotchas.md`
 - 2026-07-21 — s6b-force-decode-design → `memory/inbox/2026-07-21-s6b-force-decode-design.md`
 - 2026-07-21 — retain-phase-state-recomputed-not-carried → `memory/inbox/2026-07-21-retain-phase-state-recomputed-not-carried.md`
+- 2026-07-21 — prefill-metainfo-two-channel-bridge → `memory/inbox/2026-07-21-prefill-metainfo-two-channel-bridge.md`
 - 2026-07-21 — per-step-profiler-hang-not-full-geometry-bug → `memory/inbox/2026-07-21-per-step-profiler-hang-not-full-geometry-bug.md`
 - 2026-07-21 — fabric-link-ceiling-kv-transfer-latency-bound → `memory/inbox/2026-07-21-fabric-link-ceiling-kv-transfer-latency-bound.md`
 - 2026-07-21 — e2e-device-tsc-timing-gotchas → `memory/inbox/2026-07-21-e2e-device-tsc-timing-gotchas.md`
