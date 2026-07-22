@@ -74,3 +74,37 @@ side effect of the input-gate edit.
 - Minor (not captured, low durability): `@mov32(dest_dsd, i32_value)` accepts a scalar
   immediate source (builtins.md) — I asserted it needed a DSD and was wrong; verify CSL
   builtin signatures against builtins.md, don't assert from memory.
+
+## Update 2026-07-23 — Step 1 landed + sim-verified (F>1), and a resolved-in-code detail
+
+The 3 bugs above were all fixed and **S6b Step 1 is end-to-end sim-verified for F>1**:
+`test_sim_2x2block_kv_forcedecode.json` (round 1 = retain reuse-16 + force-decode F=4 distinct
+tokens `[seed,1,2,3]` + free-decode) matches the teacher-forced oracle at **step F-1** to
+`max_abs 9.8e-5` (noise floor). **No hang** — the additive ht_head (keep `==0` seed + drain
+token every step + ADD `ht_step<F` pre_embed_x overwrite) preserved color-7 balance, confirming
+the earlier if/else-swap hazard was the right thing to avoid.
+
+Two things worth keeping:
+
+- **The forced-token sequence is a TOKEN×BATCH 2-D thing, not 1-D.** `token_ids` (len bsz) is the
+  BATCH axis (one seed per request/lane); force-decode adds a TIME axis (F steps). Full input is
+  `forced_tokens[F][bsz]`, and `token_ids` is its step-0 row. Generation: step 0 = `token_ids`
+  (keeps F=1 inert), steps 1..F-1 = a deterministic in-vocab rule (`[i % vocab_size]*bsz`), the
+  SAME array fed to BOTH device (packed to x_stream) and oracle (W_E lookup). Do NOT try to reuse
+  the device's *packed* `x_step_buf_u32` in the oracle — it's the wire layout (u32, column-
+  transposed); the oracle needs `(bsz,dim)` bf16, so share the token-ID rule, not the buffer.
+
+- **When you move a device dump point, grep for EVERY consumer's step index — a stale one is a
+  silent step-mismatch, not just a stale label.** Moving the logit dump from step 0 to F-1 fixed
+  the value-based verifier, but a SECOND consumer (the rank-based Pass-1 diagnostic) still read
+  the device's step-0 top-k (`per_round_topk_args[k][0]`) while the oracle now returned F-1 —
+  comparing two different steps. It only "passed" via the relative-baseline logic. Fixing it to
+  `[fdl_k-1]` moved round-1 overlap 0.5→1.0 (now step-aligned). Same lesson family as "new
+  per-request dimension hits an implicit old default": when F-1 replaces a hardcoded 0, the 0 can
+  hide in more than one place.
+
+**Verification methodology note (reusable):** distinct forced tokens (not seed-repeat) are what
+make the test meaningful — a repeated token can't distinguish "KV appended at position L+2" from
+"at L+0", so it masks position/RoPE/iter_num bugs. Same value-based full-distribution method as
+S6a, but the deterministic comparison point is step F-1 (first free token, depends on all forced
+KV), = step 0 when F=1.
