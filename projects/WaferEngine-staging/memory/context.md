@@ -6,34 +6,32 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 
 ## What this project is
 
-- Host-side LLM inference engine plus Cerebras WSE-3 CSL kernels for qwen3-1.7B end-to-end variants: fused `e2e`, `e2e-pdSeparate`, and their relationship to standalone decode/prefill.
+- Host-side LLM inference engine plus Cerebras WSE-3 CSL kernels for qwen3-1.7B end-to-end variants: fused `e2e`, `e2e-pdSeparate`, and standalone decode/prefill reuse mechanisms.
 
 ## Canonical sources
 
 - `plan.md` — canonical goals, decisions, milestones, and next actions.
-- `memory/topics/s6a-prefill-warm-start.md` — M0/S6a prefill `START_CHUNKS` warm-start: verified byte-identical on WSE-3, three bring-up defects, real-scale prefix-reuse performance, decode retain interpretation, and measurement guardrails.
-- `memory/topics/s6a-decode-kv-retain.md` — M0/S6a retain design/verification learnings and pre-S6 abstraction decision.
+- `memory/topics/s6b-force-decode.md` — S6b forced-token decode design and staged implementation/verification plan.
+- `memory/topics/s6a-prefill-warm-start.md` — M0/S6a prefill `START_CHUNKS` warm-start: WSE-3 correctness, defects, real-scale prefix-reuse performance, decode retain interpretation, and measurement guardrails.
+- `memory/topics/s6a-decode-kv-retain.md` — M0/S6a retain design/verification learnings, pre-S6 abstraction decision, and the carried-counter vs recomputed-state distinction.
+- `memory/topics/prefill-decode-transfer-bandwidth.md` — transfer+transform measurement design/results, profiler pitfalls, single-link ceiling, and floorplan pointers.
 - `memory/topics/e2e-kernel-dataflow-and-topology.md` — 2026-07-09 source-read reference for e2e token/KV flow, demux/HT_head seams, K-pipe strips, and tensor layout findings.
 - `memory/topics/kv-cache-policy-tradeoffs.md` — preserve/evict/offload tiering and force-decode-in-place direction.
 - `memory/topics/e2e-pdSeparate-device-validation.md` — device results, weights gap, max-context byte model.
 - `memory/topics/standalone-vs-integrated-kernel-parity.md` — feature gap and PR #14 / S6 abstraction refinements.
-- `memory/topics/prefill-decode-transfer-bandwidth.md` — transfer+transform measurement design and floorplan pointers.
-- `memory/topics/csl-control-payload-mechanisms.md` — CSL control wavelets/switches and the 2026-07-18 no-keyed-routing/static-orchestration framing.
+- `memory/topics/csl-control-payload-mechanisms.md` — CSL control wavelets/switches and no-keyed-routing/static-orchestration framing.
 - `memory/topics/qwen3-kernel-analysis-atlas.md` — generated floorplan/algorithm/state-machine atlas with links to aggregate state-machine indexes under `assets/kernel-algo/`.
-- `memory/topics/h2d-host-device-bandwidth.md` — CS-3 host↔device / host↔host transport findings from `h2d-playground`.
-- `memory/topics/agentic-kv-trace-datasets.md` — traces/datasets for KV policy evaluation.
+- `memory/topics/h2d-host-device-bandwidth.md` — CS-3 host↔device / host↔host transport findings.
 
 ## Restart checklist
 
 1. Verify live repo/server state before acting.
 2. Read `plan.md`.
 3. Read only the topic note(s) relevant to the task.
-4. For retain / reuse-abstraction questions, start with `memory/topics/s6a-prefill-warm-start.md` and `memory/topics/s6a-decode-kv-retain.md`, then `standalone-vs-integrated-kernel-parity.md`.
-5. Before quoting prefix-reuse value, use the real-scale WSE-3 table in `memory/topics/s6a-prefill-warm-start.md`: at L=8192, 25% reuse saves 7.7%, 50% saves 22.8%, 75% saves 45.2%; `n=1` only.
-6. Do not model prefix reuse as linear hit-rate savings. The reused prefix is made of cheaper early chunks; value needs position weighting.
-7. For decode retain, remember the benefit is skipping already-executed steps; equal-work decode steps are not cheaper under retain.
-8. Before adding or widening any per-column fabric payload, confirm the per-PE extent stays EVEN; odd extents deadlock silently on WSE-3.
-9. For device performance runs, tee per-point stdout logs; worker-side `out_*` artifact dirs are not returned to the login node.
-10. For fused e2e accuracy/topology questions, read `memory/topics/e2e-kernel-dataflow-and-topology.md` before relying on older diagrams or parity notes.
-11. For fabric routing/control questions, read `memory/topics/csl-control-payload-mechanisms.md`; assume static topology + deterministic orchestration unless live source proves otherwise.
-12. Treat real HF weights/tokenizer/oracle work as deferred unless Le reprioritizes it.
+4. For S6b / multi-turn known-token work, read `memory/topics/s6b-force-decode.md` first; remember `F` is token-granular and `F=1` is the inert current behavior.
+5. For retain/reuse-abstraction questions, read `memory/topics/s6a-prefill-warm-start.md` and `memory/topics/s6a-decode-kv-retain.md`; distinguish carried-over counters from state recomputed from those counters.
+6. Before quoting prefix-reuse value, use the real-scale WSE-3 table in `s6a-prefill-warm-start.md`; savings are position-weighted, not linear hit-rate.
+7. For KV-transfer claims, use `prefill-decode-transfer-bandwidth.md`: full-size transfer is healthy with profiler off; ~1.8 GB/s aggregate is latency/serialization-bound relative to a 3.91 GB/s single-link device ceiling.
+8. Before adding or widening per-column fabric payloads, confirm the per-PE extent stays EVEN; odd extents deadlock silently on WSE-3.
+9. For CS-3 device runs, tee per-point stdout logs and check for orphan jobs after ssh `rc=255` transport death.
+10. Treat real HF weights/tokenizer/oracle work as deferred unless Le reprioritizes it.

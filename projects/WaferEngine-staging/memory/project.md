@@ -103,3 +103,5 @@ export MEMORY=$AGENT_MEMORY_ROOT/projects/WaferEngine-staging   # or /home/lexu/
 
 - InferCept (KV preserve/swap/discard cost policy): <https://arxiv.org/abs/2402.01869>
 - Topic: [[kv-cache-policy-tradeoffs]], [[e2e-pdSeparate-device-validation]]
+
+- **CS-3 ssh transport death can orphan wafer jobs.** If a `/cs3-runner`/`cs3-run.sh` device run exits `rc=255` with `Timeout, server cerebras not responding`, the guard's timeout-cancel path did not run; if a wafer `execute` job had already started, it may still be holding the wafer. When the gateway is reachable, run `csctl get jobs | grep <user>` and cancel any survivor before submitting more work. A true guard overrun ends with rc 124/cancel; ssh death ends with rc 255 and no cancel. (Captured 2026-07-21.)

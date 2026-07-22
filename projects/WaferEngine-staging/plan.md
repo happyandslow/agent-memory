@@ -14,11 +14,13 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [x] pdSeparate max-context and large-context prefill SRAM failure documented.
 - [x] KV preserve/evict tier ladder captured, including Le's T0.5 in-bank reuse addition and force-decode-in-place direction.
 - [x] Standalone-vs-integrated kernel parity gap documented.
-- [ ] Instrument prefill→decode transfer segments A/B/C with TSC and compute first effective-GB/s number.
+- [x] Instrument prefill→decode transfer segments A/B/C with TSC and compute first effective-GB/s number.
+- [ ] If exact silicon per-state KV-transfer breakdown is needed, slim/fix the widened per-step profiler; otherwise treat it as parked because profiler-off fullT proves the transfer path itself is healthy.
 - [x] Resolve pre-S6 KV-management abstraction question: shared compute exists, but retain cannot be abstracted into integrated kernels until S4/S5 lifecycle port.
 - [x] Bring up prefill warm-start (`START_CHUNKS` prefix reuse): byte-identical PASS in sim and on real WSE-3 after fixing three independent defects.
 - [x] Re-measure the prefill prefix-reuse saving on real-dim device configs; real-scale WSE-3 results now show strongly sub-linear savings (25% reuse → 7.7%, 50% → 22.8%, 75% → 45.2%).
-- [ ] Scope forced-token decode, T0.5 in-bank reuse, and T1 idle-PE offload prototypes.
+- [x] Scope forced-token decode, T0.5 in-bank reuse, and T1 idle-PE offload prototypes.
+- [ ] Implement S6b forced-token decode in staged form: S0 inert `F=1`, S1 correctness with host-fed F embeddings, S2 pipelined tail-skip/token-drain guard.
 - [ ] Decide whether fused e2e should carry prefill's sampled token into decode (host hop or new on-chip `pf_ht_tail` → HT_head wire) before making end-to-end accuracy claims.
 
 ## Decisions
@@ -109,3 +111,11 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 ### 2026-07-05
 
 - KV-cache policy tradeoff and standalone-vs-integrated parity topics captured the main research framing for preserve/evict work.
+
+### 2026-07-22
+
+- Drained seven 2026-07-21 WaferEngine-staging captures. Added `memory/topics/s6b-force-decode.md`: decode already force-decodes one host token at step 0, so S6b generalizes this to token-granular `F`; `F=1` is today’s inert baseline, with staged S0/S1/S2 implementation and a still-unverified pipeline-speed hypothesis.
+- Updated `memory/topics/s6a-prefill-warm-start.md` with the prefill metainfo two-channel bridge: per-request scalar metadata rides both the i32 token-id prepend path and the fp16 X-tile append path, bridged/re-stamped at `ht_head`; widening must update both or deadlock.
+- Updated `memory/topics/s6a-decode-kv-retain.md` with the retain/recompute distinction: retain carries the effective-length counter; RoPE phase is recomputed from that counter each round, not carried as live phase state.
+- Updated `memory/topics/prefill-decode-transfer-bandwidth.md`: profiler-off `fullT` proves full-size KV transfer is healthy; the widened per-step profiler is the hang. Single-link WSE-3 device ceiling is 3.91 GB/s, so the ~1.8 GB/s aggregate KV-transfer result is latency/serialization-bound, not fabric-ceiling-bound. Added e2e TSC/toolchain gotchas.
+- Added a CS-3 operational pitfall to `memory/project.md`: ssh transport death (`rc=255`) can bypass the timeout guard’s `csctl cancel`, so check for orphan wafer jobs on reconnect.

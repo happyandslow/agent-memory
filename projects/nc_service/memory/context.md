@@ -12,9 +12,11 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 
 - `plan.md` — canonical goals, decisions, milestones, and next actions.
 - `memory/topics/specdec-cs3-roadmap.md` — current roadmap, validated branches/tests, mode-A/mode-B details, and gotchas.
+- `memory/topics/specdec-modeb-drive-path.md` — per-round timing call chain, KV-transfer findings, RDMA negative result, zero-copy handoff fix, and standing >=10 rewind-round rule.
 - `memory/topics/specdec-gpu-verifier-eidf.md` — EIDF/SGLang REMOTE_STANDALONE verifier deployment, dummy loop, real Kimi K2.5 H100 measurement, and GLM-4.6 FP8 + native MTP competitor baseline.
+- `memory/topics/specdec-demo-gpu-cerebras.md` — browser demo model, three-lane baseline framing, K=32 coding-workload acceptance caveat, and rendering/harness lessons.
+- `memory/topics/pdsep-kernel-adoption.md` — PR#14/#12 pdSeparate mode-A kernel adoption, chunk-major KV bridge contract, and CS-3 artifact/reload reality.
 - `memory/topics/specdec-modeb-pd-module-trace.md` — process/module/coupling map for `run_e2e_pd_modeb_real.sh` plus PR/contextbase deliverable pointers.
-- `memory/topics/specdec-modeb-drive-path.md` — per-round timing call chain, KV-transfer findings, RDMA negative result, and zero-copy handoff fix.
 - `memory/topics/specdec-d2h-latency.md` — earlier d2h latency / in-process-patch / real-GPU findings.
 - Root `CLAUDE.md` in the live nc_service repo — architecture plus build/test/device commands.
 
@@ -23,7 +25,7 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 1. Verify live repo/server state before acting.
 2. Read `plan.md`.
 3. Read `memory/topics/specdec-cs3-roadmap.md`.
-4. For hosted GPU verifier work or competitor baselines, read `memory/topics/specdec-gpu-verifier-eidf.md`.
-5. Read `memory/topics/specdec-modeb-pd-module-trace.md` for who-runs-where / seam questions, or `memory/topics/specdec-modeb-drive-path.md` for timing/latency/RDMA/KV-handoff questions.
-6. Read `memory/topics/specdec-d2h-latency.md` only for backbone/latency history.
+4. For hosted GPU verifier, competitor baseline, or demo claims, read `specdec-gpu-verifier-eidf.md` plus `specdec-demo-gpu-cerebras.md`.
+5. For timing/latency/RDMA/KV-handoff questions, read `specdec-modeb-drive-path.md`.
+6. For pdSeparate PR#14/#12 adoption, read `pdsep-kernel-adoption.md`; do not use the old mode-B strided KV transform for the chunk-major mode-A kernel.
 7. Never print/copy gateway TOTP secrets; use the `/cs3-runner` workflow for device runs.

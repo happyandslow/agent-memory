@@ -4,7 +4,7 @@ Date: 2026-07-21 · Repo: `WaferEngine-staging` (S6b design, no code yet)
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## Situation
 
@@ -120,3 +120,7 @@ converged the design, wrote the plan file. Decisions that clear the bar:
   (`tok_bcast_color` id 7); ht_head receive `:309`; seed path `ht_head.csl:301-304` +
   `launch.py:2546`.
 - Routes to M2 / `GOALS §7`: force-decode-may-beat-plain-decode (pipelining) [unverified].
+
+## Drain note
+
+Drained 2026-07-22 to memory/topics/s6b-force-decode.md and plan.md.

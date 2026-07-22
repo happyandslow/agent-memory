@@ -1,6 +1,7 @@
 # Spec-dec video demo (GPU + CS-3) — built, and an acceptance-rate modelling trap
 
 Date: 2026-07-20
+**Status:** drained
 Artifact: `nc_service/demo/specdec_race/index.html` (self-contained, no deps)
 Spec: `nc_service/docs/superpowers/specs/2026-07-20-specdec-demo-design.md`
 
@@ -618,3 +619,7 @@ tune it, what every parameter means", under Topic Threads › Speculative Decode
 Drafting Model. https://context.ed-aisys.com/doc/specdec-demo-gpu-cerebras-how-to-run-it-how-to-tune-it-what-every-parameter-means-UUYyJTKb4Z
 Attachment upload failed (files.create needs an interactive session token, curl gets
 401), so the page points at the repo path instead.
+
+## Drain note
+
+Drained 2026-07-22 to memory/topics/specdec-demo-gpu-cerebras.md and plan.md.

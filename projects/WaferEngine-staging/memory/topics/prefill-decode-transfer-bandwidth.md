@@ -651,3 +651,25 @@ back to 10.27.24.65:443")**, NOT a slow compile — misattributed. Implication: 
 full config should run directly on CS-3 in minutes once the coordinator is healthy; the
 local-compile + `--run-only` workaround (built + sim-validated on `we-p2`, blocked only by
 the 2.10.0↔1.13.2 version gap) is likely unnecessary.
+
+## 2026-07-21 full-size profiler isolation and fabric-link ceiling
+
+Drained from `memory/inbox/2026-07-21-per-step-profiler-hang-not-full-geometry-bug.md`, `2026-07-21-fabric-link-ceiling-kv-transfer-latency-bound.md`, and `2026-07-21-e2e-device-tsc-timing-gotchas.md`.
+
+### Full-size transfer is fine; the widened per-step profiler is the hang
+
+A `fullT` run with `KV_PROFILE:0` completed all 256 decode steps in ~0.1 s, proving the 512×512 / 28-layer / head_dim=128 KV-transfer path itself is sound. The reproducible hang after `SEEDS_SENT decode_recv_loop_start` is caused by the widened per-step profiler path (8→14 u32 blob, per-`kv_step`-state TSC timers, extra prefill vars), not by full-geometry transfer. The profiler is task-table / `.data.hi` heavy and overflows or deadlocks at large shapes; it is parked unless exact-silicon per-state breakdown is needed.
+
+The sim-only per-state question still answered the high-level concern: `kv_transform` is ~1.54% of stage A; A is ~5.7% of A+B; reformat is therefore ~0.09% of total transfer. The transfer remains north-shift / store-and-forward dominated, not reformat dominated.
+
+### Single-link reference ceiling
+
+A clean single on-device fabric link measured **3.91 GB/s** (flat plateau from 30k to 900k wavelets), about 0.89× the disclosed ~4.4 GB/s/link spec. The simulator reports the ideal 4.39 GB/s, so only the device number is informative.
+
+Consequence: the measured KV-transfer ladder headline (~1.8 GB/s aggregate at production geometry) is 2.2× below even one clean link and ~0.1% of the seam's aggregate capacity. The bottleneck is latency/serialization — multi-hop store-and-forward and serial planes — not a fabric bandwidth ceiling. Optimizing means changing the movement algorithm (coalesce planes, bigger per-hop payload, cut-through/direct route), not chasing wire peak.
+
+### e2e TSC/toolchain gotchas
+
+- In this model, `scripts/cslc_bin` caps inlined loop iterations at 8, so SDK `<time>.get_timestamp` fails to compile. Read TSC registers directly with `@get_config(tile_config.addresses.TIMESTAMP_COUNTER)` instead; do not edit the shared wrapper.
+- Device staging has a fixed `FILES_TO_STAGE` list in `launch_device.py`; any new `.csl` not added there fails device compile with `Could not find source code`.
+- Keep using 1.1 GHz for WSE-3 TSC conversion in this repo, not the SDK bandwidth example's 850 MHz.

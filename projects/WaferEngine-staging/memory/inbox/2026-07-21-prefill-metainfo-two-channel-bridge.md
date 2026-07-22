@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 
@@ -67,3 +67,7 @@ existing data streams, and FIFO order does the sequencing.
   metainfo = two-channel (i32 token-id prepend + fp16 X-tile append) bridged at
   ht_head" belongs as an evergreen fact in the prefill kernel atlas / a review
   skill for anyone modifying prefill metainfo.
+
+## Drain note
+
+Drained 2026-07-22 to `memory/topics/s6a-prefill-warm-start.md`, `plan.md`, and promotion follow-up in `tracking/conflicts.md`.

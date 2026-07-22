@@ -196,5 +196,14 @@ a quarter of the time. This is the most decision-relevant observation of the ses
 
 See also: [[s6a-decode-kv-retain]], [[kv-cache-policy-tradeoffs]],
 [[standalone-vs-integrated-kernel-parity]], [[e2e-pdSeparate-device-validation]].
+Source/drain note: `memory/inbox/2026-07-19-s6a-prefill-warm-start-bringup.md`.
 
+## 2026-07-21 prefill metainfo rides two channels
+
+Drained from `memory/inbox/2026-07-21-prefill-metainfo-two-channel-bridge.md`. A prefill per-request scalar (`request_n_chunks`, `last_token_chunk_pos`, `start_chunk`, or future S6b/M2 fields) has to ride **two separate data streams**, with `ht_head` as the bridge:
+
+- front channel: host → demux → ht_head, i32 token-id stream, metainfo prepended per token column;
+- tail channel: ht_head → block0 → inter-block shuttle, fp16 X-tile stream, metainfo appended as the X-tile tail.
+
+`ht_head` peels the i32 header and re-stamps it as fp16 because token ids become hidden-state tiles there. Widening prefill metainfo is therefore not just "edit `metainfo_len` and one reader": both channel widths and every hardcoded send/recv/shuttle count must stay equal, or the streams desync and silently deadlock. This is the structural reason behind the S6a metainfo cascade and complements the odd-extent fabric gotcha.
 Source/drain note: `memory/inbox/2026-07-19-s6a-prefill-warm-start-bringup.md`.

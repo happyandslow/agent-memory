@@ -4,7 +4,7 @@ Date: 2026-07-21 · Repo: `WaferEngine-staging` · Branch: `lexu/staging/kv-tran
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## Situation
 
@@ -49,3 +49,7 @@ that never had the file.
   (B prefill-shift and C decode-ingress are the same movement seen from both ends and
   overlap). Real GB/s needs the device config (dim=2048, ~28 MB) or a PREFILL_LEN
   sweep (slope = bandwidth; a single small point measures fixed overhead α, not BW).
+
+## Drain note
+
+Drained 2026-07-22 to memory/topics/prefill-decode-transfer-bandwidth.md, memory/project.md, and plan.md.

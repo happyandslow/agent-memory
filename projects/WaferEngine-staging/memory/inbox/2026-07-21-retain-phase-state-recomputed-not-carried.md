@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 
@@ -58,3 +58,7 @@ recompute, so the port need not (and must not) try to "carry" the phase.
   "RoPE seeded to eff_len"; this capture records the falsified doc + the lesson)
 - Surfaced while generating the decode kernel-algo walkthroughs (agent-memory
   `assets/kernel-algo/qwen3_1p7b-decode.*`, commit `5c08bb2`)
+
+## Drain note
+
+Drained 2026-07-22 to memory/topics/s6a-decode-kv-retain.md and plan.md.

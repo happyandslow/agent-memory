@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## Situation this applies to
 
@@ -51,3 +51,7 @@ whether it is worth optimizing.
   L0–L5, aggregate 1.803 GB/s at production geometry).
 - Related skill: `cerebras-data-movement` (quoting BW numbers), and the
   SdkLayout multi-stream io_loc-pinning skill.
+
+## Drain note
+
+Drained 2026-07-22 to memory/topics/prefill-decode-transfer-bandwidth.md and plan.md.

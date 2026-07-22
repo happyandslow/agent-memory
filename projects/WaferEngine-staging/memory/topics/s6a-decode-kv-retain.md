@@ -118,3 +118,9 @@ Before S6a coding, five read-only digs across standalone decode/prefill and inte
 - Force-decode is the M2 boundary: pure retain covers resume/exact-prefix repeat on decode plus shared-prefix fanout on prefill; realistic multi-turn decode of known new tokens needs an input-token override, not a new cache primitive.
 
 Source/drain note: `memory/inbox/2026-07-13-kv-management-abstraction-design.md`.
+
+## 2026-07-21 retain/recompute documentation gotcha
+
+Drained from `memory/inbox/2026-07-21-retain-phase-state-recomputed-not-carried.md`. A work-repo doc had claimed decode retain "continues" RoPE phase. Source says the more precise thing: `round_reset` calls `rope_init_from_delta_p()` unconditionally, reseeding `(cos,sin)` to `(1,0)` each round and then rotating by `retained_len_per_pe_rt`. Retain carries the **counter / effective length**; RoPE phase is **recomputed from that counter**, not carried over as live state.
+
+Transferable rule: when documenting retain/reuse, separate carried-over state from state deterministically recomputed from carried-over counters. The values look identical at the boundary, but the implementation obligation differs; this matters for the later S4/S5 retain port.

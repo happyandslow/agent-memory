@@ -4,7 +4,7 @@ Date: 2026-07-21 · Repo: `nc_service` (WaferEngine `launch_device.py` patched i
 
 **Project:** nc_service
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## Situation
 
@@ -72,3 +72,7 @@ The flaky EIDF gateway drops connections when you run per-command `cs3-ssh.sh CS
 ControlMaster (`ssh CS-3-cmd`) is stable — it survived a long profiling/compile
 session where fresh connections kept dropping. **Promotion candidate** for the
 cs3-runner/cs3-run skill: prefer the persistent `CS-3-cmd` channel over new hops.
+
+## Drain note
+
+Drained 2026-07-22 to memory/topics/pdsep-kernel-adoption.md and plan.md.

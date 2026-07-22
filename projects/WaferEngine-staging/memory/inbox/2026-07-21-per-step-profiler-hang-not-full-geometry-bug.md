@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## Situation this applies to
 
@@ -58,3 +58,7 @@ full-layer KV-transfer bug. It is not.
 - Relevant skills: `csl-pe-data-memory-shared-pool` (task-table vs `.data.hi`
   caps), `csl-odd-extent-fabric-forward-hang`, `cerebras-debugging`.
 - Topic: `memory/topics/prefill-decode-transfer-bandwidth.md`.
+
+## Drain note
+
+Drained 2026-07-22 to memory/topics/prefill-decode-transfer-bandwidth.md and plan.md.

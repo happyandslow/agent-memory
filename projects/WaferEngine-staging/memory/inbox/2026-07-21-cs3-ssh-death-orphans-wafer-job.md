@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 
@@ -56,3 +56,7 @@ already cleared on its own, but that is luck, not cleanup.
   `memory/inbox/2026-07-19-prefill-prefix-reuse-real-scale-perf.md` (out_* don't
   persist to the login node; keep remote `~` literal) — same "looks like a
   cluster fault, read the log first" family.
+
+## Drain note
+
+Drained 2026-07-22 to memory/project.md and plan.md; promotion candidate surfaced in tracking/conflicts.md.

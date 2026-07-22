@@ -4,7 +4,7 @@ Date: 2026-07-21 · Repo: `nc_service` · Branch: `lexu/pdsep-kernel-adopt` (not
 
 **Project:** nc_service
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## Situation
 
@@ -58,3 +58,7 @@ framework must fork these two explicitly. The compare script is in scratchpad
 Also note PR#12 `kv_bridge` is bsz==1 only and rounds `ceil(prompt_len/P)` (allows
 non-integer-block prefill); our transform supports `bsz_pf != bsz_dec` and forces
 `prefill_len % P == 0`.
+
+## Drain note
+
+Drained 2026-07-22 to memory/topics/pdsep-kernel-adoption.md and plan.md.

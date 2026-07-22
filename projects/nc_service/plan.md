@@ -19,7 +19,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Run the full mode-B PD/spec-dec sim loop on CS-3 with `mock_verify_host failures:0`.
 - [x] Validate hosted GPU verifier transport with EIDF Kubernetes SGLang REMOTE_STANDALONE and Rust mock draft.
 - [x] Boot and measure real Kimi K2.5 verifier on EIDF 8×H100 with known-good flags (17 ms p50 32-token verify_forward).
-- [ ] Run partial-accept on device and connect the real GPU verifier to the real CS-3 draft path.
+- [ ] Run partial-accept on device and connect the real GPU verifier to the real CS-3 draft path; this is now also the highest-value measurement for the demo because it gives the real verify-side RTT/acceptance for the actual 28-layer path.
 - [ ] Complete mode-A transport hardening for `PD_REAL_DAEMON_DEV`.
 - [ ] Split the new prefill `egress` bottleneck (prefill compute + D2H lumped) with on-wafer TSC-at-emit vs host receive timing.
 - [ ] Beat the measured GLM-4.6 MTP competitor band (1.47× unoptimized; ~1.8× optimized target) when presenting the CS-3 draft advantage.
@@ -75,3 +75,9 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 ### 2026-06-29
 
 - Real-GPU verifier-side latency measured and ContextBase log `GOZQ9I8pOe` updated; d2h latency topic created.
+
+### 2026-07-22
+
+- Drained three nc_service captures. Added `memory/topics/specdec-demo-gpu-cerebras.md`: the browser demo is now a three-lane GPU-alone / GPU+GPU-draft / GPU+Cerebras visual model with live parameters; K=32 code-region acceptance is measured (~25.72/32) but all-rows acceptance is only ~0.915/32, so public claims must state the coding-workload regime.
+- Added `memory/topics/pdsep-kernel-adoption.md`: adopting PR#14/PR#12 pdSeparate is a mode-A serving KV-contract change, not mode-B rewind; use the chunk-major `kv_bridge` logic for that path and keep the old strided `kv_transform.py` for the mode-B rewind kernel.
+- Captured CS-3 compiled-artifact reality: `csctl log-export -b -c` can recover worker binaries, but reloadable whole-device artifacts are ~23 GB `sim.elf` images per phase, not lightweight ELFs; keep bundles at stub ELF plus real port maps and validate on cluster.
