@@ -28,10 +28,12 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 1. Verify live repo/server state before acting.
 2. Read `plan.md`.
 3. Read only the topic note(s) relevant to the task.
-4. For S6b / multi-turn known-token work, read `memory/topics/s6b-force-decode.md` first; remember `F` is token-granular and `F=1` is the inert current behavior.
-5. For retain/reuse-abstraction questions, read `memory/topics/s6a-prefill-warm-start.md` and `memory/topics/s6a-decode-kv-retain.md`; distinguish carried-over counters from state recomputed from those counters.
-6. Before quoting prefix-reuse value, use the real-scale WSE-3 table in `s6a-prefill-warm-start.md`; savings are position-weighted, not linear hit-rate.
-7. For KV-transfer claims, use `prefill-decode-transfer-bandwidth.md`: full-size transfer is healthy with profiler off; ~1.8 GB/s aggregate is latency/serialization-bound relative to a 3.91 GB/s single-link device ceiling.
-8. Before adding or widening per-column fabric payloads, confirm the per-PE extent stays EVEN; odd extents deadlock silently on WSE-3.
-9. For CS-3 device runs, tee per-point stdout logs and check for orphan jobs after ssh `rc=255` transport death.
-10. Treat real HF weights/tokenizer/oracle work as deferred unless Le reprioritizes it.
+4. For S6b / multi-turn known-token work, read `memory/topics/s6b-force-decode.md` first. Step 2 is sim-verified for F>1; the host owns `forced_tokens[F][bsz]`, color-7 producer/consumer counts must stay balanced, and toy-scale speedup currently attributes to skip-compute rather than proven pipeline fill.
+5. Before quoting force-decode pipeline-overlap benefits, repeat the F-sweep on a block-compute-dominated/real-scale config; linear F-sweep savings mean fixed skip-compute, while a saturating/knee shape would support pipeline/resource-fill attribution.
+6. For retain/reuse-abstraction questions, read `memory/topics/s6a-prefill-warm-start.md` and `memory/topics/s6a-decode-kv-retain.md`; distinguish carried-over counters from state recomputed from those counters.
+7. Before quoting prefix-reuse value, use the real-scale WSE-3 table in `s6a-prefill-warm-start.md`; savings are position-weighted, not linear hit-rate.
+8. For KV-transfer claims, use `prefill-decode-transfer-bandwidth.md`: full-size transfer is healthy with profiler off; ~1.8 GB/s aggregate is latency/serialization-bound relative to a 3.91 GB/s single-link device ceiling.
+9. When reading pure-decode KV-ingress layout, do not rely on `csl-color-audit` floorplan/matrix alone: predicted floorplans can include fused-prefill artifacts, narrow helper PEs render as badges, and the matrix omits switch/router helper PEs. Check `launch.py`/CSL placement directly.
+10. Before adding or widening per-column fabric payloads, confirm the per-PE extent stays EVEN; odd extents deadlock silently on WSE-3.
+11. For CS-3 device runs, tee per-point stdout logs and check for orphan jobs after ssh `rc=255` transport death.
+12. Treat real HF weights/tokenizer/oracle work as deferred unless Le reprioritizes it.

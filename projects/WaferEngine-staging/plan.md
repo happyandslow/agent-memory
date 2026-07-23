@@ -20,7 +20,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [x] Bring up prefill warm-start (`START_CHUNKS` prefix reuse): byte-identical PASS in sim and on real WSE-3 after fixing three independent defects.
 - [x] Re-measure the prefill prefix-reuse saving on real-dim device configs; real-scale WSE-3 results now show strongly sub-linear savings (25% reuse → 7.7%, 50% → 22.8%, 75% → 45.2%).
 - [x] Scope forced-token decode, T0.5 in-bank reuse, and T1 idle-PE offload prototypes.
-- [ ] Implement S6b forced-token decode in staged form: S0 inert `F=1`, S1 correctness with host-fed F embeddings, S2 pipelined tail-skip/token-drain guard.
+- [x] Implement S6b forced-token decode in staged form: S0 inert `F=1`, S1 correctness with host-fed F embeddings, S2 tail-skip/token-drain guard; Step 2 is sim-verified at F=4 and the F-sweep shows the toy-scale speedup is mostly skip-compute, not pipeline fill.
 - [ ] Decide whether fused e2e should carry prefill's sampled token into decode (host hop or new on-chip `pf_ht_tail` → HT_head wire) before making end-to-end accuracy claims.
 
 ## Decisions
@@ -45,13 +45,19 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Instrument `qwen3_1p7b-e2e` segment timings: t0 `start_kv_transfer`, t1 prefill states 0–3 done, t2 north-shift done, t3 decode `kv_flush_then_init`; validate in sim then on a device-sized config.
 - [ ] Fill byte totals for the 2×2 configs from run printouts (`bsz`, `kv_dim_per_pe`, `seq_len_per_pe`, `max_layers_per_block`) so GB/s denominators are explicit.
 - [ ] Compare fused on-chip seam path against pdSeparate host-DRAM bridge under the same both-segments-counted metric.
-- [ ] Quantify T1 idle-PE offload and scope forced-token decode / T0.5 in-bank reuse.
+- [ ] Quantify T1 idle-PE offload and T0.5 in-bank reuse; for S6b force-decode, repeat the F-sweep on a block-compute-dominated/real-scale config before making a pipeline-overlap claim.
 - [ ] Discuss the no-keyed-routing/static-orchestration framing as a design constraint for KV reuse/tiering; check whether any retained-store or bridge mechanism implicitly assumes content routing.
 - [ ] Unblock pdSeparate long-context prefill by shrinking/removing the quadratic score buffer; defer real HF weights/tokenizer/oracle unless Le reprioritizes them.
 - [ ] Redraw/annotate `assets/prefill-decode-transfer/e2e-topology-full.svg`: x131 is a decode west strip, and x644 (the real east strip in 2×2) is currently absent.
 - [ ] Fix e2e source/documentation hygiene found in the 2026-07-09 read: stale `route_calc.csl:5` axis comment, prefill vocab-padding asymmetry, K-pipe alias invariant check, and `csl_color_audit` raw `@set_config` parsing.
 
 ## Narrative progress log
+
+### 2026-07-23
+
+- Drained `memory/inbox/2026-07-22-s6b-force-decode-bringup.md`: S6b Step 1 and Step 2 are now sim-verified for F>1. The host owns the forced-token sequence and feeds the same deterministic 2-D `forced_tokens[F][bsz]` to device and oracle; device output during forced steps is not trusted. Step 1 preserved color-7 balance by keeping the token drain additive, and Step 2 deliberately mirrors ht_tail skip vs ht_head drain gates.
+- The controlled S6b F-sweep falsified the earlier toy-scale pipeline-fill hypothesis: cycles fall linearly with forced-step count, indicating fixed skip-compute savings rather than a saturating pipeline knee. Force-decode is still cheaper per forced token at this scale, but real-scale/block-compute-dominated measurements are needed before quoting pipeline-overlap benefits.
+- Drained `memory/inbox/2026-07-22-color-audit-floorplan-decode-gotchas.md`: for pure decode KV-ingress layout, `csl-color-audit --floorplan` can show spurious fused-prefill regions and render 1-PE helper strips only as badges, while the matrix view omits switch/router helper PEs entirely. Treat `launch.py`/CSL placement as authoritative for these cases.
 
 ### 2026-07-20
 

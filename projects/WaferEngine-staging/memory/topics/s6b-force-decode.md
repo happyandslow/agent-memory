@@ -21,12 +21,20 @@ Standalone `qwen3_1p7b-decode` already force-decodes exactly one token per round
 - Stage the work: S0 inert `F=1`; S1 correctness with host-fed F embeddings and unchanged tail/token drain; S2 pipelined by skipping tail work for `F-1` pure-forced steps and guarding the `ht_head` token drain at `ht_step >= F`.
 - `demux` needs no semantic change; it is a per-cycle store-and-forward pump that re-arms. The host must push F X-vectors and the `x_stream` quota must scale with `F_max`.
 
-## Pipelining hypothesis
+## Performance attribution
 
-Option 3 (tail skips logits/sample on forced steps) may make forced decode faster per token than normal decode because it removes the ht_tail→ht_head token-feedback bubble and lets the layer pipeline fill. This is **unverified** and should be measured with TSC before being quoted. It is a structural pipeline-overlap claim, not an lm_head-saving claim.
+The original Option 3 hypothesis was that skipping forced-step tail work might make forced decode faster because it removes the ht_tail→ht_head token-feedback bubble and lets the layer pipeline fill. The 2026-07-23 F-sweep on the 2×2/dim64/vocab24 toy config partly falsified that explanation: cycles decreased linearly with the number of forced steps in the timed window (`≈ 17138 - 2040 * forced_steps`), which indicates fixed per-step skip-compute savings, not a saturating pipeline-knee effect.
+
+Force-decode is still cheaper per forced token at this scale, but do not quote a structural pipeline-overlap benefit until it is re-measured on a block-compute-dominated/real-scale config. The clean attribution test is the F-sweep curve shape: linear means fixed per-item skip-compute; saturating/knee means a bounded pipeline/resource is filling.
 
 ## Verification
 
 Use the S6a value-based full-distribution / teacher-forced oracle method, but dump logits at `tail_step == F-1`, the first free-token logits that depend on all forced KV.
 
 See also: [[s6a-decode-kv-retain]], [[kv-cache-policy-tradeoffs]].
+
+## Bring-up lessons (2026-07-23)
+
+- Forced tokens are host-owned. Build one deterministic `forced_tokens[F][bsz]` sequence and feed the same token IDs to device embeddings and the numpy oracle. Do not read forced-step device samples back from the spill path; those outputs are discarded/dummy by design.
+- Preserve fabric producer/consumer counts when introducing F. The safe Step-1 edit kept the `ht_step == 0` seed gate, drained the color-7 token every step, and added a separate `ht_step < F` overwrite. The unsafe if/else rewrite skipped drains for forced steps 1..F-1 and would hang or poison the next round.
+- When changing the deterministic comparison point from step 0 to `F-1`, grep every verifier/diagnostic consumer for hardcoded step-0 reads. A stale Pass-1 top-k consumer compared device step 0 against oracle step F-1 until it was updated.
