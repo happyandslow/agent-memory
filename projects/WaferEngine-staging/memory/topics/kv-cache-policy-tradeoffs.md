@@ -437,8 +437,66 @@ counters. ⇒ **on-chip retain-not-discard = gate that rewind** (a control-count
 movement; S4/S6 work). **demux PE 0** is a near-empty entrance PE seeing exactly one host entry per
 request — the natural P3 host. No GOALS §2.3 claim falsified by these findings.
 
+### 2026-07-24 — M1 decomposition: T0.5 cache-ops as per-tier mechanism, fixed-slot vs paging, control-plane placement
+
+Plan-mode session decomposing **M1** (single-card in-place reuse, T0/T0.5). Source of truth =
+`milestones/M1-intra-pe-reuse.md` + `GOALS.md §7`; this is reusable background. Reusable learnings:
+
+- **`evict / replace / compact / track` is a *per-tier mechanism* + a *cross-tier policy* — not one
+  milestone.** GOALS **WS1 already lists intra-PE "dynamic eviction, memory reclamation & compaction"**,
+  so the old "eviction → M4" park was actually the **T2 off-chip host-pool** eviction only; reading it as
+  global would silently drop the **T0.5 in-bank** mechanism. Each tier (T0.5→WS1/M1, T1→WS2/M3, T2→WS3/M4)
+  owns its own track/replace/compact; the **policy** (which slot to evict — LRU/priority/min-waste) is the
+  cross-tier control plane (**M5**).
+
+- **Fixed-size slot vs paging vs segmentation (the compaction fork).** M1 = **fixed-size slots + hardwired
+  LRU eviction**: one request per slot, short request wastes its slot (**internal** fragmentation), but
+  **zero external fragmentation ⇒ no compaction, ever** (a freed slot is exactly refillable). Compaction is
+  created only by **variable-size *contiguous* allocation (segmentation)**. **Paging** (PagedAttention-style:
+  fixed small pages + a page table, request = list of pages) is the standard way to **avoid** compaction
+  *and* remove the internal-frag waste — its cost is a **page table + non-contiguous KV gather**. Key
+  coupling: **that page table *is* the distributed control plane's per-PE mapping**, so "paging vs
+  fixed-slot" and "distributed vs centralized control plane" are the same question. Fixed-slot M1 sidesteps
+  both; paging is the later WS1 capacity-efficiency upgrade.
+
+- **Control-plane placement (deepens P1/P2/P3):** the real axis is **does each compute PE run policy
+  (distributed) or just consume a decision via metadata (centralized)?** Distributed on-PE = per-PE mapping
+  table + LRU on-PE, but it **increases PE-to-PE compute-time variation → collective-heavy WSE kernels get
+  inefficient** (straggler stalls barriers). Centralized (host/entrance-PE) maintains the mapping **once**,
+  PE only consumes a `slot_id`; but under **variable-length requests** different PEs hold different #KV
+  entries, so a correct central view may still need a per-PE mapping (large/expensive) — *bites specifically
+  under compaction/ragged packing*; under uniform per-slot allocation the slot→request_id map is identical
+  across PEs (only KV bytes differ). **Neither validated.** M1 commits to **centralized** and the comparison
+  is deferred.
+
+- **Partial prefix hit → take-over (zero-copy), and hit-detection == eviction-victim selection.** On a
+  partial hit (new request shares `[0:L_match]` with a cached one, block-granular per S3.3), the win is to
+  **take over the best *evictable* prefix-matching slot**, truncate to `L_match`, and **force-decode only the
+  divergent known suffix `[L_match:L_new]`** (S6b), skipping the shared prefix's rebuild — instead of
+  LRU-evicting an arbitrary slot + full-force-decoding. Preserving the old request (fanout) needs a copy or
+  paging/COW (deferred). Storage of a partial hit = the take-over-vs-copy fork; true "share prefix + own
+  suffix, no copy/destroy" = paging.
+
+- **Miss → force-decode is forced (not a decision) in the decode-only standalone** — no prefill kernel
+  exists there, so force-decode is the *only* KV-rebuild path. The **force-decode-vs-ship-to-prefill decision
+  (`R*`) is M2**, and only becomes a real choice in the integrated/two-kernel path (has ship-to-prefill).
+
+- **M2 broadened to a "where does reuse state + compute live?" study cluster** — paging/compaction +
+  control-plane placement + reuse-forwarding (Option A/B, decode-vs-prefill home), each **validated by a
+  small benchmark**, not by assertion. M2 = design-validation milestone, not just the `R*` formula.
+
+- **Git tooling gotcha:** after a **squash-merge**, `git merge-base --is-ancestor <original-tip-sha>
+  <branch>` returns **false** even though the content is fully present (squash rewrites the SHA). Verify
+  "feature X on branch" by **content** (`git grep`, file diff), not the original commit SHA. (Hit while
+  confirming S6b landed on `kv-feature` via squash PR #2 `ad52da0`.)
+
 ## Last updated
 
+2026-07-24 — appended M1-decomposition background: per-tier cache-ops mechanism vs cross-tier (M5) policy
+(fixing the "eviction=M4" conflation), fixed-slot vs paging vs segmentation (+ the paging⇄control-plane
+coupling), the distributed-vs-centralized control-plane axis, partial-hit take-over (hit-detection ==
+eviction-victim selection), miss→force-decode, the broadened M2 study cluster, and the squash-merge
+ancestor gotcha. Source of truth: `milestones/M1-intra-pe-reuse.md` + `GOALS.md §7`.
 2026-07-12 — appended M0/S3 keyed-store skeleton design: host-vs-on-chip policy-placement axis
 (P1/P2/P3 + host-for-M0 decision + re-eval trigger), SDK v2.10 on-PE keyed-lookup feasibility
 (no map/heap/strings/recursion → compile-time integer table only), keyed-store skeleton (key=request
