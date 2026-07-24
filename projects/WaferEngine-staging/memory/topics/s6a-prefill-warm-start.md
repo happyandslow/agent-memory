@@ -207,3 +207,11 @@ Drained from `memory/inbox/2026-07-21-prefill-metainfo-two-channel-bridge.md`. A
 
 `ht_head` peels the i32 header and re-stamps it as fp16 because token ids become hidden-state tiles there. Widening prefill metainfo is therefore not just "edit `metainfo_len` and one reader": both channel widths and every hardcoded send/recv/shuttle count must stay equal, or the streams desync and silently deadlock. This is the structural reason behind the S6a metainfo cascade and complements the odd-extent fabric gotcha.
 Source/drain note: `memory/inbox/2026-07-19-s6a-prefill-warm-start-bringup.md`.
+
+## 2026-07-24 fanout suffix overwrite semantics: bank slots are positions, not an append log
+
+Drained from `memory/inbox/2026-07-23-prefill-kv-bank-slot-overwrite-semantics.md`. The prefill KV bank is indexed by chunk **position**: `K_cache_bank` / `V_cache_bank` are `[layer][chunk]`, and `cache_kv` writes chunk `c` into slot `[layer][current_chunk]`. Therefore fanout with a resident shared prefix does not need an erase step, and child suffixes overwrite the previous child's suffix in place.
+
+Concrete shape: after request A with chunks `1,2,3,4` and request B with `1,2,5,6`, the resident bank is `1,2,5,6`, not `1,2,3,4,5,6`. B's suffix occupies the same slot indices as A's suffix (`3→5`, `4→6`). The shared prefix slots `0..k-1` are simply not written by a child that starts at `current_chunk = k`; that is the reuse. No stale read occurs at an overwritten slot because within a chunk `cache_kv` runs before `p_attn_score`, so the new K/V are written just-in-time before attention reads them.
+
+Residue beyond the child's length is harmless: attention only sweeps `attn_pair` over `0..current_chunk`, so a shorter child does not read the parent's leftover tail. This is the S6a/M1 boundary: S6a needs a reuse length (`start_chunk` / prefix chunk count), not a reuse index. "Request 3 reuses request 1 while request 2 is also resident" requires multiple requests' KV addressable at once — per-request bank partition/keying, i.e. the T0.5 / M1 tier in [[kv-cache-policy-tradeoffs]]. Decode has the same one-slab shape: reuse-all is reuse-previous, and "keep only the last request, evict earlier" is not expressible without compaction/data movement.

@@ -53,6 +53,11 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Narrative progress log
 
+### 2026-07-24
+
+- Drained `memory/inbox/2026-07-23-prefill-kv-bank-slot-overwrite-semantics.md` into `memory/topics/s6a-prefill-warm-start.md`: prefill KV bank slots are chunk-position-indexed, not append-only. Fanout children overwrite the previous child's suffix in place, the shared prefix is reused by not writing those slots, and no explicit erase is needed; multi-request simultaneously-addressable KV remains the T0.5/M1 boundary.
+- Drained `memory/inbox/2026-07-23-host-kv-code-placement-convention.md` into `memory/project.md`: per-kernel host-side serving/control helpers live beside each kernel's `launch.py` while kernel forms are still converging, not under `waferengine/engine/` or `models/<kernel>/host/`.
+
 ### 2026-07-23
 
 - Drained `memory/inbox/2026-07-22-s6b-force-decode-bringup.md`: S6b Step 1 and Step 2 are now sim-verified for F>1. The host owns the forced-token sequence and feeds the same deterministic 2-D `forced_tokens[F][bsz]` to device and oracle; device output during forced steps is not trusted. Step 1 preserved color-7 balance by keeping the token drain additive, and Step 2 deliberately mirrors ht_tail skip vs ht_head drain gates.

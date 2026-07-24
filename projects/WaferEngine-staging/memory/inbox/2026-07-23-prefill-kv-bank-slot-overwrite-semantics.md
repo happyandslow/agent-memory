@@ -4,7 +4,7 @@ Date: 2026-07-23 (session content from the S6a-prefill review round) · Repo: `W
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 

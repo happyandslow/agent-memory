@@ -4,7 +4,7 @@ Date: 2026-07-23 (session content from the M0/S6a planning round) · Repo: `Wafe
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 

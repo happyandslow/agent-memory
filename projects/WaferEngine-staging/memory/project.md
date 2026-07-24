@@ -50,6 +50,14 @@ export MEMORY=$AGENT_MEMORY_ROOT/projects/WaferEngine-staging   # or /home/lexu/
   it and are stale — trust the qwen `launch.py` + `run_sim.sh`/`run_device.sh` pattern.
 - Config naming: `test_sim_*` → simulator, `test_device_*` → real WSE-3.
 - Weights are **mock/seeded random** on the device path (no real HF weights yet).
+- Host-side serving/control helpers for a specific standalone kernel (KV-reuse store,
+  retain/warm-start driver logic called by `launch.py`, forced-token serving helpers) live at
+  the **model root beside `launch.py`**, one copy per kernel while kernel forms are still
+  converging: e.g. `models/qwen3_1p7b-decode/kv_store.py` and
+  `models/qwen3_1p7b-prefill/kv_store.py`. Do **not** put this class of serving-control code
+  under `waferengine/engine/` yet (not wired/versioned against compiled kernel artifacts) or
+  under `models/<kernel>/host/` (numerical oracle / precision tooling home reached via a path
+  hack). Extract to shared engine code only after the kernel/compiled-binary form converges.
 
 ## Known pitfalls
 
