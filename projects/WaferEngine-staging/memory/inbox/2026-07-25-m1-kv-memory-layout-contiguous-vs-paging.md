@@ -84,6 +84,29 @@ sharing — may never be on the critical path, so paying its hot-loop tax now is
   fanout): on-chip SRAM→SRAM copy `len·kv_cols·2(K+V)·2B` per PE — not free. Copy-free
   cross-slot sharing is exactly what paging (B) would buy.
 
+## K vs V cache layout are TRANSPOSED, but the slot/lane block base is symmetric
+
+A code fact easy to get wrong when adding per-request slot addressing to decode attention
+(you will reach for the K formula and mis-apply it to V). In `decode.csl` the two caches are
+laid out differently along the sequence axis:
+
+- **K**: `[layer][slot][head f][seq pos]` — `pos` innermost, **stride 1** (a head's seq run is
+  contiguous). QKᵀ read `score_matvec_mult` advances the K base by `kv_len_per_pe` per head-row
+  (`decode.csl:1215,1224`).
+- **V**: `[layer][slot][seq pos][head f]` — `f` innermost, so `pos` has **stride `kv_cols`**
+  (each position is a contiguous `kv_cols`-wide row). score·V `output_matvec_mult` walks V rows
+  at stride `kv_cols` (`decode.csl:1337,1344`).
+
+Despite the transpose, the **per-(layer,slot) block base is identical for K and V**:
+`(l·SLOT_COUNT + s)·kv_cols·kv_len_per_pe` (because `kv_cols·kv_len_per_pe == kv_len_per_pe·kv_cols`).
+So under contiguous fixed slots the **slot offset is K/V-symmetric** — one accessor (`kv_k_base`/
+`kv_v_base`) applies the same `slot` term to both; the transpose lives only in the *intra-block*
+indexing that already exists. Where the transpose DOES bite: (a) carving a slot into seq sub-ranges
+(K offset `s·SLOT_LEN` stride-1 vs V offset `s·SLOT_LEN·kv_cols`), and (b) **paging** — a seq-page is
+naturally contiguous in V but **strided across rows in K**, so K must be re-tiled to make a page
+contiguous (Design B cost). Prefill is a *different* layout again — `[layer][chunk]`, no batch/slot
+axis (`prefill.csl:789-795`); its "chunk" is a prefill-only word, not decode's slot/page.
+
 ## Confidence
 
 Layout/DSD facts read off `decode.csl` in-session (line cites above); the A-vs-B code-site
