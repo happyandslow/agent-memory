@@ -70,3 +70,24 @@ Layout facts read off `decode.csl` in-session (`:561-566`, `:565`, `:1330`); the
   (contiguous slots vs paging; the layout axis, orthogonal to this storage-vs-scheduling point).
 - Continuous batching (concurrent active + mid-flight inject/evict) is a later milestone needing
   ingress/egress rework — register O1 + GOALS §7.
+
+## Update (2026-07-25) — the precise split, and locked vocabulary
+
+Refined with Le: "reuse `bsz` as slots" was imprecise (it implied the cache dim and the compute
+dim stay merged, i.e. `S = M`). The correct split keeps them as **two different-sized axes linked
+by an index** — this is the vLLM block/slot-table shape:
+
+- **slot** (`S = SLOT_COUNT`) = **maximum request capacity**. Sizes the KV cache + `iter_num_bank`/
+  `step_bank` → `[layer][slot][…]`, size ∝ **S** (NOT `S×M`).
+- **batch** (`M`) = **active requests in one local forward**. Sizes compute/IO (`X`/`QKV`/`score`/
+  `output`/sampling/`N`-header) + the `score_matmul` loop.
+- **`S ≥ M`**, linked by **`active_slot[m] → s`**: batch lane `m` reads slot `active_slot[m]` via the
+  addressing seam `kv_k_base(l, slot, pos)`.
+- Least-churn naming: keep `bsz` for **batch (M)** (most of its uses are compute/IO); rename only the
+  cache + counter sizing to **`SLOT_COUNT` (S)**; add `active_slot[]`.
+- Inert seam unchanged: `SLOT_COUNT = bsz`, `M = bsz`, `active_slot[m] = m` → byte-identical.
+
+So the "batch is not a storage axis" lesson stands and sharpens: the cache axis is **slot (S)**;
+**batch (M)** is an *index into* it, not a nested `[slot][batch]` storage dimension (that would
+over-allocate `S×M`). Full decision register: `milestones/kv-reuse-tradeoff-register.md` (D2 +
+Appendix A) + the M1-S0 contract in `milestones/M1-intra-pe-reuse.md`.
