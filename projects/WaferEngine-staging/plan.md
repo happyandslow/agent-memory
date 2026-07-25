@@ -53,6 +53,11 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Narrative progress log
 
+### 2026-07-25
+
+- Drained `memory/inbox/2026-07-22-verify-branch-merge-state-before-asserting-commit-status.md` and `memory/inbox/2026-07-24-squash-merge-breaks-ancestor-check.md` into `memory/topics/git-branch-status-verification.md`: before writing branch/commit/merge status, verify live git state and feature content. Durable prose can be stale, and squash merges make original-tip `merge-base --is-ancestor` checks false-negative even when content is present.
+- Drained `memory/inbox/2026-07-24-meshagent-sync-outline-patch-list-drop.md` as a manual skill-promotion follow-up in `tracking/conflicts.md`: `meshagent-sync` should avoid patch-mode edits on Markdown list regions and should list/fetch ContextBase docs before writing same-day session logs or mirrors.
+
 ### 2026-07-24
 
 - Drained `memory/inbox/2026-07-23-prefill-kv-bank-slot-overwrite-semantics.md` into `memory/topics/s6a-prefill-warm-start.md`: prefill KV bank slots are chunk-position-indexed, not append-only. Fanout children overwrite the previous child's suffix in place, the shared prefix is reused by not writing those slots, and no explicit erase is needed; multi-request simultaneously-addressable KV remains the T0.5/M1 boundary.

@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 
@@ -60,6 +60,7 @@ landed regardless of what a doc's prose says.
 
 ## Pointers
 
+- Drained 2026-07-25 into `memory/topics/git-branch-status-verification.md` and `plan.md`.
 - Fixed in: `PROGRESS.md § S6a`, `milestones/M0-reuse-foundation.md § S6a`,
   agent-memory `plan.md` (commit `29b16ae`), ContextBase PROGRESS mirror + Project
   Overview + the 2026-07-21 session log.

@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 
@@ -64,6 +64,7 @@ regardless of what `--is-ancestor` on the original tip SHA says.
 
 ## Pointers
 
+- Drained 2026-07-25 into `memory/topics/git-branch-status-verification.md` and `plan.md`; the squash caveat is also already represented in `memory/topics/kv-cache-policy-tradeoffs.md`.
 - Recorded in: `milestones/M1-intra-pe-reuse.md` § "Branch base (resolved 2026-07-24)"
   (the gotcha note); PROGRESS.md 2026-07-24 session log; agent-memory
   `topics/kv-cache-policy-tradeoffs.md` (2026-07-24 update, git-tooling bullet).

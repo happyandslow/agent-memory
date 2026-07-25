@@ -2,8 +2,11 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-07-24 — squash-merge-breaks-ancestor-check → `memory/inbox/2026-07-24-squash-merge-breaks-ancestor-check.md`
+- 2026-07-24 — meshagent-sync-outline-patch-list-drop → `memory/inbox/2026-07-24-meshagent-sync-outline-patch-list-drop.md`
 - 2026-07-23 — prefill-kv-bank-slot-overwrite-semantics → `memory/inbox/2026-07-23-prefill-kv-bank-slot-overwrite-semantics.md`
 - 2026-07-23 — host-kv-code-placement-convention → `memory/inbox/2026-07-23-host-kv-code-placement-convention.md`
+- 2026-07-22 — verify-branch-merge-state-before-asserting-commit-status → `memory/inbox/2026-07-22-verify-branch-merge-state-before-asserting-commit-status.md`
 - 2026-07-22 — s6b-force-decode-bringup → `memory/inbox/2026-07-22-s6b-force-decode-bringup.md`
 - 2026-07-22 — color-audit-floorplan-decode-gotchas → `memory/inbox/2026-07-22-color-audit-floorplan-decode-gotchas.md`
 - 2026-07-21 — s6b-force-decode-design → `memory/inbox/2026-07-21-s6b-force-decode-design.md`

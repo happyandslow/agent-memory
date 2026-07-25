@@ -1,6 +1,6 @@
 # WaferEngine-staging Manual Conflicts
 
-Last reviewed: 2026-07-24
+Last reviewed: 2026-07-25
 
 ## Needs Le/manual resolution
 
@@ -16,3 +16,6 @@ Last reviewed: 2026-07-24
 - 2026-07-23: Consider promoting the force-decode/F-dimension review heuristic: when adding a per-request count to a lock-step fabric loop, keep shared-color producer/consumer counts additive until both sides are deliberately mirrored; F=1 can hide an F>1 color imbalance.
 - 2026-07-23: Consider promoting the performance-attribution heuristic from S6b: an F-sweep curve shape separates skip-compute (linear per forced step) from pipeline/resource fill (saturating/knee) better than a single mixed timing point.
 - 2026-07-24: Consider promoting the host-side serving/control placement rule to repo convention docs or a review skill: while standalone kernel forms are still converging, per-kernel host control helpers belong beside `launch.py`; extract to `waferengine/engine/` only after compiled-kernel versioning settles.
+- 2026-07-25: Consider updating the `meshagent-sync` skill/protocol: never `patch` a Markdown bulleted-list region in ContextBase/Outline mirrors because sibling list items can be silently dropped; re-mirror via header replace + append and verify mid-file plus late-file sentinels.
+- 2026-07-25: Consider updating the `meshagent-sync`/checkpoint protocol to list/fetch existing same-day Logs and recent mirror `updatedAt` before creating a new session log or re-mirroring durable docs, to avoid duplicating parallel-session work.
+- 2026-07-25: Consider promoting the git branch-status verification rule: before asserting commit/merge state, verify live branch topology and feature content; under squash merges, `merge-base --is-ancestor <original-tip>` can false-negative even when the branch contains the feature.

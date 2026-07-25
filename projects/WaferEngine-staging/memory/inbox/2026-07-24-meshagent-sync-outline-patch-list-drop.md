@@ -9,7 +9,7 @@ metadata:
 
 **Project:** WaferEngine-staging (but the lesson is workflow-level, not project-specific)
 **Author:** claude
-**Status:** captured
+**Status:** drained
 **Promotion:** procedural + cross-project → **candidate for the `meshagent-sync` skill** (add the two guards below). Not a WaferEngine fact.
 
 ## Situation
@@ -59,6 +59,7 @@ damaged mirror is always recoverable by re-mirroring from the repo file — but 
 
 ## Pointers
 
+- Drained 2026-07-25 into `tracking/conflicts.md` as a skill-promotion/manual follow-up; not folded into a WaferEngine fact topic because the lesson is workflow-level.
 - Skill: `meshagent-sync` (the two guards belong in its protocol, next to the existing
   "header-then-append, lists drop on big create/replace" note).
 - Same-conversation instances: GOALS §7 patch-drop + repair; duplicate 2026-07-23 session log

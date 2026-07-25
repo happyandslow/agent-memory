@@ -22,6 +22,7 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 - `memory/topics/csl-control-payload-mechanisms.md` — CSL control wavelets/switches and no-keyed-routing/static-orchestration framing.
 - `memory/topics/qwen3-kernel-analysis-atlas.md` — generated floorplan/algorithm/state-machine atlas with links to aggregate state-machine indexes under `assets/kernel-algo/`.
 - `memory/topics/h2d-host-device-bandwidth.md` — CS-3 host↔device / host↔host transport findings.
+- `memory/topics/git-branch-status-verification.md` — guardrails for writing branch/commit/merge status under stale durable prose and squash merges.
 
 ## Restart checklist
 
@@ -38,3 +39,4 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 11. For per-kernel host serving/control helpers, put the module beside that kernel's `launch.py` while kernel forms are still converging; do not default to `waferengine/engine/` or `models/<kernel>/host/`.
 12. For CS-3 device runs, tee per-point stdout logs and check for orphan jobs after ssh `rc=255` transport death.
 13. Treat real HF weights/tokenizer/oracle work as deferred unless Le reprioritizes it.
+14. Before writing branch/commit/merge status, verify live git state and feature content; squash merges make original-tip ancestor checks false-negative. See `memory/topics/git-branch-status-verification.md`.
