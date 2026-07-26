@@ -2,6 +2,9 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-07-26 — per-slot-kv-length-stays-on-host → `memory/inbox/2026-07-26-per-slot-kv-length-stays-on-host.md`
+- 2026-07-26 — negative-control-configs-silently-degrade-to-pass → `memory/inbox/2026-07-26-negative-control-configs-silently-degrade-to-pass.md`
+- 2026-07-26 — mixed-hit-miss-batch-needs-no-ragged → `memory/inbox/2026-07-26-mixed-hit-miss-batch-needs-no-ragged.md`
 - 2026-07-25 — slot-reuses-bsz-batch-is-not-a-storage-axis → `memory/inbox/2026-07-25-slot-reuses-bsz-batch-is-not-a-storage-axis.md`
 - 2026-07-25 — m1-kv-memory-layout-contiguous-vs-paging → `memory/inbox/2026-07-25-m1-kv-memory-layout-contiguous-vs-paging.md`
 - 2026-07-25 — decode-lanes-must-be-equal-length → `memory/inbox/2026-07-25-decode-lanes-must-be-equal-length.md`

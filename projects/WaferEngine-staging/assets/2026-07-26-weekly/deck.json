@@ -1,0 +1,196 @@
+{
+  "slides": [
+    {
+      "type": "title",
+      "team": "WaferEngine · CS-3",
+      "kicker": "Weekly update",
+      "title": "KV reuse inside one card now works end to end",
+      "subtitle": "S6 closes M0's reuse line. M1 opens on holding several requests at once.",
+      "meta": [
+        {"label": "Owner", "value": "Le Xu"},
+        {"label": "Period", "value": "20 - 26 July 2026"},
+        {"label": "Focus", "value": "M0 closes Line 1, M1 opens"}
+      ],
+      "notes": "Last week's deck covered S6a on real silicon. This week: force-decode lands, S6 closes, and M1 is planned."
+    },
+    {
+      "type": "timeline",
+      "eyebrow": "Roadmap",
+      "title": "Where we are",
+      "items": [
+        {"when": "Done", "label": "M0, Line 1", "note": "PE-internal KV reuse: retain and force-decode", "done": true},
+        {"when": "Parked", "label": "M0, Line 2", "note": "KV transport, waiting on the cluster"},
+        {"when": "Now", "label": "M1", "note": "Several requests resident in one card"},
+        {"when": "Next", "label": "M2", "note": "Reuse architecture, settled by benchmark"},
+        {"when": "Later", "label": "M3 - M6", "note": "Idle-PE tier, off-chip pool, policy, scenarios"}
+      ],
+      "notes": "M0's transport half stays blocked on the CS-3 cluster being down; M1 runs in simulation and does not wait for it."
+    },
+    {
+      "type": "bullets",
+      "eyebrow": "Progress",
+      "title": "Since last week",
+      "items": [
+        "Force-decode (S6b) was designed, built in three stages and verified in simulation, then merged.",
+        "That closes S6, so M0's reuse line is complete: decode retain, prefill warm-start and force-decode all sit on one branch.",
+        "Two device sweeps finished on real silicon: prefill at a 16,384-token prompt and decode at a 4,096-token context.",
+        "M1 was broken into six subtasks, and its slot-addressing contract is written and awaiting review.",
+        "M2 grew from a single cost model into a cluster of coupled architecture questions, each to be settled by a benchmark."
+      ],
+      "notes": "The two device sweeps completed on 21 July, one day after last week's deck, so they are new here."
+    },
+    {
+      "type": "section",
+      "number": "01",
+      "title": "What now works",
+      "subtitle": "Three mechanisms, one branch."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "The idea",
+      "title": "Reuse what is already there, and force-decode only the new text",
+      "image": "/home/lexu/WaferEngine-staging/agent-memory/projects/WaferEngine-staging/assets/2026-07-26-weekly/fig_forcedecode.png",
+      "caption": "Force-decode runs ordinary decode steps, but the host supplies the token instead of the model sampling one, so the sampling work is skipped.",
+      "notes": "The key point: a second turn no longer has to re-read the first turn from token 0."
+    },
+    {
+      "type": "bullets",
+      "eyebrow": "Capability",
+      "title": "What is supported today",
+      "items": [
+        "Decode keeps its KV across rounds and extends it, rather than rewinding to zero. Correctness checked in simulation, cost measured on the wafer.",
+        "Prefill can start from a resident prefix instead of token 0, and its output is byte-identical to a cold run, both in simulation and on the wafer.",
+        "New text can be appended to a kept context by force-decoding it. Verified in simulation only so far.",
+        "Still one resident request per bank. Holding several at once is exactly what M1 adds."
+      ]
+    },
+    {
+      "type": "section",
+      "number": "02",
+      "title": "What we measured",
+      "subtitle": "Two sweeps on real silicon, one finding that changed our mind."
+    },
+    {
+      "type": "table",
+      "eyebrow": "Prefill, real WSE-3",
+      "title": "The reuse fraction dominates; length only nudges it",
+      "subtitle": "Time saved by starting from a resident prefix. 524,288 PEs, one run per point.",
+      "columns": ["Prefix reused", "8,192-token prompt", "16,384-token prompt", "Difference"],
+      "weights": [1.0, 1.2, 1.2, 0.9],
+      "rows": [
+        ["none (cold)", "1,001 ms", "3,145 ms", "baseline"],
+        ["25 %", "-7.7 %", "-7.3 %", "-0.5"],
+        ["50 %", "-22.8 %", "-23.8 %", "+1.1"],
+        ["75 %", "-45.2 %", "-49.8 %", "+4.6"]
+      ],
+      "notes": "The 16,384 column completed this week. Every reuse round was byte-identical to the cold round. Saving is sub-linear because a reused prefix is always the cheapest part of the prompt: the last chunk costs about 7x the first."
+    },
+    {
+      "type": "metrics",
+      "eyebrow": "Decode, real WSE-3",
+      "title": "Retain wins by skipping whole steps",
+      "hero": {"value": "-49.3%", "label": "second decode round at a 4,096-token context,\nthe point measured this week"},
+      "cards": [
+        {"value": "-51.4%", "label": "Second round", "note": "1,024-token context"},
+        {"value": "-34.6%", "label": "Both rounds together", "note": "1,024-token context"},
+        {"value": "+0.02%", "label": "Equal-work control", "note": "a retained step is not cheaper"}
+      ],
+      "notes": "The control row is the point: when both arms run the same number of steps, retain is 0.02% slower. Its whole value is that steps already taken are not taken again. So the saving tracks the fraction of decode steps skipped, not the sequence length."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Force-decode, simulator",
+      "title": "The saving comes from work skipped, not from a fuller pipeline",
+      "image": "/home/lexu/WaferEngine-staging/agent-memory/projects/WaferEngine-staging/assets/2026-07-26-weekly/fig_fsweep.png",
+      "caption": "Toy layout: 2x2 blocks, width 64, vocabulary 24. A forced step costs about 28% of a plain step here, roughly 806 cycles against 2,856.",
+      "notes": "Same configuration, pipelined against non-pipelined, was 17,149 to 13,096 cycles per token, a 24% saving. Correctness held at 9.8e-5 against the oracle."
+    },
+    {
+      "type": "bullets",
+      "eyebrow": "Finding",
+      "title": "This partly falsified what we expected",
+      "items": [
+        "We expected the gain to come from layer pipelining: forced tokens let the front of the model run ahead and fill the pipeline.",
+        "A straight line rules that out. Pipelining would flatten once the pipeline is full; a constant saving per forced step means work is simply not being done.",
+        "Each forced step drops its sampling and output-projection stage, and that should grow with a real 128k vocabulary.",
+        "Still open: this layout has very little per-layer compute, so whether pipelining also helps at real scale is unmeasured."
+      ]
+    },
+    {
+      "type": "section",
+      "number": "03",
+      "title": "M1, and what to decide",
+      "subtitle": "Several requests in one card, and the architecture questions behind it."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "M1 contract",
+      "title": "One number becomes two: capacity and compute",
+      "image": "/home/lexu/WaferEngine-staging/agent-memory/projects/WaferEngine-staging/assets/2026-07-26-weekly/fig_slots.png",
+      "caption": "Slots size the cache, batch sizes the compute. The device is told one new thing, which slot to use; everything else stays on the host.",
+      "notes": "Batch is a scheduling subset of the slots, not a storage axis. A slot-by-batch grid would over-allocate."
+    },
+    {
+      "type": "table",
+      "eyebrow": "M1 plan",
+      "title": "Six subtasks, each landing switched off first",
+      "columns": ["Step", "What it delivers", "Status", "Note"],
+      "weights": [0.5, 1.7, 0.8, 1.5],
+      "rows": [
+        ["S0", "Slot addressing and metadata contract", "on track", "Design written, awaiting review"],
+        ["S1", "Multi-slot cache, inert", "planned", "Must be byte-identical at one slot"],
+        ["S2", "Retain and extend into a chosen slot", "planned", "Includes partial retain"],
+        ["S3", "Hit detection, eviction, miss handling", "planned", "A miss rebuilds by force-decoding"],
+        ["S4", "Requests-per-bank capacity curve", "planned", "The milestone's headline number"],
+        ["S5", "End-to-end verification", "planned", "Against a teacher-forced reference"]
+      ],
+      "notes": "No M1 code yet. Every subtask lands as a provable no-op first, then a failing config, then real behaviour."
+    },
+    {
+      "type": "split",
+      "eyebrow": "To discuss",
+      "title": "The M2 questions",
+      "left": {
+        "eyebrow": "Why together",
+        "heading": "One architecture, not four separate calls",
+        "body": "These choices constrain each other. Paging's page table is exactly the per-PE mapping a distributed control plane would need, so picking one nearly picks the other. M1 commits to the simplest working defaults, fixed slots with control on the host and the cache in decode, and M2 tests each against a small benchmark rather than settling it by argument."
+      },
+      "panel_title": "Four coupled questions",
+      "highlights": [
+        "Does the control plane live on the host, or distributed across the compute PEs?",
+        "Fixed-size slots, or paging for copy-free prefix sharing?",
+        "On a hit, continue in decode, or ship the KV back to prefill?",
+        "Does the cache live in decode or in prefill?"
+      ],
+      "notes": "Paging would chop the attention inner loop into roughly 16 short pieces at 256 tokens and 16-token pages, which is why M1 does not start there."
+    },
+    {
+      "type": "bullets",
+      "eyebrow": "Also to discuss",
+      "title": "Open routing calls",
+      "items": [
+        "Continuous batching: M1 builds the substrate, but running requests concurrently needs ingress, egress and a scheduler reworked. Which milestone owns it?",
+        "Do we run the control-plane comparison inside M1, or on a branch forked after M1-S2?",
+        "Measuring real-scale pipelining needs a compute-heavy configuration. Is it worth the wafer time?",
+        "The CS-3 cluster is down, so M0's transport work stays parked. M1 runs in simulation meanwhile."
+      ]
+    },
+    {
+      "type": "next_steps",
+      "eyebrow": "Next steps",
+      "title": "What happens next",
+      "items": [
+        {"owner": "Le Xu", "action": "Review the M1 slot contract so implementation can start."},
+        {"owner": "Le Xu", "action": "Branch from kv-feature and land M1-S1, the multi-slot seam, switched off."},
+        {"owner": "Team", "action": "Decide which of the M2 questions gets a benchmark first."}
+      ]
+    },
+    {
+      "type": "closing",
+      "team": "WaferEngine · CS-3",
+      "title": "Questions?",
+      "subtitle": "Plan in ROADMAP.md, current state in PROGRESS.md, detail in milestones/M1-intra-pe-reuse.md.",
+      "contacts": ["lxu5398@gmail.com"]
+    }
+  ]
+}
