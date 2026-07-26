@@ -71,7 +71,7 @@ for lane_y, src in [(16.4, 0), (7.4, 2)]:
 
 ax.text(SX, 2.9, "S ≥ M   —   the cache holds more requests than any single pass computes.",
         fontsize=13.5, color=INK, fontweight="bold", family=F)
-ax.text(SX, 0.5, "Set S = M and it is byte-identical to today, so the change lands switched off.",
+ax.text(SX, 0.5, "Verified: with S = M the build is bit-identical to before, so the change landed switched off.",
         fontsize=12, color=BODY, family=F)
 
 fig.savefig("/tmp/claude-1023/-home-lexu-WaferEngine-staging/a95262c6-8919-43d3-a293-b720d73d7eac/scratchpad/fig_slots.png",

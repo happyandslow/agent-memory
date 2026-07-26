@@ -7,9 +7,18 @@
       "title": "KV reuse inside one card now works end to end",
       "subtitle": "S6 closes M0's reuse line. M1 opens on holding several requests at once.",
       "meta": [
-        {"label": "Owner", "value": "Le Xu"},
-        {"label": "Period", "value": "20 - 26 July 2026"},
-        {"label": "Focus", "value": "M0 closes Line 1, M1 opens"}
+        {
+          "label": "Owner",
+          "value": "Le Xu"
+        },
+        {
+          "label": "Period",
+          "value": "20 - 26 July 2026"
+        },
+        {
+          "label": "Focus",
+          "value": "M0 closes Line 1, M1 opens"
+        }
       ],
       "notes": "Last week's deck covered S6a on real silicon. This week: force-decode lands, S6 closes, and M1 is planned."
     },
@@ -18,11 +27,32 @@
       "eyebrow": "Roadmap",
       "title": "Where we are",
       "items": [
-        {"when": "Done", "label": "M0, Line 1", "note": "PE-internal KV reuse: retain and force-decode", "done": true},
-        {"when": "Parked", "label": "M0, Line 2", "note": "KV transport, waiting on the cluster"},
-        {"when": "Now", "label": "M1", "note": "Several requests resident in one card"},
-        {"when": "Next", "label": "M2", "note": "Reuse architecture, settled by benchmark"},
-        {"when": "Later", "label": "M3 - M6", "note": "Idle-PE tier, off-chip pool, policy, scenarios"}
+        {
+          "when": "Done",
+          "label": "M0, Line 1",
+          "note": "PE-internal KV reuse: retain and force-decode",
+          "done": true
+        },
+        {
+          "when": "Parked",
+          "label": "M0, Line 2",
+          "note": "KV transport, waiting on the cluster"
+        },
+        {
+          "when": "Now",
+          "label": "M1",
+          "note": "Several requests resident in one card"
+        },
+        {
+          "when": "Next",
+          "label": "M2",
+          "note": "Reuse architecture, settled by benchmark"
+        },
+        {
+          "when": "Later",
+          "label": "M3 - M6",
+          "note": "Idle-PE tier, off-chip pool, policy, scenarios"
+        }
       ],
       "notes": "M0's transport half stays blocked on the CS-3 cluster being down; M1 runs in simulation and does not wait for it."
     },
@@ -34,10 +64,11 @@
         "Force-decode (S6b) was designed, built in three stages and verified in simulation, then merged.",
         "That closes S6, so M0's reuse line is complete: decode retain, prefill warm-start and force-decode all sit on one branch.",
         "Two device sweeps finished on real silicon: prefill at a 16,384-token prompt and decode at a 4,096-token context.",
-        "M1 was broken into six subtasks, and its slot-addressing contract is written and awaiting review.",
+        "M1's slot contract was reviewed and approved, and the first subtask is already built and verified in simulation.",
+        "Building it reversed two things the contract had assumed, so the design is now shaped by code rather than by argument.",
         "M2 grew from a single cost model into a cluster of coupled architecture questions, each to be settled by a benchmark."
       ],
-      "notes": "The two device sweeps completed on 21 July, one day after last week's deck, so they are new here."
+      "notes": "The two device sweeps completed on 21 July, one day after last week's deck. The two reversals: the device now gets one slot per lane rather than a single slot number, because eviction victims are not contiguous across lanes; and per-slot lengths stay on the host rather than being counted on the device."
     },
     {
       "type": "section",
@@ -75,13 +106,43 @@
       "eyebrow": "Prefill, real WSE-3",
       "title": "The reuse fraction dominates; length only nudges it",
       "subtitle": "Time saved by starting from a resident prefix. 524,288 PEs, one run per point.",
-      "columns": ["Prefix reused", "8,192-token prompt", "16,384-token prompt", "Difference"],
-      "weights": [1.0, 1.2, 1.2, 0.9],
+      "columns": [
+        "Prefix reused",
+        "8,192-token prompt",
+        "16,384-token prompt",
+        "Difference"
+      ],
+      "weights": [
+        1.0,
+        1.2,
+        1.2,
+        0.9
+      ],
       "rows": [
-        ["none (cold)", "1,001 ms", "3,145 ms", "baseline"],
-        ["25 %", "-7.7 %", "-7.3 %", "-0.5"],
-        ["50 %", "-22.8 %", "-23.8 %", "+1.1"],
-        ["75 %", "-45.2 %", "-49.8 %", "+4.6"]
+        [
+          "none (cold)",
+          "1,001 ms",
+          "3,145 ms",
+          "baseline"
+        ],
+        [
+          "25 %",
+          "-7.7 %",
+          "-7.3 %",
+          "-0.5"
+        ],
+        [
+          "50 %",
+          "-22.8 %",
+          "-23.8 %",
+          "+1.1"
+        ],
+        [
+          "75 %",
+          "-45.2 %",
+          "-49.8 %",
+          "+4.6"
+        ]
       ],
       "notes": "The 16,384 column completed this week. Every reuse round was byte-identical to the cold round. Saving is sub-linear because a reused prefix is always the cheapest part of the prompt: the last chunk costs about 7x the first."
     },
@@ -89,18 +150,41 @@
       "type": "metrics",
       "eyebrow": "Decode, real WSE-3",
       "title": "Retain wins by skipping whole steps",
-      "hero": {"value": "-49.3%", "label": "second decode round at a 4,096-token context,\nthe point measured this week"},
+      "hero": {
+        "value": "-49.3%",
+        "label": "second decode round at a 4,096-token context,\nthe point measured this week"
+      },
       "cards": [
-        {"value": "-51.4%", "label": "Second round", "note": "1,024-token context"},
-        {"value": "-34.6%", "label": "Both rounds together", "note": "1,024-token context"},
-        {"value": "+0.02%", "label": "Equal-work control", "note": "a retained step is not cheaper"}
+        {
+          "value": "-51.4%",
+          "label": "Second round",
+          "note": "1,024-token context"
+        },
+        {
+          "value": "-34.6%",
+          "label": "Both rounds together",
+          "note": "1,024-token context"
+        },
+        {
+          "value": "+0.02%",
+          "label": "Equal-work control",
+          "note": "a retained step is not cheaper"
+        }
       ],
       "notes": "The control row is the point: when both arms run the same number of steps, retain is 0.02% slower. Its whole value is that steps already taken are not taken again. So the saving tracks the fraction of decode steps skipped, not the sequence length."
     },
     {
       "type": "figure",
+      "eyebrow": "How it works",
+      "title": "Two reasons a forced step could be cheaper",
+      "image": "/home/lexu/WaferEngine-staging/agent-memory/projects/WaferEngine-staging/assets/2026-07-26-weekly/fig_mechanism.png",
+      "caption": "A plain step cannot start until the one before it has picked its token. Supplying the token removes that stage, and removes the wait along with it.",
+      "notes": "The two effects cannot be switched on and off independently in the kernel: dropping the picking stage without also dropping the drain that feeds it unbalances the fabric and hangs. So they have to be told apart by the shape of the curve on the next slide."
+    },
+    {
+      "type": "figure",
       "eyebrow": "Force-decode, simulator",
-      "title": "The saving comes from work skipped, not from a fuller pipeline",
+      "title": "The line is straight, so it is skipped work, not overlap",
       "image": "/home/lexu/WaferEngine-staging/agent-memory/projects/WaferEngine-staging/assets/2026-07-26-weekly/fig_fsweep.png",
       "caption": "Toy layout: 2x2 blocks, width 64, vocabulary 24. A forced step costs about 28% of a plain step here, roughly 806 cycles against 2,856.",
       "notes": "Same configuration, pipelined against non-pipelined, was 17,149 to 13,096 cycles per token, a 24% saving. Correctness held at 9.8e-5 against the oracle."
@@ -127,24 +211,64 @@
       "eyebrow": "M1 contract",
       "title": "One number becomes two: capacity and compute",
       "image": "/home/lexu/WaferEngine-staging/agent-memory/projects/WaferEngine-staging/assets/2026-07-26-weekly/fig_slots.png",
-      "caption": "Slots size the cache, batch sizes the compute. The device is told one new thing, which slot to use; everything else stays on the host.",
+      "caption": "Slots size the cache, batch sizes the compute. The device is told one new thing, which slot each lane is on; everything else stays on the host.",
       "notes": "Batch is a scheduling subset of the slots, not a storage axis. A slot-by-batch grid would over-allocate."
     },
     {
       "type": "table",
       "eyebrow": "M1 plan",
-      "title": "Six subtasks, each landing switched off first",
-      "columns": ["Step", "What it delivers", "Status", "Note"],
-      "weights": [0.5, 1.7, 0.8, 1.5],
-      "rows": [
-        ["S0", "Slot addressing and metadata contract", "on track", "Design written, awaiting review"],
-        ["S1", "Multi-slot cache, inert", "planned", "Must be byte-identical at one slot"],
-        ["S2", "Retain and extend into a chosen slot", "planned", "Includes partial retain"],
-        ["S3", "Hit detection, eviction, miss handling", "planned", "A miss rebuilds by force-decoding"],
-        ["S4", "Requests-per-bank capacity curve", "planned", "The milestone's headline number"],
-        ["S5", "End-to-end verification", "planned", "Against a teacher-forced reference"]
+      "title": "Six subtasks, the first two now done",
+      "columns": [
+        "Step",
+        "What it delivers",
+        "Status",
+        "Note"
       ],
-      "notes": "No M1 code yet. Every subtask lands as a provable no-op first, then a failing config, then real behaviour."
+      "weights": [
+        0.5,
+        1.7,
+        0.8,
+        1.5
+      ],
+      "rows": [
+        [
+          "S0",
+          "Slot addressing and metadata contract",
+          "done",
+          "Reviewed and approved, 26 July"
+        ],
+        [
+          "S1",
+          "Multi-slot cache, inert",
+          "done",
+          "Bit-identical on both gates, in simulation"
+        ],
+        [
+          "S2",
+          "Retain and extend across a changing active set",
+          "on track",
+          "Next: per-slot lengths on the host"
+        ],
+        [
+          "S3",
+          "Hit detection, eviction, miss handling",
+          "planned",
+          "A miss rebuilds by force-decoding"
+        ],
+        [
+          "S4",
+          "Requests-per-bank capacity curve",
+          "planned",
+          "Needs a geometry near the SRAM budget"
+        ],
+        [
+          "S5",
+          "End-to-end verification",
+          "planned",
+          "Against a teacher-forced reference"
+        ]
+      ],
+      "notes": "S1 passed two gates in simulation: bit-identical to the pre-change build over 48 records, and bit-identical again with four slots and the active set mapped to slots 3 and 0, with the unused slots still exactly zero. Capacity is not exercised at this geometry. The code is still uncommitted in the working tree."
     },
     {
       "type": "split",
@@ -170,6 +294,7 @@
       "title": "Open routing calls",
       "items": [
         "Continuous batching: M1 builds the substrate, but running requests concurrently needs ingress, egress and a scheduler reworked. Which milestone owns it?",
+        "Ragged batch, meaning lanes sitting at different sequence positions. M1 declined it, but continuous batching needs it. Do we cost it on its own?",
         "Do we run the control-plane comparison inside M1, or on a branch forked after M1-S2?",
         "Measuring real-scale pipelining needs a compute-heavy configuration. Is it worth the wafer time?",
         "The CS-3 cluster is down, so M0's transport work stays parked. M1 runs in simulation meanwhile."
@@ -180,9 +305,18 @@
       "eyebrow": "Next steps",
       "title": "What happens next",
       "items": [
-        {"owner": "Le Xu", "action": "Review the M1 slot contract so implementation can start."},
-        {"owner": "Le Xu", "action": "Branch from kv-feature and land M1-S1, the multi-slot seam, switched off."},
-        {"owner": "Team", "action": "Decide which of the M2 questions gets a benchmark first."}
+        {
+          "owner": "Le Xu",
+          "action": "Commit the S1 working tree, which is the one thing holding up S2."
+        },
+        {
+          "owner": "Le Xu",
+          "action": "Build S2: per-slot lengths on the host, across a changing active set."
+        },
+        {
+          "owner": "Team",
+          "action": "Decide which of the M2 questions gets a benchmark first."
+        }
       ]
     },
     {
@@ -190,7 +324,9 @@
       "team": "WaferEngine · CS-3",
       "title": "Questions?",
       "subtitle": "Plan in ROADMAP.md, current state in PROGRESS.md, detail in milestones/M1-intra-pe-reuse.md.",
-      "contacts": ["lxu5398@gmail.com"]
+      "contacts": [
+        "lxu5398@gmail.com"
+      ]
     }
   ]
 }
