@@ -490,8 +490,39 @@ Plan-mode session decomposing **M1** (single-card in-place reuse, T0/T0.5). Sour
   "feature X on branch" by **content** (`git grep`, file diff), not the original commit SHA. (Hit while
   confirming S6b landed on `kv-feature` via squash PR #2 `ad52da0`.)
 
+### 2026-07-26 — M1 slot/batch split, contiguous-slot seam, and equal-length active-lane invariant
+
+Drained three 2026-07-25 captures from the M1/T0.5 multi-request KV coexistence work. Source-of-truth
+repo docs remain `milestones/M1-intra-pe-reuse.md`, `milestones/M1-slot-memory-layout-tradeoff.md`,
+and `milestones/kv-reuse-tradeoff-register.md`; these notes preserve reusable context:
+
+- **Slot (S) and batch (M) are distinct.** The durable lesson behind "reuse `bsz`" is that KV storage
+  capacity is **slots** (`S = SLOT_COUNT`), while the per-forward batch is the **active subset**
+  (`M`) indexed by `active_slot[m] -> s`. Do not create a nested `[slot][batch]` KV axis: that would
+  over-allocate `S×M` slabs. Least-churn naming keeps `bsz` for compute/IO batch lanes (`M`), renames
+  cache/counter sizing to `SLOT_COUNT` (`S`), and uses the inert seam `SLOT_COUNT = bsz`, `M = bsz`,
+  `active_slot[m] = m`.
+- **M1 layout decision: fixed contiguous slots now, paging only behind an addressing seam.** Decode KV
+  already has an independent per-lane storage axis but only scalar per-layer control. Contiguous slots
+  preserve the current long fixed-stride attention DSDs with only a base-address shift; paging would add
+  page-table lookups and split hot attention SAXPYs into many short runs. Keep accessors such as
+  `kv_k_base(l, slot, pos)` / `kv_v_base(...)` so addressing can later change without pre-paying the
+  hot-loop restructure.
+- **Slot base is K/V-symmetric even though K and V are transposed internally.** For contiguous slots the
+  per-`(layer, slot)` block base is `(l*SLOT_COUNT + s)*kv_cols*kv_len_per_pe` for both K and V; the K vs V
+  transpose lives inside the block. Paging would bite K harder because seq pages are naturally contiguous
+  in V but strided across K rows.
+- **Within one active forward, lanes must remain equal-length.** Decode's scalar `iter_num` is both the
+  K/softmax effective length and the packed score-buffer inter-lane stride (`m*G*iter_num`). Mixed
+  hit/miss active lanes are ragged and would silently corrupt attention unless the score layout/softmax
+  are redesigned around per-lane lengths or capacity stride. M1 should therefore test either `bsz=1` or
+  all-active lanes on the same hit/miss path; ragged continuous batching belongs to later O1/M2 work.
+
 ## Last updated
 
+2026-07-26 — drained M1/T0.5 captures on slot-vs-batch vocabulary (`SLOT_COUNT`, `M`, `active_slot`),
+contiguous fixed slots vs paging (addressing seam but no hot-loop page gather yet), K/V slot-base symmetry,
+and the equal-length active-lane invariant for packed score buffers.
 2026-07-24 — appended M1-decomposition background: per-tier cache-ops mechanism vs cross-tier (M5) policy
 (fixing the "eviction=M4" conflation), fixed-slot vs paging vs segmentation (+ the paging⇄control-plane
 coupling), the distributed-vs-centralized control-plane axis, partial-hit take-over (hit-detection ==

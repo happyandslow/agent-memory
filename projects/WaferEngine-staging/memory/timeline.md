@@ -2,6 +2,9 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-07-25 — slot-reuses-bsz-batch-is-not-a-storage-axis → `memory/inbox/2026-07-25-slot-reuses-bsz-batch-is-not-a-storage-axis.md`
+- 2026-07-25 — m1-kv-memory-layout-contiguous-vs-paging → `memory/inbox/2026-07-25-m1-kv-memory-layout-contiguous-vs-paging.md`
+- 2026-07-25 — decode-lanes-must-be-equal-length → `memory/inbox/2026-07-25-decode-lanes-must-be-equal-length.md`
 - 2026-07-24 — squash-merge-breaks-ancestor-check → `memory/inbox/2026-07-24-squash-merge-breaks-ancestor-check.md`
 - 2026-07-24 — meshagent-sync-outline-patch-list-drop → `memory/inbox/2026-07-24-meshagent-sync-outline-patch-list-drop.md`
 - 2026-07-23 — prefill-kv-bank-slot-overwrite-semantics → `memory/inbox/2026-07-23-prefill-kv-bank-slot-overwrite-semantics.md`

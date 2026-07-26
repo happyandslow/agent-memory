@@ -11,12 +11,12 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 ## Canonical sources
 
 - `plan.md` — canonical goals, decisions, milestones, and next actions.
+- `memory/topics/kv-cache-policy-tradeoffs.md` — preserve/evict/offload tiering, T0.5/M1 in-bank reuse, slot-vs-batch vocabulary, fixed-slot-vs-paging seam, and equal-length active-lane invariant.
 - `memory/topics/s6b-force-decode.md` — S6b forced-token decode design and staged implementation/verification plan.
 - `memory/topics/s6a-prefill-warm-start.md` — M0/S6a prefill `START_CHUNKS` warm-start: WSE-3 correctness, defects, real-scale prefix-reuse performance, decode retain interpretation, and measurement guardrails.
 - `memory/topics/s6a-decode-kv-retain.md` — M0/S6a retain design/verification learnings, pre-S6 abstraction decision, and the carried-counter vs recomputed-state distinction.
 - `memory/topics/prefill-decode-transfer-bandwidth.md` — transfer+transform measurement design/results, profiler pitfalls, single-link ceiling, and floorplan pointers.
 - `memory/topics/e2e-kernel-dataflow-and-topology.md` — 2026-07-09 source-read reference for e2e token/KV flow, demux/HT_head seams, K-pipe strips, and tensor layout findings.
-- `memory/topics/kv-cache-policy-tradeoffs.md` — preserve/evict/offload tiering and force-decode-in-place direction.
 - `memory/topics/e2e-pdSeparate-device-validation.md` — device results, weights gap, max-context byte model.
 - `memory/topics/standalone-vs-integrated-kernel-parity.md` — feature gap and PR #14 / S6 abstraction refinements.
 - `memory/topics/csl-control-payload-mechanisms.md` — CSL control wavelets/switches and no-keyed-routing/static-orchestration framing.
@@ -29,14 +29,15 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 1. Verify live repo/server state before acting.
 2. Read `plan.md`.
 3. Read only the topic note(s) relevant to the task.
-4. For S6b / multi-turn known-token work, read `memory/topics/s6b-force-decode.md` first. Step 2 is sim-verified for F>1; the host owns `forced_tokens[F][bsz]`, color-7 producer/consumer counts must stay balanced, and toy-scale speedup currently attributes to skip-compute rather than proven pipeline fill.
-5. Before quoting force-decode pipeline-overlap benefits, repeat the F-sweep on a block-compute-dominated/real-scale config; linear F-sweep savings mean fixed skip-compute, while a saturating/knee shape would support pipeline/resource-fill attribution.
-6. For retain/reuse-abstraction questions, read `memory/topics/s6a-prefill-warm-start.md` and `memory/topics/s6a-decode-kv-retain.md`; distinguish carried-over counters from state recomputed from those counters.
-7. Before quoting prefix-reuse value or designing fanout tests, use `s6a-prefill-warm-start.md`: savings are position-weighted, and the prefill KV bank is slot-indexed by chunk position (child suffixes overwrite previous suffixes; no append log or erase step).
-8. For KV-transfer claims, use `prefill-decode-transfer-bandwidth.md`: full-size transfer is healthy with profiler off; ~1.8 GB/s aggregate is latency/serialization-bound relative to a 3.91 GB/s single-link device ceiling.
-9. When reading pure-decode KV-ingress layout, do not rely on `csl-color-audit` floorplan/matrix alone: predicted floorplans can include fused-prefill artifacts, narrow helper PEs render as badges, and the matrix omits switch/router helper PEs. Check `launch.py`/CSL placement directly.
-10. Before adding or widening per-column fabric payloads, confirm the per-PE extent stays EVEN; odd extents deadlock silently on WSE-3.
-11. For per-kernel host serving/control helpers, put the module beside that kernel's `launch.py` while kernel forms are still converging; do not default to `waferengine/engine/` or `models/<kernel>/host/`.
-12. For CS-3 device runs, tee per-point stdout logs and check for orphan jobs after ssh `rc=255` transport death.
-13. Treat real HF weights/tokenizer/oracle work as deferred unless Le reprioritizes it.
-14. Before writing branch/commit/merge status, verify live git state and feature content; squash merges make original-tip ancestor checks false-negative. See `memory/topics/git-branch-status-verification.md`.
+4. For M1/T0.5 multi-request KV coexistence, read `memory/topics/kv-cache-policy-tradeoffs.md`: distinguish slot capacity `S` (`SLOT_COUNT`) from active batch `M` (`active_slot[m] -> s`); M1 uses fixed contiguous slots behind K/V base accessors rather than paging; and one active decode forward must keep lanes equal-length because scalar `iter_num` is also the packed score-buffer stride.
+5. For S6b / multi-turn known-token work, read `memory/topics/s6b-force-decode.md` first. Step 2 is sim-verified for F>1; the host owns `forced_tokens[F][bsz]`, color-7 producer/consumer counts must stay balanced, and toy-scale speedup currently attributes to skip-compute rather than proven pipeline fill.
+6. Before quoting force-decode pipeline-overlap benefits, repeat the F-sweep on a block-compute-dominated/real-scale config; linear F-sweep savings mean fixed skip-compute, while a saturating/knee shape would support pipeline/resource-fill attribution.
+7. For retain/reuse-abstraction questions, read `memory/topics/s6a-prefill-warm-start.md` and `memory/topics/s6a-decode-kv-retain.md`; distinguish carried-over counters from state recomputed from those counters.
+8. Before quoting prefix-reuse value or designing fanout tests, use `s6a-prefill-warm-start.md`: savings are position-weighted, and the prefill KV bank is slot-indexed by chunk position (child suffixes overwrite previous suffixes; no append log or erase step).
+9. For KV-transfer claims, use `prefill-decode-transfer-bandwidth.md`: full-size transfer is healthy with profiler off; ~1.8 GB/s aggregate is latency/serialization-bound relative to a 3.91 GB/s single-link device ceiling.
+10. When reading pure-decode KV-ingress layout, do not rely on `csl-color-audit` floorplan/matrix alone: predicted floorplans can include fused-prefill artifacts, narrow helper PEs render as badges, and the matrix omits switch/router helper PEs. Check `launch.py`/CSL placement directly.
+11. Before adding or widening per-column fabric payloads, confirm the per-PE extent stays EVEN; odd extents deadlock silently on WSE-3.
+12. For per-kernel host serving/control helpers, put the module beside that kernel's `launch.py` while kernel forms are still converging; do not default to `waferengine/engine/` or `models/<kernel>/host/`.
+13. For CS-3 device runs, tee per-point stdout logs and check for orphan jobs after ssh `rc=255` transport death.
+14. Treat real HF weights/tokenizer/oracle work as deferred unless Le reprioritizes it.
+15. Before writing branch/commit/merge status, verify live git state and feature content; squash merges make original-tip ancestor checks false-negative. See `memory/topics/git-branch-status-verification.md`.

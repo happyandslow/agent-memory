@@ -53,6 +53,11 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Narrative progress log
 
+### 2026-07-26
+
+- Drained three 2026-07-25 M1/T0.5 inbox captures into `memory/topics/kv-cache-policy-tradeoffs.md`. Durable additions: cache capacity is slot count `S` while batch `M` is the active subset via `active_slot[m]`; M1 uses fixed contiguous slots behind K/V accessors rather than paging; and active lanes in one decode forward must remain equal-length because scalar `iter_num` is both effective length and packed score stride.
+- Added a promotion follow-up for the reusable review heuristic: when adding a per-request dimension, explicitly find which invariants old lockstep uniformity was enforcing for free.
+
 ### 2026-07-25
 
 - Drained `memory/inbox/2026-07-22-verify-branch-merge-state-before-asserting-commit-status.md` and `memory/inbox/2026-07-24-squash-merge-breaks-ancestor-check.md` into `memory/topics/git-branch-status-verification.md`: before writing branch/commit/merge status, verify live git state and feature content. Durable prose can be stale, and squash merges make original-tip `merge-base --is-ancestor` checks false-negative even when content is present.

@@ -4,7 +4,7 @@ Date: 2026-07-25 · Repo: `WaferEngine-staging` · Branch base: `lexu/staging/kv
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained 2026-07-26 into `memory/topics/kv-cache-policy-tradeoffs.md`, `plan.md`, `memory/context.md`, and `tracking/status.md`; promotion follow-up added to `tracking/conflicts.md`.
 
 ## The situation this applies to
 
