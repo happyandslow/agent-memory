@@ -2,6 +2,17 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-07-26 — per-slot-kv-length-stays-on-host → `memory/inbox/2026-07-26-per-slot-kv-length-stays-on-host.md`
+- 2026-07-26 — negative-control-configs-silently-degrade-to-pass → `memory/inbox/2026-07-26-negative-control-configs-silently-degrade-to-pass.md`
+- 2026-07-26 — mixed-hit-miss-batch-needs-no-ragged → `memory/inbox/2026-07-26-mixed-hit-miss-batch-needs-no-ragged.md`
+- 2026-07-25 — slot-reuses-bsz-batch-is-not-a-storage-axis → `memory/inbox/2026-07-25-slot-reuses-bsz-batch-is-not-a-storage-axis.md`
+- 2026-07-25 — m1-kv-memory-layout-contiguous-vs-paging → `memory/inbox/2026-07-25-m1-kv-memory-layout-contiguous-vs-paging.md`
+- 2026-07-25 — decode-lanes-must-be-equal-length → `memory/inbox/2026-07-25-decode-lanes-must-be-equal-length.md`
+- 2026-07-24 — squash-merge-breaks-ancestor-check → `memory/inbox/2026-07-24-squash-merge-breaks-ancestor-check.md`
+- 2026-07-24 — meshagent-sync-outline-patch-list-drop → `memory/inbox/2026-07-24-meshagent-sync-outline-patch-list-drop.md`
+- 2026-07-23 — prefill-kv-bank-slot-overwrite-semantics → `memory/inbox/2026-07-23-prefill-kv-bank-slot-overwrite-semantics.md`
+- 2026-07-23 — host-kv-code-placement-convention → `memory/inbox/2026-07-23-host-kv-code-placement-convention.md`
+- 2026-07-22 — verify-branch-merge-state-before-asserting-commit-status → `memory/inbox/2026-07-22-verify-branch-merge-state-before-asserting-commit-status.md`
 - 2026-07-22 — s6b-force-decode-bringup → `memory/inbox/2026-07-22-s6b-force-decode-bringup.md`
 - 2026-07-22 — color-audit-floorplan-decode-gotchas → `memory/inbox/2026-07-22-color-audit-floorplan-decode-gotchas.md`
 - 2026-07-21 — s6b-force-decode-design → `memory/inbox/2026-07-21-s6b-force-decode-design.md`
