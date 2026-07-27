@@ -53,6 +53,10 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Narrative progress log
 
+### 2026-07-27
+
+- Drained three 2026-07-26 M1-S1 review captures into `memory/topics/m1-s1-multi-slot-kv-seam.md` and corrected the older `memory/topics/kv-cache-policy-tradeoffs.md` statement about mixed hit/miss batches. Durable correction: mixed prefix-hit/prefix-miss lanes can share one batch by starting at `min(L_match)` and riding together; only take-over semantics create true ragged per-lane state. Also recorded that per-slot valid length is host-owned (device keeps one scalar for the active forward) and that red configs must assert unknown keys / prove they can fail instead of passing through defaults or empty comparisons.
+
 ### 2026-07-26
 
 - Drained three 2026-07-25 M1/T0.5 inbox captures into `memory/topics/kv-cache-policy-tradeoffs.md`. Durable additions: cache capacity is slot count `S` while batch `M` is the active subset via `active_slot[m]`; M1 uses fixed contiguous slots behind K/V accessors rather than paging; and active lanes in one decode forward must remain equal-length because scalar `iter_num` is both effective length and packed score stride.

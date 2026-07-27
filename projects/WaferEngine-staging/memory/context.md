@@ -11,7 +11,8 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 ## Canonical sources
 
 - `plan.md` — canonical goals, decisions, milestones, and next actions.
-- `memory/topics/kv-cache-policy-tradeoffs.md` — preserve/evict/offload tiering, T0.5/M1 in-bank reuse, slot-vs-batch vocabulary, fixed-slot-vs-paging seam, and equal-length active-lane invariant.
+- `memory/topics/kv-cache-policy-tradeoffs.md` — preserve/evict/offload tiering, T0.5/M1 in-bank reuse, slot-vs-batch vocabulary, fixed-slot-vs-paging seam, and shared-position active-lane invariant.
+- `memory/topics/m1-s1-multi-slot-kv-seam.md` — M1-S1 multi-slot KV addressing seam engineering learnings: slot-vs-lane indexing, centralized K/V address accessors, red-test/config hygiene, host-owned slot lengths, and mixed hit/miss ride-along correction.
 - `memory/topics/s6b-force-decode.md` — S6b forced-token decode design and staged implementation/verification plan.
 - `memory/topics/s6a-prefill-warm-start.md` — M0/S6a prefill `START_CHUNKS` warm-start: WSE-3 correctness, defects, real-scale prefix-reuse performance, decode retain interpretation, and measurement guardrails.
 - `memory/topics/s6a-decode-kv-retain.md` — M0/S6a retain design/verification learnings, pre-S6 abstraction decision, and the carried-counter vs recomputed-state distinction.
@@ -29,7 +30,7 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 1. Verify live repo/server state before acting.
 2. Read `plan.md`.
 3. Read only the topic note(s) relevant to the task.
-4. For M1/T0.5 multi-request KV coexistence, read `memory/topics/kv-cache-policy-tradeoffs.md`: distinguish slot capacity `S` (`SLOT_COUNT`) from active batch `M` (`active_slot[m] -> s`); M1 uses fixed contiguous slots behind K/V base accessors rather than paging; and one active decode forward must keep lanes equal-length because scalar `iter_num` is also the packed score-buffer stride.
+4. For M1/T0.5 multi-request KV coexistence, read `memory/topics/kv-cache-policy-tradeoffs.md` and `memory/topics/m1-s1-multi-slot-kv-seam.md`: distinguish slot capacity `S` (`SLOT_COUNT`) from active batch `M` (`active_slot[m] -> s`); M1 uses fixed contiguous slots behind K/V base accessors rather than paging; one active decode forward must keep a shared sequence position because scalar `iter_num` and RoPE state are round-wide. Mixed hit/miss lanes can ride together from `min(L_match)`; only take-over raggedness needs O1/M2 per-lane state.
 5. For S6b / multi-turn known-token work, read `memory/topics/s6b-force-decode.md` first. Step 2 is sim-verified for F>1; the host owns `forced_tokens[F][bsz]`, color-7 producer/consumer counts must stay balanced, and toy-scale speedup currently attributes to skip-compute rather than proven pipeline fill.
 6. Before quoting force-decode pipeline-overlap benefits, repeat the F-sweep on a block-compute-dominated/real-scale config; linear F-sweep savings mean fixed skip-compute, while a saturating/knee shape would support pipeline/resource-fill attribution.
 7. For retain/reuse-abstraction questions, read `memory/topics/s6a-prefill-warm-start.md` and `memory/topics/s6a-decode-kv-retain.md`; distinguish carried-over counters from state recomputed from those counters.

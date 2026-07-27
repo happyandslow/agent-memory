@@ -512,14 +512,18 @@ and `milestones/kv-reuse-tradeoff-register.md`; these notes preserve reusable co
   per-`(layer, slot)` block base is `(l*SLOT_COUNT + s)*kv_cols*kv_len_per_pe` for both K and V; the K vs V
   transpose lives inside the block. Paging would bite K harder because seq pages are naturally contiguous
   in V but strided across K rows.
-- **Within one active forward, lanes must remain equal-length.** Decode's scalar `iter_num` is both the
-  K/softmax effective length and the packed score-buffer inter-lane stride (`m*G*iter_num`). Mixed
-  hit/miss active lanes are ragged and would silently corrupt attention unless the score layout/softmax
-  are redesigned around per-lane lengths or capacity stride. M1 should therefore test either `bsz=1` or
-  all-active lanes on the same hit/miss path; ragged continuous batching belongs to later O1/M2 work.
+- **Within one active forward, lanes must remain at one shared sequence position.** Decode's scalar
+  `iter_num` is both the K/softmax effective length and the packed score-buffer inter-lane stride
+  (`m*G*iter_num`), and RoPE state is also round-wide. **Correction from 2026-07-26:** mixed hit/miss
+  active lanes do not automatically imply ragged state. If the round starts at `min(L_match)` and every
+  lane walks to the same prompt end, hit lanes can redundantly recompute and overwrite bit-identical K/V;
+  the batch benefit is the minimum hit length. True ragged/take-over batching — one lane at `L_match`
+  while another is earlier — still belongs to later O1/M2 work and needs per-lane scalar/score/RoPE state.
 
 ## Last updated
 
+2026-07-27 — corrected the mixed hit/miss conclusion: ride-along from `min(L_match)` preserves one
+shared sequence position, while true take-over raggedness still needs O1/M2 per-lane state.
 2026-07-26 — drained M1/T0.5 captures on slot-vs-batch vocabulary (`SLOT_COUNT`, `M`, `active_slot`),
 contiguous fixed slots vs paging (addressing seam but no hot-loop page gather yet), K/V slot-base symmetry,
 and the equal-length active-lane invariant for packed score buffers.

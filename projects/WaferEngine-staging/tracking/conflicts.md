@@ -1,10 +1,11 @@
 # WaferEngine-staging Manual Conflicts
 
-Last reviewed: 2026-07-25
+Last reviewed: 2026-07-27
 
 ## Needs Le/manual resolution
 
 - No contradictory project facts found during 2026-07-22 maintenance.
+- 2026-07-27 cron: left local meeting-file changes untouched because they appear human/app-owned and ambiguous: modified `meetings/2026-07-26.pptx` plus untracked Office temp file `meetings/~$2026-07-26.pptx`. Decide whether to keep, revert, or remove the temp file manually.
 
 ## Promotion candidates / manual follow-up
 
@@ -20,3 +21,5 @@ Last reviewed: 2026-07-25
 - 2026-07-25: Consider updating the `meshagent-sync`/checkpoint protocol to list/fetch existing same-day Logs and recent mirror `updatedAt` before creating a new session log or re-mirroring durable docs, to avoid duplicating parallel-session work.
 - 2026-07-25: Consider promoting the git branch-status verification rule: before asserting commit/merge state, verify live branch topology and feature content; under squash merges, `merge-base --is-ancestor <original-tip>` can false-negative even when the branch contains the feature.
 - 2026-07-26: Consider promoting the per-request-dimension review heuristic: before adding a slot/request axis to a lockstep kernel, identify which invariants the old uniformity enforced for free (for M1 decode, equal active-lane length survives only as a host/test obligation because scalar `iter_num` is also the packed score stride).
+- 2026-07-27: Consider promoting the review heuristic from the mixed-hit/miss correction: before declaring a case impossible, check whether the impossibility came from an assumed implementation choice (take-over) rather than from hardware/kernel invariants (shared scalar/RoPE state).
+- 2026-07-27: Consider promoting the negative-control testing rule: before trusting a red config/test PASS, prove it can fail; unknown config keys and empty-input comparisons must not silently degrade to positive controls.

@@ -91,15 +91,24 @@ remembering, and that lives on the host. Removing it made the change strictly sm
 ## Structural fact worth remembering (decode kernel)
 
 **Two globals pin every active lane to the same sequence position**, and both must be duplicated
-before any "ragged batch" (lanes at different lengths) is possible:
+before any true "ragged batch" (lanes at different current sequence positions) is possible:
 
 1. the scalar `iter_num` is simultaneously the attention length **and** the per-lane stride of the
    *packed* `score` buffer (the buffer is allocated by capacity but packed by valid length);
 2. the RoPE rotation state (`cos_cur/sin_cur`) has **no batch axis** and advances once per step
    outside the layer loop.
 
+The corrected M1-S3 batching rule is therefore narrower than the first review conclusion:
+mixed prefix-hit/prefix-miss lanes are legal **if the whole round starts at the same position**
+(`start = min(L_match)` over active lanes) and all lanes walk to the same prompt end. A hit lane
+then redundantly recomputes `[start, L_match)` and overwrites bit-identical K/V in its slot; the
+batch's benefit is the minimum hit length across lanes. What remains illegal without a larger O1
+redesign is **take-over raggedness**: one lane jumping its scalar/RoPE state to `L_match` while
+another is still at an earlier position.
+
 Good news for a future ragged implementation: the kv-head collective is already capacity-sized
-with a zero-padded tail, so the fabric side needs no change — only local packing.
+with a zero-padded tail, so the fabric side needs no change — only local packing plus per-lane
+local state/score layout/RoPE state.
 
 ## Config hygiene: unknown keys are silently ignored
 
@@ -108,6 +117,25 @@ code's `FORCED_DECODE_LENS` (so a config's force-decode setting had never taken 
 `ACTIVE_SLOT` vs `ACTIVE_SLOTS` (which would have quietly degraded the multi-slot red test into a
 duplicate of the inert one, passing for the wrong reason). `cfg.get(key, default)` makes every typo
 a silent no-op. **An unknown-config-key assertion pays for itself.**
+
+Slot-map validation should land with the reader: decide broadcast/length semantics explicitly,
+reject duplicates (two lanes writing one slot is silent cross-contamination), and make a red config
+prove it can fail before its PASS means anything. Identity maps and empty comparisons are positive
+controls, not red tests.
+
+## Host/device ownership of per-slot length
+
+Per-slot KV **bytes** live on the device, but per-slot valid length stays in the host control plane
+for S1/S2. The device needs one current scalar per active forward because active lanes share one
+sequence position; on reactivation, the host's `kv_store` sends the slot's `retained_len` through the
+meta tile and `round_reset` overwrites the scalar. A device-side `[layer][slot]` counter bank would
+duplicate host-owned state and create drift.
+
+The real host-side trigger is: **active set changes across rounds and later returns to a previously
+used slot**. A single `last_idx` high-water mark is then wrong (`[0,1]` decodes to 3, `[2,3]` decodes
+to 6, returning to `[0,1]` with a `-1` sentinel sends 6 and leaves holes). S2 should replace the
+single sentinel/high-water path with an explicit per-slot valid-length table on the host; S1 static
+maps do not need it.
 
 ## Environment
 
