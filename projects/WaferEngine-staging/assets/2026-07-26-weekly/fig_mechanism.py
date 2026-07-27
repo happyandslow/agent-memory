@@ -35,7 +35,7 @@ def rowlabel(ytag, ynote, tag, note, color=INK):
             va="center", family=F)
     ax.text(0.5, ynote, note, fontsize=11.5, color=MUTED, va="center", family=F)
 
-ax.text(0.5, 35.4, "The measurement says it is the first one.",
+ax.text(0.5, 35.4, "On real silicon the measurement says it is the second one.",
         fontsize=13, color=INK, family=F)
 
 # ---------- row 1: plain decode ------------------------------------------
@@ -56,28 +56,28 @@ ax.text(X0, 24.8,
 
 # ---------- row 2: skip-compute ------------------------------------------
 Y2, H2 = 15.0, 5.4
-rowlabel(18.6, 15.6, "1.  Skip the picking", "the token is already known", GREEN)
+rowlabel(18.6, 15.6, "1.  Skip the picking", "real, but the small part", MUTED)
 x = X0
 for _ in range(3):
-    x = step(x, Y2, H2, with_tail=False)
+    x = step(x, Y2, H2, with_tail=False, ghost=True)
 SKIP_END = x
 
 ax.annotate("", xy=(SKIP_END, Y2 + H2 / 2), xytext=(PLAIN_END, Y2 + H2 / 2),
-            arrowprops=dict(arrowstyle="<->", color=GREEN, lw=2))
-ax.text((SKIP_END + PLAIN_END) / 2, 21.8, "time saved", ha="center",
-        fontsize=12.5, color=GREEN, fontweight="bold", family=F)
+            arrowprops=dict(arrowstyle="<->", color=MUTED, lw=1.8, linestyle=(0, (4, 3))))
+ax.text((SKIP_END + PLAIN_END) / 2, 21.8, "a little", ha="center",
+        fontsize=12.5, color=MUTED, fontweight="bold", family=F)
 
 # ---------- row 3: pipelining (staggered) --------------------------------
-LANES, H3, OV = [6.2, 3.4, 0.6], 2.6, 9.0
-rowlabel(6.5, 3.6, "2.  Overlap the steps", "nothing left to wait for", MUTED)
+LANES, H3, OV = [6.2, 3.4, 0.6], 2.6, 4.5
+rowlabel(6.5, 3.6, "2.  Overlap the steps", "nothing left to wait for", GREEN)
 for i, ly in enumerate(LANES):
-    step(X0 + i * OV, ly, H3, with_tail=False, ghost=True, fs=9.5)
+    step(X0 + i * OV, ly, H3, with_tail=False, ghost=False, fs=9.5)
 PIPE_END = X0 + (len(LANES) - 1) * OV + HEAD + BLK
 
-ax.annotate("", xy=(PIPE_END, LANES[1] + H3 / 2), xytext=(SKIP_END, LANES[1] + H3 / 2),
-            arrowprops=dict(arrowstyle="<->", color=MUTED, lw=1.8, linestyle=(0, (4, 3))))
-ax.text((PIPE_END + SKIP_END) / 2, 9.6, "extra gain  —  not seen at this scale",
-        ha="center", fontsize=12.5, color=MUTED, fontweight="bold", family=F)
+ax.annotate("", xy=(PIPE_END, LANES[1] + H3 / 2), xytext=(PLAIN_END, LANES[1] + H3 / 2),
+            arrowprops=dict(arrowstyle="<->", color=GREEN, lw=2.2))
+ax.text((PIPE_END + PLAIN_END) / 2, 9.6, "this is where the win comes from",
+        ha="center", fontsize=12.5, color=GREEN, fontweight="bold", family=F)
 
 fig.savefig("/tmp/claude-1023/-home-lexu-WaferEngine-staging/a95262c6-8919-43d3-a293-b720d73d7eac/scratchpad/fig_mechanism.png",
             facecolor="white")
