@@ -38,6 +38,19 @@ Standalone `qwen3_1p7b-decode` already force-decodes exactly one token per round
 
 **Full-scale device (real WSE-3, 524,288 PEs, dim 2048, 28 layers / 8 blocks, vocab 151,936):** with prefill swept 256→3840, forced/free stays **flat at 11.7→12.0%** while the free step grows 479.2→560.0 µs/token — i.e. a **~8.5× cheaper forced token** (55.9→67.4 µs). Skip-compute requires that ratio to climb toward 100% as context grows, because its saving is the sequence-*independent* tail. The mild upward drift is pipelining's own prediction: the ratio approaches `max_lpb/n_layers = 4/28 = 14.3%` from below.
 
+**Pipeline-depth ablation ON REAL HARDWARE (2026-07-27).** Same full-size config, only block count varied — skip-compute is geometry-independent, so this is a binary discriminator:
+
+| geometry | PEs | max_lpb | free µs/tok | forced µs/tok | measured | pipelining | skip-compute |
+|---|---|---|---|---|---|---|---|
+| 2×2 (4 blocks) | 262,144 | 7 | 468.9 | 97.2 | **20.7%** | 25.0% | ~12% (flat) |
+| 2×4 (8 blocks) | 524,288 | 4 | 479.2 | 55.9 | **11.7%** | 14.3% | ~12% (flat) |
+
+Halving the blocks nearly doubled the forced-step cost (×1.74) while the free step barely moved (×0.98) — the free step is geometry-insensitive because it serializes through all 28 layers regardless. (`nb2`, 14 layers/PE, does not link: out of PE memory + task table.)
+
+**Model fit + decomposition.** Both points fit `forced/free = (max_lpb/n_layers)·x` with ONE free parameter `x = T_blocks/(T_blocks+T_tail)`: **x = 0.823**, i.e. **`ht_tail` is 17.8% of a free decode step** (measured). Error 0.4% on both points. ⇒ **8.55× = 1.22× (skip-compute) × 7.0× (pipelining)**, where `7.0 = n_layers/max_lpb = 28/4`. **Skip-compute is real but minor; pipelining supplies 7× of the 8.5×.**
+
+**What skip-compute actually is (source-verified).** The `ht_tail.csl:1347` gate `tail_step >= forced_decode_len - 1` skips: final RMSNorm, `lm_head` GEMV (`vocab×dim`, dominant), logits Y-reduce, local top-K, top-K X merge-reduce, sampling, the X/Y route repaints + xready barrier, and the north token emit. Deliberately OUTSIDE the gate: the Z drain and the south top-k emit (re-sends stale buffers so host receive count stays `n_steps`). `ht_head.csl:308` also skips the blocking token-color wait + `embed_gather_dispatch()`. **`decode.csl` never branches on `forced_decode_len`** — all 28 layers run identically on forced steps. Every skipped item scales with `vocab`/`dim`/`TOP_K` and has **no sequence-length term**, which is precisely why the context sweep discriminates.
+
 **Consequences.** For M2's `R*`, a forced token costs **≈12% of a free decode token at real scale, not 28%** — the 28% was a toy-geometry artifact (`2/7`). The saving is an **architectural lever**: it scales with pipeline depth relative to layer count, so *more blocks ⇒ cheaper forced tokens*. The previously asserted "strengthens with vocab because lm_head grows" mechanism is **not** what drives it.
 
 **Caveats.** Device runs are timing-only — the numpy oracle and the `KV-SEED`/`LOCAL-TOPK` gates are sim-only, so device-scale numerics at large F are unverified (correctness is sim-verified at F=4, max_abs 9.8e-5, identical kernel). All 256 steps were confirmed to execute, ruling out "fast because steps were skipped".
