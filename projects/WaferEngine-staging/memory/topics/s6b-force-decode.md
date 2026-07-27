@@ -21,11 +21,28 @@ Standalone `qwen3_1p7b-decode` already force-decodes exactly one token per round
 - Stage the work: S0 inert `F=1`; S1 correctness with host-fed F embeddings and unchanged tail/token drain; S2 pipelined by skipping tail work for `F-1` pure-forced steps and guarding the `ht_head` token drain at `ht_step >= F`.
 - `demux` needs no semantic change; it is a per-cycle store-and-forward pump that re-arms. The host must push F X-vectors and the `x_stream` quota must scale with `F_max`.
 
-## Performance attribution
+## Performance attribution — REVERSED 2026-07-27 on real WSE-3
 
-The original Option 3 hypothesis was that skipping forced-step tail work might make forced decode faster because it removes the ht_tail→ht_head token-feedback bubble and lets the layer pipeline fill. The 2026-07-23 F-sweep on the 2×2/dim64/vocab24 toy config partly falsified that explanation: cycles decreased linearly with the number of forced steps in the timed window (`≈ 17138 - 2040 * forced_steps`), which indicates fixed per-step skip-compute savings, not a saturating pipeline-knee effect.
+**The gain is LAYER PIPELINING, not skip-compute.** The 2026-07-23 sim conclusion was wrong for two independent reasons.
 
-Force-decode is still cheaper per forced token at this scale, but do not quote a structural pipeline-overlap benefit until it is re-measured on a block-compute-dominated/real-scale config. The clean attribution test is the F-sweep curve shape: linear means fixed per-item skip-compute; saturating/knee means a bounded pipeline/resource is filling.
+1. **The discriminator was invalid.** "Linear ⇒ fixed per-item skip-compute; saturating ⇒ pipelining" does not hold. Once the forced steps run open-loop the pipeline fills, and each forced step then costs `max_stage` instead of the whole serial chain — giving cycles **linear in F** with slope `(C_serial − max_stage)`. Both hypotheses predict a straight line, so linearity carried no information and no knee could ever appear.
+2. **The magnitudes never fit.** The toy tail is ~5% of a toy step, yet the measured saving was ~71% of a step.
+
+**Ablation (sim, `n_layers=8` FIXED, only block count varied)** — forced/free vs the pipelining prediction `max_layers_per_block / n_layers`:
+
+| blocks | max_lpb | measured | pipelining | skip-compute |
+|---|---|---|---|---|
+| 2 | 4 | 48.6% | 50.0% | ~95% (flat) |
+| 4 | 2 | 24.9% | 25.0% | ~95% (flat) |
+| 8 | 1 | 12.9% | 12.5% | ~95% (flat) |
+
+**Full-scale device (real WSE-3, 524,288 PEs, dim 2048, 28 layers / 8 blocks, vocab 151,936):** with prefill swept 256→3840, forced/free stays **flat at 11.7→12.0%** while the free step grows 479.2→560.0 µs/token — i.e. a **~8.5× cheaper forced token** (55.9→67.4 µs). Skip-compute requires that ratio to climb toward 100% as context grows, because its saving is the sequence-*independent* tail. The mild upward drift is pipelining's own prediction: the ratio approaches `max_lpb/n_layers = 4/28 = 14.3%` from below.
+
+**Consequences.** For M2's `R*`, a forced token costs **≈12% of a free decode token at real scale, not 28%** — the 28% was a toy-geometry artifact (`2/7`). The saving is an **architectural lever**: it scales with pipeline depth relative to layer count, so *more blocks ⇒ cheaper forced tokens*. The previously asserted "strengthens with vocab because lm_head grows" mechanism is **not** what drives it.
+
+**Caveats.** Device runs are timing-only — the numpy oracle and the `KV-SEED`/`LOCAL-TOPK` gates are sim-only, so device-scale numerics at large F are unverified (correctness is sim-verified at F=4, max_abs 9.8e-5, identical kernel). All 256 steps were confirmed to execute, ruling out "fast because steps were skipped".
+
+**Reusable lessons.** (a) Before reading a curve's *shape* as a mechanism signature, verify the rival hypothesis predicts a *different* shape — and cross-check the magnitude against a cost model. (b) Simfab cannot reach real geometry (~12–24 h per decoded token at 524k tiles); mechanism ablations are fine in sim, but performance attribution at scale must run on device. (c) `cyc/token` from `launch.py` divides by a stale `counted_tokens` when `DECODE_LENS < MAX_SEQ_LEN − PREFILL_LEN` — the S6b sim numbers are **5× too low**; set `DECODE_LENS = MAX_SEQ_LEN − PREFILL_LEN`.
 
 ## Verification
 
