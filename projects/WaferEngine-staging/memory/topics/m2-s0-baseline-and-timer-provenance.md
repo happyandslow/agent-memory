@@ -109,3 +109,65 @@ belongs to the *staging* line only; do not attribute it to pr14.
 - **`KV_NPZ_DIR` is implemented but unused** (`launch.py:96-107`) — an absolute
   `/dev/shm/<run>` moves the whole P→D npz handoff to tmpfs. The cheapest route to the
   physical floor of the host round trip.
+
+## Per-request breakdown, and the finding hiding in it
+
+| req | prompt tok | generated tok | prefill span | prefill tok/s | decode µs/tok | decode tok/s (device) | decode tok/s (host) |
+|---|---|---|---|---|---|---|---|
+| 0 | 30 | 1728 | 56.91 ms | 527.1 | 652.25 | 1533.1 | 1357.4 |
+| 1 | 25 | 665 | 56.91 ms | 439.3 | 636.72 | 1570.6 | 1392.0 |
+| 2 | 36 | 461 | 56.91 ms | 632.6 | 634.57 | 1575.9 | 1397.6 |
+| 3 | 21 | 1518 | 56.91 ms | 369.0 | 649.43 | 1539.8 | 1363.5 |
+| 4 | 27 | 1714 | 56.91 ms | 474.4 | 651.28 | 1535.4 | 1359.5 |
+| 5 | 23 | 509 | 56.91 ms | 404.1 | 636.20 | 1571.8 | 1393.9 |
+| 6 | 25 | 3364 | 56.91 ms | 439.3 | 672.81 | 1486.3 | 1315.5 |
+| 7 | 21 | 476 | 56.91 ms | 369.0 | 634.69 | 1575.6 | 1397.3 |
+
+**⚠️ The decode spread is not noise — it is context length, and it is linear.** Sort the 8
+requests by generated length and `device_steady_us_per_tok` is **monotonic in all 8**.
+Least-squares over the 8 points:
+
+```
+decode cost ≈ 628.75 µs + 13.22 ns × (context tokens)     R² = 0.998
+```
+
+⇒ **`654.954 µs/token` is a mean over this workload's generation-length mix, not a constant.**
+Extrapolated: **737 µs at 8192 context, 845 µs at 16384.** The independent standalone-decode
+sweep agrees in direction and order (479→560 µs across prefill 256→3840 ≈ 22.5 ns/token, on a
+different geometry with mock weights), so the effect is real.
+
+*Why this matters beyond bookkeeping:* the `L = 8192` three-way arithmetic multiplies a single
+decode anchor by `L`. That understates the long-context lanes. The ordering probably survives
+(the correction pushes force-decode and re-prefill the same way) but the margins do not — S3
+has to sweep `L` with a context-dependent cost.
+
+**Prefill: quote the 56.91 ms floor, never a tok/s.** All 8 spans are 56.911–56.913 ms
+(spread **0.003%**) while the tok/s column spans 369.0–632.6 (spread **57.7%**). With
+`CHUNK_SIZE = 256` the device computes one full 256-position chunk whatever the prompt length,
+so the tok/s variation is entirely numerator-driven. At these prompt lengths prefill is a fixed
+cost, not a rate — and its "throughput" column is a trap for anyone reading the file cold.
+
+## Where the code and artifacts live (as of 2026-07-28)
+
+Local:
+
+| path | what |
+|---|---|
+| `/home/lexu/WaferEngine-staging` | main repo, branch `lexu/staging/kv-feature` (the M1 line). The durable planning docs live here and are **not git-tracked** — they persist via this memory repo and ContextBase. |
+| `/home/lexu/we-m2bench` | the M2 benchmark worktree, branch `lexu/staging/m2-benchmark` locked at `a3a509c`, **zero source changes**; `evidence/run{1,5}/` holds the two completed runs. |
+| session scratchpad | `timing_diff.py` (242-leaf field-by-field diff), `golden_check.py`, and the remote drivers `m2_compile.sh` / `m2_serve.sh` — deliberately **not** committed, so S0 stays zero-diff. |
+| `/home/lexu/we-p2`, `we-fdbench`, `we-pr14-compile`, `/home/lexu/WaferEngine` | older worktrees from earlier sessions, unrelated to M2. |
+
+On CS-3, everything under `/home/eidf217/eidf217/congjiehe/lexu/m2bench/` (Le's instruction —
+do not scatter artifacts elsewhere):
+
+| subdir | what |
+|---|---|
+| `serving_cache/serve_2x4_8k20k/` | the compiled store, **6.3 GB** (prefill 3.2 G + decode 3.1 G + tokenizer 11 M + `build_manifest.json`). Reusable for S1–S3 unless a kernel changes. |
+| `we-m2bench-rsync/` | the synced code tree (9.3 MB) |
+| `hf/qwen3-1.7b/` | weights: safetensors symlinked to `WaferServe/models/qwen3-1.7b`; the tokenizer files were missing there and were uploaded from the local HF cache |
+| `evidence/run1 … run5/` | per-run `timing.json`, `results.json`, verdicts, trace |
+| `logs/` | compile + all 5 serve logs, including the 3 infrastructure failures in full |
+
+38 GB of regenerable staging was deleted after the runs; the work repo and the M2 worktree are
+**intentionally uncommitted** — Le owns commits.
