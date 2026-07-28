@@ -33,8 +33,11 @@ alongside its HTTP API, and its docs give the exact command to drive **our**
   `advance_with_timeout` / pending-oneshot / registry-push shape (`Uuid`→`AtomicU64`,
   `pub`→`pub(crate)`); `verify_control.rs` matches `src/verify_control/server.rs`
   symbol-for-symbol plus a `wait_for_draft_service`.
-- **They validate our responses.** `lib.rs::extract_draft_ids` asserts seven fields
-  against a local `ReqState{round, version, committed_len}` ledger.
+- **They validate our responses.** `lib.rs::extract_draft_ids` enforces EIGHT conditions
+  against a local `ReqState{round, version, committed_len}` ledger: request_id,
+  committed_version, committed_len, proposal presence, proposal.round_id,
+  proposal.base_version, proposal.base_len, and the draft-id count. (An earlier
+  draft of this note said "seven" -- it omitted the presence check.)
 - **Prefill is implemented exactly as our own prior decision doc prescribed**
   (`accepted=0, base_len=0, emitted_ids=prompt, reason="prefill"`), independently
   confirming that "no wire change for prefill" conclusion.
@@ -80,8 +83,9 @@ Do not conclude wire compatibility by reading both sides. **Replay the counterpa
 request-construction and ledger transitions through your own responder and assert their
 checks.** Concretely: reconstructed SGLang's `build_prefill_request` / `build_decode_request`
 shapes and `ReqState` transitions in ~60 lines of Python, fed them to nc_service's
-`translate.build_response`, and asserted all seven of *their* `extract_draft_ids` conditions
-over prefill + 5 decode rounds. Green. That is evidence; a side-by-side read is not.
+`translate.build_response`, and asserted all eight of *their* `extract_draft_ids` conditions
+over prefill + 5 decode rounds. Green. That replay is now a permanent test
+(`sglang_shapes.py` + `test_sglang_shapes.py`), not a throwaway script. That is evidence; a side-by-side read is not.
 
 ## Implications / next actions
 
