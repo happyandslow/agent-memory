@@ -124,17 +124,31 @@ belongs to the *staging* line only; do not attribute it to pr14.
 | 7 | 21 | 476 | 56.91 ms | 369.0 | 634.69 | 1575.6 | 1397.3 |
 
 **⚠️ The decode spread is not noise — it is context length, and it is linear.** Sort the 8
-requests by generated length and `device_steady_us_per_tok` is **monotonic in all 8**.
-Least-squares over the 8 points:
+requests by length and `device_steady_us_per_tok` is **monotonic in all 8**.
+
+**Regress on mean context, not on generated count.** `device_steady_us_per_tok` is an average
+over the timed window, and context grows linearly across that window, so an instantaneous cost
+`a + b·c` reports as `a + b · mean_ctx` with `mean_ctx = prompt + (warmup_cycles + generated)/2`:
 
 ```
-decode cost ≈ 628.75 µs + 13.22 ns × (context tokens)     R² = 0.998
+cost per token at context c ≈ 627.83 µs + 26.45 ns × c     R² = 0.998
 ```
 
-⇒ **`654.954 µs/token` is a mean over this workload's generation-length mix, not a constant.**
-Extrapolated: **737 µs at 8192 context, 845 µs at 16384.** The independent standalone-decode
-sweep agrees in direction and order (479→560 µs across prefill 256→3840 ≈ 22.5 ns/token, on a
-different geometry with mock weights), so the effect is real.
+⇒ **`654.954 µs/token` is a mean over this workload's generation-length mix** (≈1020 tokens of
+context), not a constant. Two extrapolations that are easy to conflate: **one token at 8192
+context costs 844 µs**, whereas **a run generating 8192 tokens averages 736 µs/token**.
+
+The independent standalone-decode sweep (479→560 µs across prefill 256→3840, different geometry,
+mock weights) implies **≈22.5 ns per context token** — the same quantity, within 15%. Two
+unrelated measurements agreeing on the slope is what makes this credible.
+
+> ⚠️ **Correction, same session.** First written as `628.75 µs + 13.22 ns × context`: the fit
+> had been run against **generated tokens** while labelled context, and mean context is about
+> half the generated count, so the slope was ~2× low. What should have caught it immediately:
+> 13.22 vs the standalone sweep's 22.5 is a factor-of-2 gap between two measurements of the
+> *same* quantity, and it was written down as "agrees in order of magnitude" instead of being
+> investigated. Plotting the data is what exposed it. See
+> [[a-quoted-number-is-not-a-measured-number]] for the sibling failure mode.
 
 *Why this matters beyond bookkeeping:* the `L = 8192` three-way arithmetic multiplies a single
 decode anchor by `L`. That understates the long-context lanes. The ordering probably survives
