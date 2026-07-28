@@ -1,11 +1,12 @@
 # WaferEngine-staging Manual Conflicts
 
-Last reviewed: 2026-07-27
+Last reviewed: 2026-07-28
 
 ## Needs Le/manual resolution
 
 - No contradictory project facts found during 2026-07-22 maintenance.
 - 2026-07-27 cron: left local meeting-file changes untouched because they appear human/app-owned and ambiguous: modified `meetings/2026-07-26.pptx` plus untracked Office temp file `meetings/~$2026-07-26.pptx`. Decide whether to keep, revert, or remove the temp file manually.
+- 2026-07-28 cron: `git pull --ff-only` could not run because local `main` is ahead 1 / behind 8 (`origin/main` has newer memory commits) and local worktree still has the ambiguous modified binary `projects/WaferEngine-staging/meetings/2026-07-26.pptx`. I did not rebase, merge, revert, push, or stage the PPTX from cron; Le should decide whether to keep the PPTX edit and how to reconcile local commit `351d5e3` with `origin/main`.
 
 ## Promotion candidates / manual follow-up
 
