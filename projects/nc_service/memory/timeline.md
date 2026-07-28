@@ -2,6 +2,10 @@
 
 # nc_service Timeline
 
+- 2026-07-28 — take-scalars-from-the-kernel-not-your-own-derivation → `memory/inbox/2026-07-28-take-scalars-from-the-kernel-not-your-own-derivation.md`
+- 2026-07-27 — why-patch-the-target-not-the-launcher → `memory/inbox/2026-07-27-why-patch-the-target-not-the-launcher.md`
+- 2026-07-27 — sd-pdseparate-specdec-kernel → `memory/inbox/2026-07-27-sd-pdseparate-specdec-kernel.md`
+- 2026-07-27 — inproc-exchange-constrains-verify-seam → `memory/inbox/2026-07-27-inproc-exchange-constrains-verify-seam.md`
 - 2026-07-21 — pdsep-kv-contract-adopt → `memory/inbox/2026-07-21-pdsep-kv-contract-adopt.md`
 - 2026-07-21 — cs3-elf-extract-reload-scale → `memory/inbox/2026-07-21-cs3-elf-extract-reload-scale.md`
 - 2026-07-20 — specdec-video-demo → `memory/inbox/2026-07-20-specdec-video-demo.md`

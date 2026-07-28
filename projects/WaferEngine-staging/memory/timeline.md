@@ -2,7 +2,15 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-07-28 — e2e-on-chip-relay-was-never-demoted-and-is-frozen-mid-bringup → `memory/inbox/2026-07-28-e2e-on-chip-relay-was-never-demoted-and-is-frozen-mid-bringup.md`
+- 2026-07-28 — check-the-branch-tip-before-baselining → `memory/inbox/2026-07-28-check-the-branch-tip-before-baselining.md`
+- 2026-07-28 — a-quoted-number-is-not-a-measured-number → `memory/inbox/2026-07-28-a-quoted-number-is-not-a-measured-number.md`
+- 2026-07-28 — a-clean-auto-merge-is-not-a-safe-merge → `memory/inbox/2026-07-28-a-clean-auto-merge-is-not-a-safe-merge.md`
+- 2026-07-28 — a-benchmarks-name-is-not-its-workload-shape → `memory/inbox/2026-07-28-a-benchmarks-name-is-not-its-workload-shape.md`
+- 2026-07-27 — oracle-can-share-the-bug-under-test → `memory/inbox/2026-07-27-oracle-can-share-the-bug-under-test.md`
+- 2026-07-26 — sdk-container-cannot-mount-tmp → `memory/inbox/2026-07-26-sdk-container-cannot-mount-tmp.md`
 - 2026-07-26 — per-slot-kv-length-stays-on-host → `memory/inbox/2026-07-26-per-slot-kv-length-stays-on-host.md`
+- 2026-07-26 — new-storage-axis-only-destinations-take-it → `memory/inbox/2026-07-26-new-storage-axis-only-destinations-take-it.md`
 - 2026-07-26 — negative-control-configs-silently-degrade-to-pass → `memory/inbox/2026-07-26-negative-control-configs-silently-degrade-to-pass.md`
 - 2026-07-26 — mixed-hit-miss-batch-needs-no-ragged → `memory/inbox/2026-07-26-mixed-hit-miss-batch-needs-no-ragged.md`
 - 2026-07-25 — slot-reuses-bsz-batch-is-not-a-storage-axis → `memory/inbox/2026-07-25-slot-reuses-bsz-batch-is-not-a-storage-axis.md`
