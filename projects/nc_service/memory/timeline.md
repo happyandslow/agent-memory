@@ -3,6 +3,7 @@
 # nc_service Timeline
 
 - 2026-07-28 — take-scalars-from-the-kernel-not-your-own-derivation → `memory/inbox/2026-07-28-take-scalars-from-the-kernel-not-your-own-derivation.md`
+- 2026-07-28 — sglang-already-speaks-our-protocol → `memory/inbox/2026-07-28-sglang-already-speaks-our-protocol.md`
 - 2026-07-27 — why-patch-the-target-not-the-launcher → `memory/inbox/2026-07-27-why-patch-the-target-not-the-launcher.md`
 - 2026-07-27 — sd-pdseparate-specdec-kernel → `memory/inbox/2026-07-27-sd-pdseparate-specdec-kernel.md`
 - 2026-07-27 — inproc-exchange-constrains-verify-seam → `memory/inbox/2026-07-27-inproc-exchange-constrains-verify-seam.md`

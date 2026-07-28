@@ -16,6 +16,16 @@ tags: [waferengine-staging, qwen3, pr14, serving, port-contract, kv-reuse, nc-se
 > | `pr14-real` | `github.com:CongjieHe/WaferEngine.git` branch `real_qwen3_1p7` | `efa954d` | 2026-07-21 |
 > | `pr14-head` | `WaferAGI/WaferEngine` `refs/pull/14/head` | `a3a509c` | 2026-07-28 |
 >
+> **Re-checked 2026-07-28 (later the same day, `git ls-remote` + GitHub compare API): the two
+> upstream lines have CONVERGED at `d9dbeec`.** Both `WaferAGI refs/pull/14/head` and
+> `CongjieHe real_qwen3_1p7` now point at it, so `pr14-head` is 1 commit behind and
+> `pr14-real` is 6. That single commit ("4B Decode Optimization") touches **only
+> `models/qwen3_4b-decode/`** — `decode.csl`, `comm_pe.csl`, `approx_math.csl`,
+> `oracle_fp16.py`, `check_approx_math.py` — and nothing in `qwen3_1p7b-e2e-pdSeparate`, so it
+> is provably neutral for pdSeparate measurement. **M2 deliberately stays locked at
+> `a3a509c`**, the commit that produced the reference `mtbench8/timing.json`, so that
+> "reproduce the baseline" compares like with like. See [[m2-s0-baseline-and-timer-provenance]].
+>
 > **`pr14-real` is an ancestor of `pr14-head`, 5 commits back.** Those 5 commits rewrite the
 > 1.7B pdSeparate kernels (`decode.csl`, `ht_head.csl`, `ht_tail.csl`, `prefill.csl`; ~12.4k
 > insertions) and change two things that dominate any host-side measurement:
