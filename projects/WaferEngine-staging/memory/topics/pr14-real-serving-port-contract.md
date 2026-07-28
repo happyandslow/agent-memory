@@ -5,6 +5,39 @@ tags: [waferengine-staging, qwen3, pr14, serving, port-contract, kv-reuse, nc-se
 
 # PR #14 Real-Serving Integration & M0/S2 Port Contract — Investigation Report
 
+> ## Branch map — which local ref is which (audited 2026-07-28 via reflog)
+>
+> Two local branches track this same upstream line at **different points in time**. Getting
+> them confused costs real measurement error, so check the tip before quoting any of their
+> recorded timings.
+>
+> | local ref | fetched from | tip | date |
+> |---|---|---|---|
+> | `pr14-real` | `github.com:CongjieHe/WaferEngine.git` branch `real_qwen3_1p7` | `efa954d` | 2026-07-21 |
+> | `pr14-head` | `WaferAGI/WaferEngine` `refs/pull/14/head` | `a3a509c` | 2026-07-28 |
+>
+> **`pr14-real` is an ancestor of `pr14-head`, 5 commits back.** Those 5 commits rewrite the
+> 1.7B pdSeparate kernels (`decode.csl`, `ht_head.csl`, `ht_tail.csl`, `prefill.csl`; ~12.4k
+> insertions) and change two things that dominate any host-side measurement:
+>
+> - `per_round_kv_load_ms` **5290 → 69.5 ms** (disk `.npz` read, ~76×); KV handoff per prompt
+>   **2.94–3.12 s → 0.72 s**; `total_wall_s` 1230 → 734.
+> - `serve_2x4_8k20k.json` now **freezes the host-stream `io_loc` pins**
+>   (`KV_EGRESS_IO_LOCS` / `KV_INGRESS_IO_LOCS` / token / logits), described in-file as
+>   "frozen to the device-validated auto placement (mtbench8 8/8 bit-identical)" — closing a
+>   known ~3× auto-placement bandwidth loss (see [[h2d-host-device-bandwidth]]).
+>
+> **What did NOT move across those 5 commits:** decode 659.4 → 655.0 µs/token device,
+> prefill 30-token span 57.03 → 56.91 ms, KV egress 22.31 → 23.53 ms — all within ~1%. So the
+> device-side anchors are stable and the delta is entirely host-side overhead.
+>
+> ⇒ **Baseline new work on `pr14-head`.** Using `pr14-real` measures two already-fixed
+> implementation artifacts and charges them to the architecture. *Caveat:* `pr14-head` also
+> carries "Qwen3 1p7b Speculative Decoding" and "4B Decode Optimization", so it is less settled;
+> `pr14-real` is the known-good fallback, but then subtract the disk and `io_loc` effects by hand.
+> *Unknown from here:* whether `real_qwen3_1p7` has moved since it was last fetched — re-fetch
+> rather than assume. Related: [[git-branch-status-verification]].
+
 Session **2026-07-11 (M0/S2)**. Read-only dig across three fronts:
 (1) standalone `qwen3_1p7b-decode`/`-prefill`, (2) integrated `qwen3_1p7b-e2e`/
 `-e2e-pdSeparate`, (3) the `nc_service/waferengine/` runtime skeleton. This note is

@@ -5,6 +5,35 @@ tags: [waferengine-staging, kv-cache, policy, offload, wse3]
 
 # KV-Cache Preserve-vs-Evict Policy Tradeoffs (WSE-3)
 
+> ## ⚠️ CORRECTION 2026-07-28 — read before using any `R*` number below
+>
+> **Every `R*` value in this file (0.035 / 2.4 / 9.6 / 11–18) is computed from a host
+> bandwidth that was never measured and belongs to the wrong branch. Do not quote them.**
+>
+> 1. **`BW ≈ 15 MB/s` is not a measurement.** The "29.4 MB ÷ ~2 s" division took its
+>    denominator from a STATUS.md prose phrase ("a few seconds"), not a timer — this file's
+>    own text hedges it as "measured-ish". It also describes the **staging** single-stream
+>    colmux path, which additionally zero-extends each fp16 into a u32 on ingress and so
+>    wastes half the wire.
+> 2. **The pr14 line measures ~1.3–1.5 GB/s** — 4 streams, varlen, fp16 double-packed,
+>    `io_loc` pins frozen. Its `per_req_kv_egress_ms` (22.3 on `pr14-real`, 23.5 on
+>    `pr14-head`) **is** true wire time (blocking `task_wait` after four `nonblock`
+>    receives). ⇒ **`R*` moves from a degenerate ~0.036 ("always keep in place") to ≈3** —
+>    a boundary with real requests on both sides. *(The ~1.3–1.5 GB/s is itself **derived**
+>    by assuming a 256-token chunk payload; being verified directly in M2-S0.)*
+> 3. **`Δ = t_dec − t_pf` is not a constant.** The 170 µs/token `t_pf` is *amortized over a
+>    256-token prompt*; on real hardware a 30-token prompt costs **57 ms** (526 tok/s), so
+>    for small `L_new` prefill loses its parallelism advantage and `t_pf → t_dec`, i.e.
+>    `Δ = Δ(L_new)`. Any single-scalar `R*` is a scalar for one `L_new` only.
+> 4. **`R*` is also too narrow a question.** It compares only Option A vs B. The real
+>    decision space is recompute (in prefill **or** in decode) vs offload-and-reload vs
+>    retain in place vs move to idle PEs — and the same measurements settle all of them.
+>
+> The **method** in this file (how the penalty and breakeven are derived, the direction-of-
+> effect reasoning, the tier ladder) remains correct and reusable — it is the **inputs** that
+> were wrong. Current plan and state: `ROADMAP.md` M2 + `milestones/M2-tiering-cost-model.md`
+> (durable docs win on any conflict).
+
 ## Summary
 
 Central research question (Le, 2026-07-05): for a single request, compare the cost
