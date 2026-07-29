@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured   <!-- captured | drained -->
+**Status:** drained   <!-- captured | drained -->
 **Promotion:** operational, recurring — reinforces the existing `cs3-runner`
 skill promotion candidate already logged in `tracking/conflicts.md`.
 

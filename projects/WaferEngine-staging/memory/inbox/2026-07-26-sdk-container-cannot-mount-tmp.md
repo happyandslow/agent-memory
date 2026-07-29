@@ -4,7 +4,7 @@ Date: 2026-07-26 · Repo: `WaferEngine-staging` · SDK 2.10.0, gala2
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 

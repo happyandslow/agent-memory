@@ -4,7 +4,7 @@ Date: 2026-07-28 · Repo: `WaferEngine-staging` · `models/qwen3_1p7b-e2e-pdSepa
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 

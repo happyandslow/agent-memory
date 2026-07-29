@@ -4,7 +4,7 @@ Date: 2026-07-26 · Repo: `WaferEngine-staging` · Branch base: `lexu/staging/kv
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 

@@ -6,6 +6,11 @@ tags: [measurement, methodology, reproducibility, timing, bandwidth, m2]
 
 # Prove same-source before comparing timings; derive the payload, never assume it
 
+**Project:** WaferEngine-staging
+**Author:** claude
+**Status:** drained   <!-- captured | drained -->
+
+
 Captured during M2-S0 (pdSeparate `mtbench8` baseline reproduction on real WSE-3,
 snapshot `a3a509c`). Two methodology points that generalise well past this milestone.
 

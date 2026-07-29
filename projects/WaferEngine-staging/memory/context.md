@@ -22,7 +22,10 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 - `memory/topics/csl-control-payload-mechanisms.md` — CSL control wavelets/switches and no-keyed-routing/static-orchestration framing.
 - `memory/topics/qwen3-kernel-analysis-atlas.md` — generated floorplan/algorithm/state-machine atlas with links to aggregate state-machine indexes under `assets/kernel-algo/`.
 - `memory/topics/h2d-host-device-bandwidth.md` — CS-3 host↔device / host↔host transport findings.
-- `memory/topics/git-branch-status-verification.md` — guardrails for writing branch/commit/merge status under stale durable prose and squash merges.
+- `memory/topics/git-branch-status-verification.md` — guardrails for writing branch/commit/merge status under stale durable prose and squash merges; plus branch-tip-before-baselining and why a zero-conflict merge is evidence about text, not meaning.
+- `memory/topics/m1-s1-multi-slot-kv-seam.md` — engineering lessons from implementing the multi-slot KV addressing seam: destination-vs-source indexing, seam drift, checks that cannot fail, and oracle independence.
+- `memory/topics/m2-s0-baseline-and-timer-provenance.md` — the pr14 pdSeparate baseline reproduced bit-identical on real WSE-3, the code-derived KV wire payload, which `timing.json` fields are safe to quote, and what `mtbench8` structurally cannot measure.
+- `memory/topics/pr14-real-serving-port-contract.md` — the PR #14 feature matrix, the branch map, and the measured rebase cost.
 
 ## Restart checklist
 
@@ -41,3 +44,9 @@ Compact session-start packet. This generated view is intentionally thin: load `p
 13. For CS-3 device runs, tee per-point stdout logs and check for orphan jobs after ssh `rc=255` transport death.
 14. Treat real HF weights/tokenizer/oracle work as deferred unless Le reprioritizes it.
 15. Before writing branch/commit/merge status, verify live git state and feature content; squash merges make original-tip ancestor checks false-negative. See `memory/topics/git-branch-status-verification.md`.
+16. **Host KV transport is 1.426 GB/s aggregate / 0.357 GB/s per stream** (pr14 line, payload derived from code, time measured on real WSE-3). The old **"as-built ~15 MB/s" is retracted — never measured, wrong branch — and must not be quoted.** `R*` is ≈3.4 under the corrected figure, not the degenerate ~0.035. See `memory/topics/kv-cache-policy-tradeoffs.md`.
+17. **Decode cost is linear in context** (`627.83 µs + 26.45 ns × ctx`, R² = 0.998), so the 654.95 µs anchor is a mean over one workload's generation-length mix. Do not multiply it by `L`. See `memory/topics/m2-s0-baseline-and-timer-provenance.md`.
+18. Before reusing a shipped benchmark request set, read its inputs rather than its name and compare prompt length against every quantization in the path — `mtbench8` is single-turn and zero-reuse despite "MT", and its prompts sit below `CHUNK_SIZE`, so it measures floors, not slopes.
+19. Before trusting a red test, an oracle, a quoted number, a linked branch, or a good fit as *evidence*, check what it shares with the thing under test — all five have failed silently here. See the consolidated entry in `tracking/conflicts.md`.
+20. **Report a performance number with its setting** — model size/shape, real vs mock weights, deployment scenario, geometry + config, batch, workload shape, machine, and `n`. Le's standing instruction (2026-07-28); the project's `WORKFLOW.md` carries the full rule.
+21. Mixed prefix-hit/prefix-miss batches need **no** ragged support (round start = `min(L_match)`); per-slot KV length stays on the **host**. Both are Le's corrections and both cancelled planned work — see `memory/topics/kv-cache-policy-tradeoffs.md` before re-deriving either.

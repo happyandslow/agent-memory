@@ -40,6 +40,11 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 - [x] **DONE 2026-07-21** — the long-sequence follow-up is complete: k48 at L=16,384 (49.75% saving) and the decode L=4096 pair (`d2_noreuse` 1,120,316,570 vs `d2_reuse` 567,975,120 → −49.3%). With k48 in hand the earlier "two lengths lie on the same curve" claim is narrowed: fraction dominates, but a second-order length term appears at high reuse and favours the *longer* prompt (75%: L=8192 45.2% vs L=16384 49.8%). Decode length axis now has two points (−34.6% at 1024, −49.3% at 4096, both set by the redo step-ratio, not length). Chart + docs updated in agent-memory + ContextBase.
 - [x] **S6a-prefill DONE + verified + MERGED.** Mechanism verified byte-identical in sim AND on real WSE-3 (2026-07-19→07-21) with real-scale perf measured; the three fixes (metainfo even-padding, `ht_head` chunk-slot indexing, two host `start_chunk` assumptions) were **committed as `e0a19fc` and merged into the feature branch `lexu/staging/kv-feature` via PR #1 (`0db3fc2`) on 2026-07-21** (git-verified: `e0a19fc` touches `prefill.csl`/`ht_head.csl`/`launch.py`/`kv_store.py`/`comm_pe.csl`; current `s6b-force-decode` tree byte-identical). **So S6a — decode + prefill — is complete and landed on `kv-feature`.** Branch convention: milestone branches converge onto `lexu/staging/kv-feature`. NB (self-correction): a prior reconciliation this day wrongly called the prefill code "uncommitted / pending review" — I asserted that before checking git; the branch topology shows it was already committed + merged. The stale line it was correcting (in-repo docs' "S6a-prefill IN PROGRESS / handed to a new session", left over from the S6b session) is now fixed to "merged into kv-feature."
+- [ ] **Assert on unknown `model_config/*.json` keys.** Still not implemented, and it is the one constraint from the M1-S1 review that was left as prose rather than turned into a guard — which is exactly why it is the one still open. `cfg.get(...)` with a default silently turns a misspelt key into the default: `FORCED_DECODE_LEN` vs `FORCED_DECODE_LENS` meant one config's `[1,4,4,4]` **never once took effect**, and `ACTIVE_SLOT` vs `ACTIVE_SLOTS` turned a red control into a copy of the green one. Validate each new key too: length == `bsz`, value < `SLOT_COUNT`, **no duplicates** (a duplicate = two lanes on one slot = silent cross-contamination).
+- [ ] **M1-S2's shape flipped** — it is now mostly *host* work: a per-slot `valid_len` table in `kv_store.py` plus an explicit per-round `retained_len`, retiring the `-1` sentinel. The device barely changes. This is the opposite of the "device loops over slots" design the milestone doc still implies.
+- [ ] **Fix two now-stale contract lines in `milestones/M1-intra-pe-reuse.md`** before someone re-derives the wrong answer from them: § S0.2's *"slot empty ⇔ `iter_num_bank[layer][slot] == 0`"* (occupancy is a host judgement under D4) and the grep checklist row naming S1 as the owner of adding that dimension ("not needed, superseded").
+- [ ] **Before any pr14 rebase:** enumerate PR #14's renamed symbols and grep our call sites — the dangling-import class does **not** show up as a conflict — and re-run the trial merge at the then-current tip, since the 7-file/18-hunk counts expire as the PR moves.
+- [ ] **Re-derive `R*` once M2 produces a real `Δ(L_new)`.** The recomputed `R* ≈ 3.4` uses the stale `Δ = 276 µs`; the 57 ms prefill floor at short prompts already says `Δ` is a function of `L_new`, not a constant.
 - [ ] Strengthen the warm-start gate so it fails when reuse silently never engages — byte-identical KV alone also passes a cold run.
 - [ ] Decide whether to lift decode's `MAX_SEQ_LEN ≤ 1016` wall; it needs a KV access/layout change that keeps the traversal stride inside the DSD's i8 `.stride` field, not a type widening.
 - [ ] Instrument `qwen3_1p7b-e2e` segment timings: t0 `start_kv_transfer`, t1 prefill states 0–3 done, t2 north-shift done, t3 decode `kv_flush_then_init`; validate in sim then on a device-sized config.
@@ -52,6 +57,48 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Fix e2e source/documentation hygiene found in the 2026-07-09 read: stale `route_calc.csl:5` axis comment, prefill vocab-padding asymmetry, K-pipe alias invariant check, and `csl_color_audit` raw `@set_config` parsing.
 
 ## Narrative progress log
+
+### 2026-07-29
+
+- **Drained the 14-item backlog** (2026-07-26 → 07-29) into six topic notes plus
+  `memory/project.md`. Two clusters: M1-S1 implementation/verification, and M2 kickoff +
+  the git/branch discipline that came out of it.
+- **The single most consequential correction: the host KV transport figure.** The
+  long-quoted **"as-built ~15 MB/s"** was never measured — its denominator came from a
+  `STATUS.md` prose phrase, and it described the wrong branch. It is now
+  **1.426 GB/s aggregate / 0.357 GB/s per stream**, with the payload **derived from code**
+  (exactly 33,554,432 B/request) and the time **measured** (23.525 ms, real WSE-3, n=2, pr14
+  line). Struck through rather than deleted at all nine sites in
+  `kv-cache-policy-tradeoffs.md` so it reads as dead if found quoted elsewhere. **This moves
+  `R*` from ~0.035 ("always keep KV in place" — a degenerate answer that looked like a strong
+  conclusion) to ≈3.4**, a real boundary that typical multi-turn chat sits on both sides of.
+  It also shrinks the cross-chip-vs-fabric gap from ~300× to ~3–5×, which materially softens
+  that section's original argument. ⚠️ The recomputed `R*` still uses the stale
+  `Δ = 276 µs` — re-derive when M2 produces a real `Δ(L_new)`.
+- **Decode cost is linear in context, not a constant:** `627.83 µs + 26.45 ns × ctx`,
+  R² = 0.998, monotonic across all 8 requests of the M2-S0 run. So the 654.95 µs anchor is a
+  mean over one workload's generation-length mix (≈1020 tokens of context). Any estimate that
+  multiplies it by `L` understates long-context lanes.
+- **Two design retractions, both Le's, both authoritative.** A mixed prefix-hit/prefix-miss
+  batch does **not** need ragged support — round start = `min(L_match)` and the redundant
+  recomputation is bit-identical to what it overwrites, so correctness falls out with no mask
+  or guard; the earlier "S3 must use `bsz=1`" guidance is superseded. And per-slot KV length
+  **stays on the host** — the device keeps per-layer scalar counters, and a per-slot table
+  becomes mandatory only when the active set changes across rounds *and* you later return to
+  a previously-used slot. Both corrections cancelled change-list items rather than adding
+  them. Separately: the real blocker for ragged batching is **per-lane RoPE state**, not
+  `iter_num`, so any O1 cost estimate derived from the `iter_num` analysis alone is too low.
+- **PR #14 never demoted the `e2e` on-chip KV relay** — that claim is true of
+  `e2e-pdSeparate` only, and looks like a model mix-up in the work repo's durable prose. The
+  correction is **unconfirmed by Le** and moves an adopt-vs-port input in the convenient
+  direction, so it is parked in `tracking/conflicts.md` rather than treated as settled.
+- **Rebase cost measured** on a trial three-way merge: 7 files, 18 hunks, ~650 lines — and the
+  M1-S1 slot seam produces **zero** conflicts. The expensive half is what merged *cleanly*: a
+  renamed symbol surviving as a dangling import (code-verified) and a protocol split across
+  two files that can merge half.
+- **Six of the seven "promotion candidate" flags turned out to be one lesson** — *something
+  that looks like evidence, isn't, and fails silently*. Consolidated into a single skill
+  proposal in `tracking/conflicts.md` rather than seven entries.
 
 ### 2026-07-26
 

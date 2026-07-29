@@ -4,7 +4,7 @@ Date: 2026-07-28 · Repo: `WaferEngine-staging` · M2 kickoff (tiering cost mode
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 

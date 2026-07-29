@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured   <!-- captured | drained -->
+**Status:** drained   <!-- captured | drained -->
 **Promotion:** procedural, cross-project — see § Implications. Candidate for a
 measurement-methodology skill, not a WaferEngine topic.
 

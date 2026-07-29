@@ -18,6 +18,14 @@ Last reviewed: 2026-07-29
   == 0`"*, but occupancy is a **host** judgement under D4; and the grep checklist lists S1
   as the owner of adding that dimension, which should read "not needed, superseded". Left
   for whoever next edits that milestone — flagged so it is not re-derived from the doc.
+- *(Raised by the drain, checked, NOT a conflict — recorded so it is not re-raised)* two
+  items looked like contradictions and are not: (a) `m2-s0-baseline-and-timer-provenance.md`
+  still contains the string `15 MB/s`, but every occurrence is inside the section explaining
+  **why that number is wrong** — correct usage, not a live figure; (b) `ROADMAP.md` was
+  reported as still carrying the old "~1.3–1.5 GB/s, derived by assuming a 256-token chunk
+  payload". It no longer does — it was updated the same day to the code-derived payload and
+  the measured **1.426 GB/s**. The drain worked from the capture's quotation of ROADMAP, not
+  from the current file.
 - *(Resolved this pass, recorded for traceability)* `memory/project.md` carried
   **"Real Qwen3 weights are NOT wired into any model"**. True for the standalone kernels
   and the `main`-line fused models; **false for `e2e-pdSeparate` at PR #14**, which bakes

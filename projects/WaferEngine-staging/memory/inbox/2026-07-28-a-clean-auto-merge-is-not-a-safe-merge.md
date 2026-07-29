@@ -4,7 +4,7 @@ Date: 2026-07-28 · Repo: `WaferEngine-staging` · `lexu/staging/kv-feature` vs 
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 
