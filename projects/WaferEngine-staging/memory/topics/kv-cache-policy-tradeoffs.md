@@ -253,18 +253,20 @@ for BW in (15e6, 1e9, 4e9):       # effective KV-move bytes/s
 - `R* = Δ·BW/B` — break-even ratio `L_warm / L_new` above which force-decode-in-place (B)
   is cheaper than ship-to-prefill (A). Dimensionless (a token-count ratio).
 
-**Worked example (the 0.035 in the fact-check table)** — current single-stream regime:
+**Worked example — kept only to show the arithmetic; the `BW` it used is retracted.**
 ```
-Δ  = t_dec − t_pf = 446 − 170        = 276 µs
+Δ  = t_dec − t_pf = 446 − 170        = 276 µs        (stale mock-weight Δ — see header pt 3)
 B  = 112 KB                          = 114,688 bytes
-BW = 29.4 MB ÷ ~2 s ≈ 15 MB/s       = 14.7e6 B/s
-m  = B / BW = 114,688 / 14.7e6       = 7.80e-3 s = 7,800 µs   (the "~7800 µs/warm-tok" column)
-R* = Δ / m  = 276 / 7,800            = 0.0354 ≈ 0.035
-       (identically  R* = Δ·BW/B = 276e-6 · 14.7e6 / 114,688 = 0.035)
+BW = 1.426e9 B/s                     MEASURED (pr14, 4 streams, 33,554,432 B ÷ 23.525 ms, n=2)
+m  = B / BW = 114,688 / 1.426e9      = 80.4e-6 s = 80 µs per warm token
+R* = Δ / m  = 276 / 80               ≈ 3.4
+       (identically  R* = Δ·BW/B = 276e-6 · 1.426e9 / 114,688 = 3.43)
 ```
-Reading: B wins once the warm history exceeds `R*·L_new` = **3.5 % of the new turn** → in
-chat essentially always ("→ almost always"). At 1 GB/s `R* = 276/115 ≈ 2.4`; at 4 GB/s
-`276/29 ≈ 9.6`.
+Reading: force-decode-in-place (B) wins once the warm history exceeds ~3.4× the new turn — still
+the common case in chat, but a real boundary rather than the degenerate "always".
+**The former worked example plugged `BW = 29.4 MB ÷ "~2 s" ≈ 15 MB/s` and produced `R* = 0.035`.
+Both numbers are retracted** (the divisor came from a STATUS.md prose phrase, not a timer, and it
+described the staging single-stream colmux path). At 4 GB/s nameplate, `R* = 276/29 ≈ 9.6`.
 
 **What R\* means / direction of effect.** R* is the history-to-new-turn length ratio at the
 tipping point; **larger R\* ⇒ B (force-decode) wins *less* often** (more history needed to
@@ -273,13 +275,23 @@ justify not moving). Because `R* = Δ·BW/B`:
 - bigger KV/token (`B↑`) → `R*↓` → B wins more (moving is expensive);
 - bigger penalty (`Δ↑`) → `R*↑` → B wins less.
 
-**Bandwidth regimes — where the `BW` numbers come from** (only the first is measured):
-- **~15 MB/s — cross-chip host bridge, as-built (measured-ish).** pdSeparate's device KV
-  transfer moved the full 29.4 MB in "a few seconds" (STATUS.md); ~2 s → 14.7 MB/s. This is
-  the *single on-chip stream* rate, bottlenecked by the serial colmux/adaptor PE, NOT the
-  wire — hence far below RoCE.
-- **~1 GB/s — cross-chip host bridge, optimized (estimate).** Target if S4 multi-stream
-  removes the single-PE serialization. Not measured.
+**Bandwidth regimes — where the `BW` numbers come from:**
+- **1.426 GB/s aggregate / 0.357 GB/s per stream — cross-chip host bridge, MEASURED
+  (2026-07-29, real WSE-3, pr14 line, 4 streams, `n = 2`).** Provenance matters here: the
+  **payload is derived from code** (exactly `33,554,432 B` per request) and the **time is
+  measured** (`23.525 ms`, a blocking `task_wait` after four `nonblock` receives, so it is true
+  wire time). This supersedes both the retracted "~15 MB/s" *and* the interim derived
+  "~1.3–1.5 GB/s (assuming a 256-token chunk)".
+- **~~~15 MB/s — cross-chip host bridge, "as-built"~~ RETRACTED 2026-07-29 — never a
+  measurement.** It divided 29.4 MB by a "a few seconds" phrase lifted from STATUS.md prose,
+  not from a timer, and it described the **staging** single-stream colmux path (which
+  additionally zero-extends each fp16 to u32 and so wastes half the wire) — i.e. the wrong
+  branch as well as the wrong method. Kept visible only so the number is recognised as dead if
+  someone finds it quoted elsewhere; **do not use it, and do not treat it as a lower bound.**
+  The failure mode is worth the entry on its own: *a figure hedged in its own text as
+  "measured-ish" is an unmeasured figure, and it will still get quoted as measured.*
+- **~1 GB/s — cross-chip host bridge, "optimized" (estimate).** Superseded — the measured
+  multi-stream path already exceeds it.
 - **~4 GB/s — host RoCE ceiling (nameplate).** 4-channel RoCE (~1 GB/s/ch × 4). Idealized.
 - **On-CHIP fabric (same-wafer move — e2e, or the T1 idle-PE tier) — much faster.** Cerebras
   WSE-3 advertises **214 Pb/s ≈ 27 PB/s** aggregate on-wafer fabric over 900,000 cores at
@@ -308,7 +320,7 @@ justify not moving). Because `R* = Δ·BW/B`:
 
 **Ordering of the three bandwidths** (for intuition): local SRAM read ~23 GB/s/PE (≈21 PB/s)
 ≈ fabric per-PE ~18–30 GB/s (all 4 links, ≈214 Pb/s) — but a *single* fabric link is only
-~4–7 GB/s ≫ host bridge ~15 MB/s–4 GB/s. Reuse gets dramatically cheaper the less the KV has
+~4–7 GB/s > host bridge **1.426 GB/s measured** (–4 GB/s nameplate). Reuse gets cheaper the less the KV has
 to travel: stay-in-SRAM (T0/T0.5) ≫ move-on-wafer (T1 / same-chip A) ≫ cross-chip host move
 (T2 / pdSeparate A).
 
@@ -331,16 +343,19 @@ Per-PE (4 outgoing links): 4 × 4.4 = 17.6 (floor) … 4 × 7.4 = **~30 GB/s** �
 
 Takeaway: staying resident (T0/T0.5, SRAM BW) beats draining out one link (T1) by ~3–6×.
 On-chip movement only matches SRAM if it uses *all* links in parallel; a single-stream funnel
-is pinned to one link (~4–7 GB/s) — which is why the as-built single-stream host path sits even
-lower (~15 MB/s) and why making T1 cheap requires spreading the move across links/PEs (the S4
-lesson).
+is pinned to one link (~4–7 GB/s) — which is why the host path, even at 4 streams, measures only
+**1.426 GB/s aggregate (0.357 GB/s per stream)**, and why making T1 cheap requires spreading the
+move across links/PEs (the S4 lesson). The per-stream figure is the useful one for that argument:
+each stream is far below a single link's capacity, so the ceiling being hit is not the fabric.
 
 **Same-chip vs cross-chip — the real fork.** Plugging an on-chip fabric `BW` (~4–7 GB/s per
 link, ~30 GB/s/PE, far higher in parallel) into `R* = Δ·BW/B` gives `R* ≈ 11–18` per single
 link (up to hundreds when parallelized): on-wafer,
 moving KV is so cheap that **ship-to-prefill (A) wins for all but extreme histories**. So the
 force-decode-in-place (B) advantage is really a **cross-chip (pdSeparate, host-path
-~15 MB/s) phenomenon**, driven by the slow host bridge — not fabric cost. On one chip (e2e)
+1.426 GB/s measured) phenomenon**, driven by the slower host bridge — not fabric cost. Note the
+gap is now ~3–5×, not the ~300× the retracted 15 MB/s implied, so this fork is much less lopsided
+than this section originally read. On one chip (e2e)
 the fabric move is fast and A would usually win *if the decode→prefill reverse bridge
 existed* (it does not; see [[standalone-vs-integrated-kernel-parity]]). Caveat: the
 per-link/per-PE fabric figures are derived from the advertised aggregate + clock, not an
@@ -360,9 +375,10 @@ crossover when `L_new` is large relative to `L_warn`. (b) Numbers are mock-weigh
 bsz=1, e2e 512/256; the ~2.6× ratio is architectural but batch/config can shift it
 (larger batch amortizes prefill's fixed cost → ratio widens → Option A relatively
 better). (c) Neither path is built: Option B needs a forced-token decode input;
-Option A needs the reverse bridge. (d) The "~2 s" transfer is a current single-stream
-artifact (S4 multi-stream would cut it ~N×) — but even at wire speed Option B still
-wins for typical chat ratios.
+Option A needs the reverse bridge. (d) ~~The "~2 s" transfer is a current single-stream
+artifact~~ **superseded 2026-07-29** — the multi-stream path exists and measures
+**23.5 ms/request (1.426 GB/s)**, so the "S4 would cut it ~N×" prediction is settled and the
+transfer is no longer the dominant term.
 
 ## Cost anchors (device, test_device_2x2blk_kv, Pw=512)
 
@@ -373,8 +389,9 @@ wins for typical chat ratios.
   cap** ([[e2e-pdSeparate-device-validation]]): the current prefill kernel's
   `~200·s²` score/mask buffer means a long prompt can't even be prefilled in one
   pass, which undercuts the long-context PD-disaggregation use case.
-- Reload (preserve+reuse, T2): one ingress stream ~29 MB, "few s", no prefill
-  compute. Host I/O already 4-channel RoCE.
+- Reload (preserve+reuse, T2): ~29 MB, **23.5 ms measured over 4 streams (1.426 GB/s
+  aggregate / 0.357 GB/s per stream, real WSE-3, `n=2`, pr14 line)** — the old "few s" is
+  retracted. No prefill compute.
 - General rule: recompute cost ∝ prefill FLOPs, reload cost ∝ KV bytes → **preserve
   wins increasingly as prompt length and model size grow.**
 
@@ -552,13 +569,89 @@ and `milestones/kv-reuse-tradeoff-register.md`; these notes preserve reusable co
   transpose lives inside the block. Paging would bite K harder because seq pages are naturally contiguous
   in V but strided across K rows.
 - **Within one active forward, lanes must remain equal-length.** Decode's scalar `iter_num` is both the
-  K/softmax effective length and the packed score-buffer inter-lane stride (`m*G*iter_num`). Mixed
+  K/softmax effective length and the packed score-buffer inter-lane stride (`m*G*iter_num`). ~~Mixed
   hit/miss active lanes are ragged and would silently corrupt attention unless the score layout/softmax
   are redesigned around per-lane lengths or capacity stride. M1 should therefore test either `bsz=1` or
-  all-active lanes on the same hit/miss path; ragged continuous batching belongs to later O1/M2 work.
+  all-active lanes on the same hit/miss path.~~
+  > **⚠️ SUPERSEDED 2026-07-26 (Le's correction, conceded — authoritative).** The `iter_num`
+  > *mechanism* above stands; the **S3 config guidance drawn from it does not.** A mixed
+  > prefix-hit / prefix-miss batch does **not** need ragged support — see the
+  > "mixed hit/miss batches are legal" entry in the 2026-07-29 update below. Do not use
+  > `bsz=1` or same-path-for-all-lanes as an S3 constraint.
+
+### 2026-07-29 — mixed hit/miss batches are legal; per-slot KV length stays on the host
+
+Two design-level results from the M1-S1 review, both retractions of earlier over-constrained
+conclusions. Source of truth stays `milestones/M1-intra-pe-reuse.md` +
+`milestones/kv-reuse-tradeoff-register.md`; engineering-side lessons live in
+[[m1-s1-multi-slot-kv-seam]].
+
+**Designing hit/miss experiments: a mixed prefix-hit / prefix-miss batch needs no ragged support.**
+The earlier "a hit lane sits at `L_match` while a miss lane climbs from 0, therefore ragged,
+therefore `bsz=1`" argument smuggled in **take-over semantics** — that honouring a hit means jumping
+`iter_num` straight to `L_match` and free-decoding from there (which is what S6a's `round_reset` +
+`rope_init_from_delta_p` do today). A hit lane can instead **ride along**: `iter_num` advances one
+per step as usual and the hit lane simply does no useful work. Lengths never diverge.
+
+> **Round start = `min(L_match)` over the active lanes; `F = prompt_len − start`.**
+
+What makes this *correct* rather than merely convenient: a hit lane's recomputation over
+`[start, L_match)` is **bit-identical to what is already in its slot** — same tokens, same weights,
+same RoPE angle (angles are keyed to global position), reading correct resident prefix KV. So the
+redundant work overwrites its own output. **No mask, no guard, no special case.** The price is
+throughput, not correctness: **batch benefit = min over lanes** (A′ hits 16, B′ hits 8 → start 8,
+the batch saves 8 steps and A′ wastes 8) — the head-end mirror of the tail-end rule already in the
+kernel, where a finished lane keeps advancing and emits pad, i.e. **batch cost = worst lane**.
+*Retracted:* the claim that the triple *(prompt length, `L_match`, remaining force-decode suffix)*
+must match across lanes — only prompt length is a real constraint.
+*(Le's correction, conceded — authoritative. The `min(L_match)` formula itself is a design proposal
+that follows from the verified mechanism; not implemented, not run `[unverified]`.)*
+
+**Consequence for costing O1 / continuous batching — the estimate in this file is too low.** The
+scalar that really pins lanes together is **RoPE**, not `iter_num`: `cos_cur_f32` / `sin_cur_f32`
+have **no `bsz` axis at all** and `rope_step_advance()` runs once globally per step, outside the
+layer loop. Even if every lane got its own `iter_num`, there is still exactly one set of angles on
+the PE — a lane at position 12 and a lane at position 8 cannot both be served. Anyone pricing ragged
+batching from the `iter_num` analysis alone will under-estimate it; per-lane RoPE state is a
+separate, larger change.
+
+**Per-slot KV length belongs on the host, not mirrored onto the device.** The obvious change-list
+item when giving decode a slot dimension — *give `iter_num_bank` / `step_bank` a `[layer][slot]`
+axis so idle slots remember how full they are* — is wrong. Separate the two things a slot holds:
+**KV bytes** are safe with no help (writes only target *active* slots, so an idle slot's region is
+never touched), and **length** is the only at-risk state — which the host control plane (D4) already
+owns (`kv_store` holds each slot's `valid_len`; on reactivation it comes back down through the meta
+tile's `retained_len` and overwrites the device scalar in `round_reset`). A per-slot device bank
+would be a **second source of truth for state the host already has**. **The slot axis applies to KV
+bytes and write addresses only — counters are not part of it.**
+
+**The trigger that finally forces a per-slot table — and it is on the host, not the device:**
+
+> **when the active set changes across rounds *and* you later return to a previously-used slot.**
+> Not before.
+
+`kv_store` tracks a **single** high-water scalar (`last_idx`, behind the `RETAINED_LENS = -1`
+sentinel), correct only while the active set is constant. Failure trace: round 0 slots {0,1} decode
+to 3; round 1 slots {2,3} decode to 6, **clobbering the 3**; round 2 returns to {0,1}, resumes at 6,
+appends past never-written positions 3–5, and attention reads all of `[0,6)` as valid. **Silent
+wrong values, no crash.** *(Mechanism code-verified; the failure trace is derived from the code, not
+observed `[unverified]`.)* Knock-on: the work is **host-side** (a slot table + an explicit per-round
+`retained_len` retiring the `-1` sentinel), with the device barely changing — not the "device loops
+over slots" shape the milestone implied. The device-side per-slot counter comes back only via
+ragged/continuous batching (O1 — and there it is per-**lane**, not per-**slot**) or by moving the
+control plane onto the PE (O3 / M2b).
 
 ## Last updated
 
+2026-07-29 — **retracted the "host KV transport ~15 MB/s as-built" figure everywhere** (never a
+measurement: prose denominator, wrong branch) and replaced it with the measured
+**1.426 GB/s aggregate / 0.357 GB/s per stream** (payload derived from code at 33,554,432 B/request
+÷ a measured 23.525 ms, real WSE-3, `n=2`, pr14 line) — `R*` accordingly moves ~0.035 → ~3.4.
+Also drained two M1-S1 design results: mixed prefix-hit/miss batches need **no** ragged support
+(`min(L_match)` round start; RoPE, not `iter_num`, is the real blocker for ragged — so the O1 price
+tag rises), and per-slot KV length **stays on the host** (device keeps per-layer scalars; a per-slot
+table is forced only when the active set changes across rounds *and* a slot is revisited).
+Superseded the 2026-07-26 "lanes must be equal-length ⇒ S3 needs `bsz=1`" guidance in place.
 2026-07-26 — drained M1/T0.5 captures on slot-vs-batch vocabulary (`SLOT_COUNT`, `M`, `active_slot`),
 contiguous fixed slots vs paging (addressing seam but no hot-loop page gather yet), K/V slot-base symmetry,
 and the equal-length active-lane invariant for packed score buffers.

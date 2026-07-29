@@ -1,7 +1,7 @@
 # M1-S1 — multi-slot KV addressing seam: engineering learnings
 
 > Curated, transferable learnings from implementing + verifying the multi-slot KV
-> addressing seam in `qwen3_1p7b-decode` (M1-S1, 2026-07-26). **Plan/state live in the
+> addressing seam in `qwen3_1p7b-decode` (M1-S1, 2026-07-26 … 2026-07-27). **Plan/state live in the
 > in-repo durable docs** (`milestones/M1-intra-pe-reuse.md`, `milestones/kv-reuse-tradeoff-register.md`,
 > `PROGRESS.md`) — those win on any conflict. This note holds only the reusable engineering
 > lessons, not the milestone status.
@@ -106,6 +106,10 @@ which already tracks each slot's valid length and sends the round's start. An id
 survives with no bookkeeping at all — writes only reach active slots; only its *length* needs
 remembering, and that lives on the host. Removing it made the change strictly smaller.
 
+The design-level version of this (including the exact trigger that *does* force a per-slot table,
+and the failure trace when it is missing) is in [[kv-cache-policy-tradeoffs]]; the retain path this
+seam sits on is [[s6a-decode-kv-retain]].
+
 ## Lesson 6 — the numpy oracle is not independent by default
 
 You are about to gate a KV-reuse change on `numpy_oracle_*` — either as the red half of a negative
@@ -154,6 +158,11 @@ before any "ragged batch" (lanes at different lengths) is possible:
 
 Good news for a future ragged implementation: the kv-head collective is already capacity-sized
 with a zero-padded tail, so the fabric side needs no change — only local packing.
+
+**RoPE is the harder of the two**, and it is the one usually left out of ragged-batching cost
+estimates: giving every lane its own `iter_num` still leaves exactly one set of angles on the PE.
+See [[kv-cache-policy-tradeoffs]] for why a mixed prefix-hit/prefix-miss batch nonetheless needs
+**no** ragged support (round start = `min(L_match)`).
 
 ## Config hygiene: unknown keys are silently ignored
 

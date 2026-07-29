@@ -1,5 +1,5 @@
 ---
-summary: Git branch/merge status verification guardrails for WaferEngine-staging: durable docs can carry stale commit-state prose, and squash merges make original-tip ancestry checks false-negative; verify feature presence by live branch state plus content probes/diffs before writing status claims.
+summary: Git branch/merge status verification guardrails for WaferEngine-staging: durable docs can carry stale commit-state prose, squash merges make original-tip ancestry checks false-negative, a linked branch's committed results may be stale (reflog + ancestry diagnostics), and a zero-conflict merge is evidence about text, not about a contract spread across files.
 tags: [waferengine-staging, git, branch-state, squash-merge, verification, workflow]
 ---
 
@@ -79,6 +79,8 @@ still means the same thing*.
 
 - 2026-07-22: S6a prefill was incorrectly described as uncommitted/pending review from stale durable prose. Ground truth: S6a was committed as `e0a19fc` and squash/PR-merged into `lexu/staging/kv-feature` as PR #1 (`0db3fc2`).
 - 2026-07-24: S6b force-decode was initially misclassified as not on `kv-feature` because `git merge-base --is-ancestor 8a7cd98 lexu/staging/kv-feature` returned false. Ground truth: S6b was present through squash PR #2 (`ad52da0`), and content verification was the reliable check.
+- 2026-07-28: a linked branch (`pr14-real`, tip `efa954d`) was 5 commits behind the same upstream line's head (`pr14-head`, `a3a509c`), and a "5.3 s/round disk-npz load" finding read off its committed `timing.json` had **already been fixed** downstream (→ 69.5 ms). Confirmed via `git reflog show` (fetch identity) + `git merge-base --is-ancestor` (ancestry).
+- 2026-07-28: a trial merge of `kv-feature` onto PR #14 reported 7 conflicting files — and two contract breaks in files that merged **without conflict** (a renamed oracle symbol left as a dangling import; a 2-wavelet round header whose sender and receiver could be resolved inconsistently).
 
 ## Writing rule for future agents
 
@@ -91,4 +93,4 @@ Before updating `plan.md`, project docs, ContextBase mirrors, or status summarie
 
 ## Last updated
 
-2026-07-25 — drained 2026-07-22 and 2026-07-24 inbox captures into this topic; explicit squash-merge caveat added.
+2026-07-29 — added branch-tip verification before baselining recorded results (`git reflog show`, ancestry, remote-movement limit) and the "clean merge ≠ safe merge" rule for cross-file contracts. Prior: 2026-07-25 — drained 2026-07-22 and 2026-07-24 inbox captures into this topic; explicit squash-merge caveat added.
