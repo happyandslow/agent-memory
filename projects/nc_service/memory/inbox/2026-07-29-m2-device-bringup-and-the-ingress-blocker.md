@@ -1,4 +1,4 @@
-# M2 on real CS-3: the whole bridge stack now works up to the decode handover — and the thing that blocks it also breaks the KERNEL'S OWN validated reload path
+# M2 on real CS-3: the whole bridge stack now works up to the decode handover — plus a corrected conclusion, because I called a flaky ingress a mechanism on n=1
 
 Date: 2026-07-29 (overnight session) · Repo: `nc_service`, branch `lexu/pdsep-kernel-integration`
 
@@ -8,14 +8,25 @@ Date: 2026-07-29 (overnight session) · Repo: `nc_service`, branch `lexu/pdsep-k
 
 ## The headline
 
-Eight device attempts. Everything below the decode handover now works on the real
-machine, including a **wafer prefill that reproduces to the cycle across runs**. The
-remaining blocker is not in our architecture: a **control experiment running the
-kernel's own unmodified `launch_device.py --mode reload` against the same store fails
-in the same place, with the same 502.** Whatever this is, it is upstream of us and
-affects a path whose `device_verdict.json` says `artifact_mode=cached_reload`, PASS.
+Eight device attempts. Everything below the prefill→decode handover now works on the
+real machine, including a **wafer prefill that reproduces to the cycle across runs**.
 
-Do not spend the next session re-deriving our side. Start from the control.
+**The important correction.** A control experiment — the kernel's own unmodified
+`launch_device.py --mode reload` against our store — failed with the same 502, and I
+wrote that up as the night's finding: "the blocker is upstream, not ours." **The repeat
+control PASSED**, with a full evidence bundle. So:
+
+- our compiled store is good end to end; the kernel served a real request from it;
+- the 502s were a **transient ingress degradation**, not a mechanism;
+- and every failure of the night sits inside one window (our runs 02:30–03:40, control 1
+  at 03:45), with the first attempt after it passing at 04:30.
+
+Which means the 64-second theory below may itself be an artifact of that window. It is
+recorded as an observation, not a conclusion.
+
+*I had already been told this.* `cs3-loginnode-bst-timezone` records a mode-B 503 that
+was "pure-ingress transient, worker healthy". **Rule: on this cluster, no conclusion
+from a single 502-shaped failure. The repeat costs fifteen minutes.**
 
 ## What now works on device (do not re-litigate)
 
@@ -64,17 +75,24 @@ so there is also a **silent-RPC ceiling somewhere between 9 and 14 minutes**. Th
 rules out "just block until the decode is loaded" — which was tried, and is why blocking
 init did not help.
 
-## The control experiment is the finding
+## The control experiment, and what it actually showed
 
 `launch_device.py --mode reload --request request_config/sd_smoke/request.json --store
-<our store>` — the kernel's own code, unmodified, our store — **fails the same way**,
-502 inside `d.run(run_cmd)`, with no worker output at all.
+<our store>` — the kernel's own code, unmodified, our store, none of ours in the path:
 
-That is the single most useful fact from the night: it converts "our integration is
-broken" into "this path is broken on this cluster right now, for upstream too". Next
-session should establish whether the kernel's reload works at all today (try its
-`mtbench8` request, and the pre-existing `~/lexu/m2bench` e2e store) before touching
-our code.
+    control 1 (03:45):  502 after ~14 min, no worker output
+    control 2 (04:30):  PASS, evidence bundle downloaded and verified, 6 members
+
+So the reload path **works on our store**, and the store is validated end to end by
+upstream's own code. The failures cluster in time, not in mechanism.
+
+Next session should start by re-running our own driver against a healthy cluster before
+assuming any of the handover analysis holds. If it still dies at the handover, the
+difference to chase is that the kernel runs BOTH phases as children of one
+`cs_python launch.py` inside one `launcher.run()`, whereas we run prefill as a child of
+the patched worker and decode IN-PROCESS in that same worker — creating an `SdkRuntime`
+inside the appliance server process is the one structural difference the control does
+not exercise.
 
 It also independently confirmed our staging design — its own uploader reports
 `2 byte-split + 2106 base-upload file(s) (no tar)`, exactly the split we converged on.
