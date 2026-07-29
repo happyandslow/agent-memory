@@ -15,12 +15,18 @@ tags: [waferengine-staging, kv-cache, policy, offload, wse3]
 >    own text hedges it as "measured-ish". It also describes the **staging** single-stream
 >    colmux path, which additionally zero-extends each fp16 into a u32 on ingress and so
 >    wastes half the wire.
-> 2. **The pr14 line measures ~1.3–1.5 GB/s** — 4 streams, varlen, fp16 double-packed,
+> 2. **The pr14 line measures ~1.4 GB/s** — 4 streams, varlen, fp16 double-packed,
 >    `io_loc` pins frozen. Its `per_req_kv_egress_ms` (22.3 on `pr14-real`, 23.5 on
 >    `pr14-head`) **is** true wire time (blocking `task_wait` after four `nonblock`
 >    receives). ⇒ **`R*` moves from a degenerate ~0.036 ("always keep in place") to ≈3** —
->    a boundary with real requests on both sides. *(The ~1.3–1.5 GB/s is itself **derived**
->    by assuming a 256-token chunk payload; being verified directly in M2-S0.)*
+>    a boundary with real requests on both sides.
+>
+>    **Update 2026-07-29 — now pinned, no longer a derived range: `1.426 GB/s` aggregate /
+>    `0.357 GB/s` per stream.** Payload **derived from code** at exactly `33,554,432 B` per
+>    request, divided by a **measured** `23.525 ms`, real WSE-3, `n = 2`. The earlier
+>    "~1.3–1.5 GB/s (assuming a 256-token chunk)" range is superseded by this. Use
+>    **1.426 GB/s** for any host-KV-transport arithmetic in this file; **the old
+>    "~15 MB/s as-built" is not a fallback and must not be quoted anywhere.**
 > 3. **`Δ = t_dec − t_pf` is not a constant.** The 170 µs/token `t_pf` is *amortized over a
 >    256-token prompt*; on real hardware a 30-token prompt costs **57 ms** (526 tok/s), so
 >    for small `L_new` prefill loses its parallelism advantage and `t_pf → t_dec`, i.e.
@@ -70,7 +76,7 @@ ladder**, and the right choice is a per-request cost decision:
 | T0 in-place resident | decode PE's own SRAM | ~0 (never moves) | tiny — one cache, ≤ MAX_SEQ_LEN | occupies the working slab; blocks new request |
 | **T0.5 in-bank / in-PE multi-request reuse** | the SAME compute bank, holding >1 request's KV | **~0 — reused in place, never moves** | on-chip SRAM shared across cached requests (tightest — competes with the active request for the bank) | **(Le's addition)** cheapest reuse of all (no move), but needs KERNEL support: multi-request bank partition/keying + `round_reset` retain+extend instead of rewind. Home discussable: **decode** (where warm KV sits) or **prefill** — different tradeoffs (see "Where reuse is computed"). |
 | **T1 idle-PE SRAM offload** | spare/empty PEs on the *same wafer* | on-fabric gather (router hops, ns–µs, no host BW) | (#free PEs × ~48 KB) — wafer-scale spatial abundance | **wafer-unique middle tier** (Le's idea); needs a park-band + addressing. Difference vs T0.5: T0.5 reuses *inside* the compute bank (no move, competes for bank space); T1 *moves* to separate idle PEs (frees the bank, pays a move). |
-| T2 host-DRAM offload | host memory (pdSeparate egress path) | ingress stream ~29 MB/req, "a few s" | large (DRAM) | already implemented one-way (prefill→decode) |
+| T2 host-DRAM offload | host memory (pdSeparate egress path) | ~29 MB/req at **1.426 GB/s** measured on pr14 (~23.5 ms/request) — *not* the retracted "a few s" | large (DRAM) | already implemented one-way (prefill→decode) |
 | T3 evict + recompute | nowhere | rerun prefill (~5.7 s @256 tok; **capped ≤~512-tok prompt**, see below) | n/a | pays prefill FLOPs on miss |
 
 **The decision depends on cost** (Le's framing): storage bytes (T0/T1 scarce ~48
@@ -174,14 +180,18 @@ penalty per new token = 446 − 170):
 
 | KV-move regime (eff. BW) | move µs / warm-tok | Option B (force-decode) wins when |
 |---|---|---|
-| current single-stream (~29.4 MB in ~2 s ≈ 15 MB/s) | ~7800 | `L_warm/L_new > 0.035` → **essentially always** |
-| optimized multi-stream (~1 GB/s) | ~115 | `L_warm/L_new > 2.4` → **typical chat** |
+| ~~current single-stream (~29.4 MB in ~2 s ≈ 15 MB/s)~~ **RETRACTED 2026-07-29 — never measured, wrong branch** | ~~7800~~ | ~~`> 0.035` → essentially always~~ |
+| **as-measured pr14 host path (1.426 GB/s aggregate, 4 streams)** | ~80 | `L_warm/L_new > ~3.4` → **typical chat** |
 | ideal 4-ch RoCE (~4 GB/s) | ~29 | `L_warm/L_new > 9.6` → long conversations |
 
+(The middle row's `R*` is recomputed with the measured `BW` but still the **stale** mock-weight
+`Δ = 276 µs`; per the correction header `Δ` is itself a function of `L_new` and is being
+re-derived in M2. Treat `~3.4` as "the boundary is real and sits near 3", not as a final number.)
+
 So for multi-turn chat — **large resident history, small new turn** — Option B
-(force-decode in place) wins across every transfer regime. It is most decisive for
-**pdSeparate** (cross-chip move = seconds, single-stream-bottlenecked at ~15 MB/s by
-the serial colmux, not wire BW). The GPU instinct (always ship to prefill) is wrong
+(force-decode in place) still wins in the measured host regime, but no longer by the
+degenerate margin the retracted 15 MB/s implied: the boundary moved from "essentially
+always" to "once history exceeds ~3× the new turn". The GPU instinct (always ship to prefill) is wrong
 here precisely because (1) prefill is only ~2.6× decode, and (2) the move scales with
 the *large* history `L_warm` while the compute penalty scales with the *small* new
 turn `L_new`.
@@ -195,7 +205,7 @@ turn `L_new`.
 | `t_dec` | decode time per token | 446 µs | e2e device run (2240 tok/s = 1e6/446) |
 | `t_pf` | prefill time per token, amortized | 170 µs | e2e device run (43534 µs ÷ 256 tok) |
 | `B_tok` | KV bytes per token | 112 KB | `2·n_layers·n_kv·head_dim·bytes = 28·8·128·2·2` |
-| `BW` | effective KV-move bandwidth (path-dependent) | host ~15 MB/s→4 GB/s · on-chip fabric ~4–7 GB/s/link | see "Bandwidth regimes" below |
+| `BW` | effective KV-move bandwidth (path-dependent) | host **1.426 GB/s measured** (pr14, 4 streams) → ~4 GB/s nameplate · on-chip fabric ~4–7 GB/s/link (derived) | see "Bandwidth regimes" below |
 
 **Derived quantities:**
 - **Force-decode penalty per new token** `Δ = t_dec − t_pf` (= 446 − 170 = **276 µs**).

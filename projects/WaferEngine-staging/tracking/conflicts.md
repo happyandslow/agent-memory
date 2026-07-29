@@ -38,3 +38,49 @@ Last reviewed: 2026-07-29
 - 2026-07-25: Consider updating the `meshagent-sync`/checkpoint protocol to list/fetch existing same-day Logs and recent mirror `updatedAt` before creating a new session log or re-mirroring durable docs, to avoid duplicating parallel-session work.
 - 2026-07-25: Consider promoting the git branch-status verification rule: before asserting commit/merge state, verify live branch topology and feature content; under squash merges, `merge-base --is-ancestor <original-tip>` can false-negative even when the branch contains the feature.
 - 2026-07-26: Consider promoting the per-request-dimension review heuristic: before adding a slot/request axis to a lockstep kernel, identify which invariants the old uniformity enforced for free (for M1 decode, equal active-lane length survives only as a host/test obligation because scalar `iter_num` is also the packed score stride).
+
+### 2026-07-29 — one consolidated proposal, because seven captures turned out to be one lesson
+
+The 2026-07-26 → 07-29 captures produced seven separate "promotion candidate" flags. Reading
+them together, **six are the same failure**: *something that looks like evidence, isn't* — and
+in every case it failed **silently**, reporting the same word or shape as a real result.
+
+| the thing that looked like evidence | why it wasn't |
+|---|---|
+| a negative-control config printing PASS | an unknown JSON key defaulted back to the baseline, so the red test became a second copy of the green one |
+| a device-side check printing PASS | it compared two empty arrays (`plen == 0` since S6a) — PASS having compared zero bytes |
+| a numpy oracle agreeing with the device | the oracle contains a **second copy of the formula under test**, so it reproduces the bug it was meant to catch |
+| a quoted bandwidth in four durable docs | its denominator came from a **prose phrase**, not a timer; the original author's "measured-ish" hedge was dropped by every citation |
+| a branch someone linked you to, with committed result files | a **snapshot with a date** — the problem it showed had already been fixed 5 commits downstream |
+| a benchmark request set with a familiar name | the name described the source corpus, not how it is **driven** — "MT" (multi-turn) driven single-turn, so it exercises zero reuse |
+| a fit with R² = 0.998 | R² is invariant under an x-axis rescale, so it validates linearity and says **nothing** about whether you fitted the right variable |
+
+⇒ **Proposal: one skill, "before you trust this as evidence, check what it shares with the
+thing under test."** Trigger vocabulary should be symptoms, not terms — *a red test passes; a
+check passes on empty input; the oracle agrees; a number everyone quotes; a branch someone
+linked you to; a benchmark whose name matches your topic; a suspiciously good fit.* Each row
+above is a worked example with a concrete tell. This is procedural, project-independent, and
+has now recurred **seven times in four days** across two different milestones, which is the
+promotion bar met several times over.
+
+Two riders that did **not** fold into the above and stay separate:
+
+- **`cs3-runner` skill, two updates** (extends the standing 2026-07-22 entry): its timeout path
+  calls `cancel-mine`, which is unsafe on this **shared** account; and remote `nohup setsid` +
+  log polling is the safer launch pattern because it also survives the rc=255 transport death.
+  Add the observed failure rate — 3 of 5 identical serve runs died on EPCC ingress 502 /
+  pod-init failures — so plans budget **attempts, not successes**.
+- **"Report a performance number with its setting"** (Le's standing instruction, 2026-07-28):
+  model size/shape, real vs mock weights, deployment scenario, geometry + config, batch,
+  workload shape, machine, and `n`. Currently written into this project's `WORKFLOW.md` only,
+  so other projects have to remember to look. Procedural and cross-project ⇒ skill material.
+  Pairs naturally with the consolidated proposal above: the setting is what makes a number
+  checkable in the first place.
+
+Two further procedural rules worth carrying inside the consolidated skill rather than as their
+own entries: **only destination addresses take a new storage axis** (a source buffer indexed by
+the new axis reads into a neighbouring region — same type, same range, no trap), and **two
+copies of an addressing formula will drift** — the second copy is where the bug will be. Also:
+**before declaring a case impossible, check whether the impossibility came from an
+implementation choice you assumed** (here, take-over vs ride-along semantics turned "mixed
+hit/miss batches need ragged support" into a non-problem).
