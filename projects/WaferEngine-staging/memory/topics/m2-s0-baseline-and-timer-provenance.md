@@ -1,5 +1,5 @@
 ---
-summary: M2-S0 measurement session — the pr14 pdSeparate mtbench8 baseline reproduced bit-identical on real WSE-3 at snapshot a3a509c, the code-derived KV wire payload (32.000 MiB/request, 8/7 layer-envelope factor), and which timing.json fields are safe to quote.
+summary: M2-S0 measurement session — the pr14 pdSeparate mtbench8 baseline reproduced bit-identical on real WSE-3 at snapshot a3a509c, what mtbench8's workload shape can and cannot measure, the code-derived KV wire payload (32.000 MiB/request, 8/7 layer-envelope factor), which timing.json fields are safe to quote, and the provenance failures (prose divisor, over-wide wall clock, wrong regression x-axis) that put wrong numbers into durable docs.
 tags: [waferengine-staging, m2, pdseparate, measurement, timing, bandwidth, cs3-cluster, provenance]
 ---
 
@@ -34,6 +34,74 @@ Two gotchas around this:
 - **`results.json` holds no token ids**, only counts and decoded text. Ids live in
   `device_trace.npz` as `request_<i>_decode_sampled_ids`, with the `-2` HOST_STOP sentinel
   still in the array (filter it, as `launch.py:336-337` does).
+
+## Reaching for `mtbench8` as the vehicle for a reuse experiment
+
+It is the obvious candidate — a shipped request set with recorded timings and a golden-token
+reference, sitting right next to the model. Read `request_config/mtbench8/prompts.json` before
+reusing it, because its shape does not match its name.
+
+`prompts.json` is a **flat list of 8 independent single-turn prompts** — MT-Bench-flavoured
+open-ended writing/explanation tasks, no turn structure, no shared system prompt. **The "MT" in
+MT-Bench is multi-turn; this config drives it single-turn.** Prompts are 21–36 tokens,
+generations 478–3381 tokens: decode-dominated, zero reuse.
+
+Three things it therefore cannot measure:
+
+- **No KV reuse of any kind.** Eight unrelated prompts — nothing to retain, offload, or recompute.
+- **Prompts shorter than the transfer quantum.** 21–36 tokens against `CHUNK_SIZE = 256` means
+  every prefill ships one full padded chunk, so `per_req_kv_egress_ms` is a **floor**, not a
+  length-proportional measurement — no bandwidth-vs-length curve can come out of it, and any
+  bandwidth derived from it inherits the padding assumption.
+- **It cannot separate re-prefill / force-decode / offload.** At `L_prompt ≈ 30` all three are
+  fixed-cost-dominated (re-prefill pays the ~57 ms floor, force-decode ~30 tokens, offload one
+  padded chunk). The crossings that matter live at `L` in the thousands.
+
+What it *is* good for is exactly the role it already plays here: baseline reproduction — recorded
+timings, a golden-token reference, and the 8/8 bit-identical device validation the frozen `io_loc`
+pins cite as their justification. Keep it for that; do not stretch it. Reuse studies need
+**fabricated** request sets with controlled shared-prefix fractions and explicit turn structure;
+ground the sharing ratios in published traces rather than inventing them (Mooncake carries
+`hash_ids`, so exact prefix-sharing percentages are computable — see [[agentic-kv-trace-datasets]]).
+
+General shape worth carrying: compare prompt length against **every** quantization in the path
+(chunk size, block size, page size). A workload below the quantum measures the floor, not the slope.
+`[unverified]` whether all eight prompts are verbatim MT-Bench items — the conclusion rests on shape,
+not provenance.
+
+## Two ways an inherited number reached a decision rule without being measured
+
+Both surfaced in the same session, both load-bearing, both caught only by opening the artifact that
+produced the number rather than the number itself.
+
+**The divisor came from prose, not a timer.** `ROADMAP.md`, `GOALS.md §8`, `PROGRESS.md` and
+[[kv-cache-policy-tradeoffs]] all carried **"host KV transport as-built ~15 MB/s"**, and the whole
+`R* = Δ·BW/B_tok` breakeven used it as `BW`. It is `29.4 MB ÷ "~2 s"`: the numerator is real
+(derived from a device-run wavelet count), **the denominator is a `STATUS.md` prose phrase — "a few
+seconds"**. The topic file hedged it in its own text as *"measured-ish"*, and every citing doc
+silently dropped the hedge. It also describes the wrong branch — the *staging* single-stream colmux
+path, which additionally zero-extends fp16 into u32 and wastes half the wire. The pr14 line has been
+4-stream varlen for some time and its `per_req_kv_egress_ms` **is** true wire time (a blocking
+`task_wait` after four `nonblock` receives), giving **~1.4 GB/s — about 90× higher**. Consequences:
+`R*` moves from a degenerate ~0.036 ("always keep KV in place", i.e. no boundary at all) to **≈3**, a
+real boundary with requests on both sides; and M4's completion gate ("beat as-built ~15 MB/s") had
+**already been cleared by ~90× before it was written**. Note the asymmetry in danger: *a degenerate
+`R*` does not look broken — it looks like a strong conclusion.*
+
+**The wall clock spanned more than the quantity being computed.** From the same recorded
+`timing.json`, dividing `decode_phase_wall_s = 293.694` by 10,571 generated tokens gives 27.8
+ms/token — ~58× the known device rate, apparently "decode is 98% host overhead", which would have
+invalidated the entire on-wafer optimization thesis. Wrong: `decode_phase_wall_s` **brackets
+`compile_s` (94.5 s), `load_s` (105.3 s) and eight KV handoffs**, and the same file already carries
+the steady-state figures (device 655 µs/token, host-observed 740, `host_device_ratio = 1.129` — host
+adds ~12%). One file read, before the alarm reached a durable doc.
+
+The operating rules that follow: open the producing artifact before using an inherited number as a
+model input, and if you cannot, label it *derived*, not *measured*; carry the original author's
+hedge forward, since dropping "measured-ish" during a citation is exactly how a guess becomes a
+constant; name the start and end line for any wall clock (`*_phase_wall_s`-style names almost always
+include setup); and record per parameter whether it is a **physical floor** or an **as-built
+artifact**, or the cost model just re-derives "the current implementation has bugs" for every option.
 
 ## What is deterministic and what is not
 
@@ -142,13 +210,24 @@ The independent standalone-decode sweep (479→560 µs across prefill 256→3840
 mock weights) implies **≈22.5 ns per context token** — the same quantity, within 15%. Two
 unrelated measurements agreeing on the slope is what makes this credible.
 
-> ⚠️ **Correction, same session.** First written as `628.75 µs + 13.22 ns × context`: the fit
-> had been run against **generated tokens** while labelled context, and mean context is about
-> half the generated count, so the slope was ~2× low. What should have caught it immediately:
-> 13.22 vs the standalone sweep's 22.5 is a factor-of-2 gap between two measurements of the
-> *same* quantity, and it was written down as "agrees in order of magnitude" instead of being
-> investigated. Plotting the data is what exposed it. See
-> [[a-quoted-number-is-not-a-measured-number]] for the sibling failure mode.
+> ⚠️ **Correction, same session.** First written as `628.75 µs + 13.22 ns × context`, R² = 0.998,
+> monotonic across all 8 requests, and carried into three documents: the fit had been run against
+> **generated tokens** while labelled context, and mean context is about half the generated count,
+> so the slope was ~2× low. **R² was unchanged by the fix (0.998 either way) — a linear rescale of
+> the x-axis leaves R² untouched, so a near-perfect fit is evidence of linearity and says nothing
+> about whether the right variable was fitted.** What should have caught it immediately: 13.22 vs
+> the standalone sweep's 22.5 is a factor-of-2 gap between two measurements of the *same* quantity,
+> and it was written down as "agrees in direction and order of magnitude" instead of being
+> investigated — **a factor-of-2 gap against an independent measurement is a defect report, not a
+> rounding difference.** Plotting the data is what exposed it; drawing the axis forced the question
+> "what is x, actually?" — the table never did.
+
+Two consequences of the window-average shape that are easy to conflate and differ by 15% here: the
+cost of **one** item when the accumulated state is already N is `a + b·N`, while the **average** cost
+per item of a run that processes N is `a + b·N/2`. The general rule: when the measurement is an
+average over a window and the independent variable moves *during* that window, regress on the
+window's **mean**, never on an endpoint or a per-run proxy. Fits and evidence in
+`we-m2bench/evidence/run{1,5}/timing.json`, `decode_device.tsc.per_round[]`.
 
 *Why this matters beyond bookkeeping:* the `L = 8192` three-way arithmetic multiplies a single
 decode anchor by `L`. That understates the long-context lanes. The ordering probably survives

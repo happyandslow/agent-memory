@@ -1,10 +1,28 @@
 # WaferEngine-staging Manual Conflicts
 
-Last reviewed: 2026-07-25
+Last reviewed: 2026-07-29
 
 ## Needs Le/manual resolution
 
-- No contradictory project facts found during 2026-07-22 maintenance.
+- **2026-07-29 — an in-repo "Failed approaches" entry appears to be wrong, and the
+  correction is unconfirmed.** `PROGRESS.md` records that PR #14 demoted the `e2e` on-chip
+  KV relay to inert filler, not config-revivable. A direct diff says otherwise for `e2e`
+  (three `KV_TRANSFER: 1` configs already shipped on `main`; `build_relay` identical apart
+  from whitespace; `src/relay.csl` still present at PR #14) — the claim holds only for
+  **`e2e-pdSeparate`**. It looks like a model mix-up. **Not confirmed by Le**, and it
+  changes an adopt-vs-port input in the convenient direction (adoption costs *less* than
+  recorded), which is exactly when a correction deserves a second pair of eyes. See
+  [[standalone-vs-integrated-kernel-parity]].
+- **2026-07-29 — two in-repo contract lines are now known-stale and were not edited.**
+  `milestones/M1-intra-pe-reuse.md § S0.2` says *"slot empty ⇔ `iter_num_bank[layer][slot]
+  == 0`"*, but occupancy is a **host** judgement under D4; and the grep checklist lists S1
+  as the owner of adding that dimension, which should read "not needed, superseded". Left
+  for whoever next edits that milestone — flagged so it is not re-derived from the doc.
+- *(Resolved this pass, recorded for traceability)* `memory/project.md` carried
+  **"Real Qwen3 weights are NOT wired into any model"**. True for the standalone kernels
+  and the `main`-line fused models; **false for `e2e-pdSeparate` at PR #14**, which bakes
+  real HF weights and has now been run end to end on real WSE-3. Corrected in place with
+  the scope made explicit.
 
 ## Promotion candidates / manual follow-up
 

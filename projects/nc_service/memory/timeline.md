@@ -2,8 +2,12 @@
 
 # nc_service Timeline
 
+- 2026-07-29 — m2-device-bringup-and-the-ingress-blocker → `memory/inbox/2026-07-29-m2-device-bringup-and-the-ingress-blocker.md`
 - 2026-07-28 — take-scalars-from-the-kernel-not-your-own-derivation → `memory/inbox/2026-07-28-take-scalars-from-the-kernel-not-your-own-derivation.md`
 - 2026-07-28 — sglang-already-speaks-our-protocol → `memory/inbox/2026-07-28-sglang-already-speaks-our-protocol.md`
+- 2026-07-28 — m2-s1s2-staging-and-real-cfg → `memory/inbox/2026-07-28-m2-s1s2-staging-and-real-cfg.md`
+- 2026-07-28 — m1-complete-bridge-architecture-index → `memory/inbox/2026-07-28-m1-complete-bridge-architecture-index.md`
+- 2026-07-28 — long-poll-over-a-replay-cache-needs-fresh-keys → `memory/inbox/2026-07-28-long-poll-over-a-replay-cache-needs-fresh-keys.md`
 - 2026-07-27 — why-patch-the-target-not-the-launcher → `memory/inbox/2026-07-27-why-patch-the-target-not-the-launcher.md`
 - 2026-07-27 — sd-pdseparate-specdec-kernel → `memory/inbox/2026-07-27-sd-pdseparate-specdec-kernel.md`
 - 2026-07-27 — inproc-exchange-constrains-verify-seam → `memory/inbox/2026-07-27-inproc-exchange-constrains-verify-seam.md`

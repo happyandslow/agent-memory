@@ -2,6 +2,9 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-07-29 — regress-on-the-window-mean-not-a-proxy → `memory/inbox/2026-07-29-regress-on-the-window-mean-not-a-proxy.md`
+- 2026-07-29 — cs3-serve-runs-fail-about-half-the-time → `memory/inbox/2026-07-29-cs3-serve-runs-fail-about-half-the-time.md`
+- 2026-07-28 — prove-same-source-before-comparing-timings → `memory/inbox/2026-07-28-prove-same-source-before-comparing-timings.md`
 - 2026-07-28 — e2e-on-chip-relay-was-never-demoted-and-is-frozen-mid-bringup → `memory/inbox/2026-07-28-e2e-on-chip-relay-was-never-demoted-and-is-frozen-mid-bringup.md`
 - 2026-07-28 — check-the-branch-tip-before-baselining → `memory/inbox/2026-07-28-check-the-branch-tip-before-baselining.md`
 - 2026-07-28 — a-quoted-number-is-not-a-measured-number → `memory/inbox/2026-07-28-a-quoted-number-is-not-a-measured-number.md`
