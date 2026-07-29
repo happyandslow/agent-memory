@@ -89,6 +89,60 @@ rerun after the ingress recovered, passed. Recorded as a false lead, not a mecha
 was "pure-ingress transient, worker healthy". **Rule: on this cluster, no conclusion
 from a single 502-shaped failure. The repeat costs fifteen minutes.**
 
+## The round as nested layers (k=16, 60 aligned rounds, p50)
+
+Each layer CONTAINS the one inside it; the useful column is the shell. Computed
+per round then median, not as a difference of medians.
+
+    [0] device forward span (WSE-3 TSC)    12.72 ms   12.72   the wafer
+    [1] runtime.receive (blocks on it)     17.30 ms    4.57   D2H drain, 17 calls
+    [1b] + runtime.send                    17.37 ms    0.07   H2D, 5 calls
+    [2] worker handler (serve_loop work)   23.77 ms    6.36   host compute
+    [3] leg-2 launcher.run                 26.50 ms    2.75   gateway<->worker RPC
+    [4] leg-1 verifier round               28.78 ms    2.26   gRPC wire (loopback)
+
+    device (wafer)          12.72 ms  44.2%
+    data transfer D2H+H2D    4.64 ms  16.1%
+    host compute             6.36 ms  22.1%
+    gateway<->worker RPC     2.75 ms   9.6%
+    gRPC wire (loopback)     2.26 ms   7.8%
+
+**H2D is not the cost -- my arithmetic hypothesis was wrong.** I had reasoned that a
+RESUME round rebuilds and sends `P_BLOCK_SIZE*Pw*8` u32 per band = 4.2 MB x 4 bands =
+16.8 MB every round. Measured: `runtime.send` is **0.070 ms per round over 5 calls**,
+~14 us each. Whatever that payload is, it is free. Measuring it was the point.
+
+**The transfer cost is D2H, and it hides inside the device number.** `receive` blocks
+while the wafer produces each record, so the 12.72 ms device span is INSIDE the 17.30 ms
+of receive, not beside it. Net shell 4.57 ms over 17 calls = **~269 us per call**, and it
+scales with k because `receive_batch` issues one receive per draft step.
+
+**My first decomposition was arithmetically wrong** -- it subtracted send+recv+device
+from the wall, double-counting the overlap, and produced a NEGATIVE remainder (-1.24 ms).
+The negative sign is what exposed it. Fields are now `recv_minus_device_ms` and
+`outside_io_ms`, each stating what it excludes; the first row (window opens at collector
+build, had produced a 352-second p99) is marked `partial` with no wall figure.
+
+**Optimisation order, revised.** "The target is the host path inside the worker" was too
+coarse. Host compute 22% (6.36 ms) is FLAT between k=4 and k=16 -- pure fixed overhead
+(`_repack_kv_band` array construction, `_decode_record` unpacking 20 bf16 logits per
+step, rewind arithmetic, our encode) -- attack that first. D2H 16% second: batching the
+per-step receives into one is the candidate, and `toy-emit-recv-d2h-modes` already
+concluded D2H is host-receive-bound and batch receive helps. The wafer is the largest
+single term at 44% but it is real compute and sublinear in k.
+
+## draft_len 32 is NOT reachable
+
+`launch_decode.py:258` hard-asserts `max_draft_len == 16`, and
+`host/specdec_protocol.py:27` fixes the same constant (enforced in `DraftBatch.validate`
+and `pack_metadata`). Not a recompile -- a change to the read-only WaferEngine tree.
+
+Throughput at a 25/32 (78.125%) acceptance rate, derived from the measured rounds:
+k=4 **198 tok/s**, k=16 **451 tok/s**, k=1 no-speculation reference ~52 tok/s. A
+two-point fit extrapolates k=32 to ~666 tok/s -- EXTRAPOLATION, not measurement, and only
+~1.5x over k=16 because k=16 has already amortised the fixed overhead. That is the
+argument against spending kernel work on k=32.
+
 ## What now works on device (do not re-litigate)
 
 Compile from our vendored tree → a complete, reload-servable store at
