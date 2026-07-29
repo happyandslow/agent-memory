@@ -41,6 +41,34 @@ steady-state loop amortises.
 bound, not a real GPU host across the network (prior work puts that leg at ~41% of a
 real round).
 
+### draft_len 4 vs 16, same artifact, no recompile (p50, 61 clean rounds each)
+
+| | k=4 | k=16 | delta |
+|---|---|---|---|
+| leg-1 verifier round | 20.78 ms | 29.92 ms | +9.13 |
+| leg-1 wire | 1.25 | 1.39 | +0.14 |
+| gateway<->worker RPC | 2.59 | 2.98 | +0.39 |
+| **device forward span** | **5.12** | **12.73** | **+7.62** |
+| worker handler | 16.44 | 24.51 | +8.07 |
+| **worker host overhead** (handler - device) | **11.32** | **11.78** | **+0.46** |
+
+**The fixed cost is fixed.** 4x the draft length moves host overhead 0.46 ms, transport
+0.39 ms, wire 0.14 ms. Essentially all of the +9.13 ms is device, and even that is
+SUBLINEAR: 4x the tokens for 2.5x the device time.
+
+Per draft token: device 1.28 -> 0.80 ms/tok (**38% cheaper**); end to end 5.20 -> 1.87
+ms/tok (**2.8x cheaper**).
+
+**This is the answer for the SGLang conversation.** Their docs want
+`k == --speculative-num-steps` (example: 16), and 16 is also our better operating point
+— because it amortises the same ~11.3 ms host cost over four times the tokens. The plan
+predicted this shape; the measurement confirms it and puts numbers on it.
+
+Sizing gotcha: `max_new_tokens` must be sized for k. At k=16 each round commits up to 17
+tokens, so 400 runs the kernel out after ~24 rounds and the driver reports "draft serve
+loop reported DONE (reason=0) while the target still had commands to issue" — correctly,
+rather than silently truncating the sample. Use >= rounds * (k+1).
+
 Everything below the prefill->decode handover also works, including a **wafer prefill
 that reproduces to the cycle across runs**.
 
