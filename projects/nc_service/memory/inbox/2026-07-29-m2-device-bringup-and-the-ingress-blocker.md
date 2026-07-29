@@ -1,4 +1,4 @@
-# M2 on real CS-3: the whole bridge stack now works up to the decode handover — plus a corrected conclusion, because I called a flaky ingress a mechanism on n=1
+# M2 DELIVERED on real CS-3: the three-way latency split says leg-2 dominates the wafer 3.7x — and the cost inside leg-2 is host work, not transport
 
 Date: 2026-07-29 (overnight session) · Repo: `nc_service`, branch `lexu/pdsep-kernel-integration`
 
@@ -6,10 +6,43 @@ Date: 2026-07-29 (overnight session) · Repo: `nc_service`, branch `lexu/pdsep-k
 **Author:** claude
 **Status:** captured
 
-## The headline
+## The headline: M2's question is answered
 
-Eight device attempts. Everything below the prefill→decode handover now works on the
-real machine, including a **wafer prefill that reproduces to the cycle across runs**.
+Mock GPU -> gRPC -> gateway -> leg-2 -> REAL serve_loop -> WSE-3, end to end, on the
+real machine: **61 rounds, `verifier failures == []`, 61 device TSC rows**, draft ids
+differing every round. `bringup_s = 937`, `session_s = 960`.
+
+### The three-way split, draft_len = 4, 61 rounds (p50)
+
+| leg | p50 | share |
+|---|---|---|
+| **leg-1 verifier round (end to end)** | **20.78 ms** | 100% |
+| leg-1 wire (gRPC minus driver work) | 1.25 ms | 6% |
+| **leg-2 `launcher.run`** | **19.02 ms** | 92% |
+| -- gateway<->worker RPC | 2.59 ms | 12% |
+| -- worker handler | 16.44 ms | 79% |
+| ---- **device forward span (WSE-3 TSC)** | **5.12 ms** | **25%** |
+
+device p50 5.117 / p90 5.207 / p99 23.87 (one outlier); worker handler p50 16.44 /
+p99 17.34; gateway<->worker RPC p50 2.59 / p99 9.39.
+
+**Does leg-2 dominate the device? Yes, ~3.7x.** And the sharper finding: inside leg-2
+the transport is NOT the cost (2.59 ms). The cost is the **worker-side host work wrapped
+around the device -- 16.44 - 5.12 = ~11.3 ms/round, 54% of the whole round trip**. The
+optimisation target is neither the wafer nor the network; it is the host path inside the
+worker process.
+
+Scale check against the number the plan told us not to reuse: 5.12 ms for a 4-token
+draft batch is ~1.28 ms/token, versus 655 us/token for long-form autoregressive decode
+in the kernel's own loop. Different workload -- a draft batch pays per-batch overheads a
+steady-state loop amortises.
+
+**Caveat on every number here: the verifier is on LOOPBACK.** leg-1's 1.25 ms is a lower
+bound, not a real GPU host across the network (prior work puts that leg at ~41% of a
+real round).
+
+Everything below the prefill->decode handover also works, including a **wafer prefill
+that reproduces to the cycle across runs**.
 
 **The important correction.** A control experiment — the kernel's own unmodified
 `launch_device.py --mode reload` against our store — failed with the same 502, and I
@@ -21,8 +54,8 @@ control PASSED**, with a full evidence bundle. So:
 - and every failure of the night sits inside one window (our runs 02:30–03:40, control 1
   at 03:45), with the first attempt after it passing at 04:30.
 
-Which means the 64-second theory below may itself be an artifact of that window. It is
-recorded as an observation, not a conclusion.
+And the 64-second theory below was indeed an artifact of that window: the same code,
+rerun after the ingress recovered, passed. Recorded as a false lead, not a mechanism.
 
 *I had already been told this.* `cs3-loginnode-bst-timezone` records a mode-B 503 that
 was "pure-ingress transient, worker healthy". **Rule: on this cluster, no conclusion
@@ -49,9 +82,9 @@ Real device numbers, from the pod log, identical across two runs:
     KV egress recv         23.3 ms
     first_token            9707
 
-## The blocker, stated precisely
+## The false lead (kept because it looked so convincing)
 
-Every attempt dies at the prefill→decode handover. From the exported pod logs (use
+Runs 5-8 all died at the prefill→decode handover. From the exported pod logs (use
 `csctl log-export <jobid> -p <dir>`; it works after the job ends):
 
     run 7: prefill verdict 01:52:46 -> container SIGTERM 01:53:50
@@ -114,10 +147,16 @@ It also independently confirmed our staging design — its own uploader reports
 3. **`/dev/shm` is 64 MB on this pod** (working volume: 222 GB free). The kernel's own
    comment suggests tmpfs for the KV handoff; a run took that advice, completed the
    wafer prefill, and died in `np.savez` with ENOSPC.
-4. **Unbounded init retry (mine).** Retrying `__IOP_INIT__` through ingress 502s is
+4. **Unbounded retries (mine), twice.** Retrying `__IOP_INIT__` through ingress 502s is
    right, but I bounded it by `ready_timeout_s` (4200 s) — a budget that exists to cover
    a slow call that has NOT failed. Against a dead job it hammered a dead endpoint every
-   5 s for an hour. Now a separate 60 s retry budget.
+   5 s for an hour. I fixed that and thought the class was closed; it was not.
+   `_wait_ping` had the same shape one function along, and spun ~30 min on a later run.
+   Both now have their own budgets, and `_wait_ping` distinguishes "answered the wrong
+   thing" (bring-up is slow -- wait the full budget) from "raised" (transport gone --
+   180 s). **General rule: a retry budget belongs to the failure it retries, not to the
+   operation's overall deadline. Reusing the deadline turns every dead endpoint into a
+   silent hour.**
 
 ## Two procedural lessons worth keeping
 
