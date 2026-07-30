@@ -30,10 +30,34 @@ rate, as a stand-in for a direction nobody had timed. At `L = 8192` the reload l
 the substitution is invisible in the arithmetic. Label the direction in the units, not just the
 prose.
 
-## Timing a host transfer without perturbing it
+## You cannot time an H2D transfer from the host on this SDK
 
-The host-side way to time an H2D transfer is to `task_wait` on the `nonblock` send handles —
-but that fences the host against the device and changes the run. The device-side way does not:
+This was meant to be a two-instrument measurement — a host-side fence to cross-check the
+device-side TSC. **The fence is refuted.** Same run, same 35,651,584 B transfer, three numbers:
+
+| instrument | reads | implies |
+|---|---|---|
+| bare `nonblock` send (as-built) | 0.066 ms | 540 GB/s |
+| `task_wait` on the send handles ("the fence") | **0.697 ms** | **51.15 GB/s** |
+| device TSC at the ingress adaptor | **46.146 ms** | **0.773 GB/s** |
+
+The H2D ceiling is 11.43 GB/s, so the fence claims **4.5× the physical maximum**. And
+`recv_first` barely moved when the fence was on (53.537 → 53.103 ms), so the fence did not
+*relocate* the hidden cost — it added ~0.26 ms of its own.
+
+⇒ **`SdkRuntime.send(..., nonblock=True)` hands the buffer to the framework and `task_wait`
+gates on that handoff, not on wavelets reaching the fabric.** The ~4 KB `io_buffer_size` does
+**not** backpressure the caller, which was the whole basis for expecting the fence to work.
+Same failure mode as the bare enqueue, one level deeper.
+
+*General shape: when an API's completion semantics are the question, only a physical-ceiling
+check settles it — a plausibility argument about buffer sizes does not.* And: the reason to
+prefer the device-side measurement was never just that it avoids perturbation; it is the only
+place the event is observable.
+
+## Timing a host transfer on the device — the method that does work
+
+The device-side way needs no host blocking and perturbs nothing:
 
 - **Find the funnel PE.** Per band, every wavelet passes through exactly one PE — the
   `kv_ingress_adaptor` (1×1). Downstream, each injector PE handles one row-slice and each block
