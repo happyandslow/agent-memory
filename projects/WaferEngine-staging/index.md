@@ -23,6 +23,7 @@
 - [[memory/topics/m1-s1-multi-slot-kv-seam]]
 - [[memory/topics/m2-s0-baseline-and-timer-provenance]]
 - [[memory/topics/m2-s1-measurement-lenses]]
+- [[memory/topics/m2-s2-force-decode-port]]
 - [[memory/topics/pr14-real-serving-port-contract]]
 - [[memory/topics/prefill-decode-transfer-bandwidth]]
 - [[memory/topics/qwen3-kernel-analysis-atlas]]
