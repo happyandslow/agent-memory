@@ -106,6 +106,27 @@ the per-round field that is correct. The in-source comment had documented the nu
 ("throughput divides by the prompt length") and said nothing about the denominator having moved
 on — correct sentence, wrong number.
 
+## A "free lever" that does not exist
+
+S0 had flagged `KV_NPZ_DIR` (implemented at `launch.py:96-107`, never exercised) as *the cheapest
+route to the physical floor of the host KV round trip*: point it at `/dev/shm/<run>` and the whole
+prefill→decode npz handoff moves to tmpfs. **It does not work on this appliance.** The run wrote
+exactly one file —
+
+```
+[prefill] KV egress round 0 saved: /dev/shm/m2s1b_kvnpz/kv_egress_0.npz
+... np.savez ... OSError: [Errno 28] No space left on device
+```
+
+— and died on the next request. Each per-request KV npz is ~32 MB; a Kubernetes pod's `/dev/shm`
+defaults to **64 MB**, so it holds one and not two. Worst part: it fails **mid-run**, after a wafer
+allocation, a 6 GB store upload and a full prefill round — not at startup, where a size check would
+have cost nothing.
+
+*General shape: an implemented-but-never-exercised lever is not a known-good lever. Cost of finding
+out here was a 20-minute build plus a 10-minute run.* The physical floor of the host round trip is
+still unmeasured.
+
 ## Operational notes
 
 - **The freshness gate hashes the launchers and the model config, not just the CSL.**
