@@ -1,6 +1,6 @@
 # WaferEngine-staging Manual Conflicts
 
-Last reviewed: 2026-07-29
+Last reviewed: 2026-07-30
 
 ## Needs Le/manual resolution
 
@@ -8,6 +8,7 @@ Last reviewed: 2026-07-29
 - 2026-07-27 cron: left local meeting-file changes untouched because they appear human/app-owned and ambiguous: modified `meetings/2026-07-26.pptx` plus untracked Office temp file `meetings/~$2026-07-26.pptx`. Decide whether to keep, revert, or remove the temp file manually.
 - 2026-07-28 cron: `git pull --ff-only` could not run because local `main` is ahead 1 / behind 8 (`origin/main` has newer memory commits) and local worktree still has the ambiguous modified binary `projects/WaferEngine-staging/meetings/2026-07-26.pptx`. I did not rebase, merge, revert, push, or stage the PPTX from cron; Le should decide whether to keep the PPTX edit and how to reconcile local commit `351d5e3` with `origin/main`.
 - 2026-07-29 cron: `git pull --ff-only` still cannot run; after fetch, local `main` is ahead 2 / behind 20 and worktree still has the ambiguous modified binary `projects/WaferEngine-staging/meetings/2026-07-26.pptx` (632080 → 708030 bytes). I left the PPTX unstaged and did not rebase/merge/push from cron. Le should decide whether to keep/revert the PPTX edit and how to reconcile local daily-maintenance commits (`351d5e3`, `1d24f5a`) with `origin/main`.
+- 2026-07-30 cron: `git pull --ff-only` still cannot run; after fetch, local `main` is ahead 3 / behind 30 and worktree still has the ambiguous modified binary `projects/WaferEngine-staging/meetings/2026-07-26.pptx` (632080 → 708030 bytes). I left the PPTX unstaged and did not rebase/merge/push from cron. Le should decide whether to keep/revert the PPTX edit and how to reconcile local daily-maintenance commits (`351d5e3`, `1d24f5a`, `484c6a5`) with `origin/main`.
 
 ## Promotion candidates / manual follow-up
 
