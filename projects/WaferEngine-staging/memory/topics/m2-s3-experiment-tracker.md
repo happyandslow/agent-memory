@@ -671,3 +671,46 @@ All six bins landed; the ingress model is closed. Remaining S3 items and why non
 | **S2b** force-decode vs prefill | runnable in principle, but needs a decision on which `F` values and whether the prefill lane is still worth pricing |
 | **S3a** `f(pos)` to 16,384 | **partly answered free** — decode cost fitted `623.62 µs + 28.34 ns × ctx`, R² = 1.0000 over contexts 1,290–14,344 from run-1 data, 7× beyond the original fit range. A dedicated run would mainly add a long-context *correctness* control |
 | ROADMAP / PROGRESS | updated 2026-07-31 per the project rule "falsifies a written assumption → fix the affected doc immediately" |
+
+## Long-context correctness: checked for free, and the answer is "this prompt set CANNOT tell us"
+
+S30's design flagged a risk: the artifact had **never been exercised past ~3,407 tokens**, decode's RoPE
+is an f32 recurrence with no assert watching drift, and long-context points would therefore need a
+**correctness control, not only timing**. S30 blew straight past that ceiling — **13 of 22 requests ran
+to the full compiled context of 20,480** (hitting the `MAX_OUTPUT_LEN` budget, `halted_eos = false`),
+**6× beyond anything this artifact had done**. The generated text was already on disk, so this cost
+nothing.
+
+**Every one of those runs degenerates into a repetition loop.** distinct-4-gram over successive
+1,000-word windows collapses from ~0.8–1.0 to **0.00–0.15** and stays there.
+
+**But it is NOT a long-context defect, and the check that shows this is the one that matters:**
+
+| where the loop starts (absolute context) | count |
+|---|---|
+| **inside the previously-verified range (< 3,407)** | **5 of 20** |
+| earliest collapse | **ctx = 1,024** |
+
+A RoPE-drift or long-context failure **cannot** begin at ctx = 1,024 — that is deep inside the range S0
+reproduced **bit-identical against the HF oracle**. Worse (for the diagnosis, better for the hardware):
+several runs collapse at almost exactly `ctx ≈ L_p` — `1024/2` at 1,024, `2048/1` at 2,048, `4096/1` at
+4,096 — i.e. **the loop begins the instant generation starts**, before context depth can matter at all.
+
+⇒ **The degeneration is prompt-driven, not device-driven.** The S30 prompts are *random word salad*
+("Summarize the following document." + non-repeating filler chosen for exact token counts). Asking a
+1.7B model to summarise noise and looping is ordinary LLM behaviour on out-of-distribution input.
+
+### The two things this actually establishes
+
+1. **No evidence of a long-context correctness defect — and no evidence against one either.** The
+   confound is total: this prompt set cannot distinguish "the device is fine" from "the device is
+   broken", because the *expected* output on noise is already degenerate. **This is not a passed
+   correctness control; it is an inconclusive one.**
+2. ⚠️ **S3a's long-context correctness control CANNOT be built on the S30 prompt set.** It needs
+   **coherent** long prompts — real text (LongBench-v2 / SWE-bench are already on this machine) — where
+   a sane continuation is distinguishable from a broken one. The exact-token-count generator that made
+   S30 possible is precisely the wrong tool for S3a. Recorded now so S3a is not planned around it.
+
+**None of the S30 timing results are affected.** The ingress span is measured per round *before*
+decoding, and transport is content-blind by design — which was stated as reason (2) for choosing
+synthetic prompts in the first place. That reasoning holds; it just does not extend to correctness.
