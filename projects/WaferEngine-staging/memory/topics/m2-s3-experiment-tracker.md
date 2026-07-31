@@ -370,6 +370,44 @@ configuration rather than error. Recorded as a discrepancy to resolve, not as a 
 
 **Both results are facts from existing data. No plan conclusion drawn — that is Le's call.**
 
+
+## Run 2 INTERIM — 3 of 6 bins (2026-07-31). The affine model is in doubt.
+
+Setting as in § 11. Each bin: all rounds at ONE payload, so `spread_pct` is a **noise estimate**.
+
+| `L_p` | chunks | `band_bytes` | `mean_span_us` | `spread_pct` | rounds | lever verified |
+|---|---|---|---|---|---|---|
+| 256 | 1 | 9,437,184 | 46,149.6 | 0.003% | 4 | ✅ all 256 |
+| 512 | 2 | 17,825,792 | 46,236.5 | 0.003% | 4 | ✅ all 512 |
+| 1,024 | 4 | 34,603,008 | 56,141.0 | 0.002% | 4 | ✅ all 1,024 |
+
+`band_bytes` matched the code-derived value exactly in every bin. **Noise floor is 0.002–0.003%**, so the
+gaps below are signal, not scatter.
+
+**The marginal cost per byte is NOT constant — it rises steeply with payload:**
+
+| segment | added bytes | added time | marginal |
+|---|---|---|---|
+| 1 → 2 chunks | +8.00 MB | **+0.087 ms** | 10.9 µs/MB = **96.5 GB/s** ⇐ impossible as a rate ⇒ fixed cost still dominates here |
+| 2 → 4 chunks | +16.00 MB | **+9.905 ms** | 619 µs/MB = **1.694 GB/s** |
+| 1 → 32 chunks (run-1, two-point) | +248 MB | +292.1 ms | 1,178 µs/MB = **0.890 GB/s** |
+
+⇒ **the shape is convex/super-linear, not affine.** Run 1's two-point fit assumed a constant slope; the
+9.3% mid-range error it showed was the first sign, and this is the mechanism behind it. An affine fit on
+these three points gives only **R² = 0.897**, which is poor for 3 points.
+
+⚠️ **NOT CONCLUDING. 3 of 6 bins.** The remaining bins — 8, 16 and 32 chunks — are precisely the ones
+that set the top-end shape and therefore decide this. The marginal rate that the cost model needs is the
+one at the payload sizes that matter, and it is **not yet measured**.
+
+⚠️ **Self-correction:** an earlier line in this session quoted run-1's overall slope as "1.123 µs/MB".
+That was a unit slip (s/B → µs/MB, off by 1000×). The correct figure is **1,178 µs/MB**; the GB/s
+figures were unaffected.
+
+**Infra note:** `s30_bin0512` attempt 1 died on **EPCC ingress gRPC 502** — the known signature, not a
+config fault. Attempt 2 succeeded. Confirming this mattered: a config fault would have failed every
+remaining bin identically.
+
 ## Last updated
 
 2026-07-31
