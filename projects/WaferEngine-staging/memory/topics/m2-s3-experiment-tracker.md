@@ -16,8 +16,13 @@ tags: [waferengine-staging, kv-cache, m2, experiment-tracking, measurement]
 > checkboxes live in `milestones/M2-tiering-cost-model.md`, which stays the single source of truth for
 > plan and state. Written to be read top-down in a meeting.
 >
-> **Status: no S3 experiment has run yet.** Everything below is design and prediction. Predictions are
-> recorded *before* the runs on purpose — see § Discipline.
+> **Status (2026-07-31): S30 COMPLETE — Run 1 ✅, Run 2 ✅ all 6 bins.** §§ 1–11 are the design and the
+> pre-run predictions, left un-rewritten on purpose (see § Discipline) — *including the ones that turned
+> out wrong*. **The results are in the sections after § 11; they supersede §§ 1–11 wherever they
+> disagree.** Headline: the H2D reload path is a **hockey stick** — flat ~46 ms floor below ~2 chunks,
+> then a line through the origin at **0.797 GB/s per band = 3.186 GB/s aggregate** (R² = 1.000000). At
+> `L = 8192` a reload is **338.3 ms measured**, beating force-decode (723.8 ms) by **2.14×**. The
+> **offload** half is still unbuilt and unjudged.
 
 ## 1. The question, in one paragraph
 
@@ -33,7 +38,7 @@ it**, because the transport half of the comparison has no valid number.
 | **S0** baseline reproduced bit-identical on real WSE-3 | ✅ 2026-07-28, `n=2` |
 | **S1** measurement lenses fixed; H2D uplink "measured" | ✅ 2026-07-30 — ⚠️ **the number it produced was later falsified as a rate** |
 | **S2** force-decode ported + device-verified | ✅ 2026-07-30, `dd0d950`. `F=64`, **10,067 tokens bit-identical** across 8 requests |
-| **S30** fabricated request set + payload sweep | ⬜ **NEXT — and the gate on everything below** |
+| **S30** fabricated request set + payload sweep | ✅ **COMPLETE 2026-07-31** — Run 1 (A4 falsified: ingress IS payload-dependent) + Run 2 all 6 bins (hockey stick, marginal saturates at 0.797 GB/s/band) |
 | **S2b / S3a / S3b / S3c / S4 / S5** | ⬜ blocked or not started |
 
 **The blocking fact:** the only two transport numbers we have (`0.7726 GB/s` H2D, `1.426 GB/s` D2H) are
@@ -83,12 +88,12 @@ Everything the S3 design rests on, with what breaks if it is wrong.
 | A1 | `request_config/` is **not** in the artifact fingerprint ⇒ new prompts need no rebuild | ✅ **verified** in `launch_device.py:88-100` | the sweep costs a 40-min rebuild per point instead of being serve-only |
 | A2 | `L ≤ 8192` fits the compiled `MAX_INPUT_LEN` ⇒ no config change | ✅ verified (config) | same |
 | A3 | `kv_ingress_device` has **no per-round array** — only `mean/min/max/spread_pct` | ✅ verified in `timing.json` | a mixed-payload run could give a slope directly, and the design gets simpler |
-| A4 | Ingress is **per-step bound**; payload rides free inside existing ops | ⬜ **this is what S30 tests** | if per-byte, `0.7726 GB/s` was roughly right and "recompute wins as-built" is restored |
-| A5 | Egress (`1.426 GB/s`) has the same defect | ⬜ **untested** — same single-payload-point problem, same store-and-forward colmux shape ⇒ **structurally suspect, not falsified** | if egress *is* a real rate, the D2H half of the round trip survives and only H2D needs re-deriving |
-| A6 | In pdSeparate the host retains a copy of the **prompt** KV during a request, so the `L_p` half of a reload pays H2D only | ⚠️ **inferred from the npz flow, never confirmed in code** | the `L_p` half also pays D2H; the round-trip threshold applies to the whole payload |
+| A4 | Ingress is **per-step bound**; payload rides free inside existing ops | ❌ **FALSIFIED by S30** — above ~2 chunks the cost is purely per-byte (R² = 1.000000, zero intercept); the per-step floor exists but caps out at ~46 ms | if per-byte, `0.7726 GB/s` was roughly right and "recompute wins as-built" is restored |
+| A5 | Egress (`1.426 GB/s`) has the same defect | ⚠️ **PARTLY — settled by S30**: egress *is* broadly a real rate (~0.63 GB/s aggregate marginal, no super-linearity), but the 1.426 anchor is an outlier valid only at 1 chunk. Previously — same single-payload-point problem, same store-and-forward colmux shape ⇒ **structurally suspect, not falsified** | if egress *is* a real rate, the D2H half of the round trip survives and only H2D needs re-deriving |
+| A6 | In pdSeparate the host retains a copy of the **prompt** KV during a request, so the `L_p` half of a reload pays H2D only | ✅ **VERIFIED in code** — `launch.py:405-431` writes `inj_{i}.npz` and never deletes it | the `L_p` half also pays D2H; the round-trip threshold applies to the whole payload |
 | A7 | `L_g ≫ L_p` in the scenarios that matter | ⚠️ **DERIVED FROM A VALIDATION FIXTURE — needs re-grounding.** The 98.1% figure came from `mtbench8`, whose prompts are **21–36 tokens** because it is a bit-identity regression fixture, **not a serving workload**. Real serving prompts run to thousands of tokens | **this is load-bearing**: it is the stated reason S3b (decode egress) was promoted from *conditional* to *prerequisite*. If `L_p` dominates in realistic workloads, the prompt half has a free host copy and S3b's promotion must be re-argued |
 | A8 | Force-decode's rebuilt KV reaches a functionally equivalent end state | ⚠️ partial — S2 verified **sampled tokens** match at `F=64`; KV bit-identity is **not** available by construction (prompt KV came from *prefill*, force-decode rebuilds it in *decode*) | the A-vs-B race is not comparing one end state and the gate must change |
-| A9 | Prompts can be generated to hit exact tokenized-length bins | ⬜ to verify — `PREFILL_LENS` derives from tokenizing the prompt **text**, not from a label | bins must be found by search rather than construction |
+| A9 | Prompts can be generated to hit exact tokenized-length bins | ✅ **verified** — all 6 bins landed exactly on target, confirmed in each run's `PREFILL_LENS`. Was: to verify — `PREFILL_LENS` derives from tokenizing the prompt **text**, not from a label | bins must be found by search rather than construction |
 
 ## 5. Dataset selection, and why synthetic
 
