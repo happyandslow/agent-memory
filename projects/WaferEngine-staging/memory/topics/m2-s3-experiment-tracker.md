@@ -41,9 +41,16 @@ it**, because the transport half of the comparison has no valid number.
 | **S30** fabricated request set + payload sweep | ✅ **COMPLETE 2026-07-31** — Run 1 (A4 falsified: ingress IS payload-dependent) + Run 2 all 6 bins (hockey stick, marginal saturates at 0.797 GB/s/band) |
 | **S2b / S3a / S3b / S3c / S4 / S5** | ⬜ blocked or not started |
 
-**The blocking fact:** the only two transport numbers we have (`0.7726 GB/s` H2D, `1.426 GB/s` D2H) are
-**not usable** — one is falsified, the other is untested and structurally suspect. Every lane cost that
-involves moving KV is therefore unsupported.
+⚠️ *(This paragraph was the pre-S30 framing and is now **out of date**; kept because § 3's discovery
+chain refers to it.)* **The blocking fact:** the only two transport numbers we have (`0.7726 GB/s` H2D,
+`1.426 GB/s` D2H) are **not usable** — one is falsified, the other is untested and structurally suspect.
+Every lane cost that involves moving KV is therefore unsupported.
+
+**As of 2026-07-31 this is resolved for the reload direction.** S30 measured both host paths against a
+six-point payload sweep. The **reload (H2D) lane now has a validated model** — hockey stick, marginal
+0.797 GB/s per band = 3.186 GB/s aggregate, `L = 8192` reload = 338.3 ms measured. The **offload (D2H)
+lane for decode-resident KV remains unsupported**, because that kernel does not exist (S3b). So one lane
+cost is now grounded and one is still blocked — not "every lane".
 
 ## 3. The discovery chain — how we got here
 
