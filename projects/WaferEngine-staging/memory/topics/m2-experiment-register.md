@@ -45,7 +45,7 @@
 | ID | Name | What it establishes | Status |
 |----|------|---------------------|--------|
 | **E9** | `f_forced(pos)` | does a forced token cost more as context grows? | ✅ done — see Ch.2 E9 |
-| **E10** | Lane A vs Lane B (resume latency) | the first resume-latency boundary: at what `L_hist` does reloading beat rebuilding? | ⬜ **next** |
+| **E10** | Lane A vs Lane B (resume latency) | the first resume-latency boundary: at what `L_hist` does reloading beat rebuilding? | 🟡 **crossing ≈ 700 tok, computed from E5+E9 (Ch.2 E10); device-verify of `L_new` cancellation pending CS-3** |
 | **E11** | Full re-prefill baseline | re-prefill from scratch + ship all KV — a measurable substitute for lane C, conclusive one direction only | ⬜ |
 | **E12** | Prefill-side KV ingestion | a build, not a measurement — prefill has egress only, so true lane C does not exist | ⬜ needs decision |
 | **E13** | Decode-side KV egress | a build — the offload half of lane B; the recurring cost E10 assumes away | ⬜ needs decision |
@@ -87,7 +87,7 @@ Surveyed 2026-07-31. `nc_service` is **already a Cerebras WSE-3 codebase** — C
 | ID | Name | Result — what it presents | Status |
 |----|------|---------------------------|--------|
 | **E9** | `f_forced(pos)` | the fit `f_forced(pos)=α+β·pos`; verdict on lane A's shape | ✅ **DONE — β=4.30 ns/tok (0.15× free), forced≈0.12×free; lane A ~linear to ceiling. E10 next** |
-| **E10** | Lane A vs Lane B | the crossing point, plus two separate segments (reload overhead, post-ingress forced-token cost) so the `L_new` cancellation is tested, not assumed | ⬜ |
+| **E10** | Lane A vs Lane B | the crossing point, plus two separate segments (reload overhead, post-ingress forced-token cost) so the `L_new` cancellation is tested, not assumed | 🟡 crossing ≈700 tok predicted (E5+E9); segment measurement pending CS-3 |
 | **E11** | Full re-prefill baseline | whether full re-prefill ever beats A or B. Conclusive one direction only | ⬜ |
 | **E12a** | Lane C compute, host-seeded | is prefilling the delta actually cheaper than force-decoding it? | ⬜ now plannable |
 | **E12b** | Lane C transport (prefill KV ingress) | the prefill-side analogue of E5; completes lane C | ⬜ build |
@@ -185,9 +185,27 @@ Two findings for the cost model:
 
 ⇒ **E9 done; E10 (A/B crossing) is next and needs no new code** — E9 forced curve vs E5 measured ingress.
 
-## E10 – E13 · Not yet run
+## E10 · Lane A vs Lane B 🟡 — crossing ≈ 700 tokens, computed from measured E5+E9 (device-verify pending)
 
-E10 is unblocked: E9 forced curve (≈E3-constant×F to the ceiling) against E5's measured ingress. Because lane A stayed near-linear (not the feared quadratic blow-up), the A/B crossing sits near the **constant-envelope** prediction (`L_hist ≈ 520`), not pushed toward B. E10 still measures the reload overhead and the post-ingress forced segment separately (the `L_new` cancellation is a hypothesis, §3.4).
+Both lanes are already priced by measured data, so the boundary needs **no new run** to a first order. Algebra: at resume, A pays `laneA(L_hist+L_new)` and B pays `ingress(L_hist) + [laneA(L_hist+L_new) − laneA(L_hist)]`, so **A−B = laneA(L_hist) − ingress(L_hist)** — the `L_new` term cancels and the boundary is set entirely by "is it cheaper to force-decode `L_hist` in place, or to reload its KV?"
+
+![E10 — Lane A (rebuild) vs Lane B (reload) boundary](../../assets/2026-07-31-e10-ab-boundary/e10_ab_boundary.svg)
+
+| `L_hist` | chunks | lane A rebuild (E9, ms) | lane B reload (E5, ms) | winner |
+|----------|--------|-------------------------|------------------------|--------|
+| 512 | 2 | 37.9 | 46.24 | **A rebuild** |
+| 1,024 | 4 | 76.9 | 56.14 | B reload |
+| 2,048 | 8 | 158.3 | 85.68 | B reload |
+| 4,096 | 16 | 333.5 | 169.89 | B reload |
+| 8,192 | 32 | 735.1 | 338.27 | B reload |
+
+**Crossing ≈ 700 tokens (~2.7 chunks).** Below it, force-decoding the whole prefix in place is cheaper than paying E5's ~46 ms reload floor; above it, reload wins and pulls away (B grows at E5's 0.797 GB/s-per-band, A at ~74–98 µs/tok). This lands inside the pre-registered 400–1,500 window and near the constant-envelope prediction — **the model is not falsified.**
+
+⚠️ **This is a PREDICTION from E5+E9, not the measured E10.** It assumes the `L_new` cancellation (§3.4) — that force-decoding `L_new` costs the same whether it follows a fresh rebuild (A) or a KV reload (B). **That is exactly what the device run must test** (`lane B total − kv_ingress_span_us` vs `lane A`'s matching segment), and it needs (a) CS-3 access and (b) a coherent three-region fixture (§3.1), neither available in this session. If the cancellation holds, the crossing above is final; if the reload leaves a warm-up/first-token penalty, the crossing moves right.
+
+## E11 – E13 · Not yet run
+
+E11 (full re-prefill substitute) is a free comparison from the same fixture once it exists. E12/E13 are builds, gated on what E10/E12a show is live.
 
 ---
 

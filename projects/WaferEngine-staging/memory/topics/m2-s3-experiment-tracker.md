@@ -836,3 +836,23 @@ in `launch_decode.py`.
    was the short-context end 1/0.117).
 
 ⇒ **E10 (A/B crossing) is unblocked and needs no new code** — E9 forced curve vs E5 measured ingress.
+
+## E10 — A/B crossing, PREDICTED from measured E5+E9 (2026-07-31; device-verify pending)
+
+No new run needed to first order: A pays `laneA(L_hist+L_new)`, B pays `ingress(L_hist)+[laneA(L_hist+L_new)−laneA(L_hist)]`,
+so **A−B = laneA(L_hist) − ingress(L_hist)** — `L_new` cancels and the boundary is purely "force-decode L_hist in
+place vs reload its KV". Using E9's measured lane A and E5's measured ingress:
+
+| L_hist | chunks | A rebuild (ms) | B reload (ms) | winner |
+|--------|--------|----------------|---------------|--------|
+| 512 | 2 | 37.9 | 46.24 | A |
+| 1024 | 4 | 76.9 | 56.14 | B |
+| 2048 | 8 | 158.3 | 85.68 | B |
+| 4096 | 16 | 333.5 | 169.89 | B |
+| 8192 | 32 | 735.1 | 338.27 | B |
+
+**Crossing ≈ 700 tokens (~2.7 chunks)** — inside the pre-registered 400–1,500 window; model not falsified. Chart at
+`assets/2026-07-31-e10-ab-boundary/e10_ab_boundary.svg`. ⚠️ This ASSUMES the `L_new` cancellation; the device run
+must measure `lane B total − kv_ingress_span_us` against lane A's matching segment. **Blocked on:** CS-3 access
+(not reachable this session) + a coherent three-region fixture (§3.1, not yet built — only `e9_fsweep`/`s30_bin*`
+exist). If the reload leaves a warm-up/first-token penalty, the crossing moves right.
