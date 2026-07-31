@@ -465,6 +465,90 @@ means the reload lane stops getting worse and offload survives at large `L`.
 opposite of the intuition that bulk transfers amortise. If `α → 1`, the lane is merely slow, not
 degenerate. The cost model's qualitative conclusion hangs on this, not on the headline GB/s.
 
+## ✅ Run 2 COMPLETE, 6 of 6 — my prediction was WRONG, and the real shape is a hockey stick
+
+`s30_bin8192` landed 05:16 UTC, **rc=0 on the first attempt** (`FINISH_DONE 06:17:39+01:00`).
+`band_bytes = 269,484,032` (code-derived, exact), `mean_span_us = 338,266.277`, `spread_pct = 0.001%`,
+`rounds = 2`, both `prefill_len = 8192`.
+
+### The prediction test — I lost, and the naive model won exactly
+
+| model | predicted | measured | error |
+|---|---|---|---|
+| **power law `α = 1.613`** ⇐ what I bet on | 429.5 ms | 338.3 ms | **+27.0%** ❌ |
+| affine fitted on top-3 (4,8,16 ch) | 322.2 ms | 338.3 ms | −4.7% |
+| **carry the 8→16 marginal forward** | **338.3 ms** | 338.3 ms | **+0.0%** ✅ |
+
+**A power law with R² = 0.999473 over five points extrapolated 27% wrong one doubling outside its fit
+range.** The simplest possible model — "assume the last marginal holds" — was exact. This is the cleanest
+demonstration so far of why the project rule exists: *validating a model only where it was fit validates
+nothing.* In-range fit quality carried **no** information about extrapolation here.
+
+### What actually happens: the marginal saturates
+
+| `L_p` | ch | MB/band | ingress ms | `spr%` | n | avg µs/MB | **marginal µs/MB** | marginal GB/s **per band** |
+|---|---|---|---|---|---|---|---|---|
+| 256 | 1 | 9.4 | 46.150 | 0.003 | 4 | 4,890 | — | — |
+| 512 | 2 | 17.8 | 46.236 | 0.003 | 4 | 2,594 | 10.4 | 96.6 |
+| 1,024 | 4 | 34.6 | 56.141 | 0.002 | 4 | 1,622 | 590.4 | 1.694 |
+| 2,048 | 8 | 68.2 | 85.684 | 0.003 | 4 | 1,257 | 880.5 | 1.136 |
+| 4,096 | 16 | 135.3 | 169.891 | 0.001 | 4 | 1,256 | **1,254.8** | **0.797** |
+| 8,192 | 32 | 269.5 | 338.266 | 0.001 | 2 | 1,255 | **1,254.5** | **0.797** |
+
+**Two independent payload doublings return the same marginal to 0.02%.** The marginal rose (10 → 590 →
+881 → 1,255 µs/MB) and then **stopped dead**. It is not a power law; it is an approach to an asymptote.
+
+**Above 8 chunks the path is purely proportional — no fixed cost left at all:**
+
+```
+affine on (8, 16, 32 chunks):  t = 0.18 ms + bytes / 0.7966 GB/s-per-band     R² = 1.000000
+residuals: +0.01% / −0.00% / +0.00%
+```
+
+An intercept of **0.18 ms on an 85–338 ms span** is zero within measurement. So the real shape is a
+**hockey stick**: a flat ~46 ms floor that ignores payload up to ~2 chunks, a knee between 2 and 8
+chunks, then a clean straight line through the origin. Both earlier descriptions were wrong — "affine
+with a 35.6 ms intercept" (4 bins) and "power law α = 1.613" (5 bins) were each the best fit to a
+*truncated* curve.
+
+### ⚠️ Unit correction — "aggregate" was mislabelled two turns ago
+
+`band_bytes` is **per band, and there are 4 bands**; total payload is `4 × band_bytes`. Confirmed by
+arithmetic that the harness cannot fake: `4 × band_bytes` = **34.0 MiB at `KV_META_LEN = 2`** and
+**36.0 MiB at `KV_META_LEN = 4`** — i.e. exactly 32 MiB of KV plus a metadata term that tracks
+`KV_META_LEN` 1:1.
+
+⇒ **Every ingress marginal I have quoted in GB/s is PER BAND, not aggregate.** One table header two turns
+ago said "aggregate over 4 streams" — **that label was wrong**; the numbers under it were right as
+per-band figures. Aggregate is 4×:
+
+- **saturated marginal = 0.7966 GB/s per band = 3.186 GB/s aggregate**
+- retired S1 figure = 0.1931 per band = 0.7726 aggregate
+- ⇒ **the retired average understates the true marginal by 4.13×** (run 1 said 4.61× from a two-point
+  fit; the converged value is 4.13×)
+
+Note the egress numbers use the *opposite* convention — `32 MiB × chunks` is already the **total**, so
+those GB/s are aggregate. Two paths, two conventions, in the same `timing.json`. Worth remembering.
+
+### What this gives the cost model — the reload lane, measured not extrapolated
+
+At `L = 8192` a full prefix reload is **338.3 ms, measured directly** (it is the largest bin, not an
+extrapolation). Against S2's measured forced token of 88.35 µs:
+
+| lane at `L = 8192` | cost | source |
+|---|---|---|
+| **reload from host (H2D)** | **338.3 ms** | measured, this run |
+| force-decode in place | 723.8 ms | 8,192 × 88.35 µs (S2-measured) |
+
+⇒ **reload beats force-decode by 2.14× at `L = 8192`, as-built.** For contrast, ROADMAP's figures built
+on the falsified rate said the reload lane cost **753 → 1390 ms**; it is **2.2–4.1× cheaper** than that.
+
+⚠️⚠️ **This covers ONE HALF of the round trip.** It prices getting KV *back into* the device, and is
+valid only where the host already holds a copy — i.e. **prompt KV under A6** (verified: `inj_{i}.npz` is
+written and never deleted). The **decode→host offload half does not exist** (S3b, unbuilt), so this is
+**not** a verdict on offload-vs-recompute for decode-produced KV. Per Le's instruction, that half stays
+unjudged until there is a real implementation. **Needs Le's decision, not mine.**
+
 ## Free finding — PREFILL egress also degrades with payload (2026-07-31, zero extra wafer time)
 
 ⚠️⚠️ **SCOPE — read before using any number here.** This is the **prefill module's own KV egress path**
@@ -484,6 +568,15 @@ payload, `32 MiB × chunks` (a different constant from ingress's `band_bytes`).
 | 1,024 | 4 | 128 MB | 181.79 | 0.738 GB/s | 0.627 |
 | 2,048 | 8 | 256 MB | 458.56 | 0.585 GB/s | 0.485 |
 | 4,096 | 16 | 512 MB | 820.76 | 0.654 GB/s | **0.741** ⇐ improves |
+| 8,192 | 32 | 1,024 MB | 1,679.65 | 0.639 GB/s | 0.625 |
+
+*(These rates are **aggregate** — egress payload `32 MiB × chunks` is already the total. Opposite
+convention to ingress; see the unit correction above.)*
+
+**Full 6-point egress marginals: 0.656 → 0.627 → 0.485 → 0.741 → 0.625 GB/s.** No trend — it wanders in
+a 0.6–0.74 band with one dip at 8 chunks. Unlike ingress, egress has **no saturating structure and no
+super-linearity**; it is roughly a constant ~0.63 GB/s aggregate with noise, plus the anomalously good
+1-chunk point.
 
 Three things worth keeping:
 
