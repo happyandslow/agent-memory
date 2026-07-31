@@ -757,3 +757,26 @@ data, and the data was truncated.
 ⇒ **S3a's timing deliverable is complete** and needs no wafer time. What S3a still lacks is its
 **correctness control**, which is blocked on a coherent-text prompt set (see the long-context section
 above) — the timing half and the correctness half now have different blockers.
+
+## ⛔ SUPERSEDED AS THE INDEX (2026-07-31)
+
+Status and results now live in **`topics/m2-experiment-register.md`** (ContextBase: *M2 · Experiment
+Register*). This file remains only as the **chronological narrative** of how conclusions were reached and
+overturned; it is append-only and out of order.
+
+**Two of its conclusions are retracted there:**
+
+1. **"The uplink is 5.10× faster / the asymmetry is reversed"** (§§ 16–17) — **withdrawn.** It compared
+   prefill's KV egress against decode's KV ingress. `prefill.csl:104` shows prefill's egress is a
+   **switch-gather along X using `fft transpose.csl`** — a layout transform plus a many-PE→edge gather —
+   while the ingress is a scatter with no transform. **Different operations; their rates are not
+   comparable**, and decode's egress does not exist. There is now **no valid claim about which direction
+   is faster.**
+2. **A7's falsification** (§ 14) — **withdrawn.** It rested on Mooncake's `output_length`, which is
+   **hard-capped at 2,000 tokens** (both traces; mean 182–343). A thinking model routinely exceeds that,
+   so the trace structurally cannot represent long generation.
+
+**The recurring error behind both:** turning a result into a conclusion before asking whether the two
+things compared are the same kind of thing — and, when a result is surprising, suspecting the assumption
+before suspecting the experiment. This file warns against exactly that in one section and commits it in
+another.

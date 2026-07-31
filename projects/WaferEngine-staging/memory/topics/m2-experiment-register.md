@@ -359,7 +359,7 @@ is worth building** (E12). Only the second direction is conclusive.
 |---|---|---|
 | A | ✅ | nothing — E3's mechanism with large `F` |
 | B | ✅ **resume only** | the *eviction* half (decode→host) is **E13, unbuilt**. E10 assumes DRAM already holds `L_hist`, which the scenario justifies but which hides a recurring cost |
-| C | ❌ | prefill has **egress only** — no KV ingestion (`src/prefill/` has `kv_egress_colmux.csl` and no counterpart). E11 measures a bound, not the lane |
+| C | ❌ | prefill has **egress only** — no KV ingestion (`src/prefill/` has `kv_egress_colmux.csl` and no counterpart). E11 measures a **substitute**, not the lane |
 
 **E10's result will therefore be a statement about resume latency in a session whose history is already
 persisted — not a full offload-vs-recompute verdict.** Stating this in the figure caption is part of the
