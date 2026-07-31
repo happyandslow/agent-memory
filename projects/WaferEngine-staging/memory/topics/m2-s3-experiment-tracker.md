@@ -244,7 +244,48 @@ whether the pre-recorded prediction held.)*
 
 | date | run | config / request set | `n` | tested | result | prediction held? |
 |---|---|---|---|---|---|---|
-| — | — | — | — | *no S3 run has happened yet* | — | — |
+| 2026-07-31 | `s30_run1`, `rc=0` first attempt, ~19 min | `serve_2x4_8k20k_s2` / `request_config/s30_sweep` | 1 | is ingress payload-dependent at all? | **`spread_pct = 243.834%`** — ingress is **AFFINE** | ❌ **both predictions wrong** |
+
+## Run 1 result (2026-07-31) — the boundary is decided by PROVENANCE
+
+**Both pre-recorded predictions were wrong**, and that is the finding. per-step predicted
+`spread_pct ≈ 0.005%`; per-byte predicted `≈ 2,756%`. **Measured 243.834%.** The truth is a third thing
+neither hypothesis named — **affine**:
+
+```
+t_ingress(band) = 35.55 ms + bytes / 0.8902 GB/s     (per stream)
+                              marginal aggregate = 3.561 GB/s
+```
+
+- At the 1-chunk payload **every previous run used**, the fixed cost is **77% of the span** — which is
+  exactly why the ratio looked like a bandwidth and behaved like a constant.
+- **The marginal H2D rate is 4.61× the retired 0.7726 GB/s "average".**
+- **The lever provably moved**: `band_bytes` matched the code-derived prediction **to the byte**
+  (84,934,656 mean); the device trace confirms prompts at `[256,512,1024,2048,4096,8192,256,4096]`.
+
+**Egress goes the other way, and the asymmetry has REVERSED.** `per_req_kv_egress_ms` is the mean over
+rounds (`launch_prefill.py:1658`): **501.372 ms at a 10-chunk mean ⇒ 0.669 GB/s**, vs **1.428 GB/s** on
+the old all-1-chunk workload — **2.13× worse per byte at 10× payload**. Two aggregate points fit with a
+**negative intercept (−29.6 ms) ⇒ SUPER-linear**, marginal ≈ **0.632 GB/s**. The retired claim was
+"uplink 1.85× slower than downlink"; **marginally egress is 5.6× slower than ingress**.
+
+| `L` | force-decode | reload (prefill-produced, H2D only) | + egress (decode-produced) |
+|---|---|---|---|
+| 1,024 | 76 ms | **73 ms** offload | 286 ms recompute |
+| 4,096 | 323 ms | **186 ms** offload | 1,036 ms recompute |
+| 8,192 | 698 ms | **337 ms** offload 2.1× | 2,036 ms recompute |
+| 16,384 | 1,601 ms | **639 ms** offload 2.5× | 4,037 ms recompute |
+
+⇒ **prefill-produced KV → OFFLOAD wins above `L ≈ 953`. decode-produced KV → RECOMPUTE still wins.**
+So **A6** (host retains the prompt KV copy?) and **A7** (`L_g` vs `L_p` in real serving) are no longer
+background assumptions — **they decide the answer**.
+
+**Also:** prefill at `L=8192` measured **1,280 ms** vs the **1,001 ms** anchor — **28% optimistic**.
+
+**Caveats:** `n = 1`. The ingress fit is two points; the unused third constraint (the mean) is **9.3%
+off**, i.e. slightly sub-affine, so the fit **over-predicts the middle** — a proper fit needs per-bin
+runs. The egress conclusion rests on **two aggregate points from different runs/configs** — suggestive,
+not settled.
 
 
 ## Last updated
