@@ -329,6 +329,47 @@ prefix retained from earlier turns.
 compiled `MAX_INPUT_LEN = 8192` — but **p90 is 27,367 / 16,810, well above it**, and max is 126,195.
 So a real workload would exceed our compiled prompt cap on **roughly 10–25% of requests**.
 
+
+## Two curves fitted from s30_run1 data — 2026-07-31, zero extra wafer time
+
+Both from `evidence/s30_run1/` (already collected). Setting as in § Run 2. `n = 1`.
+
+### (a) DECODE cost vs context — the anchor is CONFIRMED, and extended 7× beyond its fit range
+
+```
+s30_run1 fit : 623.62 us + 28.34 ns x ctx      R^2 = 1.0000   (contexts 1,290 – 14,344)
+doc anchor   : 627.83 us + 26.45 ns x ctx      R^2 = 0.998    (contexts  ~600 –  2,000, mtbench8)
+```
+
+Intercept agrees to **0.7%**, slope to **7%**. **The anchor was fit on contexts 600–2,000 and this run
+independently reproduces it out to 14,344 — ~7× beyond the fit range — with R² = 1.0000.**
+
+⇒ **`f̄(L)`, the rebuild side of the boundary, is validated far past where it was previously supported.**
+This is most of what M2-S3a set out to establish, obtained with no additional wafer time.
+⚠️ It validates **timing linearity only**. The separate RoPE-drift concern is a *correctness* question
+and is untouched by this — a long-context correctness control is still required.
+
+### (b) PREFILL cost is NOT affine — per-token cost is U-shaped, minimum near L = 2,048
+
+| `L_p` | chunks | span | µs/token |
+|---|---|---|---|
+| 256 | 1 | 56.9 ms | 222.3 |
+| 512 | 2 | 74.5 ms | 145.4 |
+| 1,024 | 4 | 114.0 ms | 111.3 |
+| **2,048** | 8 | 210.5 ms | **102.8  ← minimum** |
+| 4,096 | 16 | 473.6 ms | 115.6 |
+| 8,192 | 32 | 1,280.4 ms | 156.3 |
+
+An affine fit gives a **negative intercept (−45 ms) and only R² = 0.977** ⇒ **affine is the wrong model
+for prefill.** The fixed floor dominates at small `L`; efficiency peaks around 2,048; then the quadratic
+attention term takes over and per-token cost climbs again.
+
+**The doc anchor "122 µs/token amortized @ L=8192 ⇒ 1,001 ms" measures 1,280 ms here — 28% higher.**
+⚠️ The anchor came from **standalone prefill**, a different config, so part of that gap may be
+configuration rather than error. Recorded as a discrepancy to resolve, not as a correction.
+
+**Both results are facts from existing data. No plan conclusion drawn — that is Le's call.**
+
 ## Last updated
 
 2026-07-31
