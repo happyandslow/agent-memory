@@ -792,3 +792,43 @@ is 12.7% of an output that is itself 0.3% of tokens.
 Do not cite the Mooncake figures for this question — that trace's `output_length` is hard-capped and
 cannot show long generation. Full record, including the scale gap (TraceLab mean input 171,576 tokens
 vs our 20,480 context ceiling), in [[a7-Lp-vs-Lg-settled-on-tracelab]].
+
+## E9 — `f_forced(pos)` DONE (2026-07-31, real WSE-3; recovered after the `m2-s3-0` session was lost)
+
+The E9 run completed on CS-3 (~19:05) but the driving session (`m2-s3-0`) was destroyed before the
+result was written anywhere. Recovered by re-reading the session transcript and re-analysing the raw
+`timing.json` (survived in the old session scratchpad); every number below is bit-reproduced from that
+file, not copied from prose. Canonical result now lives in the register (*M2 · Experiment Register*,
+Ch.2 E9); this is the narrative of how it was measured and what the `F=1` control caught.
+
+**Setup.** `serve_2x4_8k20k_e9` (2×4 blocks, 28 layers, `FORCED_MAX=20224`), 256-token prefix, 7 rounds
+sweeping `F` = 1, 512, 1024, 2048, 4096, 8192, 20224. A TSC tic/toc was added around the forced segment
+in `decode.csl` (+ `tsc_emitted` fix so the `F==N` terminator-emit path also reports); host fields
+`fd_f_device` / `fd_span_us` / `fd_us_per_forced_tok` land in `decode_device.tsc.per_round[]`.
+
+**Three pre-registered checks passed.** ① `fd_f_device` non-zero on all 7 rounds including r6 (`F==N`) —
+the terminator path executed correctly on hardware (closes Codex's P1). ② r6 fastest round (2.37 s wall,
+no free tail). ③ offset removed, doubling F scales span ×2.03…×2.20.
+
+**The `F=1` control caught a contamination — the point of including it.** `fd_span_us` at F=1 = **22.03 ms
+for ONE step** vs a ~88 µs steady forced step. That is a fixed per-round **pipeline-fill** offset (tic
+fires before HT_tail has received the first Z), **additive on every round**, and distinct from
+`kv_ingress_span_us` (46.15 ms, seven rounds identical, = E5's 1-chunk / 256-token reload). ⇒ the host
+`fd_us_per_forced_tok` (whole span ÷ F) over-counts: **+58% at F=512**, −13% at F=20224. Without the F=1
+round we'd have taken 117.0 µs as the position-512 cost (58% wrong). **"Look at the ratio, don't divide"
+is exactly what this was designed to protect.** A warning comment was added at the forced-segment block
+in `launch_decode.py`.
+
+**Result — segment-differenced marginal (offset-immune):** 74.1 → 76.3 → 79.5 → 85.5 → 98.0 → **134.3**
+µs/forced-token over positions 1→20,224. Two findings:
+1. **Forced decode has its own `f(pos)`** (monotone rise) ⇒ **lane A is quadratic in `L_hist`, not
+   linear**; effective slope ≈ 30 ns/tok matches free decode's 28.3 ns/tok. E3's flat 88.35 µs must
+   never be multiplied by a large F.
+2. **forced/free ≈ 0.12** across a 55× position range (11.7%→13.0%), bracketing S2's single 13.50% and
+   the old 11.7–12.0% mock prediction as a near-flat line. Mechanism verified in code: force-decode
+   pipelines tokens through the 8 (2×4) block stages, but the ratio is set by
+   `max_layers_per_block / n_layers = 4/28 = 1/7 ≈ 14.3%` (`layer_counts=[2,4,4,4,4,4,4,2]`), **not**
+   1/N_blocks = 1/8; measured ratio rises toward that 14.3% asymptote. Refines ROADMAP's "~8.5×" (that
+   was the short-context end 1/0.117).
+
+⇒ **E10 (A/B crossing) is unblocked and needs no new code** — E9 forced curve vs E5 measured ingress.
