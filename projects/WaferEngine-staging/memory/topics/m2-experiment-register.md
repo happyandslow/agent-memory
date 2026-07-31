@@ -17,16 +17,16 @@
 
 ## 1.1 Done
 
-| ID | Name | What it establishes | x-axis | y-axis | Data | Status |
-|----|------|--------------------|--------|--------|------|--------|
-| **E1** | Baseline reproduction *(S0)* | our numbers match the upstream pr14 line, bit-identical | — (table) | — | `mtbench8`, real WSE-3, n=2 | ✅ |
-| **E2** | Ingress timer *(S1)* | a device-TSC pair on the KV ingress adaptor; **the rate it produced was later falsified** | — | — | `mtbench8` | ⚠️ superseded by E5 |
-| **E3** | Force-decode port *(S2)* | force-decode works and is token-exact; cost of one *forced* token | — (single point) | — | `mtbench8`, `F=64` | ✅ |
-| **E4** | Ingress payload discriminator *(S30 run1)* | **does** H2D KV load time depend on bytes at all? | payload (mixed within one run) | `spread_pct` of the round span | `s30_sweep`, 1 run × 8 rounds | ✅ |
-| **E5** | **Ingress payload curve** *(S30 run2)* | the H2D reload cost model | KV bytes (1→32 chunks) | device-TSC ingress span (ms) | `s30_bin{0256..8192}`, 6 runs | ✅ |
-| **E6** | Prefill egress payload curve | how **prefill's own** KV→host path scales | KV bytes (1→32 chunks) | `per_req_kv_egress_ms` | same 6 runs, free | ✅ |
-| **E7** | Free-decode cost vs context | `f(pos)` — the compute baseline every lane is priced against | context position | µs per token | same 6 runs, free, n=22 | ✅ |
-| **E8** | Long-context correctness | does output stay sane to ctx 20,480? | generated position | distinct-4-gram | same 6 runs, free | ⚠️ **inconclusive** |
+| ID | Name | What it establishes | x-axis | y-axis | Data | **Result — what came out** | Status |
+|----|------|--------------------|--------|--------|------|---------------------------|--------|
+| **E1** | Baseline reproduction *(S0)* | our numbers match the upstream pr14 line | — (table) | — | `mtbench8`, real WSE-3, n=2 | **all 242 device fields reproduce to ≤0.02%**; decode 654.95 µs, prefill 56.91 ms, egress 23.5 ms | ✅ |
+| **E2** | Ingress timer *(S1)* | a device-TSC pair on the KV ingress adaptor | — | — | `mtbench8` | reported 0.7726 GB/s — **not a rate**; single payload point on the flat part of a hockey stick. Superseded by E5, true marginal **4.13× larger** | ⚠️ superseded |
+| **E3** | Force-decode port *(S2)* | force-decode works, and the cost of one *forced* token | — (single point) | — | `mtbench8`, `F=64` | **10,067 tokens bit-identical**; **1 forced token = 88.35 µs = 13.50% of a free one**. ⚠️ short contexts only | ✅ |
+| **E4** | Ingress payload discriminator *(S30 run1)* | does H2D KV load time depend on bytes **at all**? | payload (mixed in one run) | `spread_pct` of round span | `s30_sweep`, 1 run × 8 rounds | **`spread_pct` = 243.834%** ⇒ **yes, payload-dependent**. Both pre-recorded predictions (0.005% / 2,756%) **wrong** | ✅ |
+| **E5** | **Ingress payload curve** *(S30 run2)* | the H2D reload cost model | KV bytes (1→32 chunks) | device-TSC ingress span (ms) | `s30_bin{0256..8192}`, 6 runs | **hockey stick**: ~46 ms flat floor below 2 chunks, then `t = 0.18 ms + bytes/0.7966 GB/s-per-band`, **R² = 1.000000**. Marginal **saturates at 3.186 GB/s aggregate**. `L=8192` reload = **338.3 ms** | ✅ |
+| **E6** | Prefill egress payload curve | how **prefill's own** KV→host path scales | KV bytes (1→32 chunks) | `per_req_kv_egress_ms` | same 6 runs, free | 1-chunk point **reproduces the 1.426 GB/s anchor to 0.3%**, but the anchor holds **only there** — marginals wander 0.6–0.74, no trend. ⚠️ **cannot be compared to E5** (carries a transpose + gather) | ✅ |
+| **E7** | Free-decode cost vs context | `f(pos)` — the compute baseline every lane is priced against | context position | µs per token | same 6 runs, free, n=22 | **`f(pos) = 623.70 µs + 28.315 ns × pos`, R² = 0.99997**, linear to the 20,480 ceiling. Decode is **1.57× slower** at the ceiling than at the anchor | ✅ |
+| **E8** | Long-context correctness | does output stay sane to ctx 20,480? | generated position | distinct-4-gram | same 6 runs, free | all long runs loop — **but 5 of 20 start looping below ctx 3,407**, inside the bit-identical-verified range ⇒ **prompt-driven, not device-driven. Proves nothing either way** | ⚠️ **inconclusive** |
 
 ## 1.2 Planned — the three-lane race
 
@@ -45,15 +45,18 @@ arrives. Modelled on a long-running coding-agent session. Three regions, each in
 |------|-----------------------|----------------|
 | **A · rebuild everything** | KV was discarded at eviction. Force-decode all of `L_hist + L_new` in decode | `Σ f_forced(pos)` over `[0, L_hist+L_new]` — no transport |
 | **B · reload + rebuild the delta** | Load `L_hist` KV from DRAM into decode, then force-decode only `L_new` | `ingress(L_hist)` + `Σ f_forced(pos)` over `[L_hist, L_hist+L_new]` |
-| **C · compute the delta in prefill** | Give prefill the `L_hist` KV, have it prefill `L_new`, send the delta KV back, load the whole thing into decode | `move(L_hist→prefill)` + `prefill(L_new ǀ L_hist)` + `move(delta→decode)` + `ingress(L_hist+L_new)` |
+| **C · compute the delta in prefill** | Give prefill the `L_hist` KV, prefill `L_new`, send the delta KV back, load the whole thing into decode | `move(L_hist→prefill)` + `prefill(L_new ǀ L_hist)` + `move(delta→decode)` + `ingress(L_hist+L_new)` |
 
-| ID | Name | What it establishes | x-axis | y-axis | Data | Status |
-|----|------|--------------------|--------|--------|------|--------|
-| **E9** | **`f_forced(pos)`** | does a *forced* token cost more as context grows, the way a free one does? **E3's 88.35 µs was measured at `F=64` on short contexts and may not survive `F=8192`** | force-decode position | µs per forced token | fabricated session, `F` swept | ⬜ **must precede E10** |
-| **E10** | **Lane A vs Lane B** (resume latency) | the first **resume-latency** boundary: at what `L_hist` does reloading beat rebuilding? | `L_hist` | total resume latency (ms), one line per lane | fabricated session, `L_new` fixed then swept | ⬜ |
-| **E11** | **Full re-prefill baseline** | re-prefill `L_hist+L_new` from scratch and ship all KV — a **measurable substitute** for lane C, not lane C, and conclusive in one direction only | `L_hist+L_new` | total resume latency (ms) | fabricated session, ≤ 8,192 | ⬜ |
-| **E12** | Prefill-side KV ingestion | **a build, not a measurement** — prefill currently has egress only, so true lane C does not exist | — | — | — | ⬜ needs decision |
-| **E13** | Decode-side KV egress | **a build** — the offload half of lane B. Needed for the *recurring* cost; E10 assumes DRAM already holds `L_hist` | — | — | — | ⬜ needs decision |
+🔑 **Lane C is far closer than it looked — see §1.4.** The attention math it needs is *already on the wafer and device-proven*.
+
+| ID | Name | What it establishes | x-axis | y-axis | Data | **Result — what it will present** | Status |
+|----|------|--------------------|--------|--------|------|-----------------------------------|--------|
+| **E9** | **`f_forced(pos)`** | does a *forced* token cost more as context grows, the way a free one does? E3's 88.35 µs came from `F=64` on short contexts | force-decode position | µs per forced token | fabricated session, `F` swept | a **fit `f_forced(pos) = α + β·pos`** and a verdict on whether lane A is **linear or quadratic** in `L_hist` | ⬜ **next — gates E10** |
+| **E10** | **Lane A vs Lane B** (resume latency) | the first **resume-latency** boundary: at what `L_hist` does reloading beat rebuilding? | `L_hist` | resume latency (ms), one line per lane | fabricated session, `L_new` swept | **the crossing point** in tokens, plus **two separately-reported segments** (reload overhead, post-ingress forced-token cost) so the `L_new` cancellation is tested not assumed | ⬜ |
+| **E11** | **Full re-prefill baseline** | re-prefill `L_hist+L_new` from scratch and ship all KV | `L_hist+L_new` | resume latency (ms) | fabricated session, ≤ 8,192 | whether full re-prefill ever beats A or B. **Conclusive in one direction only** — if it wins, true lane C is worth building; if it loses, lane C may still win | ⬜ |
+| **E12a** | **Lane C compute, host-seeded** | 🔑 **the cheap way in** — seed `K_cache_bank`/`V_cache_bank` via `set_symbol`, start `current_chunk` at `b`, and prefill only the delta. **No fabric ingress needed** | `L_hist` (resident prefix) | delta-prefill time (ms) | fabricated session | **the compute half of lane C**, isolated from transport — i.e. is prefilling the delta actually cheaper than force-decoding it? | ⬜ **now plannable** |
+| **E12b** | Lane C transport — prefill KV ingress | the fabric ingress that makes lane C a real serving path | KV bytes | ingress span (ms) | — | the **prefill-side** analogue of E5; completes lane C end to end | ⬜ build |
+| **E13** | Decode-side KV egress | **a build** — the offload half of lane B, and the only way to get an equivalence control for the history-provenance confound | KV bytes | egress span (ms) | — | the **recurring** eviction cost E10 currently assumes away | ⬜ build |
 
 ## 1.3 What is measurable today, and what is not
 
@@ -67,8 +70,42 @@ decode produces KV ──────────── ✗ no path exists (E13)
 host DRAM ──────────── ✗ no path into prefill (E12) ✗ ────────────> prefill
 ```
 
-⇒ **Lane A and Lane B are measurable now. Lane C is not** — only a substitute for it (E11).
+⇒ **Lane A and Lane B are measurable now.** Lane C's *compute* half becomes measurable via **E12a** (host-seeded, no fabric work); its *transport* half needs **E12b**.
 ⇒ E10 measures the **resume** cost only. The **eviction** cost (decode→host) needs E13.
+
+## 1.4 Lane C: what `nc_service` already has
+
+Surveyed 2026-07-31. `nc_service` is **already a Cerebras WSE-3 codebase** — CSL + Cerebras SDK end to
+end, **no GPU, no vLLM/SGLang, no paged attention, no block tables**. So this is not a port across
+architectures; it is joining two pieces that already exist.
+
+**The decisive finding:** `kernels/qwen3_1p7b-prefill/src/prefill.csl` **already implements chunked
+prefill over a resident on-chip KV prefix**, with FlashAttention-2 cross-chunk folding. Chunk `c`'s
+queries attend chunks `0..c` read back out of `K_cache_bank`/`V_cache_bank`; the causal mask is applied
+**only to the diagonal pair** (`is_diagonal = attn_pair == current_chunk`), so earlier chunks are
+unmasked — which is exactly prefix semantics. ⇒ **"compute new tokens on top of an existing KV prefix"
+is already device-proven maths.** What is missing is only a way to *fill* those banks from outside, plus
+a base-position offset.
+
+| piece | state |
+|---|---|
+| attention over a resident prefix | ✅ **already implemented and device-proven** |
+| prefill→prefill KV format | ✅ **no transpose needed** — `kv_egress_colmux` ships `K_cache_bank` verbatim, so egress format **is** bank format (unlike prefill→decode, which does need one) |
+| host can read the bank | ✅ `launch.py:1579` already does `read_symbol(..., "K_cache_bank")`; the symmetric `set_symbol` seed is the **cheapest bring-up path** — this is what makes **E12a** possible with no fabric work |
+| a `LOAD_PREFIX` / `RESUME` + `cache_len` command ABI | ✅ exists (8-word `uint32`), proven on the **decode** side. Reuse verbatim; add a third command rather than inventing a protocol |
+| fabric ingress template | ✅ `kv_ingress_adaptor` + `kv_ingress_injector`, ~280 CSL lines, the **mirror image** of prefill's existing `kv_egress_colmux` — same switch column, direction reversed |
+| transport seam | ✅ `KvTransport` Protocol (TCP ~9 GB/s, RDMA ~12.3 GB/s measured), opaque bytes keyed by `request_id`, no kernel coupling |
+| **what genuinely needs writing** | a prefill-side ingress landing KV in the banks, plus a **base-chunk offset** threaded through `current_chunk` (currently reset to 0 at `prefill.csl:1538`), `request_n_chunks`, the chunk-banked RoPE fill, the host `attn_mask`, and the egress `rnc` accounting — plus the `z_drain`/last-token machinery, which assumes the last position of the request |
+
+⚠️ **Real constraints, not portability risks.** The prefix length is bounded by **per-PE SRAM**, not by a
+host page pool — `max_layers_per_block × max_n_chunks × kv_tile_size` fp16 on chip. That is *more*
+restrictive than a GPU KV pool. Also: prefix must be **chunk-aligned**, and `bsz == 1` throughout the
+bridge.
+
+⇒ **Plan change:** lane C moves from "needs a decision" to **planned**, split into **E12a** (compute
+half, host-seeded, no CSL ingress) and **E12b** (the fabric ingress). E12a is the one worth doing first —
+it answers *whether lane C's compute is even cheaper than force-decoding the delta* before any transport
+work is committed.
 
 ---
 
@@ -207,12 +244,23 @@ E4–E7 possible is the wrong tool for it.
 
 ## E9 – E13 · Not yet run
 
-See Chapter 1. E9 is the gate on E10: if `f_forced(pos)` grows with context the way `f(pos)` does, lane
-A's cost is **quadratic** in `L_hist`, not linear, and the A-vs-B boundary moves sharply toward B.
+See Chapter 1 for what each will present. **E9 is the gate on E10**: if `f_forced(pos)` grows with
+context the way `f(pos)` does, lane A's cost is **quadratic** in `L_hist`, not linear, and the boundary
+moves sharply toward B.
+
+**Order, and why:**
+
+| # | run | needs new code? | why here |
+|---|-----|-----------------|----------|
+| 1 | **E9** | **no** — force-decode exists, sweep `F` | zero-code, and every E10 prediction depends on it |
+| 2 | **E10** | **no** — force-decode + the ingress E5 already timed | the actual boundary; both lanes measurable today |
+| 3 | **E11** | no | free comparison point from the same fixture |
+| 4 | **E12a** | **yes, small** — host `set_symbol` seed + base-chunk offset in CSL (one rebuild) | answers whether lane C's *compute* is even worth it, **before** committing to E12b's transport |
+| 5 | **E12b / E13** | yes, real | only worth building for whichever lane E10/E12a show is live |
 
 ---
 
-# Chapter 3 — Design of the three-lane experiment (E9–E11)
+# Chapter 3 — Design of the three-lane experiment (E9–E12a)
 
 ## 3.1 The fabricated session
 
@@ -359,7 +407,8 @@ is worth building** (E12). Only the second direction is conclusive.
 |---|---|---|
 | A | ✅ | nothing — E3's mechanism with large `F` |
 | B | ✅ **resume only** | the *eviction* half (decode→host) is **E13, unbuilt**. E10 assumes DRAM already holds `L_hist`, which the scenario justifies but which hides a recurring cost |
-| C | ❌ | prefill has **egress only** — no KV ingestion (`src/prefill/` has `kv_egress_colmux.csl` and no counterpart). E11 measures a **substitute**, not the lane |
+| C · compute | 🔑 **yes, via E12a** | the attention-over-resident-prefix maths is **already device-proven** in `nc_service`'s `prefill.csl`; seeding the banks with `set_symbol` needs **no fabric ingress**. Still needs a **base-chunk offset** (CSL, `prefill.csl:1538` resets `current_chunk` to 0) + RoPE/mask/`rnc` offset bookkeeping |
+| C · transport | ❌ **E12b** | the prefill-side fabric ingress. Template exists (`kv_ingress_adaptor` + `injector`, ~280 CSL, mirror of `kv_egress_colmux`) and **needs no transpose** for prefill→prefill |
 
 **E10's result will therefore be a statement about resume latency in a session whose history is already
 persisted — not a full offload-vs-recompute verdict.** Stating this in the figure caption is part of the
