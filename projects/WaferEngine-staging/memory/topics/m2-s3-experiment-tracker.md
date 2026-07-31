@@ -414,6 +414,57 @@ figures were unaffected.
 config fault. Attempt 2 succeeded. Confirming this mattered: a config fault would have failed every
 remaining bin identically.
 
+## Run 2 — 5 of 6 bins. The shape is a POWER LAW, and here is the pre-recorded 32-chunk prediction
+
+**Recorded 2026-07-31 05:03 UTC, while `s30_bin8192` was already running (PID 486524) and before any
+32-chunk number existed.** Project rule: *predictions outside the fit range go in writing before the run.*
+
+`s30_bin4096` landed at 04:59 UTC — `band_bytes = 135,266,304` (code-derived, exact), `mean_span_us =
+169,891.091`, `spread_pct = 0.001%`, `rounds = 4`, all `prefill_len = 4096`.
+
+| `L_p` | chunks | `band_bytes` | ingress ms | `spread%` | average µs/MB | marginal µs/MB |
+|---|---|---|---|---|---|---|
+| 256 | 1 | 9,437,184 | 46.150 | 0.003 | 4,890 | — |
+| 512 | 2 | 17,825,792 | 46.236 | 0.003 | 2,594 | 10 |
+| 1,024 | 4 | 34,603,008 | 56.141 | 0.002 | 1,622 | 590 |
+| 2,048 | 8 | 68,157,440 | 85.684 | 0.003 | 1,257 | 881 |
+| 4,096 | 16 | 135,266,304 | 169.891 | 0.001 | 1,256 | **1,255** |
+
+**The marginal is still rising at 16 chunks** (590 → 881 → 1,255 µs/MB) and has only just caught up with
+the average. Both facts kill the affine model: under `t = t0 + b/BW` the marginal is a *constant*.
+
+**A 3-parameter power law fits essentially perfectly:**
+
+```
+t = 42.82 ms + 9.737e-12 · bytes^1.6131        R² = 0.999473, max residual 3.45%
+```
+
+versus affine on all five points (R² = 0.9754, residuals ±20%) or affine on the top three
+(R² = 0.9935, residuals still systematic). **Exponent 1.613 ⇒ doubling the payload multiplies the
+marginal cost per byte by 1.53×.**
+
+⚠️ **This is a measured SHAPE, not an explained one.** A transport cost growing *faster* than payload is
+not what a wire does. Candidate causes — contention, per-chunk work that itself scales with `L`, or
+something inside the timed span that is not KV movement — are **not** distinguished by this data. Treat
+`α = 1.613` as a fitted descriptor of the as-built path over 9.4–135 MB, not as a law.
+
+### The prediction — three models, 33% apart, one run decides
+
+| model | predicted 32-chunk (269,484,032 B) ingress |
+|---|---|
+| **power law `α = 1.613`** ⇐ the one I am betting on | **429.5 ms** |
+| affine fitted on the top three points | 322.2 ms |
+| pure per-byte at the current 8→16 marginal | 338.3 ms |
+
+`s30_bin8192` (2 rounds, `L_p = 8192`) settles it. **If the answer comes in near 322–338 ms the power law
+is wrong and the curve is flattening** — which would matter a great deal, because a flattening curve
+means the reload lane stops getting worse and offload survives at large `L`.
+
+**Why the exponent matters more than any single rate:** if `α > 1` holds, the reload lane's cost grows
+*faster* than the KV it moves, so **every increase in `L` pushes the boundary toward recompute** — the
+opposite of the intuition that bulk transfers amortise. If `α → 1`, the lane is merely slow, not
+degenerate. The cost model's qualitative conclusion hangs on this, not on the headline GB/s.
+
 ## Free finding — PREFILL egress also degrades with payload (2026-07-31, zero extra wafer time)
 
 ⚠️⚠️ **SCOPE — read before using any number here.** This is the **prefill module's own KV egress path**
@@ -426,29 +477,34 @@ transport path.
 Extracted from `per_req_kv_egress_ms` in the same four `timing.json` files. Payload here is the egress
 payload, `32 MiB × chunks` (a different constant from ingress's `band_bytes`).
 
-| `L_p` | chunks | payload | `per_req_kv_egress_ms` | average rate |
-|---|---|---|---|---|
-| 256 | 1 | 32 MB | 23.56 | **1.424 GB/s** |
-| 512 | 2 | 64 MB | 74.73 | 0.898 GB/s |
-| 1,024 | 4 | 128 MB | 181.79 | 0.738 GB/s |
-| 2,048 | 8 | 256 MB | 458.56 | 0.585 GB/s |
+| `L_p` | chunks | payload | `per_req_kv_egress_ms` | average rate | marginal |
+|---|---|---|---|---|---|
+| 256 | 1 | 32 MB | 23.56 | **1.424 GB/s** | — |
+| 512 | 2 | 64 MB | 74.73 | 0.898 GB/s | 0.656 |
+| 1,024 | 4 | 128 MB | 181.79 | 0.738 GB/s | 0.627 |
+| 2,048 | 8 | 256 MB | 458.56 | 0.585 GB/s | 0.485 |
+| 4,096 | 16 | 512 MB | 820.76 | 0.654 GB/s | **0.741** ⇐ improves |
 
-Two things worth keeping:
+Three things worth keeping:
 
 1. **The 1-chunk point reproduces the long-standing anchor to 0.3%.** ROADMAP's "1.426 GB/s aggregate,
    measured on `mtbench8`" comes out here as **1.424 GB/s** on a completely different prompt set. That is
    an independent confirmation of the S0 egress anchor — the harness measures what it says it measures.
-2. **…and the anchor is only valid at its own payload.** Segment marginals are **0.656 → 0.627 →
-   0.485 GB/s**, so by 8 chunks the average has fallen to 0.585 GB/s — **2.4× worse than the anchor**.
-   The concern that motivated this whole sweep ("a single payload point cannot give you a rate") is
-   therefore confirmed on the egress path too, not just ingress.
+2. **…and the anchor is only valid at its own payload.** By 8 chunks the average has fallen to
+   0.585 GB/s — **2.4× worse than the anchor**. The concern that motivated this whole sweep ("a single
+   payload point cannot give you a rate") is confirmed on the egress path too.
+3. ⚠️ **CORRECTION to what I wrote at 4 bins.** I described egress as *monotonically* degrading, on the
+   strength of 0.656 → 0.627 → 0.485. The 16-chunk point **breaks that**: the marginal comes back up to
+   **0.741 GB/s**, the best since the first segment, and the average turns around too (0.585 → 0.654).
+   **Egress is not monotone and its worst point is in the middle** — so it does *not* share ingress's
+   shape, and the "both paths have the same disease" framing I used was premature. Ingress keeps
+   degrading through 16 chunks; egress does not.
 
-⇒ For M4: **quoting 1.426 GB/s as *the* egress bandwidth overstates it at every payload above one
-chunk.** Any figure derived from it at serving-scale `L` is optimistic. Same defect as the retired
-ingress figure, opposite direction.
+⇒ For M4: **quoting 1.426 GB/s as *the* egress bandwidth still overstates it at every payload above one
+chunk** (the best any larger payload achieves is 0.741 marginal, about half the anchor). But the failure
+mode is a mid-range dip, not runaway growth, so egress does not carry ingress's `α > 1` problem.
 
-Not concluded: the mechanism. Ingress and egress degrade with payload in the same direction, which is
-suggestive of a shared cause, but nothing here isolates one.
+Not concluded: the mechanism, for either path — and now there is positive evidence they differ.
 
 ## A7 corroborated at the source, and the recorded prefix-cache ratios verified (2026-07-31)
 
