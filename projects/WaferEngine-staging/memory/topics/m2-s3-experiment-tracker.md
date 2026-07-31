@@ -371,7 +371,7 @@ configuration rather than error. Recorded as a discrepancy to resolve, not as a 
 **Both results are facts from existing data. No plan conclusion drawn — that is Le's call.**
 
 
-## Run 2 INTERIM — 3 of 6 bins (2026-07-31). The affine model is in doubt.
+## Run 2 INTERIM — 4 of 6 bins (2026-07-31). The affine model is in doubt.
 
 Setting as in § 11. Each bin: all rounds at ONE payload, so `spread_pct` is a **noise estimate**.
 
@@ -380,25 +380,31 @@ Setting as in § 11. Each bin: all rounds at ONE payload, so `spread_pct` is a *
 | 256 | 1 | 9,437,184 | 46,149.6 | 0.003% | 4 | ✅ all 256 |
 | 512 | 2 | 17,825,792 | 46,236.5 | 0.003% | 4 | ✅ all 512 |
 | 1,024 | 4 | 34,603,008 | 56,141.0 | 0.002% | 4 | ✅ all 1,024 |
+| 2,048 | 8 | 68,157,440 | 85,682.6 | 0.002% | 4 | ✅ all 2,048 |
 
 `band_bytes` matched the code-derived value exactly in every bin. **Noise floor is 0.002–0.003%**, so the
 gaps below are signal, not scatter.
 
-**The marginal cost per byte is NOT constant — it rises steeply with payload:**
+**The marginal cost per byte is NOT constant — it worsens monotonically with payload:**
 
 | segment | added bytes | added time | marginal |
 |---|---|---|---|
 | 1 → 2 chunks | +8.00 MB | **+0.087 ms** | 10.9 µs/MB = **96.5 GB/s** ⇐ impossible as a rate ⇒ fixed cost still dominates here |
 | 2 → 4 chunks | +16.00 MB | **+9.905 ms** | 619 µs/MB = **1.694 GB/s** |
+| 4 → 8 chunks | +32.00 MB | **+29.542 ms** | 923 µs/MB = **1.136 GB/s** |
 | 1 → 32 chunks (run-1, two-point) | +248 MB | +292.1 ms | 1,178 µs/MB = **0.890 GB/s** |
 
 ⇒ **the shape is convex/super-linear, not affine.** Run 1's two-point fit assumed a constant slope; the
 9.3% mid-range error it showed was the first sign, and this is the mechanism behind it. An affine fit on
-these three points gives only **R² = 0.897**, which is poor for 3 points.
+these four points gives **R² = 0.9638** — still poor, and the residual pattern is systematic (not noise).
 
-⚠️ **NOT CONCLUDING. 3 of 6 bins.** The remaining bins — 8, 16 and 32 chunks — are precisely the ones
-that set the top-end shape and therefore decide this. The marginal rate that the cost model needs is the
-one at the payload sizes that matter, and it is **not yet measured**.
+**But the intercept is stable and reproducible.** Affine fits on run 1 (2 points) and run 2 (4 points)
+agree on the fixed cost to within 0.1%: **35.55 ms vs 35.59 ms**. So the *fixed* half of the model is
+solid; it is the *slope* that is not a constant, and the slope is the half the cost model needs.
+
+⚠️ **NOT CONCLUDING. 4 of 6 bins.** The remaining bins — 16 and 32 chunks — are precisely the ones that
+set the top-end shape and therefore decide this. The marginal rate that the cost model needs is the one
+at the payload sizes that matter, and it is **not yet measured**.
 
 ⚠️ **Self-correction:** an earlier line in this session quoted run-1's overall slope as "1.123 µs/MB".
 That was a unit slip (s/B → µs/MB, off by 1000×). The correct figure is **1,178 µs/MB**; the GB/s
@@ -407,6 +413,67 @@ figures were unaffected.
 **Infra note:** `s30_bin0512` attempt 1 died on **EPCC ingress gRPC 502** — the known signature, not a
 config fault. Attempt 2 succeeded. Confirming this mattered: a config fault would have failed every
 remaining bin identically.
+
+## Free finding — PREFILL egress also degrades with payload (2026-07-31, zero extra wafer time)
+
+⚠️⚠️ **SCOPE — read before using any number here.** This is the **prefill module's own KV egress path**
+(the existing prefill→host bridge). It is **NOT** decode-side KV offload, and it must **not** be used to
+price the offload lane. Le's instruction stands: *decode egress has to rely on a real implementation*
+(S3b), and until that exists the offload half of the round trip is **not judged**. Recorded here because
+it is (a) a free by-product of the 4 completed bins and (b) directly relevant to **M4**, which owns this
+transport path.
+
+Extracted from `per_req_kv_egress_ms` in the same four `timing.json` files. Payload here is the egress
+payload, `32 MiB × chunks` (a different constant from ingress's `band_bytes`).
+
+| `L_p` | chunks | payload | `per_req_kv_egress_ms` | average rate |
+|---|---|---|---|---|
+| 256 | 1 | 32 MB | 23.56 | **1.424 GB/s** |
+| 512 | 2 | 64 MB | 74.73 | 0.898 GB/s |
+| 1,024 | 4 | 128 MB | 181.79 | 0.738 GB/s |
+| 2,048 | 8 | 256 MB | 458.56 | 0.585 GB/s |
+
+Two things worth keeping:
+
+1. **The 1-chunk point reproduces the long-standing anchor to 0.3%.** ROADMAP's "1.426 GB/s aggregate,
+   measured on `mtbench8`" comes out here as **1.424 GB/s** on a completely different prompt set. That is
+   an independent confirmation of the S0 egress anchor — the harness measures what it says it measures.
+2. **…and the anchor is only valid at its own payload.** Segment marginals are **0.656 → 0.627 →
+   0.485 GB/s**, so by 8 chunks the average has fallen to 0.585 GB/s — **2.4× worse than the anchor**.
+   The concern that motivated this whole sweep ("a single payload point cannot give you a rate") is
+   therefore confirmed on the egress path too, not just ingress.
+
+⇒ For M4: **quoting 1.426 GB/s as *the* egress bandwidth overstates it at every payload above one
+chunk.** Any figure derived from it at serving-scale `L` is optimistic. Same defect as the retired
+ingress figure, opposite direction.
+
+Not concluded: the mechanism. Ingress and egress degrade with payload in the same direction, which is
+suggestive of a shared cause, but nothing here isolates one.
+
+## A7 corroborated at the source, and the recorded prefix-cache ratios verified (2026-07-31)
+
+Two loose ends from the A7 falsification, both closed from the Mooncake release, no wafer time.
+
+**1. `input_length` semantics — the caveat I had left open is resolved.** The release README defines
+`input_length` as "Number of input tokens", and its own worked example shows two requests with
+`input_length` 6,955 and 6,472 **sharing the first 12 hash IDs = 6,144 tokens** of prefix. So
+`input_length` is the *full* input including retained/shared prefix — exactly the quantity `L_p` needs.
+⇒ The A7 falsification (`L_p` is 97.2% / 97.9% of tokens; 99.9% of requests have `L_p > L_g`) rests on
+the right field, and the last reason to doubt it is gone.
+
+**2. The prefix-cache ratios already in `topics/agentic-kv-trace-datasets.md` check out.** Recomputed
+directly from the traces (block size 512, a block counts as reusable if its hash ID was seen earlier in
+the trace):
+
+| trace | requests | prefix blocks | reusable | ratio | previously recorded |
+|---|---|---|---|---|---|
+| `conversation_trace` | 12,031 | 288,500 | 105,710 | **36.6%** | ~40% |
+| `toolagent_trace` | 23,608 | 409,616 | 226,316 | **55.3%** | ~59% |
+
+Both within ~4 points of the recorded values — **corroborated, not falsified**. The small gap is expected
+and in the right direction: my count is an *upper* bound with no eviction and unbounded history, so the
+published figures being close means their cache model is not doing much work. Good enough to keep using
+these as the reuse-rate inputs for scenario sizing.
 
 ## Last updated
 
