@@ -714,3 +714,46 @@ several runs collapse at almost exactly `ctx ≈ L_p` — `1024/2` at 1,024, `20
 **None of the S30 timing results are affected.** The ingress span is measured per round *before*
 decoding, and transport is content-blind by design — which was stated as reason (2) for choosing
 synthetic prompts in the first place. That reasoning holds; it just does not extend to correctness.
+
+## S3a's `f(pos)` curve, delivered free from the S30 bins — linear to the compiled ceiling
+
+S3a's timing half turns out to be **already measured**. Every S30 round reports
+`device_steady_us_per_tok` (device TSC) at a known prompt length, so each of the 22 rounds is a point on
+the decode-cost curve. Because a round's steady tokens span `[L_p, L_p+g]`, and a linear marginal
+`f(pos) = α + β·pos` averages to `α + β·(L_p + g/2)`, **fitting the round average against mean context
+recovers the MARGINAL coefficients directly** — this is `f(pos)`, not just `f̄(L)`.
+
+```
+f(pos) = 623.70 µs + 28.315 ns × pos        R² = 0.99997,  n = 22
+```
+
+fitted over mean-context **1,136 → 14,336**, i.e. actual contexts up to the compiled ceiling of
+**20,480**. Measured span: 655.6 µs/token at the low end, **1,028.5 µs/token at the top** — decode is
+**1.57× slower** at the ceiling than at the anchor point, which no constant-cost model captures.
+
+**Linear, with no detectable curvature anywhere in that range.** Three independent fits now agree:
+
+| fit | range | intercept | slope |
+|---|---|---|---|
+| S0 (2026-07-28) | ~600–2,000 | 627.83 µs | 26.45 ns |
+| run 1 (2026-07-31) | 1,290–14,344 | 623.62 µs | 28.34 ns |
+| **all 6 bins, 22 rounds** | **1,136–14,336** | **623.70 µs** | **28.315 ns** |
+
+The last two agree to **0.01% on intercept and 0.09% on slope** despite coming from different runs and
+six different prompt lengths — that is an independent reproduction, not a re-fit of the same data.
+
+### The methodological contrast worth keeping
+
+**S0's anchor, fitted over ~600–2,000, extrapolates to ctx = 20,480 — a 10× reach — within +2.9%**
+(1,170 µs predicted vs 1,204 µs from the full fit). On the same day, on the same machine, **the ingress
+power law fitted over five points failed at 2× reach by +27%.**
+
+So "extrapolation is unreliable" is *not* the lesson. The lesson is narrower and more useful:
+**extrapolate a curve whose shape you can argue from mechanism, not one whose shape you inferred from
+the fit.** Decode-per-token is linear in context because attention scans a KV cache that grows by one
+token per step — the shape is predicted before any data. The ingress curve's shape was read off the
+data, and the data was truncated.
+
+⇒ **S3a's timing deliverable is complete** and needs no wafer time. What S3a still lacks is its
+**correctness control**, which is blocked on a coherent-text prompt set (see the long-context section
+above) — the timing half and the correctness half now have different blockers.
