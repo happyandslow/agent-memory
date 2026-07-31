@@ -821,9 +821,13 @@ in `launch_decode.py`.
 
 **Result — segment-differenced marginal (offset-immune):** 74.1 → 76.3 → 79.5 → 85.5 → 98.0 → **134.3**
 µs/forced-token over positions 1→20,224. Two findings:
-1. **Forced decode has its own `f(pos)`** (monotone rise) ⇒ **lane A is quadratic in `L_hist`, not
-   linear**; effective slope ≈ 30 ns/tok matches free decode's 28.3 ns/tok. E3's flat 88.35 µs must
-   never be multiplied by a large F.
+1. **Forced decode has its own `f(pos)` = 71.6 µs + 4.30 ns·pos** (R²=0.999, monotone rise). ⚠️ The
+   slope is **4.30 ns/tok = only 0.15× free's 28.3** — the two lines are **NOT parallel**, forced is far
+   flatter. (An interim writeup of this run said "lane A is quadratic, slope ≈ 30 ns/tok" — **both wrong**,
+   corrected here.) ⇒ lane A = Σ f_forced is super-linear but **linear-dominated to the ceiling**: quad
+   term 1.5% at L=512, 25% at 8192, crossover L≈33k > 20,480. **Measured lane A at F=8192 = 735 ms,
+   within 1.6% of E3-constant × F (723.8 ms)** — so E3's 88.35 µs × F is a good lane-A model to 8192; it
+   only diverges at the extreme (F=20,224: 2,350 vs 1,787 ms, +31%).
 2. **forced/free ≈ 0.12** across a 55× position range (11.7%→13.0%), bracketing S2's single 13.50% and
    the old 11.7–12.0% mock prediction as a near-flat line. Mechanism verified in code: force-decode
    pipelines tokens through the 8 (2×4) block stages, but the ratio is set by
