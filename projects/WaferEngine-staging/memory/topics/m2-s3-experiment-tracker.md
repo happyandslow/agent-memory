@@ -263,7 +263,14 @@ t_ingress(band) = 35.55 ms + bytes / 0.8902 GB/s     (per stream)
 - **The lever provably moved**: `band_bytes` matched the code-derived prediction **to the byte**
   (84,934,656 mean); the device trace confirms prompts at `[256,512,1024,2048,4096,8192,256,4096]`.
 
-**Egress goes the other way, and the asymmetry has REVERSED.** `per_req_kv_egress_ms` is the mean over
+⚠️⚠️ **RETRACTED 2026-07-31 (Le).** `per_req_kv_egress_ms` times **prefill→host** egress — the *prefill*
+kernel's own path in the normal pdSeparate flow. **It is not the cost of offloading a decode-resident
+KV**, which does not exist yet (S3b, unbuilt). Same substitution error as S1's 1.85×. **The
+"decode-produced ⇒ recompute wins" column, the reversed asymmetry, and the 0.632 GB/s marginal are all
+withdrawn.** The **ingress/reload** result stands — it was measured on the reload path itself — so the
+**prefill-produced** lane survives. Offload cost for a decode-produced prefix: **no measurement exists.**
+
+**~~Egress goes the other way, and the asymmetry has REVERSED.~~** `per_req_kv_egress_ms` is the mean over
 rounds (`launch_prefill.py:1658`): **501.372 ms at a 10-chunk mean ⇒ 0.669 GB/s**, vs **1.428 GB/s** on
 the old all-1-chunk workload — **2.13× worse per byte at 10× payload**. Two aggregate points fit with a
 **negative intercept (−29.6 ms) ⇒ SUPER-linear**, marginal ≈ **0.632 GB/s**. The retired claim was
