@@ -220,3 +220,27 @@ defects.
   byte-unchanged and the config differs solely in decode-side keys.
 - `--reuse-prefill-from` does **not** support cross-config reuse: `_resolve_reuse_store`
   requires the source directory to be named after the *target* config.
+
+## Update 2026-07-31 — the EOS/pad constraint now has a host-side guard
+
+The hard constraint recorded above (**no forced token may be an EOS or pad id**, because `done_flag`
+is set inside `tail_sample_token` and a skipped step never calls it) was **unenforced**: the host
+checked only the *length* of `forced_tokens`, never its contents.
+
+An independent review flagged it while reviewing E9. A guard now runs in `_serve_loop`
+(`launch_decode.py`), **once, before any round starts**, rejecting any forced token in
+`{eos_token_ids} ∪ {pad_token_id}`.
+
+Why it matters more than "the round won't halt": a forced EOS does not merely fail to stop the round —
+it produces a **normal-looking forced-segment measurement**. That is wrong data that reads as valid,
+which is worse than missing data. Checked up front because discovering it the other way costs ~14
+minutes of wafer time.
+
+⚠️ **This also retroactively kills a plan that was briefly on the table for E9** — "make the last
+forced token an EOS so generation stops right after the forced segment", floated as the zero-code
+alternative to adding a TSC. It was not merely unproven; it is forbidden by this constraint. Recorded
+so it is not proposed a third time. See [[e9-forced-segment-tsc]].
+
+(Latent in practice today: with `enable_early_stop = 1` the EOS id is overwritten by `STOP_TOK` before
+emission, so EOS appears zero times in 10,571 sampled ids. The guard is for the fixtures that would
+have tried it deliberately.)

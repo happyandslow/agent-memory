@@ -49,6 +49,19 @@ A standalone device job could test whether "simulator only" is stale. **Not run*
 CS-3 slot to probe a path that three documentation sources close and for which a known-good alternative
 already exists in this very repo. Recorded as a decision, not an oversight.
 
+
+## What it actually cost
+
+This was not academic. E9's force-decode timing was **built once on this assumption** — the pair of
+timestamps sat in `export var`s on a block PE, deliberately, because that PE has no free color or
+output queue and a `read_symbol` readback needs no fabric at all. The reasoning was sound; the
+mechanism does not exist on hardware. The work was rewritten to measure on `ht_tail` instead, which
+already owns a drained per-round burst. See [[e9-forced-segment-tsc]].
+
+**Rule of thumb this earns:** on this project, "how do I get a value off the device?" has exactly one
+answer on real hardware — **an output stream/port that something already drains**. Reach for an
+existing drained path before designing a new one, and never for `read_symbol`.
+
 ## Why this is not a skill
 
 It is one lookup away in the official API reference. The `csl-*` / `cerebras-sdk-*` skill family exists
