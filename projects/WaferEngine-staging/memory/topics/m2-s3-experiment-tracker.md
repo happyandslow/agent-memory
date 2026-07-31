@@ -627,3 +627,35 @@ these as the reuse-rate inputs for scenario sizing.
 ## Last updated
 
 2026-07-31
+
+## Direction of the host-KV asymmetry — stated convention-free (2026-07-31)
+
+The old claim "the uplink is 1.85× slower than the downlink" compared two single-payload **averages**.
+With six payload points, and expressed as **milliseconds per 256-token chunk of KV** (so the
+per-band vs total mismatch cannot distort it — both are "one chunk of the same request's KV"):
+
+| direction | ms per chunk (16→32 segment) |
+|---|---|
+| H2D ingress (decode reload) | **10.52** |
+| D2H egress (prefill offload) | **53.68** |
+
+⇒ **egress is 5.10× SLOWER than ingress. The asymmetry runs the OTHER WAY** — the uplink is the fast
+direction, not the slow one. Every conclusion drawn from "the slow direction is the uplink" is void.
+
+⚠️⚠️ **Do NOT add these two into a round-trip cost.** The D2H figure is **prefill's** egress kernel on
+prefill's layout; **decode-side offload does not exist**. An offload+reload round trip computed this way
+is exactly the substitution Le ruled out — decode egress must rest on a real implementation (S3b).
+The arithmetic was run and is deliberately **not recorded as a result**.
+
+## S30 status: COMPLETE. What is left needs a decision, not a run.
+
+All six bins landed; the ingress model is closed. Remaining S3 items and why none of them is
+"just run it":
+
+| item | blocker |
+|---|---|
+| **S3b** decode→host egress | **needs code written** (the path does not exist). Its promotion to *prerequisite* rested on A7, which is now falsified — so whether to build it at all is Le's call |
+| **S3c** the A-vs-B race | needs S3b for the offload half; the reload half is already measured |
+| **S2b** force-decode vs prefill | runnable in principle, but needs a decision on which `F` values and whether the prefill lane is still worth pricing |
+| **S3a** `f(pos)` to 16,384 | **partly answered free** — decode cost fitted `623.62 µs + 28.34 ns × ctx`, R² = 1.0000 over contexts 1,290–14,344 from run-1 data, 7× beyond the original fit range. A dedicated run would mainly add a long-context *correctness* control |
+| ROADMAP / PROGRESS | updated 2026-07-31 per the project rule "falsifies a written assumption → fix the affected doc immediately" |
