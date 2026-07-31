@@ -295,6 +295,40 @@ runs. The egress conclusion rests on **two aggregate points from different runs/
 not settled.
 
 
+
+## A7 RE-GROUNDED FROM REAL TRACES — 2026-07-31, and it is FALSIFIED
+
+Cloned `github.com/kvcache-ai/Mooncake` (`FAST25-release/traces/`) and computed the length distribution
+directly. **Zero wafer time.**
+
+| trace | n requests | `L_p` median | `L_g` median | **`L_p` share of all tokens** | requests with `L_p > L_g` |
+|---|---|---|---|---|---|
+| `conversation_trace` | 12,031 | **6,909** | 350 | **97.2%** | **99.9%** |
+| `toolagent_trace` | 23,608 | **6,346** | 30 | **97.9%** | **99.9%** |
+
+**A7 said `L_g ≫ L_p`. Real serving is the exact opposite: `L_p` is ~98% of all tokens, in both traces,
+across 35,639 requests.** The 98.1% *`L_g`* share that A7 rested on came from `mtbench8`, whose 21–36
+token prompts exist only to make bit-identity regression cheap. Le flagged this as a fixture artifact
+before the data confirmed it.
+
+**Two consequences, recorded as facts — the plan call is Le's:**
+
+1. **The stated reason for promoting S3b (decode→host egress) from *conditional* to *prerequisite* is
+   gone.** That reason was "essentially all long-lived KV is decode-produced, so without egress the
+   offload lane covers ~0% of real scenarios." The traces say the opposite.
+2. **Combined with A6 (confirmed today: the host *does* retain the prompt KV — `inj_{i}.npz` is written
+   with `np.savez` and never deleted, `launch.py:419-431`), the prefill-produced lane — the one that
+   survived the egress retraction and is actually measured — covers ~98% of real tokens.**
+
+⚠️ **Caveats.** Mooncake is a **GPU-serving trace from Kimi/Moonshot** — different model, different
+engine. Length distribution is a workload property rather than an engine property so it should transfer,
+but it is not our model and not our workload. Also unverified: whether `input_length` already includes
+prefix retained from earlier turns.
+
+⚠️ **Separately relevant to our capacity envelope:** median input is **6,909 / 6,346**, *below* our
+compiled `MAX_INPUT_LEN = 8192` — but **p90 is 27,367 / 16,810, well above it**, and max is 126,195.
+So a real workload would exceed our compiled prompt cap on **roughly 10–25% of requests**.
+
 ## Last updated
 
 2026-07-31
