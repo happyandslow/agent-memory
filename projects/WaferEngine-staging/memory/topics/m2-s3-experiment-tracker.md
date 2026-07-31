@@ -1,0 +1,252 @@
+---
+summary: M2-S3 experiment tracker — offload vs recompute; design, assumptions register, discovery chain, dataset choice, scenario values.
+tags: [waferengine-staging, kv-cache, m2, experiment-tracking, measurement]
+---
+
+# M2-S3 Experiment Tracker — offload vs recompute
+
+> **Mirror of the ContextBase living tracker**
+> https://context.ed-aisys.com/doc/m2-s3-experiment-tracker-offload-vs-recompute-design-assumptions-discovery-chain-smzbH7hS1u
+> Subtask *status* lives in `milestones/M2-tiering-cost-model.md` (source of truth); this owns design,
+> assumptions and the discovery chain. Related: [[agentic-kv-trace-datasets]],
+> [[m2-s1-measurement-lenses]], [[m2-s2-force-decode-port]], [[prefill-decode-transfer-bandwidth]].
+
+> **Living experiment tracker for M2-S3 — the offload-vs-recompute boundary.** Owns the experimental
+> *design*, the *assumptions*, and the *discovery chain*. It does **not** own subtask status: the
+> checkboxes live in `milestones/M2-tiering-cost-model.md`, which stays the single source of truth for
+> plan and state. Written to be read top-down in a meeting.
+>
+> **Status: no S3 experiment has run yet.** Everything below is design and prediction. Predictions are
+> recorded *before* the runs on purpose — see § Discipline.
+
+## 1. The question, in one paragraph
+
+A request's KV cache must be evicted from the decode PEs. Do we **offload it to host DRAM and reload it
+later**, or **discard it and rebuild it** (force-decode in place, or regenerate in prefill)? M2's job is
+to turn that into a falsifiable boundary with a measurement behind it. As of today **we cannot answer
+it**, because the transport half of the comparison has no valid number.
+
+## 2. Where we actually are
+
+| | state |
+|---|---|
+| **S0** baseline reproduced bit-identical on real WSE-3 | ✅ 2026-07-28, `n=2` |
+| **S1** measurement lenses fixed; H2D uplink "measured" | ✅ 2026-07-30 — ⚠️ **the number it produced was later falsified as a rate** |
+| **S2** force-decode ported + device-verified | ✅ 2026-07-30, `dd0d950`. `F=64`, **10,067 tokens bit-identical** across 8 requests |
+| **S30** fabricated request set + payload sweep | ⬜ **NEXT — and the gate on everything below** |
+| **S2b / S3a / S3b / S3c / S4 / S5** | ⬜ blocked or not started |
+
+**The blocking fact:** the only two transport numbers we have (`0.7726 GB/s` H2D, `1.426 GB/s` D2H) are
+**not usable** — one is falsified, the other is untested and structurally suspect. Every lane cost that
+involves moving KV is therefore unsupported.
+
+## 3. The discovery chain — how we got here
+
+Each step falsified the previous step's headline. This is the context a meeting needs.
+
+1. **S0 (07-28).** pdSeparate baseline reproduced bit-identical, `n=2`. Also: decode cost is **linear in
+   context**, `627.83 µs + 26.45 ns × ctx` (R² = 0.998) — so the 654.955 µs anchor is a *mean over one
+   workload's generation-length mix*, not a constant.
+2. **S1 (07-30).** Added a device-TSC pair on the KV ingress adaptor, because **no host-side timer on
+   this SDK can see the H2D wire** (`task_wait` on a `nonblock` send returns 51.15 GB/s = 4.5× the
+   physical ceiling). Reported **0.7726 GB/s aggregate**, "1.85× slower than the downlink". This
+   re-priced the reload lane 753 → 1390 ms and was, at the time, the headline result.
+3. **S2 (07-30).** Force-decode ported and verified. **Forced token = 13.50% of a free one (7.41×),
+   88.35 µs** — the first same-line measurement of a ratio that had only been predicted (11.7–12.0% on a
+   mock-weight standalone line). *Incidentally*, S2's Step-0b widened the KV-meta tile, which was the
+   **first controlled payload change ever made on this path** — and it broke S1's number.
+4. **The falsification (07-30).** Payload **+5.882%**, device-TSC span **+0.0085%**. The measurement
+   **contradicts its own rate by 721×**: at 0.1931 GB/s the extra 524,288 B should have cost 2.715 ms;
+   it cost 3.764 µs.
+5. **The diagnosis (07-30).** The marker is **correctly placed** — tic after the first wavelet lands,
+   toc after the last is accepted, no barrier. **The defect is the divisor.** The path is **per-step
+   bound, not wire-bound**: ~2,356,992 blocking fabric ops per round at ~16.6 cycles each, moving
+   **0.95 wavelets per op**, i.e. **17.6× off the 1-wavelet/cycle fabric limit**. It only *looked* like a
+   bandwidth because at `KV_META_LEN = 2` bytes and steps were **coincidentally proportional**.
+
+**Two structural findings fall out, and they are the durable ones:**
+
+- **Both KV transport paths on this machine are per-step bound.** The on-chip prefill→decode relay pays
+  a fixed **~4.54 µs per store-and-forward step carrying 16 B** (wire idle 99.91%); the host ingress
+  pays **~16.6 cycles per op at 0.95 wavelets/op**. Two unrelated paths, same disease. ⇒ **on this
+  machine the lever is step count, not bandwidth.**
+- **Cross-run reproducibility is not validity.** The falsified figure reproduced to the *microsecond*
+  across five runs and three compiles — mean, min **and** max identical to three decimals. That
+  determinism was the tell, not the reassurance.
+
+## 4. Assumptions register
+
+Everything the S3 design rests on, with what breaks if it is wrong.
+
+| # | assumption | status | if wrong |
+|---|---|---|---|
+| A1 | `request_config/` is **not** in the artifact fingerprint ⇒ new prompts need no rebuild | ✅ **verified** in `launch_device.py:88-100` | the sweep costs a 40-min rebuild per point instead of being serve-only |
+| A2 | `L ≤ 8192` fits the compiled `MAX_INPUT_LEN` ⇒ no config change | ✅ verified (config) | same |
+| A3 | `kv_ingress_device` has **no per-round array** — only `mean/min/max/spread_pct` | ✅ verified in `timing.json` | a mixed-payload run could give a slope directly, and the design gets simpler |
+| A4 | Ingress is **per-step bound**; payload rides free inside existing ops | ⬜ **this is what S30 tests** | if per-byte, `0.7726 GB/s` was roughly right and "recompute wins as-built" is restored |
+| A5 | Egress (`1.426 GB/s`) has the same defect | ⬜ **untested** — same single-payload-point problem, same store-and-forward colmux shape ⇒ **structurally suspect, not falsified** | if egress *is* a real rate, the D2H half of the round trip survives and only H2D needs re-deriving |
+| A6 | In pdSeparate the host retains a copy of the **prompt** KV during a request, so the `L_p` half of a reload pays H2D only | ⚠️ **inferred from the npz flow, never confirmed in code** | the `L_p` half also pays D2H; the round-trip threshold applies to the whole payload |
+| A7 | `L_g ≫ L_p` in the scenarios that matter | ⚠️ **DERIVED FROM A VALIDATION FIXTURE — needs re-grounding.** The 98.1% figure came from `mtbench8`, whose prompts are **21–36 tokens** because it is a bit-identity regression fixture, **not a serving workload**. Real serving prompts run to thousands of tokens | **this is load-bearing**: it is the stated reason S3b (decode egress) was promoted from *conditional* to *prerequisite*. If `L_p` dominates in realistic workloads, the prompt half has a free host copy and S3b's promotion must be re-argued |
+| A8 | Force-decode's rebuilt KV reaches a functionally equivalent end state | ⚠️ partial — S2 verified **sampled tokens** match at `F=64`; KV bit-identity is **not** available by construction (prompt KV came from *prefill*, force-decode rebuilds it in *decode*) | the A-vs-B race is not comparing one end state and the gate must change |
+| A9 | Prompts can be generated to hit exact tokenized-length bins | ⬜ to verify — `PREFILL_LENS` derives from tokenizing the prompt **text**, not from a label | bins must be found by search rather than construction |
+
+## 5. Dataset selection, and why synthetic
+
+**Decision: this round uses a synthetic, fully controlled request set. Real data is for S5.**
+
+Reasons, in order of weight:
+
+1. **The sweep needs exact token bins.** Because `PREFILL_LENS` comes from tokenizing the text (A9), a
+   calibration needs prompts that land *on* 256/512/1024/2048/4096/8192. Real text does not.
+   **Control beats realism for a calibration.**
+2. **The measurements are content-blind.** Transport sees bytes; `f(pos)` sees context length. Neither
+   depends on what the tokens mean.
+3. **Realism is S5's job.** Witness workloads are where turn structure and prefix overlap matter.
+
+⚠️ **A framing error worth recording: `mtbench8` is a validation fixture, not a serving workload.** Its
+21–36-token prompts exist to make bit-identity regression cheap. Two things were mistakenly read off it
+as if they characterised serving: the `L_g ≫ L_p` ratio (A7), and the **8.5× chunk-padding waste**,
+which only occurs at `L < 256` and is likewise a fixture artifact. **Real serving prompts are far
+longer**, and the design below reflects that.
+
+**Filler must be non-repeating** (random token ids, or real text sliced from a long-document corpus) so
+the same request set stays usable for prefix-reuse work later. Cost is the same; repeated filler would
+bias any future prefix-match measurement optimistically.
+
+**For S5, a researched shortlist already exists** — see the agent-memory topic
+`topics/agentic-kv-trace-datasets.md` (2026-07-05), which I had missed when first proposing datasets and
+which supersedes the ad-hoc suggestions:
+
+| source | why | state |
+|---|---|---|
+| **TraceLab** — *Characterizing Coding Agent Workloads for LLM Serving* | **closest fit.** ~4,300 coding-agent sessions, ~350K LLM steps, ~430K tool calls, from real **Claude Code + Codex** usage, with **timing**; analyses prefix-cache hit rate and tool-call overhead directly. Shape: long contexts, short outputs, long autonomous loops. CC-BY-4.0 | shortlisted, **not yet cloned** |
+| **Mooncake** request traces (Kimi/Moonshot, FAST'25) | `hash_ids` per 512-token KV block make **prefix sharing exactly computable with no inference**. Published ratios: conversation **~40%**, **tool&agent ~59%**. Use the tool&agent trace | schema + access path recorded; **not cloned** |
+| **CacheTTL / Continuum** (arXiv 2511.02230) | does *literally this tradeoff* — KV time-to-live across the tool-call gap; read for methodology framing | reference |
+
+⚠️ **Correction to an earlier claim in `milestones/M2-tiering-cost-model.md` S5:** I wrote that the
+Mooncake grounding "may not be actionable — no such trace exists in this repo, and no download path or
+extraction command has ever been recorded." **The second half is wrong.** The trace is not checked in,
+but the access path (`github.com/kvcache-ai/Mooncake`, `FAST25-release/traces/`), the JSONL schema, and
+the `hash_ids` semantics **are** recorded in agent-memory. S5's grounding is a `git clone`, not a
+research problem.
+
+**Also on this machine already**, under `/data/huggingface/datasets/`: **SWE-bench** (code-agent prompts
+often >10k tokens), **LongBench-v2** (long-document), **StableToolBench** (tool-call). Useful as filler
+material for realistic long prompts; not substitutes for a timed agentic trace.
+
+## 6. The capacity envelope (code-derived, no compile)
+
+| limit | value | source |
+|---|---|---|
+| max **prompt** | **8,192** = `MAX_INPUT_LEN` | the prefill artifact's own `MAX_SEQ_LEN` |
+| max **total context** (prompt + generated), compiled | **20,480** = `MAX_OUTPUT_LEN` ⚠️ **not** `MAX_INPUT_LEN + MAX_OUTPUT_LEN` | orchestrator maps `decode ← MAX_OUTPUT_LEN` |
+| hard wall with a decode-only rebuild | **32,512** = 127 × 256 | **three independent walls land here**, coinciding only because `P_BLOCK_SIZE = 256`: an **i8 memory-DSD stride** (likely a loud compile error), **i16 `n_steps`** and **i16 absolute position** (both **silent wraps**) |
+| per-PE KV cache | **5,120 B** for the full 20,480 context = **64 B per 256 tok** (total context-scaled footprint **84 B**, incl. score + ingress buffer) | aggregated: **131,072 B/token = 128 KiB = exactly `8/7 · B_tok`** |
+
+**SRAM does not bind decode** — context-scaled PEs have ~25 KB headroom; the tight PEs (HT_head
+`W_E_tile`, HT_tail `lm_head_tile`, 19,008 B each) are vocab-sized and context-independent.
+
+⚠️ **Never exercised past ~3,407 tokens** — the longest context any `mtbench8` round reached. A sweep to
+16,384 runs **~5× beyond anything this artifact has done**, and decode's RoPE is an f32 recurrence
+advanced once per step with **no assert watching drift**. Long-context points therefore need a
+**correctness control**, not only timing.
+
+## 7. The experiment ladder
+
+### S30 · Run 1 — the discriminator (one run, no rebuild)
+
+**Question:** does ingress time depend on bytes *at all*? Not "what is the rate" — just the direction.
+
+Because `kv_ingress_device` reports only extremes over rounds (A3), a single run whose 8 rounds span
+**1 → 32 chunks** answers it from one field:
+
+| model | predicted `spread_pct` |
+|---|---|
+| **per-step** (current analysis) | **~0.005%** — today's value, i.e. payload-independent |
+| **per-byte** (retired reading) | **~3,100%** (max/min → 32) |
+
+Generation fixed **short (64 tokens)** so the decode budget cannot confound and the run stays fast.
+*Budget: 1 run, 3 attempts.* **If per-byte → per-bin runs follow, to fit the slope.**
+
+**Egress rides along free:** the same run gives `per_req_kv_egress_ms` against `ceil(L/256)`, which
+settles A5.
+
+### Prompt set (one `prompts.json`, several `request.json` variants)
+
+| # | `L_p` | `ceil(L/256)` | role |
+|---|---|---|---|
+| 0 | 256 | 1 | sweep floor |
+| 1 | 512 | 2 | sweep |
+| 2 | 1,024 | 4 | sweep |
+| 3 | 2,048 | 8 | sweep |
+| 4 | 4,096 | 16 | sweep |
+| 5 | 8,192 | 32 | sweep ceiling = `MAX_INPUT_LEN` |
+| 6 | 256 | 1 | scenario control |
+| 7 | 4,096 | 16 | scenario control |
+
+### Scenario values for the A-vs-B race (S3c) — sized for real serving, not the fixture
+
+| scenario | `L_p` | `L_g` at eviction | total | `L_p` share | shape |
+|---|---|---|---|---|---|
+| **A · long session preempted** | 2,048 | 8,192 | 10,240 | 20% | generation-dominant — the `L_g` half must pay D2H |
+| **B · tool-call interruption** | 4,096 | 2,048 | 6,144 | 67% | long tool schema + moderate generation |
+| **C · long-document QA** | 8,192 | 1,024 | 9,216 | **89%** | prompt-dominant — the prompt half has a free host copy **if A6 holds** |
+| **D · control** | 4,096 | 4,096 | 8,192 | 50% | even split |
+
+**A and C are the informative pair:** `L_p` share swings 20% → 89%, which puts **A6 and A7 directly
+under test** rather than leaving them as assumptions. All totals ≤ 20,480 ✓.
+
+### Then, in order
+
+**S2b** force-decode vs prefill (pure compute, zero transport — may drop the "regenerate in prefill"
+lane unconditionally) → **S3a** the `f(pos)` curve to 16,384 with a long-context correctness control →
+**S3b** decode→host egress (⚠️ its promotion depends on A7, which needs re-grounding first) → **S3c**
+the race → **S4** the boundary.
+
+## 8. Discipline — the rules this round runs under
+
+Each was bought with a failure earlier in the project.
+
+- **A transport number is not trustworthy until the payload has been varied and the time has moved
+  proportionally.** Three numbers have now died on this path for want of that test: an *enqueue* read as
+  wire time (575 GB/s), `task_wait` on a `nonblock` send (51.15 GB/s), and the ingress average
+  (self-inconsistent by 721×).
+- **Predictions outside the fit range go in writing before the run.** Validating a model only where it
+  was fit validates nothing.
+- **Device TSC only for anything on a wire** — no host-side timer on this SDK can see it.
+- **Payloads are code-derived, never assumed.**
+- **Budget attempts, not successes** — ~half of CS-3 runs die on cluster infrastructure (2 of 5 in S0).
+  Every number carries its `n`, and `n = 1` is stated as such.
+- **A checker whose input can legitimately be empty must refuse, not pass.**
+
+## 9. Open questions
+
+1. **A7 re-grounding** — is `L_g ≫ L_p` true for realistic serving, or was it a fixture artifact? This
+   decides whether S3b stays a prerequisite. **Highest priority; the scenario table above is designed to
+   answer it.**
+2. **A6** — does the host actually retain the prompt KV copy? Ten minutes of code reading; currently
+   inferred.
+3. **A5** — is egress a real rate? Answered free by Run 1.
+4. Where the 46.146 ms actually goes, if not on the wire — the per-step model accounts for it
+   arithmetically (2.36 M × 16.6 cyc) but the 16.64 cycles/step figure is a **residual**, not an
+   independent measurement.
+5. **Parked (Le, 2026-07-30):** the per-step optimisation itself — async ping-pong relay, then
+   hardware-routed scatter. **Do not act before the measurement lands**: if ingress goes 46 ms → ~3–5 ms
+   the reload lane gets ~10× cheaper and the boundary moves a long way, so the measurement must define
+   the target first. An independent review corrected the ladder — **double-buffering alone buys
+   nothing** (program order + blocking ops are the serialiser), the ~500× step collapse is an unproven
+   design target, and 17.6× is a **fabric-only lower bound**, not a ceiling.
+
+## 10. Run log
+
+*(Append one row per device run: date, run id, config, request set, `n`, what it tested, the number, and
+whether the pre-recorded prediction held.)*
+
+| date | run | config / request set | `n` | tested | result | prediction held? |
+|---|---|---|---|---|---|---|
+| — | — | — | — | *no S3 run has happened yet* | — | — |
+
+
+## Last updated
+
+2026-07-31
