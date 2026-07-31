@@ -780,3 +780,15 @@ overturned; it is append-only and out of order.
 things compared are the same kind of thing — and, when a result is surprising, suspecting the assumption
 before suspecting the experiment. This file warns against exactly that in one section and commits it in
 another.
+
+## A7 — FINAL STATE (2026-07-31, supersedes both entries above)
+
+The Mooncake-based falsification recorded earlier, and its subsequent withdrawal, are **both
+superseded**. A7 is **falsified** on **TraceLab** — 665,453 real Claude Code/Codex rounds with
+**uncapped** output (max 64,000; 6.0% exceed Mooncake's entire 2,000 cap): `L_p` is **99.7%** of all
+tokens and only **12 of 665,453** rounds have `L_g > L_p`. Thinking is present in 37.8% of rounds but
+is 12.7% of an output that is itself 0.3% of tokens.
+
+Do not cite the Mooncake figures for this question — that trace's `output_length` is hard-capped and
+cannot show long generation. Full record, including the scale gap (TraceLab mean input 171,576 tokens
+vs our 20,480 context ceiling), in [[a7-Lp-vs-Lg-settled-on-tracelab]].
