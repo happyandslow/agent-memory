@@ -2,6 +2,17 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-07-31 — repurposed-meta-slot-left-a-second-writer-on-the-old-contract → `memory/inbox/2026-07-31-repurposed-meta-slot-left-a-second-writer-on-the-old-contract.md`
+- 2026-07-31 — forced-token-cost-is-a-curve-not-a-constant → `memory/inbox/2026-07-31-forced-token-cost-is-a-curve-not-a-constant.md`
+- 2026-07-31 — forced-max-is-a-compile-time-ceiling-on-F → `memory/inbox/2026-07-31-forced-max-is-a-compile-time-ceiling-on-F.md`
+- 2026-07-31 — a-queue-that-looks-idle-can-hold-a-parked-async-op → `memory/inbox/2026-07-31-a-queue-that-looks-idle-can-hold-a-parked-async-op.md`
+- 2026-07-30 — skipping-the-sampler-desyncs-the-prng-stream → `memory/inbox/2026-07-30-skipping-the-sampler-desyncs-the-prng-stream.md`
+- 2026-07-30 — forced-token-costs-13-5-percent-on-pdseparate → `memory/inbox/2026-07-30-forced-token-costs-13-5-percent-on-pdseparate.md`
+- 2026-07-30 — derived-scripts-and-editing-a-running-script → `memory/inbox/2026-07-30-derived-scripts-and-editing-a-running-script.md`
+- 2026-07-30 — decode-context-ceiling-lives-in-the-elf-and-wraps-silently → `memory/inbox/2026-07-30-decode-context-ceiling-lives-in-the-elf-and-wraps-silently.md`
+- 2026-07-30 — cs3-relaunch-loop-guards-and-a-cheap-store-build → `memory/inbox/2026-07-30-cs3-relaunch-loop-guards-and-a-cheap-store-build.md`
+- 2026-07-30 — a-throughput-that-does-not-move-with-payload → `memory/inbox/2026-07-30-a-throughput-that-does-not-move-with-payload.md`
+- 2026-07-30 — a-regression-gate-that-cannot-pass-by-construction → `memory/inbox/2026-07-30-a-regression-gate-that-cannot-pass-by-construction.md`
 - 2026-07-29 — regress-on-the-window-mean-not-a-proxy → `memory/inbox/2026-07-29-regress-on-the-window-mean-not-a-proxy.md`
 - 2026-07-29 — never-commit-without-explicit-user-request → `memory/inbox/2026-07-29-never-commit-without-explicit-user-request.md`
 - 2026-07-29 — cs3-serve-runs-fail-about-half-the-time → `memory/inbox/2026-07-29-cs3-serve-runs-fail-about-half-the-time.md`
