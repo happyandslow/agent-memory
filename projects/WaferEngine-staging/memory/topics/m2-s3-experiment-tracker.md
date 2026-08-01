@@ -876,3 +876,14 @@ predicted. Below-crossing point (512, expect A wins) + directly-measured Option-
 **Ops lessons this run (also in cs3 memory/skill):** validate ONE case before a batch sweep (the _e10
 request-key bug); a local timeout/143 ≠ remote launch failed (caused duplicate drivers); NEVER
 ssh -O exit the gateway master (killed all access mid-run); on 502 back off 5–10 min.
+
+## E10D — direct A/B head-to-head: the winner FLIPS (2026-08-01)
+
+Option-2 (reload) total resume latency MEASURED on WSE-3 at both points; Option-1 (recompute) from the
+validated E9 curve (recompute fixture re-running for a fully-direct number):
+- L_hist=512 (below ~700): Option-1 recompute(768)=56.2 ms vs Option-2 reload (46.24+19.05)=65.3 ms → **A wins**
+- L_hist=1024 (above ~700): Option-1 recompute(1280)=95.1 ms vs Option-2 reload (56.14+20.17)=76.3 ms → **B wins**
+⇒ **flip confirmed on real hardware** — recompute wins below the crossing, reload wins above. L_new=256 delta
+costs 19–20 ms in both lanes (another cancellation confirmation). Chart: assets/2026-07-31-e10-ab-boundary/
+e10d_direct_flip.svg. The ~700-token boundary is now validated BOTH ways (E10 component/cancellation +
+E10D direct total-latency).

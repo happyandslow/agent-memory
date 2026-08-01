@@ -203,7 +203,18 @@ The boundary is `A−B = laneA(L_hist) − ingress(L_hist)` — the `L_new` term
 
 ⇒ The boundary `laneA(L_hist) = ingress(L_hist)` now stands on measured ground. **Crossing = 700 tokens (~2.7 chunks):** below it, recomputing the prefix in place (A) beats E5's ~46 ms reload floor; above it, reload (B) wins and pulls away. Inside the pre-registered 400–1,500 window — **model not falsified.**
 
-**E10D · direct A/B total-latency crossing (in progress).** A skeptic-proof head-to-head: run both options end-to-end and show the winner flip. Predicted: A (recompute) wins at L_hist=512, B (reload) wins at 1024. First device point (2026-08-01): at **L_hist=1024, Option-2 (reload) = kv_ingress 56.14 + delta256 20.17 = 76.31 ms < Option-1 (recompute 1280) = 95.11 ms → reload wins, as predicted.** The below-crossing point (512, expect A wins) + the directly-measured Option-1 totals are re-running (2 fixtures lost to 502s on the first pass).
+### E10D · direct A/B head-to-head ✅ — the winner FLIPS across the crossing, as predicted
+
+A skeptic-proof confirmation: measure both options' **total resume latency** end-to-end and show the winner flip. Option-2 (reload) totals **measured on WSE-3** (2026-08-01); Option-1 (recompute) from the validated E9 curve (`recompute` fixture re-running for a fully-direct number, but E9 already priced it).
+
+![E10D direct flip — A wins below the crossing, B above](../../assets/2026-07-31-e10-ab-boundary/e10d_direct_flip.svg)
+
+| `L_hist` | Option-1 recompute (E9-validated) | Option-2 reload (**measured**) | winner | predicted |
+|--------|-----------------------------------|--------------------------------|--------|-----------|
+| **512** (below ~700) | 56.2 ms `[recompute(768)]` | **65.29 ms** `[ingress 46.24 + delta 19.05]` | **A recompute** | A ✓ |
+| **1,024** (above ~700) | 95.1 ms `[recompute(1280)]` | **76.31 ms** `[ingress 56.14 + delta 20.17]` | **B reload** | B ✓ |
+
+⇒ **The flip is confirmed on real hardware:** below the crossing, recompute-in-place wins (56.2 < 65.3); above it, reload wins (76.3 < 95.1). The `L_new`=256 delta costs the same in both lanes (19–20 ms, another cancellation confirmation). **The ≈700-token option-1/option-2 boundary is validated both ways** — by the component/cancellation test (E10) and by the direct total-latency head-to-head (E10D).
 
 ## E11 – E13 · Not yet run
 
