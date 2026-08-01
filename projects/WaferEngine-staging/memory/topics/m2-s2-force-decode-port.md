@@ -218,8 +218,19 @@ defects.
   present the build rewrites `build_manifest.json`, so the reload freshness gate
   passes. Legitimate only when `src/prefill/**` and `launch_prefill.py` are
   byte-unchanged and the config differs solely in decode-side keys.
-- `--reuse-prefill-from` does **not** support cross-config reuse: `_resolve_reuse_store`
+- `--reuse-prefill-from` does **not** support cross-config reuse *as given*: `_resolve_reuse_store`
   requires the source directory to be named after the *target* config.
+  ⚠️ **Corrected 2026-07-31 — it CAN be made to work.** The requirement is on the directory
+  **name**, not on the artifact, so a one-line bridge satisfies it:
+  ```bash
+  mkdir -p $L/e9_reuse/<NEW_CONFIG>
+  ln -s $L/serving_cache/<OLD_CONFIG>/prefill $L/e9_reuse/<NEW_CONFIG>/prefill
+  # --reuse-prefill-from $L/e9_reuse/<NEW_CONFIG>   -> hits branch 1
+  ```
+  A symlink suffices (`_reuse_prefill_phase` uses `shutil.copytree`, which reads through it), so
+  the ~3.3 GB artifact is not duplicated. Used for the E9 store on 2026-07-31; build `rc=0`,
+  log line `[build] reused accepted prefill artifact: ...`. The legitimacy condition is unchanged:
+  only when prefill sources are byte-identical and the config differs solely in decode-side keys.
 
 ## Update 2026-07-31 — the EOS/pad constraint now has a host-side guard
 
