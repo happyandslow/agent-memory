@@ -896,3 +896,10 @@ is the E9 FIT at 768/1280, not a direct measurement** — E9 measured recompute 
 (6 failures / 3 campaigns as of 10:19). Under the fit the flip holds (robust, R²=0.999 interpolation
 inside E9's range), but E10D stays 🟡 until recompute lands directly. E10 (component/cancellation) is fully
 measured and independent.
+
+### E10D COMPLETE (2026-08-01) — recompute finally landed, flip fully measured
+e10d_recompute succeeded on ~7th attempt (10:50). Direct Option-1: recompute(768)=57.32 ms, recompute(1280)=96.96 ms
+(E9 fit had 56.2/95.1 — measured ~2% higher, verdict unchanged). Fully-measured head-to-head:
+  L_hist=512: Opt1 57.32 < Opt2 65.29 -> A recompute wins (below crossing) ✓
+  L_hist=1024: Opt1 96.96 > Opt2 76.31 -> B reload wins (above crossing) ✓
+Flip confirmed with all-device data. E10D -> ✅. Boundary ~700 tok now validated BOTH ways, fully measured.
