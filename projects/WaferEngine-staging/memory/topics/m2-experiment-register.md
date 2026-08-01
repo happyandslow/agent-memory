@@ -125,16 +125,16 @@ One run, 8 rounds spanning 1→32 chunks. Predictions: per-step → `spread_pct 
 
 ## E5 · Ingress payload curve ✅ — the main transport result
 
-| `L_p` | chunks | MB/band | ingress ms | marginal GB/s per band |
-|-------|--------|---------|------------|------------------------|
-| 256 | 1 | 9.4 | 46.150 | — |
-| 512 | 2 | 17.8 | 46.236 | 96.6 |
-| 1,024 | 4 | 34.6 | 56.141 | 1.694 |
-| 2,048 | 8 | 68.2 | 85.684 | 1.136 |
-| 4,096 | 16 | 135.3 | 169.891 | **0.797** |
-| 8,192 | 32 | 269.5 | 338.266 | **0.797** |
+| `L_p` | chunks | MB total (4 bands) | ingress ms | marginal GB/s (aggregate) |
+|-------|--------|--------------------|------------|---------------------------|
+| 256 | 1 | 37.6 | 46.150 | — |
+| 512 | 2 | 71.3 | 46.236 | 386 *(floor artifact)* |
+| 1,024 | 4 | 138.4 | 56.141 | **6.78** *(knee — E10D lands here)* |
+| 2,048 | 8 | 272.9 | 85.684 | 4.54 *(knee)* |
+| 4,096 | 16 | 541.2 | 169.891 | **3.19** *(saturated)* |
+| 8,192 | 32 | 1,078 | 338.266 | **3.19** *(saturated)* |
 
-**Hockey stick.** Flat ~46 ms floor below ~2 chunks, a knee, then a line through the origin: `t = 0.18 ms + bytes / 0.7966 GB/s-per-band`, R²=1.000000 above 8 chunks. The marginal saturates (two doublings return the same value to 0.02%). **0.7966 GB/s per band = 3.186 GB/s aggregate.** ⚠️ A power law fitted to the first five points (R²=0.999473) mispredicted the sixth by +27%; "carry the last marginal forward" was exact. In-range fit quality carried no information about extrapolation.
+**Hockey stick.** Flat ~46 ms floor below ~2 chunks, a knee, then a line through the origin: `t = 0.18 ms + total_bytes / 3.186 GB/s`, R²=1.000000 above 8 chunks. The marginal **decreases** with chunk count — not because the wire slows, but because the fixed ~46 ms floor is divided out: at low payload each byte rides nearly free inside the floor (the 1→2 marginal of 386 GB/s is a floor artifact), and the marginal only converges to the true transfer rate once the floor is paid off. **Saturated bandwidth = 3.186 GB/s (aggregate; two doublings return the same value to 0.02%).** ⚠️ A power law fitted to the first five points (R²=0.999473) mispredicted the sixth by +27%; "carry the last marginal forward" was exact. In-range fit quality carried no information about extrapolation.
 
 ## E6 · Prefill egress payload curve ✅ — and it does not transfer to decode
 
@@ -277,7 +277,7 @@ total      = 4 × band_bytes = 32 MiB × ceil(L/256) + 4 MiB
 | 4,096 | 361.9 ms | 333.5 ms | **169.89 ms** |
 | 8,192 | 723.8 ms | 735.1 ms | **338.27 ms** |
 
-⇒ crossing predicted at `L_hist ≈ 520–900`: below it, force-decoding the whole thing (A) is cheaper than paying the ~46 ms reload floor (B); above it, B wins and pulls away (A grows ~linearly at ~74–98 µs/tok while B grows at E5's saturated 0.797 GB/s-per-band). **Falsifier:** a crossing outside 400–1,500 kills the model.
+⇒ crossing predicted at `L_hist ≈ 520–900`: below it, force-decoding the whole thing (A) is cheaper than paying the ~46 ms reload floor (B); above it, B wins and pulls away (A grows ~linearly at ~74–98 µs/tok while B grows at E5's saturated 3.186 GB/s aggregate). **Falsifier:** a crossing outside 400–1,500 kills the model.
 
 ⚠️ **The `L_new` cancellation is a HYPOTHESIS, not an identity.** Both lanes are charged `Σ f_forced` over `L_new`, but that only cancels if lane B's forced decode starts from a state equivalent to lane A's (same KV layout, no extra warm-up / queue drain / first-token penalty from the ingress). **E10 measures the segments separately:** `lane B total − kv_ingress_span_us = post-ingress forced segment`; `lane A total = full-rebuild forced segment`. If the per-token cost of `L_new` differs between lanes, that difference is the finding.
 
