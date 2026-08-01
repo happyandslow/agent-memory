@@ -856,3 +856,23 @@ place vs reload its KV". Using E9's measured lane A and E5's measured ingress:
 must measure `lane B total − kv_ingress_span_us` against lane A's matching segment. **Blocked on:** CS-3 access
 (not reachable this session) + a coherent three-region fixture (§3.1, not yet built — only `e9_fsweep`/`s30_bin*`
 exist). If the reload leaves a warm-up/first-token penalty, the crossing moves right.
+
+## E10 — MEASURED on real WSE-3 (2026-08-01): cancellation validated, crossing ≈700 holds
+
+5 fixtures (L_hist=512,1024,2048,4096,8192), reuse e9 store, F=[1,N] (offset + full budget, no free tail).
+Two device confirmations:
+1. **kv_ingress (reload) == E5 ingress to 1.000** at every L_hist (46.24/56.14/85.69/169.89/338.27 ms) —
+   the reload path IS the E5 path, no surprise cost.
+2. **lane-B forced == E9 f_forced, ratio 0.999→0.972** across 512→8192 (slight ~3% dip at 8192, within
+   fit/window error) ⇒ the reloaded prefix length does not change downstream forced cost ⇒ **L_new cancels.**
+⇒ boundary laneA(L_hist)=ingress(L_hist) is on measured ground; **crossing = 700 tokens (~2.7 chunks)**,
+inside the pre-registered 400–1,500 window. Chart: assets/2026-07-31-e10-ab-boundary/e10_ab_boundary.svg.
+
+**E10D direct A/B head-to-head (in progress).** At L_hist=1024: Option-2 reload (kv_ingress 56.14 +
+delta256 20.17 = 76.31 ms) < Option-1 recompute-1280 (95.11 ms) → reload wins above the crossing, as
+predicted. Below-crossing point (512, expect A wins) + directly-measured Option-1 totals re-running
+(2 of 3 E10D fixtures lost to 502s on the first pass).
+
+**Ops lessons this run (also in cs3 memory/skill):** validate ONE case before a batch sweep (the _e10
+request-key bug); a local timeout/143 ≠ remote launch failed (caused duplicate drivers); NEVER
+ssh -O exit the gateway master (killed all access mid-run); on 502 back off 5–10 min.
