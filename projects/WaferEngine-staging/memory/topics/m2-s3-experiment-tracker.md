@@ -887,3 +887,12 @@ validated E9 curve (recompute fixture re-running for a fully-direct number):
 costs 19–20 ms in both lanes (another cancellation confirmation). Chart: assets/2026-07-31-e10-ab-boundary/
 e10d_direct_flip.svg. The ~700-token boundary is now validated BOTH ways (E10 component/cancellation +
 E10D direct total-latency).
+
+### E10D correction (2026-08-01) — Option-1 is NOT yet directly measured
+The E10D goal is a fully-MEASURED head-to-head. Only Option-2 (reload) is measured: 65.29 ms @512
+(kv_ingress 46.24 + delta256 19.05) and 76.31 ms @1024 (56.14 + 20.17). **Option-1 (recompute) 56.2/95.1 ms
+is the E9 FIT at 768/1280, not a direct measurement** — E9 measured recompute only at F=512/1024, not
+768/1280. The `e10d_recompute` fixture (prefix256, F=[1,768,1280]) has failed every attempt on EPCC 502s
+(6 failures / 3 campaigns as of 10:19). Under the fit the flip holds (robust, R²=0.999 interpolation
+inside E9's range), but E10D stays 🟡 until recompute lands directly. E10 (component/cancellation) is fully
+measured and independent.

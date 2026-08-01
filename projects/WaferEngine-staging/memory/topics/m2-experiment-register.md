@@ -203,18 +203,18 @@ The boundary is `A−B = laneA(L_hist) − ingress(L_hist)` — the `L_new` term
 
 ⇒ The boundary `laneA(L_hist) = ingress(L_hist)` now stands on measured ground. **Crossing = 700 tokens (~2.7 chunks):** below it, recomputing the prefix in place (A) beats E5's ~46 ms reload floor; above it, reload (B) wins and pulls away. Inside the pre-registered 400–1,500 window — **model not falsified.**
 
-### E10D · direct A/B head-to-head ✅ — the winner FLIPS across the crossing, as predicted
+### E10D · direct A/B head-to-head 🟡 — Option-2 measured; Option-1 direct measurement 502-BLOCKED
 
-A skeptic-proof confirmation: measure both options' **total resume latency** end-to-end and show the winner flip. Option-2 (reload) totals **measured on WSE-3** (2026-08-01); Option-1 (recompute) from the validated E9 curve (`recompute` fixture re-running for a fully-direct number, but E9 already priced it).
+The goal is a **fully-measured** head-to-head, no fitting. **Status: half done.** Option-2 (reload) totals are measured on WSE-3 at both points; **Option-1 (recompute) is NOT yet directly measured** — the `e10d_recompute` fixture (prefix 256, `F=[1,768,1280]`) has failed every attempt on EPCC 502s (two campaigns). Until it lands, the Option-1 column below is the **E9 fit** at positions 768/1280 — an interpolation of E9's validated curve (E9 directly measured `recompute` only at F=512/1024, **not** 768/1280), **not** a direct E10D measurement.
 
 ![E10D direct flip — A wins below the crossing, B above](../../assets/2026-07-31-e10-ab-boundary/e10d_direct_flip.svg)
 
-| `L_hist` | Option-1 recompute (E9-validated) | Option-2 reload (**measured**) | winner | predicted |
-|--------|-----------------------------------|--------------------------------|--------|-----------|
-| **512** (below ~700) | 56.2 ms `[recompute(768)]` | **65.29 ms** `[ingress 46.24 + delta 19.05]` | **A recompute** | A ✓ |
-| **1,024** (above ~700) | 95.1 ms `[recompute(1280)]` | **76.31 ms** `[ingress 56.14 + delta 20.17]` | **B reload** | B ✓ |
+| `L_hist` | Option-1 recompute | source | Option-2 reload | source | winner | predicted |
+|--------|--------------------|--------|-----------------|--------|--------|-----------|
+| **512** (below ~700) | 56.2 ms `[recompute(768)]` | ⚠️ **E9 fit — not yet measured** | **65.29 ms** `[46.24 + 19.05]` | ✅ **measured** | A recompute | A ✓ |
+| **1,024** (above ~700) | 95.1 ms `[recompute(1280)]` | ⚠️ **E9 fit — not yet measured** | **76.31 ms** `[56.14 + 20.17]` | ✅ **measured** | B reload | B ✓ |
 
-⇒ **The flip is confirmed on real hardware:** below the crossing, recompute-in-place wins (56.2 < 65.3); above it, reload wins (76.3 < 95.1). The `L_new`=256 delta costs the same in both lanes (19–20 ms, another cancellation confirmation). **The ≈700-token option-1/option-2 boundary is validated both ways** — by the component/cancellation test (E10) and by the direct total-latency head-to-head (E10D).
+⇒ **Under the E9 fit the flip holds** (A @512: 56.2<65.3; B @1024: 76.3<95.1), and the fit is a validated R²=0.999 interpolation *inside* E9's measured range, so the conclusion is robust — **but E10D is not complete until Option-1 is measured directly.** The ✅ is reserved for when `e10d_recompute` succeeds. Note: the primary boundary result (E10 — component + cancellation, all measured) is fully independent of this.
 
 ## E11 – E13 · Not yet run
 
