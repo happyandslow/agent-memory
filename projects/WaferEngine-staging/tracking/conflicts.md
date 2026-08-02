@@ -1,6 +1,6 @@
 # WaferEngine-staging Manual Conflicts
 
-Last reviewed: 2026-07-31
+Last reviewed: 2026-08-02
 
 ## Needs Le/manual resolution
 
@@ -11,6 +11,7 @@ Last reviewed: 2026-07-31
 - 2026-07-30 cron: `git pull --ff-only` still cannot run; after fetch, local `main` is ahead 3 / behind 30 and worktree still has the ambiguous modified binary `projects/WaferEngine-staging/meetings/2026-07-26.pptx` (632080 → 708030 bytes). I left the PPTX unstaged and did not rebase/merge/push from cron. Le should decide whether to keep/revert the PPTX edit and how to reconcile local daily-maintenance commits (`351d5e3`, `1d24f5a`, `484c6a5`) with `origin/main`.
 - 2026-07-31 cron: `git pull --ff-only` still cannot run; after fetch, local `main` is ahead 4 / behind 36 and worktree still has the ambiguous modified binary `projects/WaferEngine-staging/meetings/2026-07-26.pptx` (632080 → 708030 bytes). I left the PPTX unstaged and did not rebase/merge/push from cron. Le should decide whether to keep/revert the PPTX edit and how to reconcile local daily-maintenance commits (`351d5e3`, `1d24f5a`, `484c6a5`, `49b1136`) with `origin/main`.
 - 2026-08-01 cron: `git pull --ff-only` still cannot run; after fetch, local `main` is ahead 5 / behind 64 and worktree still has the ambiguous modified binary `projects/WaferEngine-staging/meetings/2026-07-26.pptx` (632080 → 708030 bytes). I left the PPTX unstaged and did not rebase/merge/push from cron. Le should decide whether to keep/revert the PPTX edit and how to reconcile local daily-maintenance commits (`351d5e3`, `1d24f5a`, `484c6a5`, `49b1136`, `122e5a1`) with `origin/main`.
+- 2026-08-02 cron: `git pull --ff-only` still cannot run; after fetch, local `main` is ahead 6 / behind 76 and worktree still has the ambiguous modified binary `projects/WaferEngine-staging/meetings/2026-07-26.pptx` (632080 → 708030 bytes). I left the PPTX unstaged and did not rebase/merge/push from cron. Le should decide whether to keep/revert the PPTX edit and how to reconcile local daily-maintenance commits (`351d5e3`, `1d24f5a`, `484c6a5`, `49b1136`, `122e5a1`, `bed792a`) with `origin/main`.
 
 ## Promotion candidates / manual follow-up
 
