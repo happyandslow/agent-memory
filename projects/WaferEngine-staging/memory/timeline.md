@@ -2,6 +2,7 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-08-02 — switch-scatter-vs-parity-shift → `memory/inbox/2026-08-02-switch-scatter-vs-parity-shift.md`
 - 2026-08-01 — e11-must-be-priced-as-cross-card-pd → `memory/inbox/2026-08-01-e11-must-be-priced-as-cross-card-pd.md`
 - 2026-08-01 — compression-subagent-drops-tracking-checkboxes → `memory/inbox/2026-08-01-compression-subagent-drops-tracking-checkboxes.md`
 - 2026-07-31 — the-retry-wrapper-can-die-while-the-run-survives → `memory/inbox/2026-07-31-the-retry-wrapper-can-die-while-the-run-survives.md`
