@@ -1,0 +1,160 @@
+{
+  "slides": [
+    {
+      "type": "title",
+      "team": "WaferEngine · CS-3",
+      "kicker": "M2 study · weekly meeting",
+      "title": "KV Resume on WSE-3",
+      "subtitle": "Measured costs of recompute, reload, and resident-prefix prefill.",
+      "meta": [
+        {"label": "Model", "value": "Qwen3-1.7B"},
+        {"label": "Device", "value": "WSE-3"},
+        {"label": "TSC", "value": "0.85 GHz"},
+        {"label": "Scope", "value": "Resume latency"}
+      ],
+      "notes": "The question is not which lane is universally best. It is which cost dominates under a specific resume state and implementation."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Experiment implementation · logical on-chip layout",
+      "title": "Experiment topology: prefill card → hosts → decode card",
+      "image": "figures/pdseparate_topology.png",
+      "caption": "Each kernel uses a 2×4 serpentine pipeline of 256×256-PE blocks. Prefill gathers KV east into kv_mux and drains north; decode accepts the host KV stream through adaptor + kv_demux and shifts column slices north into the fabric.",
+      "notes": "This is the logical topology used by the measured pdSeparate implementation, not a to-scale wafer map. The cards do not share an on-wafer relay seam: KV crosses through their separate host memories. The layer slices across B0…B7 are 2,4,4,4,4,4,4,2."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Three resume approaches",
+      "title": "Three request paths on the same simplified topology",
+      "image": "figures/three_resume_lanes.png",
+      "caption": "A sends token IDs to decode and rebuilds all KV; B reloads persisted history KV and computes only Lnew; C extends resident KV on prefill, then transfers the completed state through both hosts.",
+      "notes": "One PE represents the complete 2×4 kernel fabric from slide 2. Each row uses one prefill card and one decode card with separate host memory. The dashed host-to-host leg in C is assumed zero in the current latency model."
+    },
+    {
+      "type": "split",
+      "eyebrow": "Question and assumptions",
+      "title": "Three ways to resume an evicted request",
+      "left": {
+        "eyebrow": "Session state",
+        "heading": "History, delta, generation",
+        "body": "PD separation: prefill and decode each occupy one WSE card with separate host DRAM. Lhist KV is assumed persisted; Lnew has no KV. We time resume only—decode→host eviction and host-to-host latency are excluded."
+      },
+      "panel_title": "Resume lanes",
+      "highlights": [
+        "A — force-decode Lhist + Lnew in decode; no reload",
+        "B — reload Lhist KV; force-decode only Lnew",
+        "C — prefill Lnew over resident Lhist; transfer the completed KV state to decode"
+      ],
+      "notes": "Lane B assumes the history was already persisted. E13, the decode egress half, is not implemented, so this is not yet a round-trip eviction policy."
+    },
+    {
+      "type": "table",
+      "eyebrow": "Implementations and measurement contract",
+      "title": "The experiments do not all exercise the same kernel path",
+      "columns": ["Evidence", "Kernel / path", "Sweep", "Qualification"],
+      "weights": [0.8, 1.8, 1.3, 1.5],
+      "rows": [
+        ["E5", "pdSeparate decode KV ingress adaptor/injector", "P=256…8192", "Direct device TSC"],
+        ["E9", "2×4 force-decode pipeline; 28 layers", "P=256; F=1…20224", "Direct device TSC"],
+        ["E14", "Same force-decode model config", "4 prefixes × 6 F", "n=1; 24/24 pass"],
+        ["E10/D", "Reload path + post-ingress force decode", "H=512…8192", "Two direct totals"],
+        ["E12a", "S6a resident-prefix prefill, e0a19fc", "Two 8192-context cases", "Screening; not exact pdSeparate"],
+        ["E6", "Prefill transpose + switch-gather egress", "1…32 chunks", "Not inverse-equivalent to E5"]
+      ],
+      "notes": "All reported device spans use the 0.85 GHz TSC conversion. Failed EPCC 502 repeats and a run without a downloaded hash-verified evidence bundle are excluded."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Lane A · experiment",
+      "title": "All 24 force-decode spans across prefix × forced length",
+      "image": "figures/e14_raw_spans.png",
+      "caption": "RAW — P={256,1024,4096,8192}, F={1,256,512,1024,2048,4096}; real Qwen3-1.7B on WSE-3, n=1.",
+      "notes": "The large separation at small F is visible before any offset subtraction or regression."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Lane A · performance model",
+      "title": "Startup anchor + position-dependent intervals",
+      "image": "figures/e14_model_decomposition.png",
+      "caption": "D(P,F)=D(P,256)+Σ II(q), where 16 steady segments give II(q)=71.745 µs+4.093 ns·q. Ready/fill/tail are inferred.",
+      "notes": "The source-level timer starts after a locally-ready west-edge sender emits [N,F], before HT_tail receives first Z. It is not an all-PE readiness barrier. Exact attribution needs a first-Z timestamp."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Lane A model",
+      "title": "Complete force-decode equations",
+      "image": "figures/lane_a_equations.png",
+      "caption": "The discrete sum and closed form are equivalent. D(P,256) is interpolated between measured prefix anchors; F=1 is not subtracted as a universal offset.",
+      "notes": "The closed form follows from summing q from P+256 through P+F−1: there are F−256 terms and their sum is (F−256)(2P+F+255)/2."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Lane B · experiment",
+      "title": "Decode KV ingress: six raw measurements",
+      "image": "figures/e5_ingress_raw.png",
+      "caption": "RAW — six device-TSC observations on the pdSeparate ingress path, spanning the floor, knee, and byte-dominated region.",
+      "notes": "Do not compare this bandwidth directly with E6 prefill egress: E6 performs a transpose and switch-gather in addition to moving bytes."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Lane B · performance model",
+      "title": "Reload = floor + payload term",
+      "image": "figures/lane_b_reload_model.png",
+      "caption": "I(H) uses piecewise-linear interpolation of the six E5 anchors; the saturated region approaches 3.186 GB/s aggregate.",
+      "notes": "The A/B boundary calculation uses the measured-anchor interpolation, not a single bandwidth number across the whole payload range."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Lane B model",
+      "title": "Lane B reload equations",
+      "image": "figures/lane_b_equations.png",
+      "caption": "Delta reload pays I(H); full-context reload pays I(S+H). Both then force-decode Lnew using the Lane A model at absolute prefix S+H.",
+      "notes": "I(h) is piecewise-linear interpolation over the six E5 anchors. E10 validates that the real reload path reproduces E5 and that post-ingress forced-token cost matches E9 to 0.97–1.00 across H=512…8192."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Lane A vs Lane B",
+      "title": "The measured flip and the projected crossing",
+      "image": "figures/lane_ab_crossing.png",
+      "caption": "Left: E10D offset-controlled totals. Right: E14+E5 observed-span projection gives H*=744 (S=256, Lnew=256, delta reload); compare winner/crossing, not absolute y-values.",
+      "notes": "The left panel is the E10D offset-controlled direct comparison. The right panel is the newer E14 observed-span model, so the absolute y-values should not be overlaid; the robust shared conclusion is the winner flip and a crossing between the two direct witnesses. Other starting prefixes and full-context reload move the projected boundary."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "E12a · screening observations",
+      "title": "Two resident-prefix prefill cases at total context 8,192",
+      "image": "figures/e12a_screening.png",
+      "caption": "MEASURED + DERIVED — direct S6a prefill compute at total context 8,192; forced and lane totals combine E9/E5/E6 evidence.",
+      "notes": "The two resident-prefix compute measurements were byte-identical across cold/warm and warm/warm checks. Exact pdSeparate lacks START_CHUNKS, so this is a validated screening result, not the final pdSeparate benchmark."
+    },
+    {
+      "type": "table",
+      "eyebrow": "What the evidence supports",
+      "title": "A conditional policy, with explicit gaps",
+      "columns": ["Statement", "Evidence strength", "Scope / caveat"],
+      "weights": [1.8, 1.1, 2.1],
+      "rows": [
+        ["Ingress has a ~46 ms floor", "Direct measured", "pdSeparate decode ingress"],
+        ["Forced steady cost grows with position", "Measured + fit", "16 E14 steady segments"],
+        ["A/B winner flips at 512→1024", "Direct measured", "Lnew=256 resume setting"],
+        ["Crossing moves with S and reload policy", "Model-derived", "Direct witnesses pending"],
+        ["Current Lane C loses", "Screening", "S6a path; exact port pending"],
+        ["Full eviction round trip favors B", "Unknown", "Decode egress E13 missing"]
+      ],
+      "notes": "The safe conclusion is a workload- and implementation-dependent segmented policy, not a universal 700-token rule."
+    },
+    {
+      "type": "next_steps",
+      "eyebrow": "Next measurements",
+      "title": "Only run experiments that can change the decision",
+      "items": [
+        {"owner": "E14", "action": "Add a same-PE first-Z timestamp; separate readiness from first-token fill."},
+        {"owner": "E14", "action": "Sweep F={1,16,32,64,128,256}, alternate order, and obtain n=2."},
+        {"owner": "E10", "action": "Directly witness S=1024 and S=4096 boundary neighborhoods."},
+        {"owner": "E12a", "action": "Port to exact pdSeparate only if final confirmation is required."},
+        {"owner": "E13", "action": "Decide whether full eviction round-trip latency is required for the policy claim."}
+      ],
+      "notes": "E12b prefill ingress is gated: transport work alone cannot remove the measured S6a compute floor."
+    }
+  ]
+}
