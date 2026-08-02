@@ -41,6 +41,8 @@
 
 ## Pointers
 
+- ContextBase tracking doc: `https://context.ed-aisys.com/doc/m2-experiment-register-index-results-three-lane-design-X3DIdKV2s4` (E14 row + full Chapter 2 result, verified 2026-08-02)
+- Agent-memory experiment register: `memory/topics/m2-experiment-register.md` (E14 row + full result)
 - `/home/lexu/we-m2-prefix-fd-sweep/models/qwen3_1p7b-e2e-pdSeparate/request_config/e14_prefix_fd_sweep/E14_RESULTS.md`
 - `/home/lexu/we-m2-prefix-fd-sweep/models/qwen3_1p7b-e2e-pdSeparate/request_config/e14_prefix_fd_sweep/e14_grid/e14_model.json`
 - `/home/lexu/we-m2-prefix-fd-sweep/models/qwen3_1p7b-e2e-pdSeparate/request_config/e14_prefix_fd_sweep/e14_grid/e14_boundaries.json`

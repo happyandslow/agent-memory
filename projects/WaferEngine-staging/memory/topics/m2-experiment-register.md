@@ -23,6 +23,7 @@
 | **E7** | Free-decode cost vs context | `f(pos)` — the compute baseline every lane is priced against | context position | µs per token | same 6 runs, free, n=22 | ✅ |
 | **E8** | Long-context correctness | does output stay sane to ctx 20,480? | generated position | distinct-4-gram | same 6 runs, free | ⚠️ inconclusive |
 | **E9** | `f_forced(pos)` *(S3)* | forced decode has its own f(pos); forced ≈ 0.12 × free; lane A ~linear to the ceiling | force-decode position | µs per forced token | fabricated session, `F` swept, real WSE-3 | ✅ |
+| **E14** | Prefix × force-length sweep | separates prefix-dependent startup from steady forced-token cost; turns the ~700-token crossing into a boundary surface | prefix `P`, forced length `F` | forced span and marginal µs/token | `P={256,1024,4096,8192}` × `F={1,256,512,1024,2048,4096}`, real WSE-3, n=1 | ✅ model measured; direct boundary witnesses pending |
 
 ## 1.2 Planned — the three-lane race
 
@@ -216,6 +217,55 @@ A skeptic-proof, fully-**measured** head-to-head: run both options end-to-end an
 
 ⇒ **The flip is confirmed with all-measured data:** below the crossing recompute-in-place wins (57.3 < 65.3); above it reload wins (76.3 < 97.0). The `L_new`=256 delta costs the same in both lanes (19–20 ms) — a bonus cancellation confirmation. The directly-measured recompute (57.3 / 97.0 ms) landed within ~2% of the E9 fit (56.2 / 95.1) that stood in earlier — the fit was slightly low but the verdict is identical. **The ≈700-token option-1/option-2 boundary is now validated both ways and fully measured** — the component/cancellation test (E10) and the direct total-latency head-to-head (E10D).
 
+## E14 · Prefix × force-length sweep ✅ — startup depends on prefix; steady cost depends on absolute position
+
+**Question.** E9 fixed the starting prefix at 256 tokens. E14 asks whether its ~22 ms startup offset and E10's ~700-token A/B boundary survive when both the existing prefix and force-decode length vary.
+
+**Run and evidence.** Real WSE-3, real Qwen3-1.7B weights, 2×4 blocks, 24 rounds over `P={256,1024,4096,8192}` × `F={1,256,512,1024,2048,4096}`; TSC converted at **0.85 GHz**. Device verdict passed 7/7 checks and all 24 prefill/decode rounds; the downloaded bundle passed 6/6 hash checks. Build job `wsjob-8sw57nu5dcdyycpb3eyfbr` and measured serve job `wsjob-ne6h4kkcywcvd88jsc2cds` succeeded. **n=1 only:** two repeat attempts ended at the EPCC ingress with HTTP/2 502; one wafer job succeeded but returned no downloadable evidence bundle, so it was deliberately not counted.
+
+### Result 1 — the F=1 startup is prefix-dependent
+
+| prefix P | F=1 span | F=256 span | KV ingress |
+|---:|---:|---:|---:|
+| 256 | 22.037 ms | 40.915 ms | 46.150 ms |
+| 1,024 | 26.426 ms | 46.419 ms | 56.141 ms |
+| 4,096 | 110.389 ms | 125.344 ms | 169.890 ms |
+| 8,192 | 224.211 ms | 247.995 ms | 338.268 ms |
+
+The old ~22 ms “fixed offset” is only a `P=256` fact. Treating it as universal contaminates long-prefix marginal estimates.
+
+### Result 2 — after startup, all prefixes collapse onto one position curve
+
+Including every adjacent-F segment gives a poor fit (R²=0.765787, RMSE 7.076 µs/token); every large residual comes from the first `F=1→256` transition. Restricting to the 16 steady segments with `F_lo≥256` gives:
+
+`f_forced(position) = 71.745198 µs + 0.004093307 µs × position`
+
+R²=0.997447, RMSE=0.681 µs/token, max residual=1.833 µs/token. This is close to E9's fixed-`P=256` curve (71.6 µs + 4.30 ns×position). **Steady forced-token cost is explained by absolute position; how that position is split between initial prefix and already-forced tokens adds no material term.**
+
+For `F≥256`, use the two-piece model:
+
+`D(P,F)=D(P,256)+Σ[q=P+256…P+F−1](71.745198 µs + 0.004093307 µs×q)`
+
+where `D(P,256)` is a measured, prefix-dependent startup anchor.
+
+### Result 3 — the A/B boundary is a surface, not ~700 everywhere
+
+For matched final context and `L_new=256`:
+
+- Lane A: `A(S,H)=D(S,H+L_new)`
+- Lane B, delta reload: `B_delta=I(H)+D(S+H,L_new)`
+- Lane B, full-context reload: `B_full=I(S+H)+D(S+H,L_new)`
+
+| starting prefix S | delta-reload crossing H* | full-reload crossing H* |
+|---:|---:|---:|
+| 256 | 744 | 932 |
+| 1,024 | 1,079 | 2,756 |
+| 4,096 | 864 | no crossing for H∈[256,4096] |
+
+Thus E10's ~700 result is the `S=256`, delta-reload slice of `H*(S,reload_policy,L_new)`, not a universal scalar. These crossings are **model-derived interpolations, not direct A/B witnesses**; no `S=8192` boundary is reported because the measured startup-anchor range leaves no `S+H` room.
+
+**Next gates.** Resolve startup with `F={1,16,32,64,128,256}` by prefix; obtain n=2 after ingress stabilizes; then directly witness `S=1024,H={1024,1280}` and `S=4096,H={768,1024}`, `L_new=256`.
+
 ## E11 – E13 · Not yet run
 
 E11 (full re-prefill substitute) is a free comparison from the same fixture once it exists. E12/E13 are builds, gated on what E10/E12a show is live.
@@ -310,3 +360,4 @@ total      = 4 × band_bytes = 32 MiB × ceil(L/256) + 4 MiB
 
 * **2026-07-31** — register created. E6's "asymmetry reversed / 5.10×" retracted (prefill egress carries a transpose+gather; not comparable to decode ingress). A7's falsification withdrawn (Mooncake `output_length` capped at 2,000). Scenario fixed to the three-lane resume race; E9–E13 defined. Design reviewed by Codex — 8 findings applied.
 * **2026-07-31 (later)** — **E9 done and filed** (recovered from the lost `m2-s3-0` session; raw `timing.json` re-analysed, bit-reproduced). Forced decode has its own `f(pos) = 71.6 µs + 4.30 ns·pos`; forced ≈ 0.12 × free; the `F=1` control exposed a ~22 ms per-round pipeline-fill offset that contaminates `fd_us_per_forced_tok`. Mechanism: 8 (2×4) block pipeline, ratio ≈ `max_lpb/n_layers = 4/28`, not 1/N_blocks. Chart added. **Correction:** an interim writeup called lane A "quadratic" with a "~30 ns/tok slope" — **both wrong**; the measured slope is 4.30 ns/tok and lane A is linear-dominated to the ceiling (≈ E3-constant × F to ~1.6% at 8192). ROADMAP and this register corrected. **E10 next; no new code.**
+* **2026-08-02** — **E14 measured on real WSE-3 (n=1, TSC 0.85 GHz).** The F=1 startup anchor grows with prefix, while all F_lo≥256 marginal segments collapse onto `71.745198 µs + 4.093307 ns×position` (R²=0.997447). The ~700-token E10 crossing is therefore one slice of a boundary surface parameterized by starting prefix, reload policy, and `L_new`. Two repeat attempts hit ingress 502 and were not counted without a hash-verified evidence bundle.
