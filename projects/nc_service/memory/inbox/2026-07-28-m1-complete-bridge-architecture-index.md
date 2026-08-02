@@ -123,7 +123,10 @@ test asserts the two prompts differ ("make them differ, or this test proves noth
   -> decode in ONE worker and is device-validated. Using two pods costs an extra
   allocation and an extra network hop, polluting the baseline.
 - [ ] Still blocked on SGLang: batch size (their `batch_advance` is concurrent, we are
-      one-in-flight end to end) and `draft_len` 4 vs 16.
+      one-in-flight end to end). **`draft_len` 4 vs 16 is CLOSED** (2026-07-29): measured
+      on the real WSE-3, k=16 is our preferred point too (2.8x cheaper per draft token),
+      and `MAX_DRAFT_LEN == 16` is a hard kernel assert, not a config knob. See
+      [[2026-08-02-cerebras-nvidia-bridging-open-items-audit]].
 
 ## Pointers
 
