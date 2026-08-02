@@ -3,6 +3,9 @@
 # WaferEngine-staging Timeline
 
 - 2026-08-02 — switch-scatter-vs-parity-shift → `memory/inbox/2026-08-02-switch-scatter-vs-parity-shift.md`
+- 2026-08-02 — force-decode-startup-depends-on-prefix → `memory/inbox/2026-08-02-force-decode-startup-depends-on-prefix.md`
+- 2026-08-02 — decode-egress-has-no-switch-gather-color → `memory/inbox/2026-08-02-decode-egress-has-no-switch-gather-color.md`
+- 2026-08-02 — codex-review-hangs-under-nohup-on-stdin → `memory/inbox/2026-08-02-codex-review-hangs-under-nohup-on-stdin.md`
 - 2026-08-01 — e11-must-be-priced-as-cross-card-pd → `memory/inbox/2026-08-01-e11-must-be-priced-as-cross-card-pd.md`
 - 2026-08-01 — compression-subagent-drops-tracking-checkboxes → `memory/inbox/2026-08-01-compression-subagent-drops-tracking-checkboxes.md`
 - 2026-07-31 — the-retry-wrapper-can-die-while-the-run-survives → `memory/inbox/2026-07-31-the-retry-wrapper-can-die-while-the-run-survives.md`

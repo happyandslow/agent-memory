@@ -2,6 +2,7 @@
 
 # nc_service Timeline
 
+- 2026-08-02 — cerebras-nvidia-bridging-open-items-audit → `memory/inbox/2026-08-02-cerebras-nvidia-bridging-open-items-audit.md`
 - 2026-07-29 — m2-device-bringup-and-the-ingress-blocker → `memory/inbox/2026-07-29-m2-device-bringup-and-the-ingress-blocker.md`
 - 2026-07-28 — take-scalars-from-the-kernel-not-your-own-derivation → `memory/inbox/2026-07-28-take-scalars-from-the-kernel-not-your-own-derivation.md`
 - 2026-07-28 — sglang-already-speaks-our-protocol → `memory/inbox/2026-07-28-sglang-already-speaks-our-protocol.md`
