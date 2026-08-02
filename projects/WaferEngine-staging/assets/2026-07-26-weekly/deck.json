@@ -5,7 +5,7 @@
       "team": "WaferEngine · CS-3",
       "kicker": "Weekly update",
       "title": "KV reuse inside one card now works end to end",
-      "subtitle": "S6 closes M0's reuse line. M1 opens on holding several requests at once.",
+      "subtitle": "S6 closes M0's reuse line. Force-decode turns out to be 8.5x cheaper on the wafer, for a reason we had wrong.",
       "meta": [
         {
           "label": "Owner",
@@ -36,7 +36,7 @@
         {
           "when": "Parked",
           "label": "M0, Line 2",
-          "note": "KV transport, waiting on the cluster"
+          "note": "KV transport, still to build"
         },
         {
           "when": "Now",
@@ -61,12 +61,12 @@
       "eyebrow": "Progress",
       "title": "Since last week",
       "items": [
-        "Force-decode (S6b) was designed, built in three stages and verified in simulation, then merged.",
-        "That closes S6, so M0's reuse line is complete: decode retain, prefill warm-start and force-decode all sit on one branch.",
-        "Two device sweeps finished on real silicon: prefill at a 16,384-token prompt and decode at a 4,096-token context.",
-        "M1's slot contract was reviewed and approved, and the first subtask is already built and verified in simulation.",
-        "Building it reversed two things the contract had assumed, so the design is now shaped by code rather than by argument.",
-        "M2 grew from a single cost model into a cluster of coupled architecture questions, each to be settled by a benchmark."
+        "Force-decode was re-measured on the wafer and the conclusion reversed: the win is layer overlap, not skipped work.",
+        "A forced token costs about 12% of a plain one, roughly 8.5 times cheaper, and that holds across a 15x context range.",
+        "S6b merged, which closes S6, so M0's reuse line is complete on a single branch.",
+        "Two more device sweeps landed: prefill at a 16,384-token prompt and decode at a 4,096-token context.",
+        "M1's slot contract was approved and its first subtask is already built and verified in simulation.",
+        "M2 grew from a single cost model into a cluster of coupled architecture questions."
       ],
       "notes": "The two device sweeps completed on 21 July, one day after last week's deck. The two reversals: the device now gets one slot per lane rather than a single slot number, because eviction victims are not contiguous across lanes; and per-slot lengths stay on the host rather than being counted on the device."
     },
@@ -91,7 +91,7 @@
       "items": [
         "Decode keeps its KV across rounds and extends it, rather than rewinding to zero. Correctness checked in simulation, cost measured on the wafer.",
         "Prefill can start from a resident prefix instead of token 0, and its output is byte-identical to a cold run, both in simulation and on the wafer.",
-        "New text can be appended to a kept context by force-decoding it. Verified in simulation only so far.",
+        "New text can be appended to a kept context by force-decoding it. Correctness checked in simulation; speed now measured on the wafer.",
         "Still one resident request per bank. Holding several at once is exactly what M1 adds."
       ]
     },
@@ -99,7 +99,7 @@
       "type": "section",
       "number": "02",
       "title": "What we measured",
-      "subtitle": "Two sweeps on real silicon, one finding that changed our mind."
+      "subtitle": "Three sweeps on real silicon, and a conclusion we had to reverse."
     },
     {
       "type": "table",
@@ -179,25 +179,27 @@
       "title": "Two reasons a forced step could be cheaper",
       "image": "/home/lexu/WaferEngine-staging/agent-memory/projects/WaferEngine-staging/assets/2026-07-26-weekly/fig_mechanism.png",
       "caption": "A plain step cannot start until the one before it has picked its token. Supplying the token removes that stage, and removes the wait along with it.",
-      "notes": "The two effects cannot be switched on and off independently in the kernel: dropping the picking stage without also dropping the drain that feeds it unbalances the fabric and hangs. So they have to be told apart by the shape of the curve on the next slide."
+      "notes": "Both effects are real, but they are not the same size. The next slide shows the measurement that separates them."
     },
     {
       "type": "figure",
-      "eyebrow": "Force-decode, simulator",
-      "title": "The line is straight, so it is skipped work, not overlap",
-      "image": "/home/lexu/WaferEngine-staging/agent-memory/projects/WaferEngine-staging/assets/2026-07-26-weekly/fig_fsweep.png",
-      "caption": "Toy layout: 2x2 blocks, width 64, vocabulary 24. A forced step costs about 28% of a plain step here, roughly 806 cycles against 2,856.",
-      "notes": "Same configuration, pipelined against non-pipelined, was 17,149 to 13,096 cycles per token, a 24% saving. Correctness held at 9.8e-5 against the oracle."
+      "eyebrow": "Force-decode, real WSE-3",
+      "title": "The win is layer overlap, and the formula predicts it",
+      "image": "/home/lexu/WaferEngine-staging/agent-memory/projects/WaferEngine-staging/assets/2026-07-26-weekly/fig_verdict.png",
+      "caption": "A forced token costs about 12% of a plain one, roughly 8.5 times cheaper. 524,288 PEs, 28 layers over 8 blocks, vocabulary 151,936. Device runs are timing-only.",
+      "notes": "Left: if the saving were skipped work, the ratio would climb toward 100% as the context grows and attention dwarfs the skipped stage. It does not move. Right: holding the model fixed and spreading it over more blocks tracks the predicted ratio at all three points."
     },
     {
       "type": "bullets",
       "eyebrow": "Finding",
-      "title": "This partly falsified what we expected",
+      "title": "We had this backwards a week ago",
       "items": [
-        "We expected the gain to come from layer pipelining: forced tokens let the front of the model run ahead and fill the pipeline.",
-        "A straight line rules that out. Pipelining would flatten once the pipeline is full; a constant saving per forced step means work is simply not being done.",
-        "Each forced step drops its sampling and output-projection stage, and that should grow with a real 128k vocabulary.",
-        "Still open: this layout has very little per-layer compute, so whether pipelining also helps at real scale is unmeasured."
+        "Last week we said the saving was skipped work. That is now falsified, not narrowed: on the wafer it is layer overlap.",
+        "The old test could not have decided it. Once forced steps run open-loop, both explanations predict a straight line.",
+        "The magnitudes never fitted either. The skipped stage is about 5% of a step, yet the saving was about 71%.",
+        "The size of the win is set by how the layers are spread across the block pipeline, not by vocabulary as we had predicted.",
+        "It also explains the old 28%: seven layers at two per block gives 28.6%, which is what we had measured.",
+        "A stale divisor made absolute per-token figures about five times too low. Ratios hold, but throughput baselines need re-checking."
       ]
     },
     {
@@ -293,11 +295,12 @@
       "eyebrow": "Also to discuss",
       "title": "Open routing calls",
       "items": [
+        "The cluster was available all along, so the standing assumption that it was down was stale. Does M0's transport work restart now?",
+        "Device runs are timing-only, with no correctness gate at device scale. When do we add one?",
+        "A forced token at 56 to 67 microseconds looks faster than our recorded prefill rate. A like-for-like run would settle force-decode against ship-to-prefill.",
         "Continuous batching: M1 builds the substrate, but running requests concurrently needs ingress, egress and a scheduler reworked. Which milestone owns it?",
-        "Ragged batch, meaning lanes sitting at different sequence positions. M1 declined it, but continuous batching needs it. Do we cost it on its own?",
-        "Do we run the control-plane comparison inside M1, or on a branch forked after M1-S2?",
-        "Measuring real-scale pipelining needs a compute-heavy configuration. Is it worth the wafer time?",
-        "The CS-3 cluster is down, so M0's transport work stays parked. M1 runs in simulation meanwhile."
+        "Ragged batch, meaning lanes at different sequence positions. M1 declined it, but continuous batching needs it.",
+        "Do we run the control-plane comparison inside M1, or on a branch forked after M1-S2?"
       ]
     },
     {

@@ -78,9 +78,14 @@ export MEMORY=$AGENT_MEMORY_ROOT/projects/WaferEngine-staging   # or /home/lexu/
   device (1.13.2)** — proven by the baseline `test_device_2x2blk_kv` device run
   (which contains them). So a **local-sim operand-overlap crash is a 2.10 artifact,
   NOT a device bug — do not chase it.** compile-only locally is still fine for a build check.
-- **Real Qwen3 weights are NOT wired** into any model — mock/seeded only; no HF
-  loader, no Qwen3 gpu_reference oracle, no tokenizer. See
-  [[e2e-pdSeparate-device-validation]].
+- **Real Qwen3 weights: true for the standalone kernels, NO LONGER TRUE for the pr14
+  line** (corrected 2026-07-28). `qwen3_1p7b-decode` / `-prefill` and the `main`-line
+  fused models are still mock/seeded — no HF loader, no Qwen3 gpu_reference oracle, no
+  tokenizer (see [[e2e-pdSeparate-device-validation]]). But `qwen3_1p7b-e2e-pdSeparate`
+  **at PR #14** loads real HF weights and bakes them into the ELF at compile time, and we
+  have run it end to end on real WSE-3 with revision `70d244cc`
+  ([[m2-s0-baseline-and-timer-provenance]]). ⇒ **always say which line a "mock weights"
+  caveat applies to**; a performance number from the pr14 line is a real-weight number.
 - **pdSeparate `test_device_2x2blk_kv` does not compile** on the committed tree —
   prefill.csl overflows per-PE SRAM at PREFILL_LEN=2048 (the STATUS.md "pass" was
   uncommitted). Prompt cap ≈ 512 tokens at the 2×2/7-layer layout.
@@ -107,9 +112,42 @@ export MEMORY=$AGENT_MEMORY_ROOT/projects/WaferEngine-staging   # or /home/lexu/
   `test_device_2x2blk_kv` (no profiler)**: if baseline works but your config hangs →
   it's YOUR config (I/O streams / io_loc at full 512×512 scale), not the cluster.
 
+- **CS-3 ssh transport death can orphan wafer jobs.** If a `/cs3-runner`/`cs3-run.sh`
+  device run exits `rc=255` with `Timeout, server cerebras not responding`, the guard's
+  timeout-cancel path did not run; if a wafer `execute` job had already started, it may
+  still be holding the wafer. When the gateway is reachable, run
+  `csctl get jobs | grep <user>` and cancel any survivor before submitting more work.
+  A true guard overrun ends with rc 124/cancel; ssh death ends with rc 255 and no cancel.
+  (2026-07-21.)
+- **Expect roughly half of a batch of device serve runs to die on cluster
+  infrastructure.** Five identical `--mode reload` runs, back to back, same store:
+  **two completed, three failed** — two with an EPCC ingress gRPC **502**
+  (`Received http2 header with status: 502` from `10.27.24.65:443`, mid-run, preceded by
+  `Error parsing metadata: … content-type: text/html`) and one with
+  `ClusterJobInitError: … pod failure detected … [wsjob-…-worker-0]` during init. None
+  were our code — the two that completed were bit-identical to each other and to the
+  reference. These three self-cleaned (no orphan jobs). ⇒ **when a plan says "n = 5",
+  budget attempts, not successes**, and say in the report which was achieved.
+  (2026-07-28, M2-S0.)
+- **Drive device runs with remote `nohup setsid` + log polling, not `cs3-run.sh`.** Its
+  timeout path calls `cs3-jobs.sh cancel-mine`, which on this **shared** account would
+  kill other tenants' jobs. `setsid` also survives ssh transport death (the rc=255 case
+  above). The local ssh call returning **124 immediately after launching** the detached
+  job is normal and does not mean the remote job died. To kill a run, cancel the specific
+  wsjob id from its log. (2026-07-28.)
+- **The Cerebras SDK singularity image cannot bind-mount anything under `/tmp`.**
+  `cs_python` bind-mounts the working directory into the container at the *same absolute
+  path*, and the container supplies its own `/tmp`, so the mount has no valid destination:
+  `FATAL: container creation failed: … destination /tmp/… doesn't exist in container`,
+  before any compile and with no CSL error. Put alternate checkouts (e.g. a
+  `git worktree` of pre-change HEAD for an A/B inert gate) under `$HOME` instead — same
+  command then works unchanged. This also rules out the agent scratchpad
+  (`/tmp/claude-*/…`) as a run location; it is fine for logs and comparison scripts,
+  which run on the host, but not for anything `cs_python` must `chdir` into. Sim-verified;
+  a device run from an alternate path was not attempted. (2026-07-26.)
+
 ## Important links
 
 - InferCept (KV preserve/swap/discard cost policy): <https://arxiv.org/abs/2402.01869>
-- Topic: [[kv-cache-policy-tradeoffs]], [[e2e-pdSeparate-device-validation]]
-
-- **CS-3 ssh transport death can orphan wafer jobs.** If a `/cs3-runner`/`cs3-run.sh` device run exits `rc=255` with `Timeout, server cerebras not responding`, the guard's timeout-cancel path did not run; if a wafer `execute` job had already started, it may still be holding the wafer. When the gateway is reachable, run `csctl get jobs | grep <user>` and cancel any survivor before submitting more work. A true guard overrun ends with rc 124/cancel; ssh death ends with rc 255 and no cancel. (Captured 2026-07-21.)
+- Topic: [[kv-cache-policy-tradeoffs]], [[e2e-pdSeparate-device-validation]],
+  [[m2-s0-baseline-and-timer-provenance]]

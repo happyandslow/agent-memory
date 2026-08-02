@@ -1,9 +1,52 @@
 ---
-summary: PR #14 (WaferAGI, "Real Qwen3 1_7B Serving") pre-integrates the standalone multi-round/varlen/round_reset/KV-bridge machinery into both fused deployments; only the keyed-retain KV store is still a gap. Investigation report backing M0/S2 port contract.
+summary: PR #14 (WaferAGI, "Real Qwen3 1_7B Serving") pre-integrates the standalone multi-round/varlen/round_reset/KV-bridge machinery into both fused deployments; only the keyed-retain KV store is still a gap. Investigation report backing the M0/S2 port contract, plus the branch map and the measured trial-merge cost of rebasing kv-feature onto it.
 tags: [waferengine-staging, qwen3, pr14, serving, port-contract, kv-reuse, nc-service]
 ---
 
 # PR #14 Real-Serving Integration & M0/S2 Port Contract — Investigation Report
+
+> ## Branch map — which local ref is which (audited 2026-07-28 via reflog)
+>
+> Two local branches track this same upstream line at **different points in time**. Getting
+> them confused costs real measurement error, so check the tip before quoting any of their
+> recorded timings.
+>
+> | local ref | fetched from | tip | date |
+> |---|---|---|---|
+> | `pr14-real` | `github.com:CongjieHe/WaferEngine.git` branch `real_qwen3_1p7` | `efa954d` | 2026-07-21 |
+> | `pr14-head` | `WaferAGI/WaferEngine` `refs/pull/14/head` | `a3a509c` | 2026-07-28 |
+>
+> **Re-checked 2026-07-28 (later the same day, `git ls-remote` + GitHub compare API): the two
+> upstream lines have CONVERGED at `d9dbeec`.** Both `WaferAGI refs/pull/14/head` and
+> `CongjieHe real_qwen3_1p7` now point at it, so `pr14-head` is 1 commit behind and
+> `pr14-real` is 6. That single commit ("4B Decode Optimization") touches **only
+> `models/qwen3_4b-decode/`** — `decode.csl`, `comm_pe.csl`, `approx_math.csl`,
+> `oracle_fp16.py`, `check_approx_math.py` — and nothing in `qwen3_1p7b-e2e-pdSeparate`, so it
+> is provably neutral for pdSeparate measurement. **M2 deliberately stays locked at
+> `a3a509c`**, the commit that produced the reference `mtbench8/timing.json`, so that
+> "reproduce the baseline" compares like with like. See [[m2-s0-baseline-and-timer-provenance]].
+>
+> **`pr14-real` is an ancestor of `pr14-head`, 5 commits back.** Those 5 commits rewrite the
+> 1.7B pdSeparate kernels (`decode.csl`, `ht_head.csl`, `ht_tail.csl`, `prefill.csl`; ~12.4k
+> insertions) and change two things that dominate any host-side measurement:
+>
+> - `per_round_kv_load_ms` **5290 → 69.5 ms** (disk `.npz` read, ~76×); KV handoff per prompt
+>   **2.94–3.12 s → 0.72 s**; `total_wall_s` 1230 → 734.
+> - `serve_2x4_8k20k.json` now **freezes the host-stream `io_loc` pins**
+>   (`KV_EGRESS_IO_LOCS` / `KV_INGRESS_IO_LOCS` / token / logits), described in-file as
+>   "frozen to the device-validated auto placement (mtbench8 8/8 bit-identical)" — closing a
+>   known ~3× auto-placement bandwidth loss (see [[h2d-host-device-bandwidth]]).
+>
+> **What did NOT move across those 5 commits:** decode 659.4 → 655.0 µs/token device,
+> prefill 30-token span 57.03 → 56.91 ms, KV egress 22.31 → 23.53 ms — all within ~1%. So the
+> device-side anchors are stable and the delta is entirely host-side overhead.
+>
+> ⇒ **Baseline new work on `pr14-head`.** Using `pr14-real` measures two already-fixed
+> implementation artifacts and charges them to the architecture. *Caveat:* `pr14-head` also
+> carries "Qwen3 1p7b Speculative Decoding" and "4B Decode Optimization", so it is less settled;
+> `pr14-real` is the known-good fallback, but then subtract the disk and `io_loc` effects by hand.
+> *Unknown from here:* whether `real_qwen3_1p7` has moved since it was last fetched — re-fetch
+> rather than assume. Related: [[git-branch-status-verification]].
 
 Session **2026-07-11 (M0/S2)**. Read-only dig across three fronts:
 (1) standalone `qwen3_1p7b-decode`/`-prefill`, (2) integrated `qwen3_1p7b-e2e`/
@@ -212,6 +255,15 @@ path from on-chip relay to host-mediated**. It does.
   `KV_TRANSFER=1` only paints colors 17/21 that nothing feeds/consumes, and those ids collide
   with the host path. Reviving = re-port the removed on-chip machinery (reference = staging's
   live fcfc8c1 e2e), not a toggle.
+
+  > ⚠️ **The two bullets above are contested by an unconfirmed 2026-07-28 correction.** A direct
+  > diff of `main` vs `a3a509c` found that in **`qwen3_1p7b-e2e`** the on-chip relay was **never
+  > demoted by PR #14** and was already config-revivable on `main` (three `KV_TRANSFER: 1` configs
+  > shipped, `build_relay` identical, `src/relay.csl` still present at PR #14); the "host-mediated,
+  > not config-revivable" reading appears to hold for **`e2e-pdSeparate`** only. Evidence and status
+  > in [[standalone-vs-integrated-kernel-parity]] § 2026-07-28. **Not confirmed by Le** — treat both
+  > readings as live until someone re-diffs, and re-check any adopt-vs-port reasoning that used
+  > "adopting PR #14 means host-mediated e2e" as an input.
 - **e2e and pdSeparate KV transport are byte-identical at pr14** (matching blob hashes on
   `kv_bridge.py` / `kv_egress_colmux` / `kv_ingress_adaptor+injector`). Differences are packaging:
   e2e = 1 co-resident artifact / 1 runtime / in-memory per-request KV / no swap; pdSeparate = 2
@@ -239,6 +291,64 @@ adopt-vs-port candidate (KV-source-agnostic). Full detail: `milestones/M0-reuse-
 § Phase C` + Verification log; `GOALS.md §7` adopt-vs-port entry (refined). Related:
 [[kv-cache-policy-tradeoffs]], [[e2e-kernel-dataflow-and-topology]], [[standalone-vs-integrated-kernel-parity]].
 
+## 2026-07-28 — what the rebase onto PR #14 actually costs (trial merge)
+
+You are sizing the rebase of `kv-feature` onto PR #14 and you run a trial three-way merge to find
+out what it costs. **The conflict list is the cheap half.** The expensive half is the files git
+merged without complaint, because our work and PR #14's work touched *different lines of the same
+contract*.
+
+Conflict surface, measured on a trial merge against `a3a509c`: **7 files, 18 hunks, ~650 lines** —
+`decode/launch.py` (6 hunks, 457 lines), `decode/src/ht_tail.csl` (3/53),
+`decode/src/decode.csl` (2/34), `decode/src/ht_head.csl` (1/24), `prefill/launch.py` (3/52),
+`prefill/src/ht_head.csl` (2/21), `prefill/model_config/test_sim_2x4_kv_varlen.json` (1/8). Budget
+it in days, not weeks — but budget it *after* the two breaks below, not before. **These counts
+expire**: PR #14 moves (`b9ff52b` → `a3a509c` while this repo's docs still pinned the old one), so
+re-run the trial merge at the then-current tip.
+
+Two structural facts in that table matter more than the totals:
+
+- **The entire M1-S1 slot-addressing seam produces ZERO conflicts.** The piece nobody upstream is
+  building is also the piece that costs nothing to carry ([[m1-s1-multi-slot-kv-seam]]).
+- **The recurring friction is thematic, and it will recur on every future rebase.** PR #14's repeated
+  move is *deleting* compile-time switches (`kv_stream_ingress` in decode, `kv_egress` in prefill —
+  those paths now unconditional), and our retain code sits inside exactly those conditionals. We add
+  conditionality precisely where they remove it.
+
+**Break 1 — a renamed symbol survives as a dangling import (code-verified in the merged tree).**
+PR #14 renames `numpy_oracle_logits` → `numpy_decode_oracle`. `oracle_fp16.py` auto-merges with
+**no conflict**; the merged `launch.py` then carries both `from oracle_fp16 import
+numpy_oracle_logits, numpy_oracle_retain_step0` (ours, now dangling) and `from oracle_fp16 import
+numpy_decode_oracle` (theirs), while the merged `oracle_fp16.py` no longer defines the old name.
+Git did its job; the result does not import. Before the rebase, enumerate PR #14's renamed symbols
+and grep our call sites — this whole class is invisible as a conflict.
+
+**Break 2 — a protocol split across two files can merge *half*** `[unverified]`. S6b widened the
+decode round header to a 2-wavelet `[N, F]`; the sender is in `ht_head`, the receiver in `ht_tail`.
+Both files conflict, so both get hand-resolved **independently** — take the widened header at one end
+and not the other and you have a wavelet-count mismatch, the classic silent CSL desync with no
+compile error. What makes it worse: **`bsz = 2` in every config we own**, which is claimed to make a
+half-merge produce plausible-looking output rather than an obvious failure. *That half is reasoning
+from the merged sources, not an observed run* — treat it as the reason to add an explicit check, not
+as a measured fact. Concretely: after resolving, assert the sender's emitted wavelet count equals the
+receiver's expected extent, and add at least one config where a mismatch cannot cancel.
+
+Adjacent guard in the same area, also **reasoning-only** `[unverified]`: PR #14 adds an `n_steps + 1`
+terminator step to both `ht_head` and `ht_tail` loops. Tracing both counts, the S6b balance survives
+— `ht_head` floods `NEG_INF` and breaks **without draining a token**, and `ht_tail`'s pre-existing
+`tail_step < n_steps - 1` gate already excludes the terminator from emitting, so N−F emits still meet
+N−F drains. But **branch order in the merged `ht_head` matters**: if our `ht_step < forced_decode_len`
+branch precedes the terminator check, `F > N` swallows the terminator entirely (no flood, no break)
+and the diagonal PE blocks forever on a `pre_embed_x` the host never sends. `F == N` is safe. Put the
+terminator check first *and* assert `F <= N` host-side.
+
+The generalisable half of this — a three-way merge reconciles lines, not a contract spread across
+files — lives in [[git-branch-status-verification]]. Conflict counts and the dangling-import break
+are code-verified against an actual trial merge; nothing here was confirmed by Le, and the rebase
+itself remains the deferred adopt-vs-port decision above.
+
 ## Last updated
 
-2026-07-12 (M0/S4 design digs; supersedes the "e2e stays on-chip under pr14" implication of the 2026-07-11 headline).
+2026-07-28 (trial-merge rebase cost + the two clean-merge breaks; contested-e2e-relay caveat added.
+Prior: 2026-07-12 M0/S4 design digs, which superseded the "e2e stays on-chip under pr14" implication
+of the 2026-07-11 headline).

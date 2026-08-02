@@ -2,9 +2,17 @@
 
 Shared working area for meeting slides and materials (pptx, pdf, keynote, images, notes).
 
-**Names are freeform.** No dated-filename convention here (dates usually live inside the
-slide content). Chronology is tracked by git history, file mtime, and in-slide dates —
-not the filename. This folder is exempt from the strict dated-filename checker.
+## Naming and layout
+
+- Put each meeting deck directly in this directory as `YYYY-MM-DD.pptx`, using the
+  meeting date.
+- Keep regenerable material for that deck in `YYYY-MM-DD-src/`: `deck.json`, figure
+  scripts, `figures/`, and rendered `preview/` files.
+- Treat the root-level dated PPTX as the presentation artifact. Do not create topic-named
+  deck directories alongside it.
+
+Legacy files that predate this convention may keep their existing names. This folder
+remains exempt from the repository's strict dated-memory-file checker.
 
 **Co-edited by you and agents.** Agents may create, append to, or modify slides here when
 you ask; you also edit on top of them. Guardrails:

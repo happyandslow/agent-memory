@@ -1,5 +1,5 @@
 ---
-summary: Feature-parity gap between current standalone qwen3 kernels and integrated e2e/pdSeparate snapshots.
+summary: Feature-parity gap between current standalone qwen3 kernels and integrated e2e/pdSeparate snapshots, plus the (unconfirmed) correction that PR #14 never demoted e2e's on-chip KV relay — only pdSeparate's — and left e2e's KV pipeline frozen at a diagnosed bring-up failure.
 tags: [waferengine-staging, qwen3, kernel-parity, serving]
 ---
 
@@ -161,6 +161,56 @@ From the pre-S6 abstraction design session (5 read-only digs; detail in
   `enter_request` counter-only reset) — so **prefill retain is the same mechanism as decode retain**
   (MODERATE effort: `start_chunk` warm-start). S6 broadened to cover both kernels (S6a).
 
+### 2026-07-28 — "PR #14 killed the e2e on-chip KV relay" is wrong; it is true of pdSeparate only `[not confirmed by Le]`
+
+You are weighing whether to adopt PR #14 and you consult the `PROGRESS.md` "Failed approaches" entry
+recording that **PR #14 demoted the on-chip relay to inert filler, not config-revivable**. Read
+straight, that says adopting PR #14 costs you the on-chip KV path in `e2e` and forces host-mediated
+KV — a real tradeoff to weigh against everything else. **That tradeoff does not exist**, and the
+direction of the correction is the convenient one: adoption is *less* costly than recorded, not more.
+
+Verified by direct diff of `main` vs `a3a509c`, in `qwen3_1p7b-e2e`:
+
+- three `KV_TRANSFER: 1` configs already shipped on `main` — `test_sim_1x2blk_kv`,
+  `test_sim_2x2blk_kv`, `test_device_2x2blk_kv`;
+- `build_relay` is **identical** `main` → PR #14 apart from a Unicode arrow and one space of
+  indentation, with `transit_rp`'s SOUTH→NORTH wiring of colors 17/21 verbatim the same;
+- `src/relay.csl` **still exists** in `e2e` at PR #14.
+
+So neither half of the recorded claim holds for `e2e`: the relay was never demoted by PR #14, and it
+was already config-revivable on `main`. The model it *is* true of is **`qwen3_1p7b-e2e-pdSeparate`**
+— `src/relay.csl` present on `main`, absent at PR #14, and its `launch_decode.py` never mentions
+`build_relay` or `kv_transfer`. This note's own § "Superseded for the integration target" already had
+that right (pdSeparate's KV plumbing recorded as *replaced*); the error lives in the work repo's
+durable prose and in [[pr14-real-serving-port-contract]] § 2026-07-12, which makes it easy to keep
+re-reading.
+
+**What PR #14 does contribute to `e2e` is the pipeline, not the seam** — six new KV CSL files,
+`kv_transform` work in `prefill.csl`, a `STAGE_A_DIAG` env gate, and an on-chip bit-exact self-check;
+`e2e/launch.py` grows 3054 → 4552 lines. **And it is frozen at a well-diagnosed failure**, which is
+the more useful half for anyone picking this up:
+
+- the self-check reports `FAIL (256 bad, first=(0,0,0,0,0,'K'))`;
+- the first bad element is at the **diagonal, north-most decode PE — the one position needing no
+  transpose at all**, which is why the diagnosis is a systematic offset/packing/delivery bug rather
+  than a layout bug;
+- the handoff doc **explicitly retracts the tempting "add K pair-interleave" fix** and forbids
+  further layout changes without bit-exact evidence first;
+- `e2e/launch.py` was last touched 8 commits before the tip; the author moved on to pdSeparate
+  serving, then speculative decoding, then 4B.
+
+So on-chip KV transfer in `e2e` is a partly-built pipeline plus a non-obvious diagnosis, not a blank
+sheet — and not a day spent rediscovering that the interleave fix is wrong.
+
+*Confidence:* code-verified in-session by direct diff for `build_relay`, `src/relay.csl` and the
+`KV_TRANSFER: 1` config list in both `e2e` and `e2e-pdSeparate`. Originally surfaced by a peer
+analysis agent, then independently checked because it contradicted both a written record and the
+same session's earlier claim that PR #14 *revived* the path (also wrong — it was never dead).
+**Not confirmed by Le**, and the `PROGRESS.md` entry's exact wording has not been re-read since,
+so correct that entry only after reading it. Relay topology context in
+[[e2e-kernel-dataflow-and-topology]]; the adopt-vs-port decision this feeds is in
+[[pr14-real-serving-port-contract]].
+
 ## Last updated
 
-2026-07-13 (added the two-lineages / KV-abstraction refinement; prior: 2026-07-11 PR #14 supersession + kickoff_relay correction).
+2026-07-28 (e2e on-chip relay correction — unconfirmed; prior: 2026-07-13 two-lineages / KV-abstraction refinement, 2026-07-11 PR #14 supersession + kickoff_relay correction).

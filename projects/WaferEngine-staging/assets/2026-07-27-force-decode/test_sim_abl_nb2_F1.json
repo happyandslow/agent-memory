@@ -1,0 +1,45 @@
+{
+    "Pw": 8,
+    "Ph": 16,
+    "P_X_BLOCK_NUM": 1,
+    "P_Y_BLOCK_NUM": 2,
+    "group_num": 4,
+    "bsz": 2,
+    "dim": 64,
+    "head_dim": 16,
+    "MAX_SEQ_LEN": 48,
+    "ffn_dim": 128,
+    "n_heads": 4,
+    "n_kv_heads": 2,
+    "n_layers": 8,
+    "WARMUP": 1,
+    "PREFILL_LEN": 16,
+    "vocab_size": 24,
+    "HT_WIDTH_tail": 6,
+    "TOP_K": 2,
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "KV_TRANSFER": 1,
+    "NUM_ROUNDS": 2,
+    "PREFILL_LENS": [
+        8,
+        0
+    ],
+    "DECODE_LENS": [
+        8,
+        8
+    ],
+    "RETAIN_ROUNDS": [
+        0,
+        1
+    ],
+    "RETAINED_LENS": [
+        8,
+        -1
+    ],
+    "FORCED_DECODE_LENS": [
+        1,
+        1
+    ],
+    "KV_DSD_SEG_MAX": 100
+}

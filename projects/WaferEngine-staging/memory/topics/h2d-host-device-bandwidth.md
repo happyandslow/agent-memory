@@ -13,6 +13,18 @@ This is the *host↔device / host↔host* transport story. It is a **different
 topic** from [[prefill-decode-transfer-bandwidth]], which covers the *on-chip*
 prefill→decode KV handoff. Related: [[e2e-pdSeparate-device-validation]].
 
+> ⚠️ **CORRECTION (2026-07-30, M2-S2).** Where this topic or its consumers quote a
+> KV-ingress figure of **0.7726 GB/s aggregate / 0.1931 GB/s per stream** (M2-S1,
+> device TSC on the band-0 `kv_ingress_adaptor`), **that number is not a bandwidth.**
+> It is one payload divided by one span, and the span turns out to be nearly
+> payload-independent: the first *controlled* payload change on that path
+> (widening the KV-meta tile 2→4 slots) moved the bytes **+5.882%** and the span
+> **+0.0085%**, a marginal rate of **134 GB/s — 12× the 11.43 GB/s H2D physical
+> ceiling and 655× the average**. Do not scale a reload cost off it. The
+> *bandwidth-test* numbers elsewhere in this topic (S=16 pinned, 12.54 GB/s D2H;
+> 11.43 GB/s H2D ceiling) are unaffected — those were measured across payload
+> sizes. Detail and the follow-up experiment in [[m2-s2-force-decode-port]] §5.
+
 ## Summary
 
 The series answers one question in layers: **how fast can bytes get onto and off

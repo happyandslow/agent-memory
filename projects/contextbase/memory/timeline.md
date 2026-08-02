@@ -2,4 +2,6 @@
 
 # contextbase Timeline
 
+- 2026-07-30 — patch-mode-cannot-match-mirrored-markdown → `memory/inbox/2026-07-30-patch-mode-cannot-match-mirrored-markdown.md`
+- 2026-07-26 — append-drops-checkboxes-nested-in-checkboxes → `memory/inbox/2026-07-26-append-drops-checkboxes-nested-in-checkboxes.md`
 - 2026-06-29 — restricted-sharing-acl-design → `docs/2026-06-29-restricted-sharing-acl-design.md`

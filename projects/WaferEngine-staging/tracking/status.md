@@ -4,7 +4,7 @@
 
 > Generated/current-state dashboard. Safe for deterministic scripts or hooks to overwrite. This is a thin projection; do not use it as the canonical roadmap.
 
-Last updated: 2026-08-02
+Last updated: 2026-07-29
 Status: Active
 
 ## Canonical current state
@@ -15,25 +15,38 @@ Status: Active
 
 ## Recent changes
 
-- 2026-08-02 maintenance refreshed checks/generated views and confirmed no undrained capture/inbox material. `git pull --ff-only` remains blocked by branch divergence (local ahead 6 / behind 76 after fetch) plus the ambiguous modified binary `meetings/2026-07-26.pptx`; see `tracking/conflicts.md`.
-- 2026-07-31 maintenance refreshed checks and confirmed no new inbox/capture material needed curation. `git pull --ff-only` remains blocked by branch divergence (local ahead 4 / behind 36 after fetch) plus the ambiguous modified binary `meetings/2026-07-26.pptx`; see `tracking/conflicts.md`.
-- 2026-07-30 maintenance refreshed generated views/checks. `git pull --ff-only` remains blocked by branch divergence (local ahead 3 / behind 30 after fetch) plus the ambiguous modified binary `meetings/2026-07-26.pptx`; see `tracking/conflicts.md`.
-- 2026-07-27 maintenance fast-forwarded to origin commit `9e84d0e` and drained three 2026-07-26 M1-S1 review captures.
-- Corrected the M1 mixed hit/miss batching conclusion: lanes can share one batch by starting at `min(L_match)` and riding together; only take-over semantics create true ragged per-lane scalar/RoPE state.
-- Added M1-S1 engineering facts to `memory/topics/m1-s1-multi-slot-kv-seam.md`: per-slot valid length is host-owned, device keeps one scalar for the active forward, red configs must assert unknown keys/prove they can fail, and empty comparisons must not print PASS.
+- 2026-07-29 maintenance drained a **14-item backlog** (2026-07-26 → 07-29) into six topic notes plus `memory/project.md`; the inbox is now empty of `captured` items.
+- **Retracted the host KV transport figure.** "As-built ~15 MB/s" was never measured (denominator taken from a prose phrase) and described the wrong branch. Replaced with **1.426 GB/s aggregate / 0.357 GB/s per stream** — payload derived from code, time measured on real WSE-3 (n=2). Struck through at all nine sites rather than deleted. `R*` moves ~0.035 → **≈3.4**; the cross-chip-vs-fabric gap shrinks ~300× → ~3–5×.
+- **Decode cost recorded as linear in context** — `627.83 µs + 26.45 ns × ctx` (R² = 0.998); the 654.95 µs anchor is a workload mean, not a per-token constant.
+- **Two design retractions, both Le's:** mixed hit/miss batches need no ragged support (round start = `min(L_match)`), and per-slot KV length stays on the host. Both cancelled planned S1/S2 work; the real ragged blocker is per-lane RoPE state, not `iter_num`.
+- New topics folded: `m1-s1-multi-slot-kv-seam.md` (destination-vs-source indexing, seam drift, checks that cannot fail, oracle independence) and `m2-s0-baseline-and-timer-provenance.md` (baseline reproduction, timer provenance, what `mtbench8` cannot measure).
+- Corrected a stale project fact: real Qwen3 weights **are** wired on the pr14 line, contrary to the blanket "not wired into any model" claim.
+- Promotion: six of seven candidate flags consolidated into **one** skill proposal — *"before you trust this as evidence, check what it shares with the thing under test"* — plus two riders (`cs3-runner` safety, and reporting a performance number with its setting).
+- Two items parked for Le in `tracking/conflicts.md`: an unconfirmed correction to a `PROGRESS.md` "Failed approaches" entry about the `e2e` on-chip relay, and two now-stale contract lines in `milestones/M1-intra-pe-reuse.md`.
 - 2026-07-26 maintenance first reconciled local/remote branch divergence by creating backup branch `backup/daily-maintenance-pre-rebase-20260726-083147` and rebasing local daily-maintenance commits onto `origin/main`; cron did not push.
 - Drained three 2026-07-25 M1/T0.5 inbox captures into `memory/topics/kv-cache-policy-tradeoffs.md` and `plan.md`.
 - M1 vocabulary sharpened: cache capacity is slot count `S` (`SLOT_COUNT`); active per-forward batch is `M`, linked by `active_slot[m] -> s`; do not allocate nested `S×M` KV slabs.
 - M1 layout decision recorded: use fixed contiguous slots now behind K/V base accessors; paging/page tables remain deferred because they would restructure hot attention loops and hurt K layout harder.
-- Decode active-lane invariant recorded and corrected: one forward needs one shared sequence position because scalar `iter_num` and RoPE state are round-wide; mixed hit/miss ride-along is legal, true ragged take-over moves to later continuous-batching work.
+- Decode active-lane invariant recorded: within one forward lanes must be equal-length because scalar `iter_num` is both effective attention length and packed score-buffer stride; mixed hit/miss ragged batches move to later continuous-batching work.
 - Promotion follow-up added: consider a reusable review heuristic for per-request-dimension changes in lockstep kernels.
 - 2026-07-25 maintenance drained branch-status verification captures into `memory/topics/git-branch-status-verification.md` and surfaced `meshagent-sync` promotion follow-ups.
 
 ## Freshness
 
-- Memory checked: 2026-08-02
-- Generated by: agent-memory skill maintain pass (Hermes cron)
+- Memory checked: 2026-07-30 (M2-S2 checkpoint)
+- Generated by: agent-memory skill maintain pass (Claude Code, `/agent-memory maintain WaferEngine-staging`)
 
 ## Manual conflicts / follow-ups
 
-- Promotion candidates are listed in `tracking/conflicts.md`; no contradictory project facts were auto-resolved.
+- Promotion candidates and two items needing Le are listed in `tracking/conflicts.md`. One contradictory project fact **was** corrected in place this pass (the blanket "real Qwen3 weights are not wired" claim, now scoped); the unconfirmed `e2e` on-chip relay correction was **not** auto-resolved and is parked for Le.
+
+## 2026-07-30 — M2-S2 checkpoint
+
+- New topic [[memory/topics/m2-s2-force-decode-port]]: force-decode ported to the pr14 pdSeparate line and verified
+  end-to-end on real WSE-3; forced token = **13.50%** of a free one (closes the standing "does ~12% hold on this
+  geometry" question).
+- ⚠️ **Contradiction resolved in place:** [[memory/topics/h2d-host-device-bandwidth]] now carries a correction banner —
+  the M2-S1 KV-ingress figure of 0.7726 GB/s **is not a bandwidth** (first controlled payload change: +5.882% bytes ⇒
+  +0.0085% span, marginal 134 GB/s = 12× the physical ceiling). The *bandwidth-test* numbers in that topic are
+  unaffected — those were measured across payload sizes. Durable docs (`PROGRESS.md` Failed approaches, `ROADMAP.md`
+  Known constraints, M2 anchors table, `GOALS.md` §7) all amended the same day and win on any conflict.

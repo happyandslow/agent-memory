@@ -2,7 +2,37 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-08-02 — switch-scatter-vs-parity-shift → `memory/inbox/2026-08-02-switch-scatter-vs-parity-shift.md`
+- 2026-08-02 — force-decode-startup-depends-on-prefix → `memory/inbox/2026-08-02-force-decode-startup-depends-on-prefix.md`
+- 2026-08-02 — decode-egress-has-no-switch-gather-color → `memory/inbox/2026-08-02-decode-egress-has-no-switch-gather-color.md`
+- 2026-08-02 — codex-review-hangs-under-nohup-on-stdin → `memory/inbox/2026-08-02-codex-review-hangs-under-nohup-on-stdin.md`
+- 2026-08-01 — e11-must-be-priced-as-cross-card-pd → `memory/inbox/2026-08-01-e11-must-be-priced-as-cross-card-pd.md`
+- 2026-08-01 — compression-subagent-drops-tracking-checkboxes → `memory/inbox/2026-08-01-compression-subagent-drops-tracking-checkboxes.md`
+- 2026-07-31 — the-retry-wrapper-can-die-while-the-run-survives → `memory/inbox/2026-07-31-the-retry-wrapper-can-die-while-the-run-survives.md`
+- 2026-07-31 — repurposed-meta-slot-left-a-second-writer-on-the-old-contract → `memory/inbox/2026-07-31-repurposed-meta-slot-left-a-second-writer-on-the-old-contract.md`
+- 2026-07-31 — forced-token-cost-is-a-curve-not-a-constant → `memory/inbox/2026-07-31-forced-token-cost-is-a-curve-not-a-constant.md`
+- 2026-07-31 — forced-max-is-a-compile-time-ceiling-on-F → `memory/inbox/2026-07-31-forced-max-is-a-compile-time-ceiling-on-F.md`
+- 2026-07-31 — a-queue-that-looks-idle-can-hold-a-parked-async-op → `memory/inbox/2026-07-31-a-queue-that-looks-idle-can-hold-a-parked-async-op.md`
+- 2026-07-30 — skipping-the-sampler-desyncs-the-prng-stream → `memory/inbox/2026-07-30-skipping-the-sampler-desyncs-the-prng-stream.md`
+- 2026-07-30 — forced-token-costs-13-5-percent-on-pdseparate → `memory/inbox/2026-07-30-forced-token-costs-13-5-percent-on-pdseparate.md`
+- 2026-07-30 — derived-scripts-and-editing-a-running-script → `memory/inbox/2026-07-30-derived-scripts-and-editing-a-running-script.md`
+- 2026-07-30 — decode-context-ceiling-lives-in-the-elf-and-wraps-silently → `memory/inbox/2026-07-30-decode-context-ceiling-lives-in-the-elf-and-wraps-silently.md`
+- 2026-07-30 — cs3-relaunch-loop-guards-and-a-cheap-store-build → `memory/inbox/2026-07-30-cs3-relaunch-loop-guards-and-a-cheap-store-build.md`
+- 2026-07-30 — a-throughput-that-does-not-move-with-payload → `memory/inbox/2026-07-30-a-throughput-that-does-not-move-with-payload.md`
+- 2026-07-30 — a-regression-gate-that-cannot-pass-by-construction → `memory/inbox/2026-07-30-a-regression-gate-that-cannot-pass-by-construction.md`
+- 2026-07-29 — regress-on-the-window-mean-not-a-proxy → `memory/inbox/2026-07-29-regress-on-the-window-mean-not-a-proxy.md`
+- 2026-07-29 — never-commit-without-explicit-user-request → `memory/inbox/2026-07-29-never-commit-without-explicit-user-request.md`
+- 2026-07-29 — cs3-serve-runs-fail-about-half-the-time → `memory/inbox/2026-07-29-cs3-serve-runs-fail-about-half-the-time.md`
+- 2026-07-28 — prove-same-source-before-comparing-timings → `memory/inbox/2026-07-28-prove-same-source-before-comparing-timings.md`
+- 2026-07-28 — e2e-on-chip-relay-was-never-demoted-and-is-frozen-mid-bringup → `memory/inbox/2026-07-28-e2e-on-chip-relay-was-never-demoted-and-is-frozen-mid-bringup.md`
+- 2026-07-28 — check-the-branch-tip-before-baselining → `memory/inbox/2026-07-28-check-the-branch-tip-before-baselining.md`
+- 2026-07-28 — a-quoted-number-is-not-a-measured-number → `memory/inbox/2026-07-28-a-quoted-number-is-not-a-measured-number.md`
+- 2026-07-28 — a-clean-auto-merge-is-not-a-safe-merge → `memory/inbox/2026-07-28-a-clean-auto-merge-is-not-a-safe-merge.md`
+- 2026-07-28 — a-benchmarks-name-is-not-its-workload-shape → `memory/inbox/2026-07-28-a-benchmarks-name-is-not-its-workload-shape.md`
+- 2026-07-27 — oracle-can-share-the-bug-under-test → `memory/inbox/2026-07-27-oracle-can-share-the-bug-under-test.md`
+- 2026-07-26 — sdk-container-cannot-mount-tmp → `memory/inbox/2026-07-26-sdk-container-cannot-mount-tmp.md`
 - 2026-07-26 — per-slot-kv-length-stays-on-host → `memory/inbox/2026-07-26-per-slot-kv-length-stays-on-host.md`
+- 2026-07-26 — new-storage-axis-only-destinations-take-it → `memory/inbox/2026-07-26-new-storage-axis-only-destinations-take-it.md`
 - 2026-07-26 — negative-control-configs-silently-degrade-to-pass → `memory/inbox/2026-07-26-negative-control-configs-silently-degrade-to-pass.md`
 - 2026-07-26 — mixed-hit-miss-batch-needs-no-ragged → `memory/inbox/2026-07-26-mixed-hit-miss-batch-needs-no-ragged.md`
 - 2026-07-25 — slot-reuses-bsz-batch-is-not-a-storage-axis → `memory/inbox/2026-07-25-slot-reuses-bsz-batch-is-not-a-storage-axis.md`

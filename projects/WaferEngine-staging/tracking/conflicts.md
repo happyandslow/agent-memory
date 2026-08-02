@@ -1,17 +1,36 @@
 # WaferEngine-staging Manual Conflicts
 
-Last reviewed: 2026-08-02
+Last reviewed: 2026-07-29
 
 ## Needs Le/manual resolution
 
-- No contradictory project facts found during 2026-07-22 maintenance.
-- 2026-07-27 cron: left local meeting-file changes untouched because they appear human/app-owned and ambiguous: modified `meetings/2026-07-26.pptx` plus untracked Office temp file `meetings/~$2026-07-26.pptx`. Decide whether to keep, revert, or remove the temp file manually.
-- 2026-07-28 cron: `git pull --ff-only` could not run because local `main` is ahead 1 / behind 8 (`origin/main` has newer memory commits) and local worktree still has the ambiguous modified binary `projects/WaferEngine-staging/meetings/2026-07-26.pptx`. I did not rebase, merge, revert, push, or stage the PPTX from cron; Le should decide whether to keep the PPTX edit and how to reconcile local commit `351d5e3` with `origin/main`.
-- 2026-07-29 cron: `git pull --ff-only` still cannot run; after fetch, local `main` is ahead 2 / behind 20 and worktree still has the ambiguous modified binary `projects/WaferEngine-staging/meetings/2026-07-26.pptx` (632080 → 708030 bytes). I left the PPTX unstaged and did not rebase/merge/push from cron. Le should decide whether to keep/revert the PPTX edit and how to reconcile local daily-maintenance commits (`351d5e3`, `1d24f5a`) with `origin/main`.
-- 2026-07-30 cron: `git pull --ff-only` still cannot run; after fetch, local `main` is ahead 3 / behind 30 and worktree still has the ambiguous modified binary `projects/WaferEngine-staging/meetings/2026-07-26.pptx` (632080 → 708030 bytes). I left the PPTX unstaged and did not rebase/merge/push from cron. Le should decide whether to keep/revert the PPTX edit and how to reconcile local daily-maintenance commits (`351d5e3`, `1d24f5a`, `484c6a5`) with `origin/main`.
-- 2026-07-31 cron: `git pull --ff-only` still cannot run; after fetch, local `main` is ahead 4 / behind 36 and worktree still has the ambiguous modified binary `projects/WaferEngine-staging/meetings/2026-07-26.pptx` (632080 → 708030 bytes). I left the PPTX unstaged and did not rebase/merge/push from cron. Le should decide whether to keep/revert the PPTX edit and how to reconcile local daily-maintenance commits (`351d5e3`, `1d24f5a`, `484c6a5`, `49b1136`) with `origin/main`.
-- 2026-08-01 cron: `git pull --ff-only` still cannot run; after fetch, local `main` is ahead 5 / behind 64 and worktree still has the ambiguous modified binary `projects/WaferEngine-staging/meetings/2026-07-26.pptx` (632080 → 708030 bytes). I left the PPTX unstaged and did not rebase/merge/push from cron. Le should decide whether to keep/revert the PPTX edit and how to reconcile local daily-maintenance commits (`351d5e3`, `1d24f5a`, `484c6a5`, `49b1136`, `122e5a1`) with `origin/main`.
-- 2026-08-02 cron: `git pull --ff-only` still cannot run; after fetch, local `main` is ahead 6 / behind 76 and worktree still has the ambiguous modified binary `projects/WaferEngine-staging/meetings/2026-07-26.pptx` (632080 → 708030 bytes). I left the PPTX unstaged and did not rebase/merge/push from cron. Le should decide whether to keep/revert the PPTX edit and how to reconcile local daily-maintenance commits (`351d5e3`, `1d24f5a`, `484c6a5`, `49b1136`, `122e5a1`, `bed792a`) with `origin/main`.
+- **2026-07-29 — an in-repo "Failed approaches" entry appears to be wrong, and the
+  correction is unconfirmed.** `PROGRESS.md` records that PR #14 demoted the `e2e` on-chip
+  KV relay to inert filler, not config-revivable. A direct diff says otherwise for `e2e`
+  (three `KV_TRANSFER: 1` configs already shipped on `main`; `build_relay` identical apart
+  from whitespace; `src/relay.csl` still present at PR #14) — the claim holds only for
+  **`e2e-pdSeparate`**. It looks like a model mix-up. **Not confirmed by Le**, and it
+  changes an adopt-vs-port input in the convenient direction (adoption costs *less* than
+  recorded), which is exactly when a correction deserves a second pair of eyes. See
+  [[standalone-vs-integrated-kernel-parity]].
+- **2026-07-29 — two in-repo contract lines are now known-stale and were not edited.**
+  `milestones/M1-intra-pe-reuse.md § S0.2` says *"slot empty ⇔ `iter_num_bank[layer][slot]
+  == 0`"*, but occupancy is a **host** judgement under D4; and the grep checklist lists S1
+  as the owner of adding that dimension, which should read "not needed, superseded". Left
+  for whoever next edits that milestone — flagged so it is not re-derived from the doc.
+- *(Raised by the drain, checked, NOT a conflict — recorded so it is not re-raised)* two
+  items looked like contradictions and are not: (a) `m2-s0-baseline-and-timer-provenance.md`
+  still contains the string `15 MB/s`, but every occurrence is inside the section explaining
+  **why that number is wrong** — correct usage, not a live figure; (b) `ROADMAP.md` was
+  reported as still carrying the old "~1.3–1.5 GB/s, derived by assuming a 256-token chunk
+  payload". It no longer does — it was updated the same day to the code-derived payload and
+  the measured **1.426 GB/s**. The drain worked from the capture's quotation of ROADMAP, not
+  from the current file.
+- *(Resolved this pass, recorded for traceability)* `memory/project.md` carried
+  **"Real Qwen3 weights are NOT wired into any model"**. True for the standalone kernels
+  and the `main`-line fused models; **false for `e2e-pdSeparate` at PR #14**, which bakes
+  real HF weights and has now been run end to end on real WSE-3. Corrected in place with
+  the scope made explicit.
 
 ## Promotion candidates / manual follow-up
 
@@ -27,5 +46,49 @@ Last reviewed: 2026-08-02
 - 2026-07-25: Consider updating the `meshagent-sync`/checkpoint protocol to list/fetch existing same-day Logs and recent mirror `updatedAt` before creating a new session log or re-mirroring durable docs, to avoid duplicating parallel-session work.
 - 2026-07-25: Consider promoting the git branch-status verification rule: before asserting commit/merge state, verify live branch topology and feature content; under squash merges, `merge-base --is-ancestor <original-tip>` can false-negative even when the branch contains the feature.
 - 2026-07-26: Consider promoting the per-request-dimension review heuristic: before adding a slot/request axis to a lockstep kernel, identify which invariants the old uniformity enforced for free (for M1 decode, equal active-lane length survives only as a host/test obligation because scalar `iter_num` is also the packed score stride).
-- 2026-07-27: Consider promoting the review heuristic from the mixed-hit/miss correction: before declaring a case impossible, check whether the impossibility came from an assumed implementation choice (take-over) rather than from hardware/kernel invariants (shared scalar/RoPE state).
-- 2026-07-27: Consider promoting the negative-control testing rule: before trusting a red config/test PASS, prove it can fail; unknown config keys and empty-input comparisons must not silently degrade to positive controls.
+
+### 2026-07-29 — one consolidated proposal, because seven captures turned out to be one lesson
+
+The 2026-07-26 → 07-29 captures produced seven separate "promotion candidate" flags. Reading
+them together, **six are the same failure**: *something that looks like evidence, isn't* — and
+in every case it failed **silently**, reporting the same word or shape as a real result.
+
+| the thing that looked like evidence | why it wasn't |
+|---|---|
+| a negative-control config printing PASS | an unknown JSON key defaulted back to the baseline, so the red test became a second copy of the green one |
+| a device-side check printing PASS | it compared two empty arrays (`plen == 0` since S6a) — PASS having compared zero bytes |
+| a numpy oracle agreeing with the device | the oracle contains a **second copy of the formula under test**, so it reproduces the bug it was meant to catch |
+| a quoted bandwidth in four durable docs | its denominator came from a **prose phrase**, not a timer; the original author's "measured-ish" hedge was dropped by every citation |
+| a branch someone linked you to, with committed result files | a **snapshot with a date** — the problem it showed had already been fixed 5 commits downstream |
+| a benchmark request set with a familiar name | the name described the source corpus, not how it is **driven** — "MT" (multi-turn) driven single-turn, so it exercises zero reuse |
+| a fit with R² = 0.998 | R² is invariant under an x-axis rescale, so it validates linearity and says **nothing** about whether you fitted the right variable |
+
+⇒ **Proposal: one skill, "before you trust this as evidence, check what it shares with the
+thing under test."** Trigger vocabulary should be symptoms, not terms — *a red test passes; a
+check passes on empty input; the oracle agrees; a number everyone quotes; a branch someone
+linked you to; a benchmark whose name matches your topic; a suspiciously good fit.* Each row
+above is a worked example with a concrete tell. This is procedural, project-independent, and
+has now recurred **seven times in four days** across two different milestones, which is the
+promotion bar met several times over.
+
+Two riders that did **not** fold into the above and stay separate:
+
+- **`cs3-runner` skill, two updates** (extends the standing 2026-07-22 entry): its timeout path
+  calls `cancel-mine`, which is unsafe on this **shared** account; and remote `nohup setsid` +
+  log polling is the safer launch pattern because it also survives the rc=255 transport death.
+  Add the observed failure rate — 3 of 5 identical serve runs died on EPCC ingress 502 /
+  pod-init failures — so plans budget **attempts, not successes**.
+- **"Report a performance number with its setting"** (Le's standing instruction, 2026-07-28):
+  model size/shape, real vs mock weights, deployment scenario, geometry + config, batch,
+  workload shape, machine, and `n`. Currently written into this project's `WORKFLOW.md` only,
+  so other projects have to remember to look. Procedural and cross-project ⇒ skill material.
+  Pairs naturally with the consolidated proposal above: the setting is what makes a number
+  checkable in the first place.
+
+Two further procedural rules worth carrying inside the consolidated skill rather than as their
+own entries: **only destination addresses take a new storage axis** (a source buffer indexed by
+the new axis reads into a neighbouring region — same type, same range, no trap), and **two
+copies of an addressing formula will drift** — the second copy is where the bug will be. Also:
+**before declaring a case impossible, check whether the impossibility came from an
+implementation choice you assumed** (here, take-over vs ride-along semantics turned "mixed
+hit/miss batches need ragged support" into a non-problem).
