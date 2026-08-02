@@ -2,6 +2,9 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-08-01 — e11-must-be-priced-as-cross-card-pd → `memory/inbox/2026-08-01-e11-must-be-priced-as-cross-card-pd.md`
+- 2026-08-01 — compression-subagent-drops-tracking-checkboxes → `memory/inbox/2026-08-01-compression-subagent-drops-tracking-checkboxes.md`
+- 2026-07-31 — the-retry-wrapper-can-die-while-the-run-survives → `memory/inbox/2026-07-31-the-retry-wrapper-can-die-while-the-run-survives.md`
 - 2026-07-31 — repurposed-meta-slot-left-a-second-writer-on-the-old-contract → `memory/inbox/2026-07-31-repurposed-meta-slot-left-a-second-writer-on-the-old-contract.md`
 - 2026-07-31 — forced-token-cost-is-a-curve-not-a-constant → `memory/inbox/2026-07-31-forced-token-cost-is-a-curve-not-a-constant.md`
 - 2026-07-31 — forced-max-is-a-compile-time-ceiling-on-F → `memory/inbox/2026-07-31-forced-max-is-a-compile-time-ceiling-on-F.md`
