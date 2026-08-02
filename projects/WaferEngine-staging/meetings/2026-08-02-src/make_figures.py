@@ -38,6 +38,8 @@ plt.rcParams.update({
     "font.size": 13,
     "axes.labelcolor": BODY,
     "text.color": INK,
+    # Keep labels as editable text in the companion SVG exports.
+    "svg.fonttype": "none",
 })
 
 
@@ -219,7 +221,7 @@ def edge_x(x, pe=False):
     return x + (0.76 if pe else box_w/2)
 
 
-def arrow_between(x1, x2, y, label, color, dashed=False, src_pe=False, dst_pe=False, lift=0.25):
+def arrow_between(x1, x2, y, label, color, dashed=False, src_pe=False, dst_pe=False, lift=0.52):
     start = x1 + (0.76 if src_pe else box_w/2)
     end = x2 - (0.76 if dst_pe else box_w/2)
     ax.annotate("", xy=(end, y), xytext=(start, y),
@@ -282,7 +284,7 @@ box(cols["result"], y, "KV ready", GREEN, "white")
 ax.annotate("", xy=(cols["pf_pe"]-0.76, y+0.18), xytext=(cols["pf_host"]+box_w/2, y+0.18),
             arrowprops=dict(arrowstyle="-|>", color=GREEN, linewidth=2.0,
                             connectionstyle="arc3,rad=-0.12"), zorder=4)
-ax.text(3.95, y+0.49, "Lnew IDs", ha="center", fontsize=8.7, color=GREEN, weight="bold")
+ax.text(3.95, y+0.43, "Lnew IDs", ha="center", fontsize=8.7, color=GREEN, weight="bold")
 ax.annotate("", xy=(cols["pf_host"]+box_w/2, y-0.18), xytext=(cols["pf_pe"]-0.76, y-0.18),
             arrowprops=dict(arrowstyle="-|>", color=GREEN, linewidth=2.0,
                             connectionstyle="arc3,rad=-0.12"), zorder=4)
@@ -298,6 +300,9 @@ arrow_between(cols["dc_pe"], cols["result"], y, "state loaded", GREEN, src_pe=Tr
 
 ax.text(7.1, 0.18, "Solid = card-local movement   ·   Dashed = off-card host bridge   ·   Decode→host eviction excluded",
         ha="center", fontsize=9.1, color=MUTED)
+# Companion vector source: text remains text and all boxes/arrows remain SVG
+# elements. The deck itself uses PNG for portable rendering.
+fig.savefig(OUT / "three_resume_lanes.svg", bbox_inches="tight", facecolor="white")
 save(fig, "three_resume_lanes.png")
 
 
