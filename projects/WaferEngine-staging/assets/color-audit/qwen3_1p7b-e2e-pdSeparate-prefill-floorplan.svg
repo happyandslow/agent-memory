@@ -1,83 +1,83 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 951 914" width="951" height="914" font-family="ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif">
-<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="2.6" opacity=".5"/></pattern><pattern id="hatchFake" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="1" opacity=".2"/></pattern><pattern id="hatchZoom" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#94a3b8" stroke-width="1" opacity=".35"/></pattern></defs>
-<style>:root{color-scheme:light dark}text{fill:#0f172a}.bg{fill:#fff}.sub{fill:#64748b}.rl{font-size:13px;font-weight:600}.rd{font-size:10.5px}.rdb{font-size:10.5px;font-weight:600}.ax{font-size:9.5px;fill:#94a3b8}.t1{font-size:19px;font-weight:700}.t2{font-size:11.5px}.bdg{font-size:9px;font-weight:700;fill:#fff}.grid{stroke:#cbd5e1;stroke-width:.6;opacity:.45}.brk{stroke:#94a3b8;stroke-width:1;stroke-dasharray:3 3;opacity:.9}.blk{stroke:#334155;stroke-dasharray:4 3;stroke-width:.9;fill:none;opacity:.5}@media (prefers-color-scheme:dark){text{fill:#e2e8f0}.bg{fill:#0b1120}.sub{fill:#94a3b8}.ax{fill:#64748b}.grid{stroke:#334155}.blk{stroke:#94a3b8}}</style>
-<rect class="bg" width="951" height="914"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 806 944" width="806" height="944" font-family="ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif">
+<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="2.6" opacity=".5"/></pattern><pattern id="hatchFake" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="1" opacity=".2"/></pattern><pattern id="hatchZoom" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#94a3b8" stroke-width="1" opacity=".3"/></pattern></defs>
+<style>:root{color-scheme:light dark}text{fill:#0f172a}.bg{fill:#fff}.sub{fill:#64748b}.rl{font-size:13px;font-weight:600}.rd{font-size:10.5px}.rdb{font-size:10.5px;font-weight:600}.ax{font-size:9.5px;fill:#94a3b8}.t1{font-size:19px;font-weight:700}.t2{font-size:11.5px}.bk{font-size:9.5px;font-weight:600;fill:#64748b}.bdg{font-size:9px;font-weight:700;fill:#fff}.grid{stroke:#cbd5e1;stroke-width:.6;opacity:.45}.brk{stroke:#94a3b8;stroke-width:1;stroke-dasharray:3 3;opacity:.9}.blk{stroke:#334155;stroke-dasharray:4 3;stroke-width:.9;fill:none;opacity:.5}@media (prefers-color-scheme:dark){text{fill:#e2e8f0}.bg{fill:#0b1120}.sub{fill:#94a3b8}.ax{fill:#64748b}.bk{fill:#94a3b8}.grid{stroke:#334155}.blk{stroke:#94a3b8}}</style>
+<rect class="bg" width="806" height="944"/>
 <text class="t1" x="62" y="34">Wafer floorplan — models/qwen3_1p7b-e2e-pdSeparate (prefill artifact)</text>
-<text class="t2 sub" x="62" y="55">config model_config/test_device_2x2blk_kv.json · 6 code regions · derived from launch.py placement formulas · X axis broken (compute block collapsed)</text>
-<text class="t2 sub" x="62" y="72">fabric 641×514 PEs (x 4..644, y 1..514) · Pw=512 Ph=512 · 2×2 blocks of 256 · west/edge PEs 3.4px each · block interior 512 PE → 150px</text>
-<rect x="497.2" y="134.0" width="150.0" height="719.6" fill="url(#hatchZoom)"/>
-<line class="grid" x1="62.0" y1="134.0" x2="650.6" y2="134.0"/>
-<text class="ax" x="54.0" y="137.0" text-anchor="end">1</text>
-<line class="grid" x1="62.0" y1="493.8" x2="650.6" y2="493.8"/>
-<text class="ax" x="54.0" y="496.8" text-anchor="end">258</text>
-<line class="grid" x1="62.0" y1="852.2" x2="650.6" y2="852.2"/>
-<text class="ax" x="54.0" y="855.2" text-anchor="end">514</text>
-<rect x="497.2" y="135.4" width="150.0" height="716.8" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.4" rx="2" opacity=".93"/>
-<line class="blk" x1="572.2" y1="135.4" x2="572.2" y2="852.2"/>
-<line class="blk" x1="497.2" y1="493.8" x2="647.2" y2="493.8"/>
-<text class="rl" x="572.2" y="492.8" text-anchor="middle">pf_block</text>
-<text class="rd sub" x="572.2" y="507.8" text-anchor="middle">512×512</text>
-<rect x="62.0" y="135.4" width="435.2" height="358.4" fill="#e2e8f0" stroke="#475569" stroke-width="1.4" rx="2" opacity=".93"/>
-<text class="rl" x="279.6" y="313.6" text-anchor="middle">pf_ht_head</text>
-<text class="rd sub" x="279.6" y="328.6" text-anchor="middle">128×256</text>
-<rect x="62.0" y="134.0" width="435.2" height="1.4" fill="#e2e8f0" stroke="#475569" stroke-width="1.4" rx="2" opacity=".93"/>
-<text class="rdb" x="62.0" y="131.0">pf_demux <tspan class="rd sub">128×1</tspan></text>
-<circle cx="70.0" cy="134.7" r="6.5" fill="#475569"/>
-<text class="bdg" x="70.0" y="137.7" text-anchor="middle">3</text>
-<rect x="62.0" y="493.8" width="435.2" height="358.4" fill="#e2e8f0" stroke="#475569" stroke-width="1.4" rx="2" opacity=".93"/>
-<text class="rl" x="279.6" y="672.0" text-anchor="middle">pf_ht_tail</text>
-<text class="rd sub" x="279.6" y="687.0" text-anchor="middle">128×256</text>
-<rect x="62.0" y="852.2" width="435.2" height="1.4" fill="#e2e8f0" stroke="#475569" stroke-width="1.4" rx="2" opacity=".93"/>
-<text class="rdb" x="62.0" y="849.2">pf_logits_mux <tspan class="rd sub">128×1</tspan></text>
-<circle cx="70.0" cy="852.9" r="6.5" fill="#475569"/>
-<text class="bdg" x="70.0" y="855.9" text-anchor="middle">5</text>
-<rect x="647.2" y="135.4" width="3.4" height="716.8" fill="#e2e8f0" stroke="#475569" stroke-width="1.4" rx="2" opacity=".93"/>
-<text class="rd" x="648.9" y="141.4" text-anchor="start" transform="rotate(90 648.9 141.4)" fill="#475569">pf_kv_mux 1×512</text>
-<circle cx="648.9" cy="843.2" r="6.5" fill="#475569"/>
-<text class="bdg" x="648.9" y="846.2" text-anchor="middle">6</text>
-<line class="grid" x1="62.0" y1="134.0" x2="62.0" y2="853.6"/>
-<text class="ax" x="62.0" y="128.0" text-anchor="middle">4</text>
-<line class="grid" x1="170.8" y1="134.0" x2="170.8" y2="853.6"/>
-<text class="ax" x="170.8" y="128.0" text-anchor="middle">36</text>
-<line class="grid" x1="279.6" y1="134.0" x2="279.6" y2="853.6"/>
-<text class="ax" x="279.6" y="128.0" text-anchor="middle">68</text>
-<line class="grid" x1="388.4" y1="134.0" x2="388.4" y2="853.6"/>
-<text class="ax" x="388.4" y="128.0" text-anchor="middle">100</text>
-<line class="brk" x1="497.2" y1="134.0" x2="497.2" y2="853.6"/>
-<line class="brk" x1="647.2" y1="134.0" x2="647.2" y2="853.6"/>
-<line class="brk" x1="497.2" y1="104.0" x2="647.2" y2="104.0"/>
-<line class="brk" x1="497.2" y1="100.0" x2="497.2" y2="108.0"/>
-<line class="brk" x1="647.2" y1="100.0" x2="647.2" y2="108.0"/>
-<text class="rdb" x="572.2" y="98.0" text-anchor="middle" fill="#64748b">cols 132–643 · 512 PE compute block (collapsed)</text>
-<text class="ax" x="494.2" y="128.0" text-anchor="end">132</text>
-<text class="ax" x="650.2" y="128.0" text-anchor="start">644</text>
-<line class="grid" x1="647.2" y1="134.0" x2="647.2" y2="853.6"/>
-<text class="t2" x="676.6" y="134" font-weight="700">Code regions (build order)</text>
-<rect x="676.6" y="145" width="11" height="11" fill="#ede9fe" stroke="#6d28d9"/>
-<text class="rd" x="694.6" y="154">(1) pf_block</text>
-<text class="rd sub" x="826.6" y="154">512×512 @ (132,2)</text>
-<rect x="676.6" y="161" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
-<text class="rd" x="694.6" y="170">(2) pf_ht_head</text>
-<text class="rd sub" x="826.6" y="170">128×256 @ (4,2)</text>
-<rect x="676.6" y="177" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
-<text class="rd" x="694.6" y="186">(3) pf_demux</text>
-<text class="rd sub" x="826.6" y="186">128×1 @ (4,1)</text>
-<rect x="676.6" y="193" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
-<text class="rd" x="694.6" y="202">(4) pf_ht_tail</text>
-<text class="rd sub" x="826.6" y="202">128×256 @ (4,258)</text>
-<rect x="676.6" y="209" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
-<text class="rd" x="694.6" y="218">(5) pf_logits_mux</text>
-<text class="rd sub" x="826.6" y="218">128×1 @ (4,514)</text>
-<rect x="676.6" y="225" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
-<text class="rd" x="694.6" y="234">(6) pf_kv_mux</text>
-<text class="rd sub" x="826.6" y="234">1×512 @ (644,2)</text>
-<text class="t2" x="676.6" y="276" font-weight="700">Reading this floorplan</text>
-<rect x="676.6" y="287" width="11" height="11" fill="url(#hatchZoom)"/>
-<text class="rd" x="694.6" y="296">collapsed compute-block interior (X)</text>
-<text class="rd sub" x="676.6" y="316">West HT/IO band + edge strips are drawn at</text>
-<text class="rd sub" x="676.6" y="330">3.4px/PE; the 512-PE block interior is</text>
-<text class="rd sub" x="676.6" y="344">squeezed to 150px so the thin regions read.</text>
-<text class="rd sub" x="676.6" y="358">Y is linear (HT bands span the full block).</text>
-<line class="blk" x1="676.6" y1="376" x2="687.6" y2="376"/>
-<text class="rd" x="694.6" y="380">compute-block boundary (2×2)</text>
+<text class="t2 sub" x="62" y="55">config model_config/test_device_2x2blk_kv.json · 6 code regions · derived from launch.py placement formulas</text>
+<text class="t2 sub" x="62" y="72">fabric 641×514 PEs · Pw=512 Ph=512 · 2×2 blocks of 256 · X axis broken: each compute band collapsed (see brackets)</text>
+<rect x="62.0" y="150.0" width="132.0" height="719.6" fill="url(#hatchZoom)"/>
+<rect x="194.0" y="150.0" width="132.0" height="719.6" fill="url(#hatchZoom)"/>
+<line class="grid" x1="62.0" y1="150.0" x2="342.0" y2="150.0"/>
+<text class="ax" x="54.0" y="153.0" text-anchor="end">1</text>
+<line class="grid" x1="62.0" y1="509.8" x2="342.0" y2="509.8"/>
+<text class="ax" x="54.0" y="512.8" text-anchor="end">258</text>
+<line class="grid" x1="62.0" y1="868.2" x2="342.0" y2="868.2"/>
+<text class="ax" x="54.0" y="871.2" text-anchor="end">514</text>
+<rect x="194.0" y="151.4" width="132.0" height="716.8" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.4" rx="2" opacity=".93"/>
+<line class="blk" x1="260.0" y1="151.4" x2="260.0" y2="868.2"/>
+<line class="blk" x1="194.0" y1="509.8" x2="326.0" y2="509.8"/>
+<text class="rl" x="260.0" y="508.8" text-anchor="middle">pf_block</text>
+<text class="rd sub" x="260.0" y="523.8" text-anchor="middle">512×512</text>
+<rect x="62.0" y="151.4" width="132.0" height="358.4" fill="#e2e8f0" stroke="#475569" stroke-width="1.4" rx="2" opacity=".93"/>
+<text class="rl" x="128.0" y="329.6" text-anchor="middle">pf_ht_head</text>
+<text class="rd sub" x="128.0" y="344.6" text-anchor="middle">128×256</text>
+<rect x="62.0" y="143.2" width="132.0" height="15.0" fill="#e2e8f0" stroke="#475569" stroke-width="1.4" rx="2" opacity=".93"/>
+<text class="rdb" x="62.0" y="140.2">pf_demux <tspan class="rd sub">128×1</tspan></text>
+<circle cx="70.0" cy="150.7" r="6.5" fill="#475569"/>
+<text class="bdg" x="70.0" y="153.7" text-anchor="middle">3</text>
+<rect x="62.0" y="509.8" width="132.0" height="358.4" fill="#e2e8f0" stroke="#475569" stroke-width="1.4" rx="2" opacity=".93"/>
+<text class="rl" x="128.0" y="688.0" text-anchor="middle">pf_ht_tail</text>
+<text class="rd sub" x="128.0" y="703.0" text-anchor="middle">128×256</text>
+<rect x="62.0" y="861.4" width="132.0" height="15.0" fill="#e2e8f0" stroke="#475569" stroke-width="1.4" rx="2" opacity=".93"/>
+<text class="rdb" x="62.0" y="858.4">pf_logits_mux <tspan class="rd sub">128×1</tspan></text>
+<circle cx="70.0" cy="868.9" r="6.5" fill="#475569"/>
+<text class="bdg" x="70.0" y="871.9" text-anchor="middle">5</text>
+<rect x="326.0" y="151.4" width="16.0" height="716.8" fill="#e2e8f0" stroke="#475569" stroke-width="1.4" rx="2" opacity=".93"/>
+<text class="rd" x="334.0" y="157.4" text-anchor="start" transform="rotate(90 334.0 157.4)" fill="#475569">pf_kv_mux 1×512</text>
+<circle cx="334.0" cy="859.2" r="6.5" fill="#475569"/>
+<text class="bdg" x="334.0" y="862.2" text-anchor="middle">6</text>
+<line class="brk" x1="62.0" y1="150.0" x2="62.0" y2="869.6"/>
+<line class="brk" x1="194.0" y1="150.0" x2="194.0" y2="869.6"/>
+<line class="brk" x1="62.0" y1="116.0" x2="194.0" y2="116.0"/>
+<line class="brk" x1="62.0" y1="112.0" x2="62.0" y2="120.0"/>
+<line class="brk" x1="194.0" y1="112.0" x2="194.0" y2="120.0"/>
+<text class="bk" x="128.0" y="110.0" text-anchor="middle">HT band: cols 4–131 · 128 PE (collapsed)</text>
+<line class="brk" x1="194.0" y1="150.0" x2="194.0" y2="869.6"/>
+<line class="brk" x1="326.0" y1="150.0" x2="326.0" y2="869.6"/>
+<line class="brk" x1="194.0" y1="90.0" x2="326.0" y2="90.0"/>
+<line class="brk" x1="194.0" y1="86.0" x2="194.0" y2="94.0"/>
+<line class="brk" x1="326.0" y1="86.0" x2="326.0" y2="94.0"/>
+<text class="bk" x="260.0" y="84.0" text-anchor="middle">compute block: cols 132–643 · 512 PE (collapsed)</text>
+<line class="grid" x1="326.0" y1="150.0" x2="326.0" y2="869.6"/>
+<text class="ax" x="326.0" y="144.0" text-anchor="middle">644</text>
+<text class="t2" x="368.0" y="150" font-weight="700">Code regions (build order)</text>
+<rect x="368.0" y="161" width="11" height="11" fill="#ede9fe" stroke="#6d28d9"/>
+<text class="rd" x="386.0" y="170">(1) pf_block</text>
+<text class="rd sub" x="518.0" y="170">512×512 @ (132,2)</text>
+<rect x="368.0" y="177" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
+<text class="rd" x="386.0" y="186">(2) pf_ht_head</text>
+<text class="rd sub" x="518.0" y="186">128×256 @ (4,2)</text>
+<rect x="368.0" y="193" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
+<text class="rd" x="386.0" y="202">(3) pf_demux</text>
+<text class="rd sub" x="518.0" y="202">128×1 @ (4,1)</text>
+<rect x="368.0" y="209" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
+<text class="rd" x="386.0" y="218">(4) pf_ht_tail</text>
+<text class="rd sub" x="518.0" y="218">128×256 @ (4,258)</text>
+<rect x="368.0" y="225" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
+<text class="rd" x="386.0" y="234">(5) pf_logits_mux</text>
+<text class="rd sub" x="518.0" y="234">128×1 @ (4,514)</text>
+<rect x="368.0" y="241" width="11" height="11" fill="#e2e8f0" stroke="#475569"/>
+<text class="rd" x="386.0" y="250">(6) pf_kv_mux</text>
+<text class="rd sub" x="518.0" y="250">1×512 @ (644,2)</text>
+<text class="t2" x="368.0" y="292" font-weight="700">Reading this floorplan</text>
+<rect x="368.0" y="303" width="11" height="11" fill="url(#hatchZoom)"/>
+<text class="rd" x="386.0" y="312">collapsed compute band (marked by its</text>
+<text class="rd" x="386.0" y="326">column index range on the X axis)</text>
+<text class="rd sub" x="368.0" y="346">Each uniform compute band (HT_head/HT_tail</text>
+<text class="rd sub" x="368.0" y="360">band, the 512-PE block) is squeezed to 132px so</text>
+<text class="rd sub" x="368.0" y="374">the thin demux / mux / KV routing regions and</text>
+<text class="rd sub" x="368.0" y="388">edge strips stay legible. Y is linear.</text>
+<text class="rd sub" x="368.0" y="402">1-PE bars drawn ≥15px (true size in the table).</text>
+<line class="blk" x1="368.0" y1="420" x2="379.0" y2="420"/>
+<text class="rd" x="386.0" y="424">compute-block boundary (2×2)</text>
 </svg>
