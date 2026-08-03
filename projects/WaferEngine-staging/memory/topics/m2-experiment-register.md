@@ -48,7 +48,8 @@
 | **E9** | `f_forced(pos)` | does a forced token cost more as context grows? | ✅ done — see Ch.2 E9 |
 | **E10** | Lane A vs Lane B (resume latency) | the first resume-latency boundary: at what `L_hist` does reloading beat rebuilding? | ✅ **crossing ≈ 700 tok; `L_new` cancellation VALIDATED on real WSE-3 (ratio 0.97–1.00 across 512→8192), kv_ingress = E5 exactly (Ch.2 E10)** |
 | **E11** | Full re-prefill baseline | re-prefill from scratch + ship all KV — a measurable substitute for lane C, conclusive one direction only | ⬜ |
-| **E12** | Prefill-side KV ingestion | a build, not a measurement — prefill has egress only, so true lane C does not exist | ⬜ needs decision |
+| **E12a** | Resident-prefix Lane C compute screening | does prefill compute the delta faster than forced decode when history is already resident? | ⚠️ **screening negative** — compute alone loses 3.82–10.77×; exact pdSeparate port remains optional confirmation |
+| **E12b** | Prefill-side KV ingestion | completes the missing host→prefill transport for true Lane C | ⏸ gated — do not build for the current host-mediated design unless exact E12a overturns the screening result |
 | **E13** | Decode-side KV egress | a build — the offload half of lane B; the recurring cost E10 assumes away | ⬜ needs decision |
 
 ## 1.3 What is measurable today, and what is not
@@ -61,7 +62,7 @@ decode produces KV  ------------- X no path exists (E13) X ---------------------
 host DRAM ---------------- X no path into prefill (E12) X ---------------> prefill
 ```
 
-⇒ **Lane A and Lane B are measurable now. Lane C is not** — only a substitute for it (E11). ⇒ E10 measures the **resume** cost only. The **eviction** cost (decode→host) needs E13. See §1.4 — lane C is closer than this suggests.
+⇒ **Lane A and Lane B are measurable now. Lane C is not end-to-end measurable**, but its resident-prefix compute half has now been screened on WSE-3 and is already slower than Lane B's forced delta before transport (E12a screening, Ch.2). E11 remains the full re-prefill substitute; E12b is gated. ⇒ E10 measures the **resume** cost only. The **eviction** cost (decode→host) needs E13.
 
 ## 1.4 Lane C: what `nc_service` already has
 
@@ -90,7 +91,7 @@ Surveyed 2026-07-31. `nc_service` is **already a Cerebras WSE-3 codebase** — C
 | **E9** | `f_forced(pos)` | the fit `f_forced(pos)=α+β·pos`; verdict on lane A's shape | ✅ **DONE — β=4.30 ns/tok (0.15× free), forced≈0.12×free; lane A ~linear to ceiling. E10 next** |
 | **E10** | Lane A vs Lane B | the crossing point, plus two separate segments (reload overhead, post-ingress forced-token cost) so the `L_new` cancellation is tested, not assumed | ✅ ≈700 tok; cancellation measured 0.97–1.00 across L_hist (Ch.2 E10) |
 | **E11** | Full re-prefill baseline | whether full re-prefill ever beats A or B. Conclusive one direction only | ⬜ |
-| **E12a** | Lane C compute, host-seeded | is prefilling the delta actually cheaper than force-decoding it? | ⬜ now plannable |
+| **E12a** | Lane C compute, resident-prefix screening | is prefilling the delta actually cheaper than force-decoding it? | ⚠️ **screening negative** — 292.935 ms for 256-token delta, 409.636 ms for 1,024; compute alone is 10.77× / 3.82× forced. Exact pdSeparate port remains optional confirmation |
 | **E12b** | Lane C transport (prefill KV ingress) | the prefill-side analogue of E5; completes lane C | ⬜ build |
 | **E13** | Decode-side KV egress | the recurring eviction cost E10 assumes away; also the equivalence control for the history-provenance confound | ⬜ build |
 
@@ -101,7 +102,7 @@ Surveyed 2026-07-31. `nc_service` is **already a Cerebras WSE-3 codebase** — C
 | 1 | **E9** | no | zero-code; every E10 prediction depends on it → **done** |
 | 2 | **E10** | no — force-decode + E5 ingress already timed | the actual boundary; both lanes measurable today |
 | 3 | **E11** | no | free comparison point from the same fixture |
-| 4 | **E12a** | yes, small — host `set_symbol` seed + base-chunk offset (one rebuild) | answers whether lane C's compute is worth it, before E12b's transport |
+| 4 | **E12a** | screening used existing S6a `START_CHUNKS`; exact pdSeparate port still needs code | screening says no: compute alone loses 3.8–10.8×; port only for final confirmation |
 | 5 | **E12b / E13** | yes, real | only for whichever lane E10/E12a show is live |
 
 ---
@@ -166,7 +167,7 @@ Real WSE-3, `serve_2x4_8k20k_e9` (2×4 blocks, 28 layers, `FORCED_MAX=20224`), 2
 
 **Three pre-registered checks passed.** ① `fd_f_device` non-zero on all 7 rounds including r6 (`F==N`=20,224) — the terminator-emit path (`tsc_emitted` fix, Codex's P1) executed correctly on hardware. ② r6 fastest round (2.37 s wall — all-forced, no free tail). ③ offset removed, doubling `F` scales the span ×2.03…×2.20.
 
-**The `F=1` control caught a contamination.** `fd_span_us` at `F=1` = **22.03 ms for ONE step** vs a ~88 µs steady forced step. That is a fixed per-round **pipeline-fill** offset (the device tic fires before HT_tail has received the first Z), **additive on every round**, distinct from `kv_ingress_span_us` (46.15 ms, seven rounds identical, = E5's 1-chunk / 256-token reload). ⇒ the host `fd_us_per_forced_tok` over-counts — **+58% at `F=512`**, −13% at `F=20224`. Without the `F=1` round we'd have taken 117.0 µs as the position-512 cost (58% wrong). A warning comment was added at the forced-segment block in `launch_decode.py`.
+**The `F=1` control caught a contamination.** `fd_span_us` at `F=1` = **22.03 ms for ONE step** vs a ~88 µs steady forced step. E14 and a source audit supersede the original description of this as a fixed pipeline-fill offset: the device tic fires after the `[N,F]` header but before HT_tail receives its first Z, and that header comes from one locally-ready west-edge result sender rather than an all-PE ready barrier. The span can therefore include prefix-dependent residual KV receive/copy, ingress-to-broadcast rebinding, round reset, and cross-PE readiness skew, in addition to first-token pipeline fill and final tail. It is distinct from `kv_ingress_span_us` (46.15 ms, seven rounds identical, = E5's 1-chunk / 256-token reload). ⇒ the host `fd_us_per_forced_tok` over-counts — **+58% at `F=512`**, −13% at `F=20224`. Without the `F=1` round we'd have taken 117.0 µs as the position-512 cost (58% wrong). A warning comment was added at the forced-segment block in `launch_decode.py`.
 
 **The result — segment-differenced marginal (offset-immune):**
 
@@ -264,11 +265,115 @@ For matched final context and `L_new=256`:
 
 Thus E10's ~700 result is the `S=256`, delta-reload slice of `H*(S,reload_policy,L_new)`, not a universal scalar. These crossings are **model-derived interpolations, not direct A/B witnesses**; no `S=8192` boundary is reported because the measured startup-anchor range leaves no `S+H` room.
 
+### Result 4 — physical span decomposition and how the regression is obtained
+
+The measured device interval is best written as
+
+`T_observed(P,F) = T_ready(P) + T_fill(P) + T_steady(P,F) + T_tail(P+F-1)`.
+
+In the earlier three-term shorthand, `T_fd = T_steady + T_tail`; it is not `F` identical token costs. The four terms have distinct meanings:
+
+- `T_ready(P)`: work after the timer starts but before the first token can enter a globally ready pipeline. The implementation starts timing after one west-edge PE emits the `[N,F]` header, before HT_tail blocks on its first Z; other PEs can still be receiving/copying KV, flushing OQ7, rebinding ingress to broadcast, resetting the round, or arriving at the ready state.
+- `T_fill(P)`: latency for the first forced token to traverse all 28 transformer layers. With stage layer counts `[2,4,4,4,4,4,4,2]`, a useful estimate is `T_fill(P) ≈ (28/4) II(P) = 7 II(P)`.
+- `T_steady(P,F)`: the `F-1` completion intervals after the first token. If `II(q)=a+bq`, then
+  `T_steady(P,F)=Σ[j=1…F-1] II(P+j)`
+  `=(F-1)a+b[(F-1)P+F(F-1)/2]`.
+  There are `F-1`, not `F`, intervals because the first completion is accounted for by readiness plus pipeline fill.
+- `T_tail(q)`: final-token drain/post-processing after the last steady interval. Combining the free-decode fit with the eight-stage estimate gives `T_tail(q)≈f_free(q)-7II(q)=121.484 µs-0.000338 µs×q`, about 0.12 ms over this range.
+
+The steady regression is computed directly from adjacent measured spans, without subtracting `F=1`. For every segment with `F_lo≥256`, define
+
+`y_i = [D(P,F_hi)-D(P,F_lo)]/(F_hi-F_lo)`
+
+and place that average at the segment's mean absolute position
+
+`x_i = [(P+F_lo)+(P+F_hi-1)]/2`.
+
+The four prefixes times four adjacent segments give 16 `(x_i,y_i)` observations. Unweighted least squares on `y=a+bx` yields `a=71.745198 µs/token` and `b=0.004093307 µs/position = 4.093307 ns/position`.
+
+Using `T_fill≈7II` and the tail estimate, the `F=1` readings imply the following residual readiness costs:
+
+| P | fill | tail | inferred ready |
+|---:|---:|---:|---:|
+| 256 | 0.510 ms | 0.121 ms | 21.406 ms |
+| 1,024 | 0.532 ms | 0.121 ms | 25.774 ms |
+| 4,096 | 0.620 ms | 0.120 ms | 109.649 ms |
+| 8,192 | 0.737 ms | 0.119 ms | 223.355 ms |
+
+The large prefix dependence is therefore overwhelmingly in pre-first-token readiness, not transformer pipeline fill. Readiness inferred independently from `F=256` differs by `+0.182,+0.495,-7.749,-3.195 ms`, showing round sensitivity and why `D(P,256)` remains the robust empirical anchor. That anchor plus the steady curve predicts every measured `F=512…4096` point within 0.90 ms. Exact identification needs one additional same-PE timestamp immediately after the first Z receive; the existing 16-u32 TSC burst has three padding words that can carry it.
+
 **Next gates.** Resolve startup with `F={1,16,32,64,128,256}` by prefix; obtain n=2 after ingress stabilizes; then directly witness `S=1024,H={1024,1280}` and `S=4096,H={768,1024}`, `L_new=256`.
 
-## E11 – E13 · Not yet run
+## E12a screening · Resident-prefix incremental prefill ✅ — compute alone loses to Lane B
 
-E11 (full re-prefill substitute) is a free comparison from the same fixture once it exists. E12/E13 are builds, gated on what E10/E12a show is live.
+**Question.** If the history KV is already resident on the prefill wafer, is computing only `L_new` in prefill cheap enough to justify Lane C? The tested resume model is:
+
+```
+Lane B = I_decode(L_hist) + F_forced(L_new | L_hist)
+Lane C = P_resident(L_new | L_hist) + E_prefill(L_new) + I_decode(L_hist + L_new)
+```
+
+Assumptions for the estimate: prefill and decode are separate wafers with separate hosts; host-to-host time is zero; history KV is already resident on prefill; decode is repopulated with the full `L_hist + L_new` KV; prefill egress sends only delta KV; the three Lane-C phases are serial unless the explicitly labelled overlap lower bound is used.
+
+### Existing full-prefill sweep — exact pdSeparate `6ecb496`
+
+The six S30 artifacts already contain a complete device-TSC prefill curve; no rerun was needed. TSC is the device forward span, not host-wall.
+
+| full prefill length | device forward | average µs/token | E6 KV egress |
+|---:|---:|---:|---:|
+| 256 | 56.909 ms | 222.30 | 23.564 ms |
+| 512 | 74.466 ms | 145.44 | 74.730 ms |
+| 1,024 | 113.954 ms | 111.28 | 181.791 ms |
+| 2,048 | 210.461 ms | 102.76 | 458.563 ms |
+| 4,096 | 473.610 ms | 115.63 | 820.757 ms |
+| 8,192 | 1,280.425 ms | 156.30 | 1,679.655 ms |
+
+This curve is useful context but is **not** `P(L_new | resident L_hist)`: dividing a full-prefill span by token count hid the large per-request floor and led to the earlier, over-optimistic 26–40 ms estimate for a 256-token delta.
+
+### Resident-prefix WSE-3 screening run — 2026-08-02
+
+The committed pdSeparate tree `6ecb496` does not contain `START_CHUNKS`, so it cannot directly execute resident-prefix prefill without a port. To avoid the other active session's dirty tree, the screening run used an isolated `git archive` of the already device-validated S6a commit `e0a19fc` (`models/qwen3_1p7b-prefill`). No active checkout was edited.
+
+Configuration: real WSE-3; Qwen3-1.7B real dimensions; 512×1024 PEs; 2×4 logical blocks; 28 layers; `CHUNK_SIZE=256`; total context 8,192. Each fixture ran `START_CHUNKS=[0,k,k]`: one cold reference followed by two identical warm rounds. Device TSC starts at kickoff and ends at logits emit, excluding host staging and KV egress but including the fixed device forward/pipeline work relevant to resume latency.
+
+| `L_hist` | `L_new` | `k` | span cycles | resident-prefix compute | E9 forced estimate | compute ratio | correctness |
+|---:|---:|---:|---:|---:|---:|---:|---|
+| 7,936 | 256 | 31 | 322,228,241 | **292.935 ms** | 27.206 ms | **10.77×** | cold↔warm byte-identical; warm↔warm identical |
+| 7,168 | 1,024 | 28 | 450,599,510 | **409.636 ms** | 107.133 ms | **3.82×** | cold↔warm byte-identical; warm↔warm identical |
+
+The new points agree with the earlier S6a position-weighted chunk-cost model to well under 1%, so the large short-delta floor is reproducible rather than noise. The main correction is qualitative: resident-prefix prefill is not `L_new × 103–156 µs`; for small deltas, fixed per-request work dominates.
+
+### Lane B vs Lane C estimate
+
+For `I_decode(L_hist)`, the two unmeasured 28/31-chunk history points are interpolated from E5's saturated 3.186 GB/s slope: one 256-token KV chunk adds 32 MiB / 3.186 GB/s = 10.532 ms. `F_forced` integrates E9's `71.6 µs + 4.30 ns·position`. E6 supplies delta-only egress under the explicit assumption that a future delta path retains E6's payload cost. `I_decode(L_hist+L_new)` is E5's measured 8,192-token point, 338.266 ms.
+
+| component / total | `L_hist=7936, L_new=256` | `L_hist=7168, L_new=1024` | basis |
+|---|---:|---:|---|
+| Lane-B history ingress | 327.734 ms | 296.139 ms | E5 saturated-slope interpolation |
+| Lane-B forced delta | 27.206 ms | 107.133 ms | E9 fit integral |
+| **Lane B total** | **354.940 ms** | **403.271 ms** | estimate |
+| Lane-C resident-prefix compute | 292.935 ms | 409.636 ms | **measured WSE-3** |
+| Lane-C delta egress | 23.564 ms | 181.791 ms | E6 |
+| Lane-C full decode ingress | 338.266 ms | 338.266 ms | E5 measured |
+| **Lane C, serial** | **654.765 ms** | **929.693 ms** | estimate |
+| **Lane C − Lane B** | **+299.825 ms** | **+526.421 ms** | Lane C loses |
+| Lane C, perfect egress/ingress overlap | 631.201 ms | 747.902 ms | optimistic lower bound |
+| overlap lower bound − Lane B | +276.261 ms | +344.630 ms | Lane C still loses |
+
+**Result.** The current Lane C is compute-dominated before transport is considered: resident-prefix prefill alone is 10.77× / 3.82× the corresponding forced-decode delta. Adding host-mediated delta egress and decode ingress increases the loss to 300–526 ms. Even perfect overlap of egress and decode ingress does not change the winner.
+
+**Decision implication.** Do not build E12b merely to improve the present design's transport. An exact pdSeparate E12a port remains useful as a final confirmation, because every compared prefill CSL/host file differs bytewise between `e0a19fc` and pdSeparate `6ecb496`; therefore these are a validated screening result, not the final pdSeparate benchmark. But the port would need to remove a 3.8–10.8× compute gap **before** paying transport to reverse the decision. Lane C becomes live only if the design removes most of the per-request prefill floor and likely bypasses/fuses the current host egress plus decode-ingress path.
+
+Evidence:
+
+- Local: `/home/lexu/e12a-sweep-20260802-Sp5ma8/evidence/e12a_delta256.log`
+- Local: `/home/lexu/e12a-sweep-20260802-Sp5ma8/evidence/e12a_delta1024.log`
+- CS-3 staging: `~/lexu/e12a_sweep_20260802/`
+- Jobs: `wsjob-8zy8lthn4hghhrxmgryzda` and `wsjob-bfmuvpzmpu9xdbubpmbcbt`, both completed successfully; no job left running.
+
+## E11 / E13 · Not yet run
+
+E11 (full re-prefill substitute) can reuse the exact six-point pdSeparate curve above when placed into the fabricated-session comparison. E13 remains a build. E12b is now gated on an architectural change or an exact pdSeparate E12a result that overturns this negative screening result.
 
 ---
 
@@ -348,7 +453,7 @@ total      = 4 × band_bytes = 32 MiB × ceil(L/256) + 4 MiB
 |------|-------------------|-----------------|
 | A | ✅ | nothing — E3's mechanism with large `F` (now measured, E9) |
 | B | ✅ resume only | the eviction half (decode→host) is E13, unbuilt. E10 assumes DRAM already holds `L_hist` |
-| C | ❌ | prefill has egress only, no KV ingestion. E11 measures a substitute |
+| C | ⚠️ compute screened negative | resident-prefix compute measured through the validated S6a path; exact pdSeparate port and prefill KV ingress remain unbuilt. Current host-mediated design is not competitive |
 
 **E10's result will be a statement about resume latency in a session whose history is already persisted — not a full offload-vs-recompute verdict.** Stating this in the figure caption is part of the deliverable.
 
@@ -359,5 +464,7 @@ total      = 4 × band_bytes = 32 MiB × ceil(L/256) + 4 MiB
 ## Change log
 
 * **2026-07-31** — register created. E6's "asymmetry reversed / 5.10×" retracted (prefill egress carries a transpose+gather; not comparable to decode ingress). A7's falsification withdrawn (Mooncake `output_length` capped at 2,000). Scenario fixed to the three-lane resume race; E9–E13 defined. Design reviewed by Codex — 8 findings applied.
-* **2026-07-31 (later)** — **E9 done and filed** (recovered from the lost `m2-s3-0` session; raw `timing.json` re-analysed, bit-reproduced). Forced decode has its own `f(pos) = 71.6 µs + 4.30 ns·pos`; forced ≈ 0.12 × free; the `F=1` control exposed a ~22 ms per-round pipeline-fill offset that contaminates `fd_us_per_forced_tok`. Mechanism: 8 (2×4) block pipeline, ratio ≈ `max_lpb/n_layers = 4/28`, not 1/N_blocks. Chart added. **Correction:** an interim writeup called lane A "quadratic" with a "~30 ns/tok slope" — **both wrong**; the measured slope is 4.30 ns/tok and lane A is linear-dominated to the ceiling (≈ E3-constant × F to ~1.6% at 8192). ROADMAP and this register corrected. **E10 next; no new code.**
+* **2026-07-31 (later)** — **E9 done and filed** (recovered from the lost `m2-s3-0` session; raw `timing.json` re-analysed, bit-reproduced). Forced decode has its own `f(pos) = 71.6 µs + 4.30 ns·pos`; forced ≈ 0.12 × free; the `F=1` control exposed a ~22 ms startup contamination at `P=256` (initially called pipeline fill; superseded by the E14 method correction below). Mechanism: 8 (2×4) block pipeline, ratio ≈ `max_lpb/n_layers = 4/28`, not 1/N_blocks. Chart added. **Correction:** an interim writeup called lane A "quadratic" with a "~30 ns/tok slope" — **both wrong**; the measured slope is 4.30 ns/tok and lane A is linear-dominated to the ceiling (≈ E3-constant × F to ~1.6% at 8192). ROADMAP and this register corrected. **E10 next; no new code.**
 * **2026-08-02** — **E14 measured on real WSE-3 (n=1, TSC 0.85 GHz).** The F=1 startup anchor grows with prefix, while all F_lo≥256 marginal segments collapse onto `71.745198 µs + 4.093307 ns×position` (R²=0.997447). The ~700-token E10 crossing is therefore one slice of a boundary surface parameterized by starting prefix, reload policy, and `L_new`. Two repeat attempts hit ingress 502 and were not counted without a hash-verified evidence bundle.
+* **2026-08-02 (E12a screening)** — **Resident-prefix incremental prefill measured on real WSE-3 using isolated S6a commit `e0a19fc`.** At total context 8,192, `L_new=256` took 292.935 ms (`L_hist=7,936`, 10.77× the E9 forced estimate) and `L_new=1,024` took 409.636 ms (`L_hist=7,168`, 3.82× forced); both cold↔warm and warm↔warm KV checks were byte-identical. With E5/E6 transport, serial Lane C is estimated at 654.765 / 929.693 ms vs Lane B 354.940 / 403.271 ms; even perfect egress/ingress overlap leaves Lane C +276 / +345 ms slower. This is a validated negative screening result, not the exact pdSeparate benchmark: `6ecb496` lacks `START_CHUNKS` and its prefill files differ bytewise. Decision: do not build E12b for the current host-mediated design unless an exact pdSeparate port overturns the 3.8–10.8× compute gap.
+* **2026-08-02 (E14 method correction)** — Replaced the misleading “fixed pipeline-fill offset” interpretation with `ready + fill + steady + tail`. Source timing shows the `[N,F]` header is not a global readiness barrier; inferred `T_ready` grows from 21.406 ms at `P=256` to 223.355 ms at `P=8192`, while estimated fill remains 0.510–0.737 ms and tail ≈0.12 ms. Documented the 16-point adjacent-segment regression that produces `a=71.745198 µs` and `b=4.093307 ns/position`; retained `D(P,256)` as the robust startup anchor pending a first-Z timestamp.

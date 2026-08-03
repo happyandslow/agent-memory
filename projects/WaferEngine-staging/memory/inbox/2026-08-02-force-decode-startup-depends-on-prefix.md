@@ -28,6 +28,33 @@
 - Two n=2 attempts ended in EPCC ingress 502. One repeat wafer job itself succeeded but
   its evidence bundle did not reach the launcher, so it was correctly not counted.
 
+## Implementation audit and physical model
+
+- The measured interval is `T_observed(P,F) = T_ready(P) + T_fill(P) +
+  T_steady(P,F) + T_tail(P+F-1)`. In the older three-term shorthand,
+  `T_fd = T_steady + T_tail`.
+- The HT_tail timer begins after a west-edge result sender emits the `[N,F]` header but
+  before the first Z arrives. This is local progress, not an all-PE readiness barrier, so
+  `T_ready` can contain residual KV receive/copy, OQ7 flush, ingress-to-broadcast rebind,
+  round reset, and cross-PE readiness skew.
+- With stage layer counts `[2,4,4,4,4,4,4,2]`, estimate first-token fill as
+  `T_fill(P) ~= (28/4) II(P) = 7 II(P)`. Combining this with the free-decode fit gives
+  `T_tail(q) ~= f_free(q)-7II(q) = 121.484 us - 0.000338 us*q`, approximately 0.12 ms.
+- The resulting F=1-based readiness estimates are 21.406, 25.774, 109.649, and
+  223.355 ms for P=256, 1024, 4096, and 8192. Fill is only 0.510-0.737 ms and tail
+  approximately 0.12 ms, so the long-prefix growth is overwhelmingly pre-first-token
+  readiness rather than transformer pipeline fill.
+- Regression method: for each adjacent segment with `F_lo>=256`, compute
+  `y=[D(P,F_hi)-D(P,F_lo)]/(F_hi-F_lo)` and assign it mean absolute position
+  `x=[(P+F_lo)+(P+F_hi-1)]/2`. Unweighted least squares over 4 prefixes x 4 segments
+  gives `II(q)=a+bq`, `a=71.745198 us`, `b=4.093307 ns/position`.
+- Therefore `T_steady(P,F)=sum_{j=1}^{F-1}II(P+j) = (F-1)a +
+  b[(F-1)P + F(F-1)/2]`. There are F-1 completion intervals because the first token
+  is represented by readiness plus fill.
+- `D(P,256)` plus the steady curve predicts all measured F=512...4096 points within
+  0.90 ms. Exact separation needs a same-PE timestamp immediately after first-Z receive;
+  three currently unused words in the 16-u32 TSC burst can carry it.
+
 ## Implications / next actions
 
 - [ ] Replace universal `F=1` offset subtraction in the M2 model with a measured
