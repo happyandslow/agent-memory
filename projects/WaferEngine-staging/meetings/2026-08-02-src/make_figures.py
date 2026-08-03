@@ -347,38 +347,38 @@ equation_card(ax, 10.8, 0.75, 3.05, 3.65, "MODEL SCOPE",
 save(fig, "lane_a_equations.png")
 
 
-# Lane B equation sheet, including delta/full reload and the ingress interpolation.
+# Lane B equation sheet under the current full-target-KV reload contract.
 fig, ax = plt.subplots(figsize=(14.2, 6.7))
 ax.set_xlim(0, 14.2)
 ax.set_ylim(0, 7.0)
 ax.axis("off")
 ax.text(0.35, 6.35,
-        r"$B_{\Delta}(S,H,L_{new})=I(H)+D(S+H,L_{new})$",
+        r"$B_{full}(S,H,L_{new})=I(P_{target})$",
         fontsize=25, color=BLUE, va="center")
 ax.text(0.35, 5.40,
-        r"$B_{full}(S,H,L_{new})=I(S+H)+D(S+H,L_{new})$",
+        r"$P_{target}=S+H+L_{new}$",
         fontsize=23, color=GREEN, va="center")
 ax.text(9.35, 6.35,
         r"$A(S,H,L_{new})=D(S,H+L_{new})$",
         fontsize=17, color=VIOLET, va="center")
-ax.text(9.38, 5.88, "Lane A reference used at the crossing", fontsize=10.5, color=MUTED)
+ax.text(9.38, 5.88, "Both lanes stop when target KV is ready", fontsize=10.5, color=MUTED)
 
 equation_card(ax, 0.35, 0.75, 6.1, 3.85, "INGRESS MODEL",
               [(2.55, r"$I(h)=t_k+\frac{t_{k+1}-t_k}{h_{k+1}-h_k}(h-h_k)$", 18),
                (1.62, r"$h\in[h_k,h_{k+1}]$", 16),
                (0.72, r"$h_k\in\{256,512,1024,2048,4096,8192\}$", 14)],
               BLUE, "#E9F0FE")
-equation_card(ax, 6.85, 0.75, 3.15, 3.85, "FORCED DELTA",
-              [(2.40, r"$D(S+H,L_{new})$", 19),
-               (1.43, "Reuse Lane A's startup", 12.5),
-               (0.96, "+ steady-II model", 12.5),
-               (0.35, "at absolute prefix S+H", 12.5)],
+equation_card(ax, 6.85, 0.75, 3.15, 3.85, "COMMON NEXT TOKEN",
+              [(2.40, r"$G(P_{target})$", 19),
+               (1.43, "Same free-decode step", 12.5),
+               (0.96, "after either lane", 12.5),
+               (0.35, "excluded from comparison", 12.5)],
               VIOLET, "#F2EDFD")
 equation_card(ax, 10.4, 0.75, 3.45, 3.85, "VARIABLES",
               [(2.55, r"$S$: starting prefix", 14),
                (1.80, r"$H$: history to recover", 14),
                (1.05, r"$L_{new}$: new context", 14),
-               (0.32, r"$I$: measured KV ingress", 14)],
+               (0.32, r"$I$: full-KV ingress", 14)],
               GREEN, "#E5F4EE")
 save(fig, "lane_b_equations.png")
 

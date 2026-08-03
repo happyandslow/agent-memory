@@ -108,8 +108,8 @@
       "eyebrow": "Lane B model",
       "title": "Lane B reload equations",
       "image": "figures/lane_b_equations.png",
-      "caption": "Delta reload pays I(H); full-context reload pays I(S+H). Both then force-decode Lnew using the Lane A model at absolute prefix S+H.",
-      "notes": "I(h) is piecewise-linear interpolation over the six E5 anchors. E10 validates that the real reload path reproduces E5 and that post-ingress forced-token cost matches E9 to 0.97–1.00 across H=512…8192."
+      "caption": "Lane B reloads the complete target KV: B=I(S+H+Lnew). The next free-decode token is common to both lanes and excluded.",
+      "notes": "I(h) is piecewise-linear interpolation over the six E5 anchors. Under the current Lane B contract, host memory already holds the complete target KV, so Lane B has no force-decode term. The older E10 delta-reload fixture is a different mechanism and must not be substituted here."
     },
     {
       "type": "figure",

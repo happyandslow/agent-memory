@@ -2,6 +2,7 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-08-03 — lane-b-full-kv-reload-has-no-forced-delta → `memory/inbox/2026-08-03-lane-b-full-kv-reload-has-no-forced-delta.md`
 - 2026-08-02 — switch-scatter-vs-parity-shift → `memory/inbox/2026-08-02-switch-scatter-vs-parity-shift.md`
 - 2026-08-02 — force-decode-startup-depends-on-prefix → `memory/inbox/2026-08-02-force-decode-startup-depends-on-prefix.md`
 - 2026-08-02 — decode-egress-has-no-switch-gather-color → `memory/inbox/2026-08-02-decode-egress-has-no-switch-gather-color.md`
