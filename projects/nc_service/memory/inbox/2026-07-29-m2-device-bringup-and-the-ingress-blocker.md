@@ -4,7 +4,7 @@ Date: 2026-07-29 (overnight session) · Repo: `nc_service`, branch `lexu/pdsep-k
 
 **Project:** nc_service
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The headline: M2's question is answered
 

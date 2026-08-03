@@ -4,7 +4,7 @@ Date: 2026-07-30 · EPCC CS-3, M2-S1 overnight runs
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 **Promotion signal: procedural, not project-specific.** This is a method-level trap for any
 long-running remote job driven by shell scripts; nothing about it is Cerebras- or

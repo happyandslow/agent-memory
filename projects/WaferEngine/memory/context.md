@@ -2,24 +2,41 @@
 
 # WaferEngine Context
 
-Compact session-start packet. This generated view is intentionally thin: load `plan.md` for goals/decisions/next actions and then only the relevant topic note(s).
+Compact startup packet for fresh agent sessions. This generated view is intentionally thin: load `plan.md`, `memory/project.md`, and only the relevant topic note(s).
 
 ## What this project is
 
-- WaferEngine/WaferServe WSE-3 kernel work around qwen3-1.7B decode/prefill, SpecDec, runtime KV loading, PE-local SRAM/fabric resource limits, and CS-3 host/device transport.
+- See `memory/project.md` for stable identity, source-of-truth paths, machines, and commands.
 
-## Canonical sources
+## Current state
 
-- `plan.md` — canonical roadmap, decisions, milestones, and next actions.
-- `memory/topics/dynamic-kv-load.md` — runtime KV ingress / compile-once serving contract.
-- `memory/topics/h2d-playground-transport.md` — CS-3 host↔device, host↔host, RDMA, and pipeline latency findings from h2d-playground.
-- `memory/topics/pe-sram-memory-breakdown.md` — device-measured PE SRAM and fabric-resource findings.
-- `tracking/conflicts.md` — manual conflicts Le must resolve before externalizing slide/image-dependent material.
+- Daily maintenance last checked this project on 2026-08-03.
+- Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
+
+## Current focus
+
+- Use `plan.md` next actions plus any project-specific topic notes below.
+
+## Next likely actions
+
+- [ ] Verify live repo/server state before acting; memory is context, not proof of current external state.
+- [ ] Read `tracking/status.md` and relevant topic notes.
+
+## Must-read topic notes
+
+- `memory/topics/dynamic-kv-load.md` — Runtime KV ingress for qwen3 decode so one compiled artifact can serve variable-prefill requests.
+- `memory/topics/h2d-playground-transport.md` — CS-3 host/device and cross-pod transport experiments from h2d-playground.
+- `memory/topics/pe-sram-memory-breakdown.md` — Device-measured WSE-3 per-PE SRAM/fabric resource analysis for qwen3 decode and prefill.
+
+## Important constraints
+
+- Do not search broad raw transcripts unless the user asks for targeted archaeology.
+- Do not edit generated views directly outside the maintain/regeneration pass.
 
 ## Restart checklist
 
-1. Verify live repo/server/PR state before acting; memory is not current proof.
-2. Read `plan.md`.
-3. Read only the topic note relevant to the task.
-4. For transport/H2D/RDMA questions, read `memory/topics/h2d-playground-transport.md` plus the full doc pointer there.
-5. If task mentions WaferOS/session examples, also check `human/2026-06-29-meeting-notes-waferos.md` and `tracking/conflicts.md`.
+1. Verify live repo/server state; memory may be stale.
+2. Read `memory/project.md` and `plan.md`.
+3. Read `tracking/status.md`.
+4. Read relevant topic notes.
+5. Proceed with the user's task.

@@ -8,7 +8,7 @@ tags: [methodology, measurement, regression-gate, reproducibility, m2, procedura
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 

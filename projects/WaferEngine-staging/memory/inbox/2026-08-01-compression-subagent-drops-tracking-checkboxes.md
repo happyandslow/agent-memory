@@ -8,7 +8,7 @@ tags: [methodology, docs, subagent, compression, verification, procedural]
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 

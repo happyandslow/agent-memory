@@ -8,7 +8,7 @@ tags: [cs3-cluster, operations, automation, build, epcc, recipe]
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 

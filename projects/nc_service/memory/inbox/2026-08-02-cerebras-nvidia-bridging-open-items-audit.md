@@ -4,7 +4,7 @@ Date: 2026-08-02 · Repo: `nc_service` (branch `lexu/pdsep-kernel-integration`)
 
 **Project:** nc_service
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## Why this note
 

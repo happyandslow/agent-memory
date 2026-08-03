@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 Refines [[2026-07-30-cs3-relaunch-loop-guards-and-a-cheap-store-build]]. Only the parts that
 note does not already cover.

@@ -8,7 +8,7 @@ tags: [m2, e11, pd-disaggregation, cross-card, cost-model, nc_service, decision]
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 Refines the E11 rows in [[m2-experiment-register]] (which frame E11 as "full re-prefill,
 same fixture, no code, a free comparison point"). That framing is only right for the wrong

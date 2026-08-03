@@ -4,7 +4,7 @@ Date: 2026-07-27 · Repo: `nc_service` (kernel in WaferEngine `CongjieHe/WaferEn
 
 **Project:** nc_service
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## Situation
 

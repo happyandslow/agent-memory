@@ -13,23 +13,43 @@
 
 ## Topics
 
+- [[memory/topics/cerebras-nvidia-bridging-open-items-audit]]
+- [[memory/topics/inproc-exchange-constrains-verify-seam]]
+- [[memory/topics/long-poll-over-a-replay-cache-needs-fresh-keys]]
+- [[memory/topics/m1-complete-bridge-architecture-index]]
+- [[memory/topics/m2-device-bringup-and-the-ingress-blocker]]
+- [[memory/topics/m2-s1s2-staging-and-real-cfg]]
 - [[memory/topics/pdsep-kernel-adoption]]
+- [[memory/topics/sd-pdseparate-specdec-kernel]]
+- [[memory/topics/sglang-already-speaks-our-protocol]]
 - [[memory/topics/specdec-cs3-roadmap]]
 - [[memory/topics/specdec-d2h-latency]]
 - [[memory/topics/specdec-demo-gpu-cerebras]]
 - [[memory/topics/specdec-gpu-verifier-eidf]]
 - [[memory/topics/specdec-modeb-drive-path]]
 - [[memory/topics/specdec-modeb-pd-module-trace]]
+- [[memory/topics/take-scalars-from-the-kernel-not-your-own-derivation]]
+- [[memory/topics/why-patch-the-target-not-the-launcher]]
 
 ## Topic catalog
 
 | Topic | Summary | Tags | Path |
 | --- | --- | --- | --- |
+| Cerebras-draft <-> NVIDIA-verify bridging: what is still open, and what the M2 measurement closed | Cerebras-draft <-> NVIDIA-verify bridging — what is still open, and what the M2 measurement closed | nc_service, drained-inbox, 2026-08-02 | `memory/topics/cerebras-nvidia-bridging-open-items-audit.md` |
+| Wiring the kernel's `target.verify()` out of the worker: the live transport is an in-process gRPC hotswap, not FIFO — and that dictates the whole protocol | Wiring the kernel's `target.verify()` out of the worker — the live transport is an in-process gRPC hotswap, not FIFO — and that dictates the whole protocol | nc_service, drained-inbox, 2026-07-27 | `memory/topics/inproc-exchange-constrains-verify-seam.md` |
+| Long-polling over a replay-cached transport: reusing the request key turns the retry into a livelock, and that is why an application-level ack is unavoidable | Long-polling over a replay-cached transport — reusing the request key turns the retry into a livelock, and that is why an application-level ack is unavoidable | nc_service, drained-inbox, 2026-07-28 | `memory/topics/long-poll-over-a-replay-cache-needs-fresh-keys.md` |
+| M1 done: the sd-pdSeparate bridge runs end to end with no SDK, no wafer, no GPU — plus an index of which module runs where | M1 done — the sd-pdSeparate bridge runs end to end with no SDK, no wafer, no GPU — plus an index of which module runs where | nc_service, drained-inbox, 2026-07-28 | `memory/topics/m1-complete-bridge-architecture-index.md` |
+| M2 DELIVERED on real CS-3: the three-way latency split says leg-2 dominates the wafer 3.7x — and the cost inside leg-2 is host work, not transport | M2 DELIVERED on real CS-3 — the three-way latency split says leg-2 dominates the wafer 3.7x — and the cost inside leg-2 is host work, not transport | nc_service, drained-inbox, 2026-07-29 | `memory/topics/m2-device-bringup-and-the-ingress-blocker.md` |
+| M2 S1+S2: the kernel tree and the real decode cfg now reach the pod — and the 23 GB ELF blocker was already solved upstream | M2 S1+S2 — the kernel tree and the real decode cfg now reach the pod — and the 23 GB ELF blocker was already solved upstream | nc_service, drained-inbox, 2026-07-28 | `memory/topics/m2-s1s2-staging-and-real-cfg.md` |
 | pdSeparate kernel adoption notes | Adopting PR#14 / PR#12 pdSeparate kernel changes the KV contract: mode-A serving only, chunk-major varlen KV bridge, no internal rewind; compiled reload artifacts are full 23 GB sim.elf images, not lightweight ELFs. | nc-service, waferengine, pdSeparate, kv-contract, csl-kernel, cs3, sdklauncher | `memory/topics/pdsep-kernel-adoption.md` |
+| The `sd-pdSeparate` kernel IS the spec-dec target: it HAS in-kernel rewind, a clean `target.verify()` seam, and runs in the worker | The `sd-pdSeparate` kernel IS the spec-dec target — it HAS in-kernel rewind, a clean `target.verify()` seam, and runs in the worker | nc_service, drained-inbox, 2026-07-27 | `memory/topics/sd-pdseparate-specdec-kernel.md` |
+| Before designing a protocol change for the GPU verifier, check the counterpart repo: SGLang already vendored our proto AND our Rust control plane | Before designing a protocol change for the GPU verifier, check the counterpart repo — SGLang already vendored our proto AND our Rust control plane | nc_service, drained-inbox, 2026-07-28 | `memory/topics/sglang-already-speaks-our-protocol.md` |
 | SpecDec-on-CS-3 roadmap (real kernels → PD serving + spec-dec rewind) | Current roadmap for real-kernel SpecDec on CS-3, PD serving, mode-B rewind, and full-loop validation. | nc-service, specdec, cs3, pd-disaggregation, roadmap | `memory/topics/specdec-cs3-roadmap.md` |
 | SpecDec d2h latency + real-GPU verify-side (WSE-3 drafter) | Measured WSE-3 draft-to-host latency and real-GPU verifier integration history for SpecDec. | nc-service, specdec, latency, gpu-verifier, wse3 | `memory/topics/specdec-d2h-latency.md` |
 | SpecDec demo: GPU + Cerebras | Browser demo for GPU-alone vs GPU+GPU-draft vs GPU+Cerebras speculative decoding; parameterized timing model, rendering pitfalls, and final K=32 coding-workload caveats. | nc-service, specdec, demo, gpu-verifier, cerebras, acceptance-rate, visualization | `memory/topics/specdec-demo-gpu-cerebras.md` |
 | SpecDec GPU verifier on EIDF / SGLang REMOTE_STANDALONE | EIDF/Kubernetes SGLang REMOTE_STANDALONE verifier bring-up, dummy and real Kimi K2.5 measurements. | nc-service, specdec, gpu-verifier, eidf, sglang, kimi, glm, mtp | `memory/topics/specdec-gpu-verifier-eidf.md` |
 | Mode-B per-round drive path + timing anchors | Mode-B (spec-dec rewind) per-round drive path with file:line annotations + timing anchors — where a ~115ms recurring round actually spends its time. | nc-service, specdec, mode-B, latency, drive-path, wse3, profiling | `memory/topics/specdec-modeb-drive-path.md` |
 | Mode-B PD module trace (architecture map + deliverables) | Module-by-module map of the mode-B PD disaggregation run (run_e2e_pd_modeb_real.sh) — four processes, three couplings, the seam split — plus deliverable locations and two operational gotchas (OAuth refresh, render toolchain). Companion to [[specdec-modeb-drive-path]]. | nc-service, specdec, mode-B, PD-disaggregation, module-map, wse3, io_pipeline, realkv, gotcha | `memory/topics/specdec-modeb-pd-module-trace.md` |
+| Integrating a vendored kernel: every quantity you re-derive on your side is the drift you came to delete | Integrating a vendored kernel — every quantity you re-derive on your side is the drift you came to delete | nc_service, drained-inbox, 2026-07-28 | `memory/topics/take-scalars-from-the-kernel-not-your-own-derivation.md` |
+| Driving a vendored kernel's host loop from an RPC handler: it has no "run one round" API, so you patch its target seam, not its launcher | Driving a vendored kernel's host loop from an RPC handler — it has no "run one round" API, so you patch its target seam, not its launcher | nc_service, drained-inbox, 2026-07-27 | `memory/topics/why-patch-the-target-not-the-launcher.md` |
 

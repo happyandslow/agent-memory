@@ -2,30 +2,55 @@
 
 # nc_service Context
 
-Compact session-start packet. This generated view is intentionally thin: load `plan.md` for goals/decisions/next actions and then only the relevant topic note(s).
+Compact startup packet for fresh agent sessions. This generated view is intentionally thin: load `plan.md`, `memory/project.md`, and only the relevant topic note(s).
 
 ## What this project is
 
-- WaferEngine SpecDec on WSE-3: CS-3 runs the draft model, an external GPU host is the verifier/target, and the `io_pipeline` backbone carries advances. Mode A (regular PD serving) and mode B (speculative decoding with rewind) are separate.
+- See `memory/project.md` for stable identity, source-of-truth paths, machines, and commands.
 
-## Canonical sources
+## Current state
 
-- `plan.md` — canonical goals, decisions, milestones, and next actions.
-- `memory/topics/specdec-cs3-roadmap.md` — current roadmap, validated branches/tests, mode-A/mode-B details, and gotchas.
-- `memory/topics/specdec-modeb-drive-path.md` — per-round timing call chain, KV-transfer findings, RDMA negative result, zero-copy handoff fix, and standing >=10 rewind-round rule.
-- `memory/topics/specdec-gpu-verifier-eidf.md` — EIDF/SGLang REMOTE_STANDALONE verifier deployment, dummy loop, real Kimi K2.5 H100 measurement, and GLM-4.6 FP8 + native MTP competitor baseline.
-- `memory/topics/specdec-demo-gpu-cerebras.md` — browser demo model, three-lane baseline framing, K=32 coding-workload acceptance caveat, and rendering/harness lessons.
-- `memory/topics/pdsep-kernel-adoption.md` — PR#14/#12 pdSeparate mode-A kernel adoption, chunk-major KV bridge contract, and CS-3 artifact/reload reality.
-- `memory/topics/specdec-modeb-pd-module-trace.md` — process/module/coupling map for `run_e2e_pd_modeb_real.sh` plus PR/contextbase deliverable pointers.
-- `memory/topics/specdec-d2h-latency.md` — earlier d2h latency / in-process-patch / real-GPU findings.
-- Root `CLAUDE.md` in the live nc_service repo — architecture plus build/test/device commands.
+- Daily maintenance last checked this project on 2026-08-03.
+- Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
+
+## Current focus
+
+- Use `plan.md` next actions plus any project-specific topic notes below.
+
+## Next likely actions
+
+- [ ] Verify live repo/server state before acting; memory is context, not proof of current external state.
+- [ ] Read `tracking/status.md` and relevant topic notes.
+
+## Must-read topic notes
+
+- `memory/topics/cerebras-nvidia-bridging-open-items-audit.md` — Cerebras-draft <-> NVIDIA-verify bridging — what is still open, and what the M2 measurement closed
+- `memory/topics/inproc-exchange-constrains-verify-seam.md` — Wiring the kernel's `target.verify()` out of the worker — the live transport is an in-process gRPC hotswap, not FIFO — and that dictates the whole protocol
+- `memory/topics/long-poll-over-a-replay-cache-needs-fresh-keys.md` — Long-polling over a replay-cached transport — reusing the request key turns the retry into a livelock, and that is why an application-level ack is unavoidable
+- `memory/topics/m1-complete-bridge-architecture-index.md` — M1 done — the sd-pdSeparate bridge runs end to end with no SDK, no wafer, no GPU — plus an index of which module runs where
+- `memory/topics/m2-device-bringup-and-the-ingress-blocker.md` — M2 DELIVERED on real CS-3 — the three-way latency split says leg-2 dominates the wafer 3.7x — and the cost inside leg-2 is host work, not transport
+- `memory/topics/m2-s1s2-staging-and-real-cfg.md` — M2 S1+S2 — the kernel tree and the real decode cfg now reach the pod — and the 23 GB ELF blocker was already solved upstream
+- `memory/topics/pdsep-kernel-adoption.md` — Adopting PR#14 / PR#12 pdSeparate kernel changes the KV contract: mode-A serving only, chunk-major varlen KV bridge, no internal rewind; compiled reload artifacts are full 23 GB sim.elf images, not lightweight ELFs.
+- `memory/topics/sd-pdseparate-specdec-kernel.md` — The `sd-pdSeparate` kernel IS the spec-dec target — it HAS in-kernel rewind, a clean `target.verify()` seam, and runs in the worker
+- `memory/topics/sglang-already-speaks-our-protocol.md` — Before designing a protocol change for the GPU verifier, check the counterpart repo — SGLang already vendored our proto AND our Rust control plane
+- `memory/topics/specdec-cs3-roadmap.md` — Current roadmap for real-kernel SpecDec on CS-3, PD serving, mode-B rewind, and full-loop validation.
+- `memory/topics/specdec-d2h-latency.md` — Measured WSE-3 draft-to-host latency and real-GPU verifier integration history for SpecDec.
+- `memory/topics/specdec-demo-gpu-cerebras.md` — Browser demo for GPU-alone vs GPU+GPU-draft vs GPU+Cerebras speculative decoding; parameterized timing model, rendering pitfalls, and final K=32 coding-workload caveats.
+- `memory/topics/specdec-gpu-verifier-eidf.md` — EIDF/Kubernetes SGLang REMOTE_STANDALONE verifier bring-up, dummy and real Kimi K2.5 measurements.
+- `memory/topics/specdec-modeb-drive-path.md` — Mode-B (spec-dec rewind) per-round drive path with file:line annotations + timing anchors — where a ~115ms recurring round actually spends its time.
+- `memory/topics/specdec-modeb-pd-module-trace.md` — Module-by-module map of the mode-B PD disaggregation run (run_e2e_pd_modeb_real.sh) — four processes, three couplings, the seam split — plus deliverable locations and two operational gotchas (OAuth refresh, render toolchain). Companion to [[specdec-modeb-drive-path]].
+- `memory/topics/take-scalars-from-the-kernel-not-your-own-derivation.md` — Integrating a vendored kernel — every quantity you re-derive on your side is the drift you came to delete
+- `memory/topics/why-patch-the-target-not-the-launcher.md` — Driving a vendored kernel's host loop from an RPC handler — it has no "run one round" API, so you patch its target seam, not its launcher
+
+## Important constraints
+
+- Do not search broad raw transcripts unless the user asks for targeted archaeology.
+- Do not edit generated views directly outside the maintain/regeneration pass.
 
 ## Restart checklist
 
-1. Verify live repo/server state before acting.
-2. Read `plan.md`.
-3. Read `memory/topics/specdec-cs3-roadmap.md`.
-4. For hosted GPU verifier, competitor baseline, or demo claims, read `specdec-gpu-verifier-eidf.md` plus `specdec-demo-gpu-cerebras.md`.
-5. For timing/latency/RDMA/KV-handoff questions, read `specdec-modeb-drive-path.md`.
-6. For pdSeparate PR#14/#12 adoption, read `pdsep-kernel-adoption.md`; do not use the old mode-B strided KV transform for the chunk-major mode-A kernel.
-7. Never print/copy gateway TOTP secrets; use the `/cs3-runner` workflow for device runs.
+1. Verify live repo/server state; memory may be stale.
+2. Read `memory/project.md` and `plan.md`.
+3. Read `tracking/status.md`.
+4. Read relevant topic notes.
+5. Proceed with the user's task.

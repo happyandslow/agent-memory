@@ -4,7 +4,7 @@ Date: 2026-07-26 · ContextBase (Outline) via MCP, MeshAgent collection
 
 **Project:** contextbase
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## The situation this applies to
 

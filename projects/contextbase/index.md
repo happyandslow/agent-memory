@@ -13,4 +13,13 @@
 
 ## Topics
 
+- [[memory/topics/append-drops-checkboxes-nested-in-checkboxes]]
+- [[memory/topics/patch-mode-cannot-match-mirrored-markdown]]
+
+## Topic catalog
+
+| Topic | Summary | Tags | Path |
+| --- | --- | --- | --- |
+| A mirrored page is missing whole sub-items after import: `update_document` drops `- [ ]` items nested inside another `- [ ]` item | A mirrored page is missing whole sub-items after import — `update_document` drops `- [ ]` items nested inside another `- [ ]` item | contextbase, drained-inbox, 2026-07-26 | `memory/topics/append-drops-checkboxes-nested-in-checkboxes.md` |
+| `editMode: "patch"` never matches on a mirrored page — findText is compared against Outline's *normalized* markdown, not your source file | `editMode — "patch"` never matches on a mirrored page — findText is compared against Outline's *normalized* markdown, not your source file | contextbase, drained-inbox, 2026-07-30 | `memory/topics/patch-mode-cannot-match-mirrored-markdown.md` |
 

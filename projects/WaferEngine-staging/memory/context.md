@@ -2,52 +2,58 @@
 
 # WaferEngine-staging Context
 
-Compact session-start packet. This generated view is intentionally thin: load `plan.md` for goals/decisions/next actions and then only the relevant topic note(s).
+Compact startup packet for fresh agent sessions. This generated view is intentionally thin: load `plan.md`, `memory/project.md`, and only the relevant topic note(s).
 
 ## What this project is
 
-- Host-side LLM inference engine plus Cerebras WSE-3 CSL kernels for qwen3-1.7B end-to-end variants: fused `e2e`, `e2e-pdSeparate`, and standalone decode/prefill reuse mechanisms.
+- See `memory/project.md` for stable identity, source-of-truth paths, machines, and commands.
 
-## Canonical sources
+## Current state
 
-- `plan.md` — canonical goals, decisions, milestones, and next actions.
-- `memory/topics/kv-cache-policy-tradeoffs.md` — preserve/evict/offload tiering, T0.5/M1 in-bank reuse, slot-vs-batch vocabulary, fixed-slot-vs-paging seam, and shared-position active-lane invariant.
-- `memory/topics/m1-s1-multi-slot-kv-seam.md` — M1-S1 multi-slot KV addressing seam engineering learnings: slot-vs-lane indexing, centralized K/V address accessors, red-test/config hygiene, host-owned slot lengths, and mixed hit/miss ride-along correction.
-- `memory/topics/s6b-force-decode.md` — S6b forced-token decode design and staged implementation/verification plan.
-- `memory/topics/s6a-prefill-warm-start.md` — M0/S6a prefill `START_CHUNKS` warm-start: WSE-3 correctness, defects, real-scale prefix-reuse performance, decode retain interpretation, and measurement guardrails.
-- `memory/topics/s6a-decode-kv-retain.md` — M0/S6a retain design/verification learnings, pre-S6 abstraction decision, and the carried-counter vs recomputed-state distinction.
-- `memory/topics/prefill-decode-transfer-bandwidth.md` — transfer+transform measurement design/results, profiler pitfalls, single-link ceiling, and floorplan pointers.
-- `memory/topics/e2e-kernel-dataflow-and-topology.md` — 2026-07-09 source-read reference for e2e token/KV flow, demux/HT_head seams, K-pipe strips, and tensor layout findings.
-- `memory/topics/e2e-pdSeparate-device-validation.md` — device results, weights gap, max-context byte model.
-- `memory/topics/standalone-vs-integrated-kernel-parity.md` — feature gap and PR #14 / S6 abstraction refinements.
-- `memory/topics/csl-control-payload-mechanisms.md` — CSL control wavelets/switches and no-keyed-routing/static-orchestration framing.
-- `memory/topics/qwen3-kernel-analysis-atlas.md` — generated floorplan/algorithm/state-machine atlas with links to aggregate state-machine indexes under `assets/kernel-algo/`.
-- `memory/topics/h2d-host-device-bandwidth.md` — CS-3 host↔device / host↔host transport findings.
-- `memory/topics/git-branch-status-verification.md` — guardrails for writing branch/commit/merge status under stale durable prose and squash merges; plus branch-tip-before-baselining and why a zero-conflict merge is evidence about text, not meaning.
-- `memory/topics/m1-s1-multi-slot-kv-seam.md` — engineering lessons from implementing the multi-slot KV addressing seam: destination-vs-source indexing, seam drift, checks that cannot fail, and oracle independence.
-- `memory/topics/m2-s0-baseline-and-timer-provenance.md` — the pr14 pdSeparate baseline reproduced bit-identical on real WSE-3, the code-derived KV wire payload, which `timing.json` fields are safe to quote, and what `mtbench8` structurally cannot measure.
-- `memory/topics/pr14-real-serving-port-contract.md` — the PR #14 feature matrix, the branch map, and the measured rebase cost.
+- Daily maintenance last checked this project on 2026-08-03.
+- Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
+
+## Current focus
+
+- Use `plan.md` next actions plus any project-specific topic notes below.
+
+## Next likely actions
+
+- [ ] Verify live repo/server state before acting; memory is context, not proof of current external state.
+- [ ] Read `tracking/status.md` and relevant topic notes.
+
+## Must-read topic notes
+
+- `memory/topics/a-queue-that-looks-idle-can-hold-a-parked-async-op.md` — A queue that looks idle between phases can be holding a parked async op — 2026-07-31
+- `memory/topics/a-regression-gate-that-cannot-pass-by-construction.md` — Your "prove it changed nothing" gate fails, and the code is fine — the tolerance was calibrated on the wrong comparison — 2026-07-30
+- `memory/topics/a-throughput-that-does-not-move-with-payload.md` — A GB/s that does not move when you change the payload — 2026-07-30
+- `memory/topics/a7-Lp-vs-Lg-settled-on-tracelab.md` — A7 (L_g >> L_p) is FALSIFIED on TraceLab — 665k real Claude Code/Codex rounds, uncapped output, L_p = 99.7% of tokens. Supersedes both the Mooncake-based falsification and its withdrawal.
+- `memory/topics/agentic-kv-trace-datasets.md` — Dataset and trace pointers for agentic/request-length KV preserve-vs-evict analysis.
+- `memory/topics/codex-review-hangs-under-nohup-on-stdin.md` — Driving codex-review in a loop — background passes finish with empty output, foreground passes time out
+- `memory/topics/compression-subagent-drops-tracking-checkboxes.md` — A content-fact verifier passed the compressed doc — but every unchecked subtask lost its checkbox — 2026-08-01
+- `memory/topics/cs3-relaunch-loop-guards-and-a-cheap-store-build.md` — Automating "retry the CS-3 run when the 502 clears" — three things that bite, and a store build that takes 5 minutes instead of 20 — 2026-07-30
+- `memory/topics/csl-control-payload-mechanisms.md` — CSL (WSE-3, SDK v2.10) supports control payloads that instruct PE actions — control wavelets (opcode + control-task entrypoint + 16-bit arg), switch-advance/reset/teardown, data-task-by-color, header-peel, and async .on_control termination. Input to the M0/S4 metadata-carrying on-chip KV relay.
+- `memory/topics/decode-context-ceiling-lives-in-the-elf-and-wraps-silently.md` — How long a sequence the pr14 decode can actually hold — and the wall that wraps silently — 2026-07-30
+- `memory/topics/decode-egress-has-no-switch-gather-color.md` — S3b/E13 decode→host KV egress — the "clone prefill's switch-gather" plan has no valid color on the decode artifact
+- `memory/topics/derived-scripts-and-editing-a-running-script.md` — A chained remote job never fires, or a long-running script suddenly executes garbage — two traps in `sed`-derived driver scripts
+- `memory/topics/e11-must-be-priced-as-cross-card-pd.md` — Pricing the re-prefill baseline (lane C0) — the register's "free same-fixture comparison" is the wrong scenario — real PD is cross-card — 2026-08-01
+- `memory/topics/e2e-kernel-dataflow-and-topology.md` — Source-read reference for qwen3_1p7b-e2e token/KV dataflow, decode strips/K-pipe, HT_head/demux seams, and tensor layout findings.
+- `memory/topics/e2e-pdSeparate-device-validation.md` — Device-validation and max-context findings for qwen3 e2e and pdSeparate deployments.
+- `memory/topics/e9-forced-segment-tsc.md` — E9 force-decode segment timing — why it lives in ht_tail and not the block PE, the 4-way burst-width contract, and the two silent-failure bugs found in review.
+- `memory/topics/epcc-cs3-has-four-systems.md` — The EPCC CS-3 cluster has FOUR systems, not one — a guard that waits on "any wsjob exists" blocks on an idle cluster and costs wall-clock for nothing.
+- `memory/topics/force-decode-startup-depends-on-prefix.md` — Force-decode startup depends on prefix length — 2026-08-02
+- `memory/topics/forced-max-is-a-compile-time-ceiling-on-f.md` — You set a large forced_decode_len and the run dies before touching the wafer — 2026-07-31
+- `memory/topics/forced-token-cost-is-a-curve-not-a-constant.md` — Forced-decode token cost is a curve, not the single 13.5% number — 2026-07-31
+
+## Important constraints
+
+- Do not search broad raw transcripts unless the user asks for targeted archaeology.
+- Do not edit generated views directly outside the maintain/regeneration pass.
 
 ## Restart checklist
 
-1. Verify live repo/server state before acting.
-2. Read `plan.md`.
-3. Read only the topic note(s) relevant to the task.
-4. For M1/T0.5 multi-request KV coexistence, read `memory/topics/kv-cache-policy-tradeoffs.md` and `memory/topics/m1-s1-multi-slot-kv-seam.md`: distinguish slot capacity `S` (`SLOT_COUNT`) from active batch `M` (`active_slot[m] -> s`); M1 uses fixed contiguous slots behind K/V base accessors rather than paging; one active decode forward must keep a shared sequence position because scalar `iter_num` and RoPE state are round-wide. Mixed hit/miss lanes can ride together from `min(L_match)`; only take-over raggedness needs O1/M2 per-lane state.
-5. For S6b / multi-turn known-token work, read `memory/topics/s6b-force-decode.md` first. Step 2 is sim-verified for F>1; the host owns `forced_tokens[F][bsz]`, color-7 producer/consumer counts must stay balanced, and toy-scale speedup currently attributes to skip-compute rather than proven pipeline fill.
-6. Before quoting force-decode pipeline-overlap benefits, repeat the F-sweep on a block-compute-dominated/real-scale config; linear F-sweep savings mean fixed skip-compute, while a saturating/knee shape would support pipeline/resource-fill attribution.
-7. For retain/reuse-abstraction questions, read `memory/topics/s6a-prefill-warm-start.md` and `memory/topics/s6a-decode-kv-retain.md`; distinguish carried-over counters from state recomputed from those counters.
-8. Before quoting prefix-reuse value or designing fanout tests, use `s6a-prefill-warm-start.md`: savings are position-weighted, and the prefill KV bank is slot-indexed by chunk position (child suffixes overwrite previous suffixes; no append log or erase step).
-9. For KV-transfer claims, use `prefill-decode-transfer-bandwidth.md`: full-size transfer is healthy with profiler off; ~1.8 GB/s aggregate is latency/serialization-bound relative to a 3.91 GB/s single-link device ceiling.
-10. When reading pure-decode KV-ingress layout, do not rely on `csl-color-audit` floorplan/matrix alone: predicted floorplans can include fused-prefill artifacts, narrow helper PEs render as badges, and the matrix omits switch/router helper PEs. Check `launch.py`/CSL placement directly.
-11. Before adding or widening per-column fabric payloads, confirm the per-PE extent stays EVEN; odd extents deadlock silently on WSE-3.
-12. For per-kernel host serving/control helpers, put the module beside that kernel's `launch.py` while kernel forms are still converging; do not default to `waferengine/engine/` or `models/<kernel>/host/`.
-13. For CS-3 device runs, tee per-point stdout logs and check for orphan jobs after ssh `rc=255` transport death.
-14. Treat real HF weights/tokenizer/oracle work as deferred unless Le reprioritizes it.
-15. Before writing branch/commit/merge status, verify live git state and feature content; squash merges make original-tip ancestor checks false-negative. See `memory/topics/git-branch-status-verification.md`.
-16. **Host KV transport is 1.426 GB/s aggregate / 0.357 GB/s per stream** (pr14 line, payload derived from code, time measured on real WSE-3). The old **"as-built ~15 MB/s" is retracted — never measured, wrong branch — and must not be quoted.** `R*` is ≈3.4 under the corrected figure, not the degenerate ~0.035. See `memory/topics/kv-cache-policy-tradeoffs.md`.
-17. **Decode cost is linear in context** (`627.83 µs + 26.45 ns × ctx`, R² = 0.998), so the 654.95 µs anchor is a mean over one workload's generation-length mix. Do not multiply it by `L`. See `memory/topics/m2-s0-baseline-and-timer-provenance.md`.
-18. Before reusing a shipped benchmark request set, read its inputs rather than its name and compare prompt length against every quantization in the path — `mtbench8` is single-turn and zero-reuse despite "MT", and its prompts sit below `CHUNK_SIZE`, so it measures floors, not slopes.
-19. Before trusting a red test, an oracle, a quoted number, a linked branch, or a good fit as *evidence*, check what it shares with the thing under test — all five have failed silently here. See the consolidated entry in `tracking/conflicts.md`.
-20. **Report a performance number with its setting** — model size/shape, real vs mock weights, deployment scenario, geometry + config, batch, workload shape, machine, and `n`. Le's standing instruction (2026-07-28); the project's `WORKFLOW.md` carries the full rule.
-21. Mixed prefix-hit/prefix-miss batches need **no** ragged support (round start = `min(L_match)`); per-slot KV length stays on the **host**. Both are Le's corrections and both cancelled planned work — see `memory/topics/kv-cache-policy-tradeoffs.md` before re-deriving either.
+1. Verify live repo/server state; memory may be stale.
+2. Read `memory/project.md` and `plan.md`.
+3. Read `tracking/status.md`.
+4. Read relevant topic notes.
+5. Proceed with the user's task.
