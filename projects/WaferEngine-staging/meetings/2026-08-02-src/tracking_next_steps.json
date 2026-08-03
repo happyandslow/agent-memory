@@ -1,0 +1,35 @@
+{
+  "title": "M2 Prefix-Reuse Study",
+  "subtitle": "Tracking-derived next actions",
+  "date": "2026-08-02",
+  "slides": [
+    {
+      "type": "next_steps",
+      "eyebrow": "Milestone cursor",
+      "title": "Finish M2, then resume M1 from S2",
+      "items": [
+        {
+          "owner": "M2 · CLOSE",
+          "action": "Reconcile Lane B; close E14/E11 and conditional E13; keep E12 gated."
+        },
+        {
+          "owner": "M1 · S2 NEXT",
+          "action": "Track per-slot valid_len and verify retention as active slots change."
+        },
+        {
+          "owner": "M1 · S3",
+          "action": "Implement prefix hits, skip-prefill, LRU replace, miss rebuild, and truncation."
+        },
+        {
+          "owner": "M1 · S4",
+          "action": "Measure requests per bank near the SRAM limit and addressing overhead."
+        },
+        {
+          "owner": "M1 · S5",
+          "action": "Verify full/partial hits, misses, and eviction end to end against the oracle."
+        }
+      ],
+      "notes": "M2 is condensed into one closeout line. The authoritative M1 milestone marks S0 and S1 complete; its remaining dependency chain is S2 to S3 to S4 to S5. The partial-hit open question is resolved by the S3 take-over default, while exact SRAM sizing is part of S4."
+    }
+  ]
+}

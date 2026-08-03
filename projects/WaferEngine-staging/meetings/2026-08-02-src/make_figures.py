@@ -590,34 +590,40 @@ save(fig, "lane_ab_crossing.png")
 # E12a: direct resident-prefill compute alongside comparison estimates.
 labels = ["History 7,936\nDelta 256", "History 7,168\nDelta 1,024"]
 prefill_compute = np.array([292.935, 409.636])
-forced_est = np.array([27.206, 107.133])
-lane_b_total = np.array([354.940, 403.271])
+# Current Lane B reloads the complete target KV state. It therefore has no
+# force-decode reconstruction, and both 8,192-context cases pay the same E5
+# full-KV ingress span.
+lane_b_compute = np.array([0.0, 0.0])
+lane_b_total = np.array([338.266, 338.266])
 lane_c_total = np.array([654.765, 929.693])
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13.4, 5.8))
 ii = np.arange(2)
 w = 0.34
 ax1.bar(ii-w/2, prefill_compute, width=w, color="#F2EDFD", edgecolor=VIOLET,
-        label="Resident prefill compute — measured S6a")
-ax1.bar(ii+w/2, forced_est, width=w, color="#E9F0FE", edgecolor=BLUE,
-        label="Forced delta — E9 fit integral")
-for xpos, vals in [(ii-w/2, prefill_compute), (ii+w/2, forced_est)]:
+        label="Lane C: resident prefill — measured S6a")
+ax1.bar(ii+w/2, lane_b_compute, width=w, color="#E9F0FE", edgecolor=BLUE,
+        label="Lane B: full-KV reload — no recompute")
+for xpos, vals in [(ii-w/2, prefill_compute), (ii+w/2, lane_b_compute)]:
     for x0, y0 in zip(xpos, vals):
-        ax1.text(x0, y0+10, f"{y0:.1f}", ha="center", fontsize=10.5)
+        ax1.text(x0, y0+10, f"{y0:.1f}", ha="center", fontsize=10.5,
+                 color=BLUE if y0 == 0 else INK, weight="bold" if y0 == 0 else "normal")
 ax1.set_xticks(ii, labels)
 ax1.set_ylabel("Compute span (ms)")
-ax1.set_title("Compute comparison", loc="left", fontsize=17, weight="bold")
+ax1.set_title("On-card reconstruction compute", loc="left", fontsize=17, weight="bold")
 ax1.legend(frameon=False, fontsize=9.5)
 style_ax(ax1)
 
-ax2.bar(ii-w/2, lane_b_total, width=w, color="#E9F0FE", edgecolor=BLUE, label="Lane B total — derived")
+ax2.bar(ii-w/2, lane_b_total, width=w, color="#E9F0FE", edgecolor=BLUE,
+        label="Lane B: reload complete 8,192-token KV")
 ax2.bar(ii+w/2, lane_c_total, width=w, color="#E5F4EE", edgecolor=GREEN, label="Lane C serial — derived")
 for xpos, vals in [(ii-w/2, lane_b_total), (ii+w/2, lane_c_total)]:
     for x0, y0 in zip(xpos, vals):
         ax2.text(x0, y0+20, f"{y0:.1f}", ha="center", fontsize=10.5)
 ax2.set_xticks(ii, labels)
 ax2.set_ylabel("Resume latency estimate (ms)")
-ax2.set_title("End-to-end composition", loc="left", fontsize=17, weight="bold")
+ax2.set_title("Resume-to-KV-ready composition", loc="left", fontsize=17, weight="bold")
 ax2.legend(frameon=False, fontsize=9.5)
 style_ax(ax2)
-fig.suptitle("E12a is a screening run on S6a e0a19fc, not exact pdSeparate", x=0.08, ha="left", fontsize=12, color=MUTED)
+fig.suptitle("Both cases end at context 8,192; common next free-decode is excluded",
+             x=0.08, ha="left", fontsize=12, color=MUTED)
 save(fig, "e12a_screening.png")
