@@ -50,14 +50,14 @@
 | **E11** | Full re-prefill baseline | re-prefill from scratch + ship all KV — a measurable substitute for lane C, conclusive one direction only | ⬜ |
 | **E12a** | Resident-prefix Lane C compute screening | does prefill compute the delta faster than forced decode when history is already resident? | ⚠️ **screening negative** — compute alone loses 3.82–10.77×; exact pdSeparate port remains optional confirmation |
 | **E12b** | Prefill-side KV ingestion | completes the missing host→prefill transport for true Lane C | ⏸ gated — do not build for the current host-mediated design unless exact E12a overturns the screening result |
-| **E13** | Decode-side KV egress | a build — the offload half of lane B; the recurring cost E10 assumes away | ⬜ needs decision |
+| **E13** | Decode-side KV egress | a build — the offload half of lane B; the recurring cost E10 assumes away | ✅ **Step 1 DONE — Gate 1/2 PASS + Fig E-1 (Ch.2 E13); Gate 3 remains** |
 
 ## 1.3 What is measurable today, and what is not
 
 ```
 prefill produces KV --[E6: egress, measured]--> host DRAM --[E5: ingress, measured]--> decode
                                                                                           |
-decode produces KV  ------------- X no path exists (E13) X --------------------------------+
+decode produces KV --[E13 Step 1: egress, MEASURED — Fig E-1, 2026-08-03]--> host DRAM ----+
 
 host DRAM ---------------- X no path into prefill (E12) X ---------------> prefill
 ```
@@ -93,7 +93,7 @@ Surveyed 2026-07-31. `nc_service` is **already a Cerebras WSE-3 codebase** — C
 | **E11** | Full re-prefill baseline | whether full re-prefill ever beats A or B. Conclusive one direction only | ⬜ |
 | **E12a** | Lane C compute, resident-prefix screening | is prefilling the delta actually cheaper than force-decoding it? | ⚠️ **screening negative** — 292.935 ms for 256-token delta, 409.636 ms for 1,024; compute alone is 10.77× / 3.82× forced. Exact pdSeparate port remains optional confirmation |
 | **E12b** | Lane C transport (prefill KV ingress) | the prefill-side analogue of E5; completes lane C | ⬜ build |
-| **E13** | Decode-side KV egress | the recurring eviction cost E10 assumes away; also the equivalence control for the history-provenance confound | ⬜ build |
+| **E13** | Decode-side KV egress | the recurring eviction cost E10 assumes away; also the equivalence control for the history-provenance confound | ✅ **Step 1 DONE (Gate 1/2 + Fig E-1); Gate 3 remains** |
 
 ## 1.6 Run order
 
@@ -371,9 +371,30 @@ Evidence:
 - CS-3 staging: `~/lexu/e12a_sweep_20260802/`
 - Jobs: `wsjob-8zy8lthn4hghhrxmgryzda` and `wsjob-bfmuvpzmpu9xdbubpmbcbt`, both completed successfully; no job left running.
 
-## E11 / E13 · Not yet run
+## E13 · Decode-side KV egress ✅ — Step 1 DONE (Gate 1/2 + Fig E-1), real WSE-3 (2026-08-03)
 
-E11 (full re-prefill substitute) can reuse the exact six-point pdSeparate curve above when placed into the fabricated-session comparison. E13 remains a build. E12b is now gated on an architectural change or an exact pdSeparate E12a result that overturns this negative screening result.
+The **offload half of lane B** — the eviction cost E10 assumes away — is now **built and measured on real WSE-3**. A decode-side slot's KV can be pulled back to host, byte-correctly. Mechanism: shift-based egress (block east-shift gather → `kv_egress_colmux` NORTH drain → 4-band D2H), `EGRESS_AT_STEP=0` post-ingress dump, config `serve_2x4_8k20k_e13`.
+
+**Gate 1 (shape) + Gate 2 (content) PASS:**
+- Egress D2H receives the exact code-derived count with no hang; **decode throughput unchanged (657 µs/tok == E1 baseline)** ⇒ egress ON is non-perturbing.
+- **Egressed KV == injected KV bit-for-bit** (k_diff=0, v_diff=0, nonzero=14.68 M). Device emit order == `_repack_kv_band`'s ingress order (layer-outer, per-layer K-all-px then V-all-px, px-inner) ⇒ reload is an identity round trip; correct host inverse = `repack_stream_to_banks`. The first hang was a HOST receive-ordering deadlock (egress fires pre-`main`; host drained it post-logits) — fixed by draining the 4 bands before the logit loop.
+
+**Fig E-1 — decode-side D2H egress cost vs `L_p` (device TSC on the band-0 colmux head):** a **HOCKEY STICK**, mirroring E5.
+
+| `L_p` | plen | payload/band | span_cycles | span_us @0.85 GHz | GB/s band0 (measured) |
+|----:|----:|----:|----:|----:|----:|
+| 256  | 1  | 8 MiB   | 39,270,494  | 46,200.6  | 0.182 |
+| 512  | 2  | 16 MiB  | 39,336,033  | 46,277.7  | 0.363 |
+| 1,024 | 4  | 32 MiB  | 47,754,412  | 56,181.7  | 0.597 |
+| 8,192 | 32 | 256 MiB | 287,114,397 | 337,781.6 | 0.795 |
+
+`span ≈ 46 ms fixed floor + payload / 0.80 GB·s⁻¹·band`. Fixed floor ≈ 46 ms (256 rows serialized NORTH through one head PE; ≈ E5/E2's 46.146 ms) dominates small payloads (256→512 doubles payload, span flat). Marginal ≈ 0.80–0.83 GB/s/band — a striking symmetry with **E5's H2D reload 0.7966 GB/s/band** (same per-band wire rate). `4×` (all bands) ≈ 3.2 GB/s is a **PROJECTION**, not measured (host drains bands sequentially; concurrent aggregate = M4). `L_p` 2048/4096 = ingress-502 casualties (rerun to fill). ⚠️ Clock 0.85 GHz (matches the decode-TSC E1 baseline); the 0.85-vs-1.1 GHz reconciliation is open — **raw `span_cycles` preserved** in `decode_device_verdict.json.egress_tsc`.
+
+⇒ **The eviction half of lane B is now priced.** With E5 (reload) + E9 (forced), the offload lane is end-to-end priced at the as-built serialization. **Remaining E13: Gate 3** (decoded-KV round trip) — needs a TOP_K=1 greedy build + the round-trip host-loop restructure; not started.
+
+## E11 · Not yet run
+
+E11 (full re-prefill substitute) can reuse the exact six-point pdSeparate curve above when placed into the fabricated-session comparison. E12b is now gated on an architectural change or an exact pdSeparate E12a result that overturns this negative screening result.
 
 ---
 
@@ -468,3 +489,5 @@ total      = 4 × band_bytes = 32 MiB × ceil(L/256) + 4 MiB
 * **2026-08-02** — **E14 measured on real WSE-3 (n=1, TSC 0.85 GHz).** The F=1 startup anchor grows with prefix, while all F_lo≥256 marginal segments collapse onto `71.745198 µs + 4.093307 ns×position` (R²=0.997447). The ~700-token E10 crossing is therefore one slice of a boundary surface parameterized by starting prefix, reload policy, and `L_new`. Two repeat attempts hit ingress 502 and were not counted without a hash-verified evidence bundle.
 * **2026-08-02 (E12a screening)** — **Resident-prefix incremental prefill measured on real WSE-3 using isolated S6a commit `e0a19fc`.** At total context 8,192, `L_new=256` took 292.935 ms (`L_hist=7,936`, 10.77× the E9 forced estimate) and `L_new=1,024` took 409.636 ms (`L_hist=7,168`, 3.82× forced); both cold↔warm and warm↔warm KV checks were byte-identical. With E5/E6 transport, serial Lane C is estimated at 654.765 / 929.693 ms vs Lane B 354.940 / 403.271 ms; even perfect egress/ingress overlap leaves Lane C +276 / +345 ms slower. This is a validated negative screening result, not the exact pdSeparate benchmark: `6ecb496` lacks `START_CHUNKS` and its prefill files differ bytewise. Decision: do not build E12b for the current host-mediated design unless an exact pdSeparate port overturns the 3.8–10.8× compute gap.
 * **2026-08-02 (E14 method correction)** — Replaced the misleading “fixed pipeline-fill offset” interpretation with `ready + fill + steady + tail`. Source timing shows the `[N,F]` header is not a global readiness barrier; inferred `T_ready` grows from 21.406 ms at `P=256` to 223.355 ms at `P=8192`, while estimated fill remains 0.510–0.737 ms and tail ≈0.12 ms. Documented the 16-point adjacent-segment regression that produces `a=71.745198 µs` and `b=4.093307 ns/position`; retained `D(P,256)` as the robust startup anchor pending a first-Z timestamp.
+
+* **2026-08-03 (E13 Step 1)** — **Decode-side KV egress BUILT + measured on real WSE-3.** Gate 1 (shape) + Gate 2 (content) PASS: egressed KV == injected KV bit-for-bit (k_diff=0/v_diff=0), decode throughput unchanged (657 µs/tok). **Fig E-1** (decode-side D2H cost, device TSC on the band-0 colmux head) is a hockey stick: `span ≈ 46 ms floor + payload / 0.80 GB·s⁻¹·band`; marginal 0.80–0.83 GB/s/band ≈ E5's H2D reload 0.7966/band; floor ≈ 46 ms ≈ E5/E2. 4 clean L_p points (256/512/1024/8192); 2048/4096 = ingress-502 casualties. `4×`≈3.2 GB/s is a projection (concurrent = M4). Clock 0.85 GHz (raw span_cycles preserved; 1.1 GHz reconciliation open). ⇒ **the eviction half of lane B is now priced.** Every change: implement → Codex-APPROVE → gate; nothing committed. Remaining E13 = Gate 3 (decoded-KV round trip). Detail: work-repo `models/qwen3_1p7b-e2e-pdSeparate/E13_SESSION_LOG.md`.
