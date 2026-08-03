@@ -124,8 +124,8 @@
       "eyebrow": "E12a · screening observations",
       "title": "Two resident-prefix prefill cases at total context 8,192",
       "image": "figures/e12a_screening.png",
-      "caption": "MEASURED + DERIVED — direct S6a prefill compute at total context 8,192; forced and lane totals combine E9/E5/E6 evidence.",
-      "notes": "The two resident-prefix compute measurements were byte-identical across cold/warm and warm/warm checks. Exact pdSeparate lacks START_CHUNKS, so this is a validated screening result, not the final pdSeparate benchmark."
+      "caption": "Lane B: full-KV reload = 338.266 ms in both cases; forced delta and common free-decode excluded.",
+      "notes": "This uses the current slide-3 Lane B definition: reload the complete target KV and resume with normal free decode. Lane C remains a screening composition based on direct S6a prefill compute plus E5/E6 transport evidence; exact pdSeparate lacks START_CHUNKS."
     },
     {
       "type": "table",
