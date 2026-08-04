@@ -42,9 +42,17 @@ init, teardown) is loop-heavy, MeshJIT-offloading them needs ONE of:
    WSE-3 branch encoding, undocumented → reverse-engineer);
 3. **PIC codegen** (cslc PC-relative-backward-branch mode, if it exists).
 
+## Real CS-3 confirmation (physical wafer, 2026-08-04)
+Ran the **matched** config (slot 0xa800 = cand_loop source) on the physical EPCC wafer (cloud
+SdkCompiler --fabric-dims=762,1172 + SdkLauncher; RoCE egress to 10.27.28.180..198 = real silicon).
+**ALL CANDIDATES PASSED, incl. cand_loop.** ⇒ on real WSE-3 a loop kernel transplanted over the
+fabric and `@bitcast`-jumped runs bit-exact when the slot is **address-matched** to its source. The
+**address-matched-slot strategy (option 1) is validated on silicon** — the concrete unblock. Repo:
+`~/MeshJIT/controlflow-experiment/` (RESULTS.md), run on CS-3 at `~/meshjit-controlflow/`.
+
 ## Caveats / next
-- **Simulator only.** The stall is a real modeled wrong-address control transfer, but WSE-3 branch
-  encoding is undocumented → **confirm on real CS-3** before relying on it (needs OTP / cs3-run).
+- The **mismatched** loop was NOT run on the appliance (would likely hang the wsjob); its stall is
+  sim-confirmed only. The matched pass is the load-bearing positive result.
 - **Leaf half untested.** init/teardown also *call* other fns (non-leaf). Next: a candidate that
   calls a helper, to test the leaf half independently.
 - Perf for prefill is a non-issue (long compute-bound run; ~0.5 ms of fabric fetch vs ~7 s). The
