@@ -139,7 +139,55 @@ compute block.
 
 ## Last updated
 
-2026-06-28
+2026-08-04 (PR #14 real 2×4 re-profile; see Updates). Prior: 2026-06-28.
+
+## Updates
+
+### 2026-08-04 — re-profiled on PR #14 real 2×4 deployment (seq 8192)
+
+Re-ran the breakdown on the **actual real-device config** at PR #14 head
+(WaferAGI/WaferEngine #14, CongjieHe:real_qwen3_1p7, `a8ab2a5`): 2×4 blocks,
+P_BLOCK_SIZE=256, 28 layers ([2,4,4,4,4,4,4,2], max 4/block), MAX_SEQ_LEN=8192. This
+is a different operating point from the 2026-06-28 table above (which used a 2×2 /
+seq-512 config), so the numbers move — the earlier table is NOT wrong, it's a
+different config.
+
+Full pipeline runs **locally** now (no cluster): `cs_python launch_sim.py
+--compile-only` (cmaddr=None simfab, WSE3 target) compiles the full 512×1024 fabric in
+**50 s decode / ~510–540 s prefill** on the 1.5 TB / 128-core box; per-PE ELF layout is
+byte-equivalent to a device compile. cs_python SIF cannot mount /tmp — run under
+/home/lexu. Tool source restored from branch `lexu/pe-mem-breakdown` (working-tree copy
+was pycache-only). Plot code got a label-overlap fix (rotate 35°, sort by %used, %
+annotations) in this session.
+
+Tightest PE per role (bytes, 48 KB budget):
+
+| kernel / role | code | weights | kv | activ | system | free | %used |
+| --- | --: | --: | --: | --: | --: | --: | --: |
+| decode compute (4-layer block) | 26232 | 6452 | 2052 | 268 | 5046 | 9098 | 81.5% |
+| decode compute (2-layer end block) | ~10500 | 6448 | 2048 | 38 | ~4295 | ~25800 | ~47% |
+| decode ht_tail (lm_head) | 13652 | 19024 | 0 | 8 | 7264 | 8916 | 81.9% |
+| prefill compute (c256) | 30260 | 6628 | 2048 | 638 | 3904 | 5466 | 88.9% |
+| prefill compute (c512, whole_tile_flash) | 30664 | 6628 | 2048 | 796 | 4686 | 4074 | 91.7% |
+| prefill ht_head (mock 38 KB embed) | 1504 | 37988 | 0 | 1026 | 1926 | 6698 | 86.4% |
+| prefill ht_tail (lm_head) | 12084 | 19008 | 0 | 8 | 7114 | 10774 | 78.1% |
+
+Key shifts vs 2026-06-28 and takeaways:
+- **`.text` code is still the #1 per-PE cost** — now 25.6 KB decode / ~30 KB prefill
+  (53–61% of budget), grew ~+3 KB decode / ~+7 KB prefill (on-device KV transfer, PR
+  #13/#14).
+- **Prefill compute PE is now the binding constraint of the whole deployment: 88.9%
+  (c256) → 91.7% (c512), only 4–5 KB free.** It overtook decode (which has ~9 KB free,
+  ~82%). Whoever raises seq/chunk/adds code hits prefill first.
+- decode weights 11.2→6.3 KB (4 layers/block in real 2×4 vs 7/block in the 2×2 config);
+  decode KV 0.23→2.0 KB (seq 8192 vs 512).
+- Prefill "optimization-stage" configs are label-only clones differing solely in
+  CHUNK_SIZE (256 vs 512); `lifetime_arena`==`whole_tile_flash` config. OPTIMIZATION_STAGE
+  is a summary label, not a kernel gate — the differing SRAM verdicts in `results/raw/`
+  came from earlier commits.
+- Artifacts: `/home/lexu/we-sram-profile/` (RESULTS_sram_profile.md, bd_{decode_real,
+  prefill_c256,prefill_c512}/ with CSV + stacked PNGs); inbox note
+  `memory/inbox/2026-08-04-pr14-sram-profile.md`. Also published to ContextBase.
 
 ## Related
 
