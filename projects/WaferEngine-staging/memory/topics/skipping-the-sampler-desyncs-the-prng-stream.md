@@ -91,3 +91,36 @@ its own step" is wrong with early stop enabled.**
 - `models/qwen3_1p7b-e2e-pdSeparate`, worktree `/home/lexu/we-m2bench`,
   snapshot `a3a509c` + M2-S2 changes.
 - Related: [[s6b-force-decode]], [[decode-lanes-must-be-equal-length]].
+
+## Updates
+
+### 2026-08-04 — a second instance, at setup rather than at runtime, and the invariant is prose-only
+
+Same family, different site: the seeded weight-generation stream is shared between
+`models/qwen3_1p7b-decode/launch.py` (`_gen_block_tensors_single_layer`) and
+`host/oracle_fp16.py` (`_gen_block_weights`), and the number of `rand_f16` draws must match **draw
+for draw**, not just in total. The per-batch KV seed is drawn `for _ in range(bsz)` on both sides.
+
+**The trigger this time was structural, not behavioural.** During M1-S2 the oracle's seeded cache was
+widened from `bsz` to `slot_count` — a change that looks like it only affects the shape of one array.
+It also changes the **draw count**, so every weight drawn after it (`UP`, `GATE`, `DOWN`) comes from a
+different offset in the stream. The device and the oracle then hold *entirely different FFN weights*.
+
+**Symptom to recognise:** one config's numerics are at the usual noise floor while another config's
+are garbage, after a change that touched no arithmetic — because the divergence only appears when
+`SLOT_COUNT > bsz`, i.e. on some configs and not others. It reads as "the new multi-slot path is
+broken" when the weights simply are not the same weights.
+
+**What makes it recur:** the invariant is enforced *only by two prose comments*, one in each file,
+each asserting it must match the other. After the edit the two comments **contradicted each other in
+writing** — `launch.py` still said "bsz consecutive draws", the oracle said "slot_count consecutive
+draws" — and nothing failed. A cross-file invariant with no machine check will drift; the comments
+are documentation of an intention, not enforcement of it.
+
+**Rule distilled:** the seeded weight cache is a **source** (lane-shaped, mirroring the host ingress
+payload) and must not take the new storage axis; only the evolving cache does. Same
+`destination = slot, source = lane` split already used on the device side. Recorded as an M1
+design decision (`milestones/M1-intra-pe-reuse.md` § Design decisions, 2026-08-04).
+
+**Open:** nothing asserts the two draw counts agree. A cheap machine check — have both sides count
+their draws and compare once at startup — would convert this class from silent to loud.
