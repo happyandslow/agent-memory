@@ -10,6 +10,7 @@
 - Codex sends the approved, bounded task to Claude Code using `claude-fable-5` with automatic fallback to `claude-opus-4-8`. Claude Code implements and runs the agreed gates; Codex then independently reviews evidence and diff, returns concrete findings, and repeats the implement/review cycle until the gate passes.
 - A user phrase such as “do S3.1 first” selects the next planned step; it does not silently replace this implementation-role contract.
 - `launch.py` modularisation is a separate pure-move task with a bit-identical gate. It must be discussed and approved before dispatch and must not be mixed with the next S3 behaviour change.
+- Every step boundary is a hard approval gate. Before R0a, R0b, each review-driven correction pass, and every later S3.x implementation, Codex states the exact task and evidence gate, stops, and waits for Le's explicit approval before invoking Claude Code.
 
 ## Implications / next actions
 
