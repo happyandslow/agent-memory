@@ -5,6 +5,7 @@
 - 2026-08-04 — m1-s3-planner-implementation-review-contract → `memory/inbox/2026-08-04-m1-s3-planner-implementation-review-contract.md`
 - 2026-08-04 — force-decode-zero-seed-deadlock → `memory/inbox/2026-08-04-force-decode-zero-seed-deadlock.md`
 - 2026-08-04 — clean-sh-deletes-the-git-ignored-instruction-file → `memory/inbox/2026-08-04-clean-sh-deletes-the-git-ignored-instruction-file.md`
+- 2026-08-04 — background-sim-waiter-must-poll-artifact-not-pid → `memory/inbox/2026-08-04-background-sim-waiter-must-poll-artifact-not-pid.md`
 - 2026-08-04 — an-oracle-cannot-check-an-input-it-re-derives → `memory/inbox/2026-08-04-an-oracle-cannot-check-an-input-it-re-derives.md`
 - 2026-08-03 — weekly-progress → `meetings/2026-08-03-weekly-progress.md`
 - 2026-08-03 — lane-b-full-kv-reload-has-no-forced-delta → `memory/inbox/2026-08-03-lane-b-full-kv-reload-has-no-forced-delta.md`

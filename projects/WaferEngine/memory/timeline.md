@@ -3,6 +3,8 @@
 # WaferEngine Timeline
 
 - 2026-08-04 — pr14-sram-profile → `memory/inbox/2026-08-04-pr14-sram-profile.md`
+- 2026-08-04 — meshjit-line-multicast-cost → `memory/inbox/2026-08-04-meshjit-line-multicast-cost.md`
+- 2026-08-04 — meshjit-branch-relocation → `memory/inbox/2026-08-04-meshjit-branch-relocation.md`
 - 2026-07-14 — h2d-playground-summary → `memory/inbox/2026-07-14-h2d-playground-summary.md`
 - 2026-07-14 — h2d-playground-experiments → `docs/2026-07-14-h2d-playground-experiments.md`
 - 2026-07-06 — pr14-real-qwen3-serving → `memory/inbox/2026-07-06-pr14-real-qwen3-serving.md`
