@@ -2,6 +2,8 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-08-05 — decode-one-layer-rectangular-layout-sram → `memory/inbox/2026-08-05-decode-one-layer-rectangular-layout-sram.md`
+- 2026-08-05 — codex-review-times-out-when-source-is-outside-the-root → `memory/inbox/2026-08-05-codex-review-times-out-when-source-is-outside-the-root.md`
 - 2026-08-04 — m1-s3-planner-implementation-review-contract → `memory/inbox/2026-08-04-m1-s3-planner-implementation-review-contract.md`
 - 2026-08-04 — force-decode-zero-seed-deadlock → `memory/inbox/2026-08-04-force-decode-zero-seed-deadlock.md`
 - 2026-08-04 — clean-sh-deletes-the-git-ignored-instruction-file → `memory/inbox/2026-08-04-clean-sh-deletes-the-git-ignored-instruction-file.md`
