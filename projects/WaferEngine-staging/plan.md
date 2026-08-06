@@ -35,7 +35,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 | 2026-07-19 | Treat the mock-scale prefill reuse numbers as mechanism-only; no reuse-value claim until real-dim configs are re-measured. | Saving tracks (k/n)² rather than k/n, so prefix reuse has strong diminishing returns — but the grid ran at dim=64/vocab=64, and the L=2048 rows were invalidated by a host cache-key bug. | `memory/topics/s6a-prefill-warm-start.md` |
 | 2026-07-20 | Model prefix-reuse value with position weighting, not linear hit rate. | Real-scale WSE-3 results show 50% prefix reuse saves only 22.8% latency and 75% saves 45.2%; reused prefix chunks are the cheapest part, while recomputed suffix chunks dominate. | `memory/topics/s6a-prefill-warm-start.md` |
 | 2026-07-20 | Decode retain's benefit is skipping already-executed decode steps, not making each equal-work step cheaper. | Equal-work decode comparisons differ by only ~0.02% fixed overhead; the correct end-state comparison saves 34.6% total decode work by avoiding redoing discarded steps. | `memory/topics/s6a-prefill-warm-start.md` |
-| 2026-08-04 | M1-S3 implementation-role contract: Codex stays planner+reviewer and does NOT implement production changes itself; it dispatches the approved bounded task to Claude Code (`claude-fable-5`, fallback `claude-opus-4-8`), which implements + runs the agreed gates; Codex then independently reviews evidence+diff and iterates to gate-pass. | Every step boundary is a hard approval gate; a phrase like "do S3.1 first" selects the next planned step, it does not replace the role contract. `launch.py` modularisation is a separate pure-move task with a bit-identical gate, discussed/approved before dispatch and not mixed with an S3 behaviour change. | `memory/inbox/2026-08-04-m1-s3-planner-implementation-review-contract.md` (hermes) |
+| 2026-08-04 | M1-S3 implementation-role contract: Codex stays planner+reviewer and does NOT implement production changes itself; it dispatches the approved bounded task to Claude Code (`claude-fable-5`, fallback `claude-opus-4-8`), which implements + runs the agreed gates; Codex then independently reviews evidence+diff and iterates to gate-pass. | Every step boundary is a hard approval gate; a phrase like "do S3.1 first" selects the next planned step, it does not replace the role contract. The `launch.py` modularisation was scoped as a separate pure-move task with a bit-identical gate and has since been completed + merged before S3.3 (history, not open). | `memory/inbox/2026-08-04-m1-s3-planner-implementation-review-contract.md` (hermes) |
 
 ## Next actions
 
@@ -48,9 +48,10 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
       enabling automatic M1-S3 cache-hit scheduling — `F=0` (seedless exact-history hit) deadlocks
       the step-0 HT_head/HT_tail dependency; M1 runs an exact reuse at `F=1`, not `F=0`. See
       `memory/topics/force-decode-startup-depends-on-prefix.md` § Updates 2026-08-04.
-- [ ] **Agree the standalone `launch.py` modularisation boundary with Le** (separate pure-move task,
-      bit-identical gate) before dispatching any further M1-S3 implementation; preserve the
-      per-step sequence agree plan → Claude Code implement/test → Codex review → iterate → accept.
+- [x] **DONE — standalone `launch.py` modularisation** (separate pure-move task, bit-identical gate)
+      was discussed, approved, implemented, committed, and merged **before S3.3**; it is history, not
+      an open action. The per-step S3 role/gate sequence it established still stands for later steps:
+      agree plan → Claude Code implement/test → Codex review → iterate → Codex accept.
 - [x] **DONE 2026-07-21** — the long-sequence follow-up is complete: k48 at L=16,384 (49.75% saving) and the decode L=4096 pair (`d2_noreuse` 1,120,316,570 vs `d2_reuse` 567,975,120 → −49.3%). With k48 in hand the earlier "two lengths lie on the same curve" claim is narrowed: fraction dominates, but a second-order length term appears at high reuse and favours the *longer* prompt (75%: L=8192 45.2% vs L=16384 49.8%). Decode length axis now has two points (−34.6% at 1024, −49.3% at 4096, both set by the redo step-ratio, not length). Chart + docs updated in agent-memory + ContextBase.
 - [x] **S6a-prefill DONE + verified + MERGED.** Mechanism verified byte-identical in sim AND on real WSE-3 (2026-07-19→07-21) with real-scale perf measured; the three fixes (metainfo even-padding, `ht_head` chunk-slot indexing, two host `start_chunk` assumptions) were **committed as `e0a19fc` and merged into the feature branch `lexu/staging/kv-feature` via PR #1 (`0db3fc2`) on 2026-07-21** (git-verified: `e0a19fc` touches `prefill.csl`/`ht_head.csl`/`launch.py`/`kv_store.py`/`comm_pe.csl`; current `s6b-force-decode` tree byte-identical). **So S6a — decode + prefill — is complete and landed on `kv-feature`.** Branch convention: milestone branches converge onto `lexu/staging/kv-feature`. NB (self-correction): a prior reconciliation this day wrongly called the prefill code "uncommitted / pending review" — I asserted that before checking git; the branch topology shows it was already committed + merged. The stale line it was correcting (in-repo docs' "S6a-prefill IN PROGRESS / handed to a new session", left over from the S6b session) is now fixed to "merged into kv-feature."
 - [ ] **Assert on unknown `model_config/*.json` keys.** Still not implemented, and it is the one constraint from the M1-S1 review that was left as prose rather than turned into a guard — which is exactly why it is the one still open. `cfg.get(...)` with a default silently turns a misspelt key into the default: `FORCED_DECODE_LEN` vs `FORCED_DECODE_LENS` meant one config's `[1,4,4,4]` **never once took effect**, and `ACTIVE_SLOT` vs `ACTIVE_SLOTS` turned a red control into a copy of the green one. Validate each new key too: length == `bsz`, value < `SLOT_COUNT`, **no duplicates** (a duplicate = two lanes on one slot = silent cross-contamination).
@@ -90,8 +91,9 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
   artifact not a PID; and `./clean.sh` deletes git-ignored `CLAUDE.md`/`.superpowers/`
   irrecoverably.
 - **Into Decisions + Next actions:** the M1-S3 planner/implementation/review role contract (Codex
-  plans+reviews, Claude Code implements); Lane B slide audit; `F=1` guard; launch.py modularisation
-  boundary.
+  plans+reviews, Claude Code implements); Lane B slide audit; `F=1` guard. The `launch.py`
+  modularisation from that contract is recorded as **completed history** (merged before S3.3), not
+  an open action.
 - **Cross-project drain:** `memory/inbox/2026-08-05-decode-one-layer-rectangular-layout-sram.md`
   (the one-layer `64 x 256` decode layout / HT-embedding SRAM wall) was folded into the
   `we-pr14-depth-layout` project (`memory/topics/decode-pipeline-depth-layout.md`), the durable home
