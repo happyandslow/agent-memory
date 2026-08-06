@@ -2,6 +2,7 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-08-06 — runtime-load-onchip-artifact-upload-cost → `memory/inbox/2026-08-06-runtime-load-onchip-artifact-upload-cost.md`
 - 2026-08-05 — decode-one-layer-rectangular-layout-sram → `memory/inbox/2026-08-05-decode-one-layer-rectangular-layout-sram.md`
 - 2026-08-05 — codex-review-times-out-when-source-is-outside-the-root → `memory/inbox/2026-08-05-codex-review-times-out-when-source-is-outside-the-root.md`
 - 2026-08-04 — m1-s3-planner-implementation-review-contract → `memory/inbox/2026-08-04-m1-s3-planner-implementation-review-contract.md`

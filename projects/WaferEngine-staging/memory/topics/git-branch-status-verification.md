@@ -94,3 +94,22 @@ Before updating `plan.md`, project docs, ContextBase mirrors, or status summarie
 ## Last updated
 
 2026-07-29 — added branch-tip verification before baselining recorded results (`git reflog show`, ancestry, remote-movement limit) and the "clean merge ≠ safe merge" rule for cross-file contracts. Prior: 2026-07-25 — drained 2026-07-22 and 2026-07-24 inbox captures into this topic; explicit squash-merge caveat added.
+
+## Updates
+
+### 2026-08-06 — moving a dirty PR-tip experiment onto its squash-merged main
+
+When an experiment branch still points at a PR tip but the target main contains
+that PR as a squash commit, a normal rebase from the pre-PR merge base will try
+to replay the entire old PR history. For
+`lexu/staging/decode-pipeline-depth`, the four dirty decode files were first
+verified byte-identical between old tip `93a6d0e` and WaferAGI main `b136ab6`;
+the dirty patch also had identical per-file numstat against both bases. The
+safe operation was therefore a zero-commit, squash-aware move:
+`git rebase --onto b136ab6 93a6d0e --autostash`. It preserved the tracked
+patch and all untracked configs/docs without replaying PR commits.
+
+Remote names were misleading in this clone: `origin/main` was stale at
+`fcfc8c1`, and the configured `upstream` still pointed to MeshInfra. Resolve
+and record the authoritative repository URL and exact target SHA before any
+branch movement; do not trust the local remote alias alone.
