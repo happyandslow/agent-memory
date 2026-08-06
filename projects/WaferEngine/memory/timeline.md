@@ -2,6 +2,7 @@
 
 # WaferEngine Timeline
 
+- 2026-08-06 — qwen3-1p7b-decode-pipeline-depth-profile → `memory/inbox/2026-08-06-qwen3-1p7b-decode-pipeline-depth-profile.md`
 - 2026-08-05 — ssh-cs3-connection-closed-port-65535-gateway-exhaustion → `memory/inbox/2026-08-05-ssh-cs3-connection-closed-port-65535-gateway-exhaustion.md`
 - 2026-08-04 — pr14-sram-profile → `memory/inbox/2026-08-04-pr14-sram-profile.md`
 - 2026-08-04 — meshjit-line-multicast-cost → `memory/inbox/2026-08-04-meshjit-line-multicast-cost.md`
