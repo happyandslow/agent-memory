@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained   <!-- drained 2026-08-06 into new topic codex-review-times-out-when-source-is-outside-the-root.md -->
 
 ## The situation this applies to
 

@@ -60,3 +60,32 @@ Source: `memory/inbox/2026-08-02-force-decode-startup-depends-on-prefix.md`
 - `/home/lexu/we-m2-prefix-fd-sweep/models/qwen3_1p7b-e2e-pdSeparate/request_config/e14_prefix_fd_sweep/e14_grid/e14_model.json`
 - `/home/lexu/we-m2-prefix-fd-sweep/models/qwen3_1p7b-e2e-pdSeparate/request_config/e14_prefix_fd_sweep/e14_grid/e14_boundaries.json`
 - Related capture: `memory/inbox/2026-07-31-forced-token-cost-is-a-curve-not-a-constant.md`
+
+## Updates
+
+### 2026-08-04 — `F=0` is not a supported boundary; M1 keeps a mandatory `F=1` seed
+
+Drained from `memory/inbox/2026-08-04-force-decode-zero-seed-deadlock.md` (author claude,
+source/control-flow evidence only — no `F=0` simulation was run).
+
+While adding cache-hit resume to the standalone decode path, an exact resident-history hit appears
+to permit `F = prompt_len - start = 0`, i.e. the host would send no forced token before free
+decode. A source audit shows this is **not a supported S6b boundary and deadlocks**:
+
+- In `models/qwen3_1p7b-decode/src/ht_head.csl:297-312`, HT_head consumes the host step-0 X only
+  when `ht_step < F`. With `F=0` it instead **waits for HT_tail's sampled token**; HT_tail cannot
+  produce that token until decode first receives X, so the dependencies close before step 0. The
+  host still prepares a step-0 buffer, but HT_head takes the branch that does not consume it.
+- ⇒ **M1 keeps a mandatory known seed.** Safe match:
+  `L_resume = floor(min(LCP, valid_len, prompt_len - 1) / P_BLOCK_SIZE) * P_BLOCK_SIZE`, then D9's
+  `start = min(L_resume)` across lanes, then the fail-closed guard
+  `1 <= F = prompt_len - start <= decode_len`. An exact resident-history reuse request includes the
+  known next seed and runs at **`F=1`, not `F=0`**.
+- Supporting a seedless (`F=0`) hit would need a distinct device protocol + liveness proof, not a
+  host-only S3 change.
+
+Next actions (also in plan.md): add the shared host/config `1 <= F` guard before enabling automatic
+M1-S3 hit scheduling; if an API later requires seedless reuse, scope it as a device feature and test
+the step-0 color/dependency balance explicitly. Pointers: work-repo
+`milestones/M1-intra-pe-reuse.md` § S3.0 + Verification log; `milestones/kv-reuse-tradeoff-register.md`
+D11; `PROGRESS.md` Failed approaches.

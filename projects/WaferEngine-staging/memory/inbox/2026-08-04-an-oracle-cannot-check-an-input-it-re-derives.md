@@ -8,7 +8,7 @@ tags: [methodology, verification, oracle, regression-gate, m1, procedural]
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** new
+**Status:** drained   <!-- drained 2026-08-06 into new topic an-oracle-cannot-check-an-input-it-re-derives.md -->
 
 ## The situation this applies to
 

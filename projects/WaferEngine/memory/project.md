@@ -46,7 +46,22 @@
 
 ## Known pitfalls
 
-- 
+- **`ssh CS-3` → "Connection closed by UNKNOWN port 65535" is EIDF gateway connection
+  exhaustion, not a broken local socket.** The `CS-3` alias has no ControlMaster (only
+  `RemoteCommand` + `ProxyJump`), so every `ssh CS-3` opens a fresh gateway connection; the
+  automation alias `CS-3-cmd` *does* have a ControlMaster (the warm path), which is why automation
+  keeps working while interactive login fails. Leftover long-lived interactive `ssh CS-3` sessions
+  each hold a gateway slot; with the automation tunnel too, new connects get refused (leading
+  diagnosis: gateway cap / per-IP rate-limit — `MaxStartups`/fail2ban). *[unverified: the
+  65535-refusal → gateway-cap causation is diagnosis; retry-after-cleanup not confirmed.]* To
+  handle: check local ControlMaster state with `ps`/`ss` only (never `ssh` to probe); kill leftover
+  interactive `ssh CS-3` PIDs (the ProxyJump pair) but **preserve `CS-3-cmd`** — do not
+  `rm ~/.ssh/cm/*` (kills the warm path, forces a fresh OTP login). Do NOT loop-retry the failing
+  `ssh CS-3` (fail2ban lockout risk); wait a few minutes, diagnose with `ssh -v CS-3` (first ~20
+  lines). Distinct from the WaferEngine-staging run-transport death case
+  (`2026-07-21-cs3-ssh-death-orphans-wafer-job`). Procedural CS-3/EPCC-general → **promotion
+  candidate for the `cs3-run`/`cs3-runner` connection-troubleshooting section.** (Drained from
+  `memory/inbox/2026-08-05-ssh-cs3-connection-closed-port-65535-gateway-exhaustion.md`, 2026-08-05.)
 
 ## Important links
 

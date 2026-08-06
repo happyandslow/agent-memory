@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained   <!-- drained 2026-08-06 into topic m2-s0-baseline-and-timer-provenance.md § Updates -->
 
 ## Situation this applies to
 

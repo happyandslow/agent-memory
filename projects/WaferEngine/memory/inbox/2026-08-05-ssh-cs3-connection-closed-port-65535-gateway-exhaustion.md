@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine
 **Author:** claude
-**Status:** captured
+**Status:** drained   <!-- drained 2026-08-06 into memory/project.md Known pitfalls; promotion candidate for cs3-run/cs3-runner -->
 
 ## The situation this applies to
 

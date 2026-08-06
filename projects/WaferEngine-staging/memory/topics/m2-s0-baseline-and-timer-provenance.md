@@ -264,3 +264,35 @@ do not scatter artifacts elsewhere):
 
 38 GB of regenerable staging was deleted after the runs; the work repo and the M2 worktree are
 **intentionally uncommitted** — Le owns commits.
+
+## Updates
+
+### 2026-08-06 — measured `runtime.load()` (ELF→wafer) cost, and load ≠ attach
+
+Drained from `memory/inbox/2026-08-06-runtime-load-onchip-artifact-upload-cost.md` (author claude).
+This note records the number the "untimed bracket" above left out: the `runtime.load()` step
+itself, worker-local, after the 6.6 GB gateway→worker staging.
+
+- **`runtime.load()` IS directly timed** — `perf_counter` wraps the exact call and stores `load_s`
+  (`launch_prefill.py:1939-1943`, `launch_decode.py:4066-4067`; prints "runtime.load took Xs",
+  comment "ELF -> wafer program+weight load"). NOT a bracket/subtraction estimate.
+- **Measured `load_s` (real CS-3, worker node, artifact already staged local, pdSeparate):**
+  - M2-S0 / mtbench8: prefill **141.47 s**, decode **150.67 s**
+    (`request_config/mtbench8/timing.json`, `device_verdict.json`).
+  - E10 A/B run: prefill **146.01 s**, decode **156.04 s**
+    (`assets/2026-07-31-e10-ab-boundary/e9_timing.json`).
+  - ⇒ **~140–156 s per artifact**, decode consistently a few s higher.
+- **`load` ≠ `attach` — separate stages.** `runtime = SdkRuntime(...)` (attach) is **UNTIMED** and
+  lives in the ~416 s bracket (interpreter start + artifact `copytree` + attach); `runtime.load()`
+  is separately measured as `load_s`. So the M2-S0 734 s run decomposes as **load ~292 s
+  (141.5+150.7, measured) + untimed bracket ~416 s + compute ~26 s** (mtbench8 short gen). An
+  earlier pass that folded the ~150 s load *into* attach **double-counted** — corrected here.
+- **Caveat:** `load_s` is **program + weights together** (weights baked into the ELF), not code-only
+  `.text`. ~150 s is "whole decode artifact onto the wafer", NOT a per-kernel code-upload figure —
+  do **not** use it as the reference for a MeshJIT / on-chip PE→PE single-kernel `.text` fetch (a
+  few KB over the fabric, a completely different order of magnitude).
+- Estimation corollary: Gate 3 is decode-only reload ⇒ **ONE ~150 s `load_s`, not two.**
+
+Pointers: `launch_prefill.py:1654,1939-1943`; `launch_decode.py:3594,4066-4067`;
+`we-m2bench/.../request_config/mtbench8/{timing.json,device_verdict.json}`;
+`assets/2026-07-31-e10-ab-boundary/e9_timing.json`.

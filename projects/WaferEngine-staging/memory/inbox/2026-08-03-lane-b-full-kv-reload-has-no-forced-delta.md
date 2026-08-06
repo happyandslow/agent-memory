@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** human
-**Status:** captured
+**Status:** drained   <!-- drained 2026-08-06 into m2-experiment-register.md change log + plan.md next actions -->
 
 ## What happened / finding
 

@@ -8,7 +8,7 @@ tags: [qwen3-1p7b, decode, layout, pipeline-depth, sram, ht]
 
 **Project:** WaferEngine-staging
 **Author:** codex
-**Status:** captured
+**Status:** drained   <!-- drained 2026-08-06 into projects/we-pr14-depth-layout topic decode-pipeline-depth-layout.md + that project's plan -->
 
 ## What happened / finding
 

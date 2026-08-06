@@ -146,6 +146,31 @@ export MEMORY=$AGENT_MEMORY_ROOT/projects/WaferEngine-staging   # or /home/lexu/
   which run on the host, but not for anything `cs_python` must `chdir` into. Sim-verified;
   a device run from an alternate path was not attempted. (2026-07-26.)
 
+- **A background waiter for a containerized sim run must poll for the OUTPUT ARTIFACT, not track a
+  PID.** `cs_python launch_sim.py` / `run_sim.sh` runs the actual work **inside the SDK SIF
+  container as a child Python process with a different PID**; the outer shell exits (or is the wrong
+  thing to `wait` on) while the container Python is still compiling/decoding, so a PID-based waiter
+  fires early / on the wrong process and its post-run snapshot-copy step is skipped — the run
+  completes on disk but nothing gets copied. Bit **twice** across the R0b refactor sessions. Robust
+  fix: **loop until the completion artifact exists and is non-empty** (e.g. `<out>/device_verdict.json`,
+  the true wire-complete signal), never `wait $PID` / PID-match across the container boundary.
+  Aggravator: the SIF sim is slow (~30 s/step; a retain config ~32 steps), so a short PID-timeout
+  looks "done" long before the run is. Procedural → **promotion candidate** (operational/skill, not
+  a topic). (Drained from `memory/inbox/2026-08-04-background-sim-waiter-must-poll-artifact-not-pid.md`,
+  2026-08-04.)
+
+- **The repo's own `./clean.sh` also deletes git-ignored `CLAUDE.md` and `.superpowers/`, and git
+  cannot restore them.** `clean.sh -n` lists `CLAUDE.md` + `.superpowers/` among "Would remove"
+  alongside `out_*/`, `__pycache__/`, `.pytest_cache/`, `.ruff_cache/`. `CLAUDE.md` is git-ignored
+  **by design** in this repo, so `git checkout` cannot bring it back — the only copies are the
+  ContextBase / agent-memory mirrors, if current. The script's "keeping .claude/.vscode/.idea"
+  contract is true but incomplete (it keeps the `.claude` *directory* while removing the top-level
+  instruction file). ⇒ **always `./clean.sh -n` and read the WHOLE list before `-y`**; never chain
+  `-y` from a disk-pressure reflex. Prefer targeted `rm -rf models/<model>/out_*` after checking
+  `ls -dlt` dates and `pgrep -af cs_python` (gala2 is shared). A `clean.sh` fix to exclude
+  `CLAUDE.md`/`.superpowers/` is a repo change (needs Le's call), not a memory item. (Drained from
+  `memory/inbox/2026-08-04-clean-sh-deletes-the-git-ignored-instruction-file.md`, 2026-08-04.)
+
 ## Important links
 
 - InferCept (KV preserve/swap/discard cost policy): <https://arxiv.org/abs/2402.01869>

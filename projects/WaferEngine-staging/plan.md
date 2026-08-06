@@ -35,9 +35,22 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 | 2026-07-19 | Treat the mock-scale prefill reuse numbers as mechanism-only; no reuse-value claim until real-dim configs are re-measured. | Saving tracks (k/n)² rather than k/n, so prefix reuse has strong diminishing returns — but the grid ran at dim=64/vocab=64, and the L=2048 rows were invalidated by a host cache-key bug. | `memory/topics/s6a-prefill-warm-start.md` |
 | 2026-07-20 | Model prefix-reuse value with position weighting, not linear hit rate. | Real-scale WSE-3 results show 50% prefix reuse saves only 22.8% latency and 75% saves 45.2%; reused prefix chunks are the cheapest part, while recomputed suffix chunks dominate. | `memory/topics/s6a-prefill-warm-start.md` |
 | 2026-07-20 | Decode retain's benefit is skipping already-executed decode steps, not making each equal-work step cheaper. | Equal-work decode comparisons differ by only ~0.02% fixed overhead; the correct end-state comparison saves 34.6% total decode work by avoiding redoing discarded steps. | `memory/topics/s6a-prefill-warm-start.md` |
+| 2026-08-04 | M1-S3 implementation-role contract: Codex stays planner+reviewer and does NOT implement production changes itself; it dispatches the approved bounded task to Claude Code (`claude-fable-5`, fallback `claude-opus-4-8`), which implements + runs the agreed gates; Codex then independently reviews evidence+diff and iterates to gate-pass. | Every step boundary is a hard approval gate; a phrase like "do S3.1 first" selects the next planned step, it does not replace the role contract. `launch.py` modularisation is a separate pure-move task with a bit-identical gate, discussed/approved before dispatch and not mixed with an S3 behaviour change. | `memory/inbox/2026-08-04-m1-s3-planner-implementation-review-contract.md` (hermes) |
 
 ## Next actions
 
+- [ ] **Audit the Lane B equation and A/B-crossing slides** for the delta-reload vs full-KV-reload
+      definition mismatch: full-KV Lane B is `B(L)=I(L)` with no post-ingress forced delta (adding
+      one double-counts); the next free-decode token is a common tail, charged to all lanes or none.
+      Targets: `meetings/2026-08-02.pptx` slide 12, `meetings/2026-08-02-src/make_figures.py`. See
+      `memory/topics/m2-experiment-register.md` change log 2026-08-03.
+- [ ] **Add the shared host/config `1 <= F = prompt_len - start <= decode_len` guard** before
+      enabling automatic M1-S3 cache-hit scheduling — `F=0` (seedless exact-history hit) deadlocks
+      the step-0 HT_head/HT_tail dependency; M1 runs an exact reuse at `F=1`, not `F=0`. See
+      `memory/topics/force-decode-startup-depends-on-prefix.md` § Updates 2026-08-04.
+- [ ] **Agree the standalone `launch.py` modularisation boundary with Le** (separate pure-move task,
+      bit-identical gate) before dispatching any further M1-S3 implementation; preserve the
+      per-step sequence agree plan → Claude Code implement/test → Codex review → iterate → accept.
 - [x] **DONE 2026-07-21** — the long-sequence follow-up is complete: k48 at L=16,384 (49.75% saving) and the decode L=4096 pair (`d2_noreuse` 1,120,316,570 vs `d2_reuse` 567,975,120 → −49.3%). With k48 in hand the earlier "two lengths lie on the same curve" claim is narrowed: fraction dominates, but a second-order length term appears at high reuse and favours the *longer* prompt (75%: L=8192 45.2% vs L=16384 49.8%). Decode length axis now has two points (−34.6% at 1024, −49.3% at 4096, both set by the redo step-ratio, not length). Chart + docs updated in agent-memory + ContextBase.
 - [x] **S6a-prefill DONE + verified + MERGED.** Mechanism verified byte-identical in sim AND on real WSE-3 (2026-07-19→07-21) with real-scale perf measured; the three fixes (metainfo even-padding, `ht_head` chunk-slot indexing, two host `start_chunk` assumptions) were **committed as `e0a19fc` and merged into the feature branch `lexu/staging/kv-feature` via PR #1 (`0db3fc2`) on 2026-07-21** (git-verified: `e0a19fc` touches `prefill.csl`/`ht_head.csl`/`launch.py`/`kv_store.py`/`comm_pe.csl`; current `s6b-force-decode` tree byte-identical). **So S6a — decode + prefill — is complete and landed on `kv-feature`.** Branch convention: milestone branches converge onto `lexu/staging/kv-feature`. NB (self-correction): a prior reconciliation this day wrongly called the prefill code "uncommitted / pending review" — I asserted that before checking git; the branch topology shows it was already committed + merged. The stale line it was correcting (in-repo docs' "S6a-prefill IN PROGRESS / handed to a new session", left over from the S6b session) is now fixed to "merged into kv-feature."
 - [ ] **Assert on unknown `model_config/*.json` keys.** Still not implemented, and it is the one constraint from the M1-S1 review that was left as prose rather than turned into a guard — which is exactly why it is the one still open. `cfg.get(...)` with a default silently turns a misspelt key into the default: `FORCED_DECODE_LEN` vs `FORCED_DECODE_LENS` meant one config's `[1,4,4,4]` **never once took effect**, and `ACTIVE_SLOT` vs `ACTIVE_SLOTS` turned a red control into a copy of the green one. Validate each new key too: length == `bsz`, value < `SLOT_COUNT`, **no duplicates** (a duplicate = two lanes on one slot = silent cross-contamination).
@@ -59,6 +72,30 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Fix e2e source/documentation hygiene found in the 2026-07-09 read: stale `route_calc.csl:5` axis comment, prefill vocab-padding asymmetry, K-pipe alias invariant check, and `csl_color_audit` raw `@set_config` parsing.
 
 ## Narrative progress log
+
+### 2026-08-06 — maintain pass drained the 9-item inbox backlog (2026-08-03 → 08-06)
+
+- **Two new topics** (methodology/tooling lessons, both promotion candidates):
+  `memory/topics/an-oracle-cannot-check-an-input-it-re-derives.md` (a device-vs-oracle gate that
+  PASSes a provably-wrong run because both sides re-derived the same setup quantity — plus the
+  vacuous-PASS sibling) and `memory/topics/codex-review-times-out-when-source-is-outside-the-root.md`
+  (codex-review burns its full ~1800 s timeout with no output when claims reference source outside
+  its `-C` root; inline the source + narrow scope).
+- **Appended to existing topics:** `force-decode-startup-depends-on-prefix.md` ← the `F=0`
+  seedless-hit deadlock (M1 keeps a mandatory `F=1` seed); `m2-s0-baseline-and-timer-provenance.md`
+  ← measured `runtime.load()` = ~140–156 s/artifact and the load≠attach correction;
+  `m2-experiment-register.md` change log ← the full-KV Lane B definition (`B(L)=I(L)`, no forced
+  delta).
+- **Into `memory/project.md` Known pitfalls:** the containerized-sim waiter must poll for the output
+  artifact not a PID; and `./clean.sh` deletes git-ignored `CLAUDE.md`/`.superpowers/`
+  irrecoverably.
+- **Into Decisions + Next actions:** the M1-S3 planner/implementation/review role contract (Codex
+  plans+reviews, Claude Code implements); Lane B slide audit; `F=1` guard; launch.py modularisation
+  boundary.
+- **Cross-project drain:** `memory/inbox/2026-08-05-decode-one-layer-rectangular-layout-sram.md`
+  (the one-layer `64 x 256` decode layout / HT-embedding SRAM wall) was folded into the
+  `we-pr14-depth-layout` project (`memory/topics/decode-pipeline-depth-layout.md`), the durable home
+  for the decode pipeline-depth experiment. All nine captures marked `Status: drained`.
 
 ### 2026-08-03
 - **M2 · E13 (decode→host KV egress, the "eviction half" of lane B) — Step 1 COMPLETE + Fig E-1 DELIVERED, all on real WSE-3.** This closes register §1.3's `decode produces KV --X no path X-->` gap: a decode-side slot's KV can now be pulled back to host, byte-correctly.

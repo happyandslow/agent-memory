@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** hermes
-**Status:** captured
+**Status:** drained   <!-- drained 2026-08-06 into plan.md Decisions + Next actions -->
 
 ## What happened / finding
 

@@ -8,7 +8,7 @@ tags: [tooling, gotcha, destructive, repo-hygiene]
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained   <!-- drained 2026-08-06 into memory/project.md Known pitfalls -->
 
 ## The situation this applies to
 

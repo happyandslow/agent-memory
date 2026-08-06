@@ -36,6 +36,31 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Narrative progress log
 
+### 2026-08-06
+
+- **Drained the MeshJIT SRAM-relief captures into the new topic `memory/topics/meshjit-code-relocation.md`**
+  (`memory/inbox/2026-08-04-meshjit-branch-relocation.md` + `2026-08-04-meshjit-line-multicast-cost.md`).
+  Durable findings: the address-matched-slot relocation rule is **validated on silicon** (forward
+  branches + straight-line code relocate freely; backward loop branches are absolute-encoded so a
+  transplanted loop kernel only runs bit-exact when the receiver slot address == source); WSE-3
+  router-line multicast is pipelined hardware (`T ≈ 20 + 9*K/32 + (N-1)` cycles, one hop/cycle, not
+  `N*K`); real c512 phase-function sizes give a ~4,952 B shared-slot gross saving on five
+  independent kernels; and per-phase reuse is promising while **per-leaf fetch is not** (load cost
+  already > one body-call for qk_norm/rope/silu). Refines skill `wse-runtime-remote-code-loading`
+  invariant #1.
+- **Drained `memory/inbox/2026-08-04-pr14-sram-profile.md`** — its content was already folded into
+  `memory/topics/pe-sram-memory-breakdown.md` § Updates 2026-08-04 (PR #14 real 2×4 re-profile);
+  marked the capture drained. Headline: prefill compute PE is now the binding constraint of the
+  real deployment (88.9% c256 → 91.7% c512).
+- **Drained `memory/inbox/2026-08-06-qwen3-1p7b-decode-pipeline-depth-profile.md` into the
+  `we-pr14-depth-layout` project** (`projects/we-pr14-depth-layout/memory/topics/decode-pipeline-depth-layout.md`
+  + that project's plan), where the decode pipeline-depth experiment now lives; the capture is
+  marked drained with a cross-project pointer. Headline: one-layer `64 x 256` decode fits but costs
+  22.6–24.5% throughput and 42.52% max context vs the 8-stage baseline.
+- **Drained `memory/inbox/2026-08-05-ssh-cs3-connection-closed-port-65535-gateway-exhaustion.md`
+  into `memory/project.md` Known pitfalls** (CS-3 gateway connection-exhaustion recipe) and flagged
+  it as a `cs3-run`/`cs3-runner` skill promotion candidate.
+
 ### 2026-07-14
 
 - Drained `memory/inbox/2026-07-14-h2d-playground-summary.md` into `memory/topics/h2d-playground-transport.md`. Durable findings: measure device transfer with on-device TSC, pin `io_loc` for multi-stream scaling, prefer 10.27.x underlay over 100.64.x overlay, treat pipeline latency as host/network/queueing dominated, and preserve RDMA as a latency/CPU win that does not fix KV handoff. Full doc: `docs/2026-07-14-h2d-playground-experiments.md`.

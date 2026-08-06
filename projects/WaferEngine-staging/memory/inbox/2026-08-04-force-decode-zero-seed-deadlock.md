@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained   <!-- drained 2026-08-06 into topic force-decode-startup-depends-on-prefix.md § Updates + plan.md -->
 
 ## What happened / finding
 

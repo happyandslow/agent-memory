@@ -2,7 +2,11 @@
 topic: pe-sram-memory-breakdown
 tags: [waferengine, wse3, meshjit, code-relocation, sram, prefill]
 date: 2026-08-04
+status: drained
 ---
+
+> **Status: drained** (2026-08-06 maintain pass) into the new topic
+> `memory/topics/meshjit-code-relocation.md` § Relocation correctness.
 
 # MeshJIT control-flow relocation: forward branches OK, backward (loop) branches are absolute
 

@@ -2,7 +2,12 @@
 topic: pe-sram-memory-breakdown
 tags: [waferengine, wse3, sram, qwen3, pr14, resource-analysis]
 date: 2026-08-04
+status: drained
 ---
+
+> **Status: drained** (2026-08-06 maintain pass) into
+> `memory/topics/pe-sram-memory-breakdown.md` § Updates 2026-08-04 (PR #14 real 2×4 re-profile),
+> which already carried this content and cites this capture.
 
 # Per-PE SRAM profile of PR #14 real Qwen3-1.7B decode + prefill
 
