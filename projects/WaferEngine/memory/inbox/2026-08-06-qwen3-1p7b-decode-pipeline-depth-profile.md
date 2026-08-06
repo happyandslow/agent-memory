@@ -1,6 +1,10 @@
 # Qwen3-1.7B decode pipeline-depth CS-3 profile (2026-08-06)
 
-## Durable results
+**Project:** WaferEngine
+**Author:** codex
+**Status:** captured
+
+## What happened / finding
 
 - Base snapshot: upstream/main `b136ab64b3f5575c72fb722fb972ef5c77f4c9fe`;
   repository remote remained the `happyandslow/WaferEngine` fork.
@@ -22,6 +26,13 @@
 - Nominal-depth decode-side pipeline-prefill numbers are upper bounds, not
   measurements: baseline roughly 13--15k tok/s and 64x256 roughly 35--40k
   over matched positions. Dedicated prefill is the achieved comparison.
+- At position 256 specifically, the nominal-depth arithmetic is
+  `1850.5 * 8 = 14,804.0 tok/s` for the baseline and
+  `1425.4 * 28 = 39,911.2 tok/s` for 64x256 (2.696x the baseline estimate).
+  This multiplication assumes all pipeline stages accept independent prefill
+  tokens at the measured steady-state decode initiation interval, with no
+  fill/drain, dependency, collective, input, or output bottleneck. It must not
+  be reported as achieved throughput without an actual pipelined-prefill run.
 - Local SDK 2.10 sim artifacts and CS-3 appliance/server 1.13.2 device
   artifacts are not byte-identical; source/config hashes match. Device
   artifacts and device measurements are authoritative.
@@ -39,7 +50,19 @@
 - CS-3 sync deletion can remove ignored remote results. Copy every device-
   authoritative result locally before the next sync.
 
-Primary report and raw paths:
+## Implications / next actions
+
+- [ ] Test the remembered 128x128 one-layer layout.
+- [ ] Investigate changing HT geometry/size to relieve embedding SRAM pressure.
+- [ ] If one-layer layouts remain unsuitable, test a two-layer rectangular layout.
+- [ ] Validate the decode-derived pipeline-prefill upper bound with an actual
+  multi-token pipelined-prefill implementation before reporting it as achieved.
+
+## Pointers
+
+- ContextBase log:
+  https://context.ed-aisys.com/doc/2026-08-06-result-qwen3-17b-decode-pipeline-depth-profile-tWZ5gVLrVO
+- Primary report and raw paths:
 `/home/lexu/we-pr14-depth-layout/docs/DECODE_PIPELINE_DEPTH_EXPERIMENT_2026-08-05.md`
 and
 `/home/lexu/we-pr14-depth-layout/models/qwen3_1p7b-decode/bench/results/`.
