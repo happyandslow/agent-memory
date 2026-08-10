@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained   <!-- drained 2026-08-10 into never-commit-without-explicit-user-request.md + conflicts.md promotion follow-up -->
 
 ## The situation this applies to
 

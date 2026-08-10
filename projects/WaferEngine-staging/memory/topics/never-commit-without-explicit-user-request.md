@@ -46,3 +46,18 @@ Source: `memory/inbox/2026-07-29-never-commit-without-explicit-user-request.md`
   code unless the user tells you to.”
 - Accidental commit: `91feb24` (to be removed from local branch history while
   preserving its design file as an uncommitted file).
+
+## Update — 2026-08-08: `git stash` is also a mutation
+
+Drained from `memory/inbox/2026-08-08-git-stash-violates-a-preserve-index-ban.md`.
+
+If a task includes a hard Git-safety clause such as “preserve the staged index exactly; your edits stay
+unstaged; do not run add/commit/push/reset/restore/checkout/clean/rebase/merge,” then `git stash` is
+also banned. It mutates the worktree and index: `stash` removes staged files into the stash, and
+`stash pop` can replay them as unstaged, collapsing the staged-vs-unstaged boundary the user explicitly
+told the agent to preserve.
+
+Under a Git-mutation ban, use only read-only git inspection (`status`, `diff`, `log`, `rev-parse`,
+`show`). If scratch isolation is needed, use a separate copy/worktree or plain file copies rather than
+mutating refs, the index, or the shared worktree. This generalizes the commit-specific rule above:
+approval to implement or test is not approval to mutate Git state.

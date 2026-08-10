@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained   <!-- drained 2026-08-10 into s3b-decode-kv-egress-options.md + memory/project.md -->
 
 ## The situation this applies to
 

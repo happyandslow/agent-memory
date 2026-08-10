@@ -48,6 +48,14 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
       enabling automatic M1-S3 cache-hit scheduling — `F=0` (seedless exact-history hit) deadlocks
       the step-0 HT_head/HT_tail dependency; M1 runs an exact reuse at `F=1`, not `F=0`. See
       `memory/topics/force-decode-startup-depends-on-prefix.md` § Updates 2026-08-04.
+- [ ] **For M1-S4, define actual-length/EOS commit semantics for automatic replacement early-stop.**
+      The temporary S3.5 rule fails closed after draining trailing TSC because host slot length may have
+      advanced to planned `RoundPlan.end` while the device produced fewer resident KV positions. See
+      `memory/topics/automatic-replacement-early-stop-fails-closed.md`.
+- [ ] **If D9 is ever relaxed, design per-PE resume payloads before arbitrary truncate-then-branch.**
+      Current host-seeded and decode-appended KV share one strided placement, so one scalar is exact for
+      P-aligned boundaries only; non-P-multiple resumes need per-row valid lengths. See
+      `memory/topics/decode-kv-strided-placement-and-resume-granularity.md`.
 - [x] **DONE — standalone `launch.py` modularisation** (separate pure-move task, bit-identical gate)
       was discussed, approved, implemented, committed, and merged **before S3.3**; it is history, not
       an open action. The per-step S3 role/gate sequence it established still stands for later steps:
@@ -73,6 +81,22 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Fix e2e source/documentation hygiene found in the 2026-07-09 read: stale `route_calc.csl:5` axis comment, prefill vocab-padding asymmetry, K-pipe alias invariant check, and `csl_color_audit` raw `@set_config` parsing.
 
 ## Narrative progress log
+
+### 2026-08-10 — maintain pass drained four 2026-08-06→08 captures
+
+- **E13/S3b decode egress:** appended the runtime-extent fabric `@mov` correction to
+  `memory/topics/s3b-decode-kv-egress-options.md` and `memory/project.md`: runtime `@set_dsd_length`
+  + fabric `@mov` is supported; the real wall is extent `< 0x7fff`; still gate compile/place because
+  runtime-narrow fabout placement has failed before.
+- **M1 decode resume/layout:** created `memory/topics/decode-kv-strided-placement-and-resume-granularity.md`:
+  host-seeded KV and decode-appended KV use the same strided token→row/col placement; a single scalar
+  resume is exact only at P-aligned/D9 boundaries, and arbitrary truncate-then-branch would need per-PE
+  valid-length payloads.
+- **M1 automatic replacement:** created `memory/topics/automatic-replacement-early-stop-fails-closed.md`:
+  automatic early-stop fails closed until S4 defines actual-length/EOS commit semantics.
+- **Git safety:** appended the `git stash` correction to `memory/topics/never-commit-without-explicit-user-request.md`:
+  under a preserve-index / no-Git-mutation contract, `stash` is banned because it mutates and can collapse
+  the staged-vs-unstaged boundary.
 
 ### 2026-08-06 — maintain pass drained the 9-item inbox backlog (2026-08-03 → 08-06)
 

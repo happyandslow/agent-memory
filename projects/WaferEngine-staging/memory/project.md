@@ -171,6 +171,13 @@ export MEMORY=$AGENT_MEMORY_ROOT/projects/WaferEngine-staging   # or /home/lexu/
   `CLAUDE.md`/`.superpowers/` is a repo change (needs Le's call), not a memory item. (Drained from
   `memory/inbox/2026-08-04-clean-sh-deletes-the-git-ignored-instruction-file.md`, 2026-08-04.)
 
+- **Runtime-extent fabric moves are allowed, but still require a compile/place gate.** SDK runtime
+  sources use `@set_dsd_length` followed by async fabric `@mov32`, so a decode E13 raw-bank egress can
+  use runtime `plen` rather than contorting wire order solely to make extents comptime. The hard wall is
+  extent `< 0x7fff`, and placement may still fail for runtime-narrow fabout DSDs; use a comptime-MAX DSD
+  template, narrow it, and make “compiles and places” an explicit gate. See
+  `memory/topics/s3b-decode-kv-egress-options.md` update 2026-08-06. (Drained 2026-08-10.)
+
 ## Important links
 
 - InferCept (KV preserve/swap/discard cost policy): <https://arxiv.org/abs/2402.01869>

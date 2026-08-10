@@ -46,6 +46,7 @@ Last reviewed: 2026-07-29
 - 2026-07-25: Consider updating the `meshagent-sync`/checkpoint protocol to list/fetch existing same-day Logs and recent mirror `updatedAt` before creating a new session log or re-mirroring durable docs, to avoid duplicating parallel-session work.
 - 2026-07-25: Consider promoting the git branch-status verification rule: before asserting commit/merge state, verify live branch topology and feature content; under squash merges, `merge-base --is-ancestor <original-tip>` can false-negative even when the branch contains the feature.
 - 2026-07-26: Consider promoting the per-request-dimension review heuristic: before adding a slot/request axis to a lockstep kernel, identify which invariants the old uniformity enforced for free (for M1 decode, equal active-lane length survives only as a host/test obligation because scalar `iter_num` is also the packed score stride).
+- 2026-08-10: Consider promoting the Git-safety rule from `memory/inbox/2026-08-08-git-stash-violates-a-preserve-index-ban.md`: a “preserve the index / do not mutate Git state” contract bans `git stash` too, because stash/pop mutates the index and worktree and can collapse staged-vs-unstaged boundaries.
 
 ### 2026-07-29 — one consolidated proposal, because seven captures turned out to be one lesson
 

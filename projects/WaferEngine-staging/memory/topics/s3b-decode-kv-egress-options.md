@@ -76,6 +76,25 @@ KV, and the host already retains that copy (A6, verified). What survives is an *
 argument — decode-produced KV is the only KV with no host copy, so any cross-turn retention scheme
 accumulates exactly the bytes S3b would move. **Le's decision, not a technical one.**
 
+## Update — 2026-08-06: runtime-extent fabric `@mov` is supported
+
+Drained from `memory/inbox/2026-08-06-runtime-extent-fabric-mov-is-supported.md`.
+
+The earlier design pressure to keep fabric `@mov` extents comptime was too strong. SDK source shows
+runtime-length fabric moves are supported when a DSD is narrowed with `@set_dsd_length` before the
+move: `csl_libraries/runtime/mux_adaptor.csl:317-341` uses a runtime `dsd_length` followed by async
+`@mov32`, and similar patterns appear in `demux.csl`, `demux_N1.csl`, and `spmv-hypersparse/pe.csl`.
+
+The real hard wall is extent `< 0x7fff`; above it the move can silently deadlock, matching the known
+ingress `metablk` extent wall. For E13, `plen = ceil(L/256) <= 80`, so a raw-bank decode egress where
+the runtime extent is `plen` is below the wall. This means decode egress can use two strided moves per
+PE — whole K bank, then whole V bank — and let the host split/place opaquely, with no on-chip transpose.
+
+Caveat: language-supported does not imply placement-safe. `prefill.csl:788` records a prior
+runtime-narrow egress fabout that triggered PaintCompiler placement/OOM failures. Use a comptime-MAX DSD
+template, narrow it with `@set_dsd_length`, and treat “runtime-extent emit compiles and places” as a
+Step-1 gate, not an assumption.
+
 ## Last updated
 
-2026-07-31
+2026-08-10

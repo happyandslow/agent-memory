@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** codex
-**Status:** captured
+**Status:** drained   <!-- drained 2026-08-10 into automatic-replacement-early-stop-fails-closed.md + plan.md -->
 
 ## What happened / finding
 
