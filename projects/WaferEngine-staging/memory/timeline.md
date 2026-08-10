@@ -2,6 +2,7 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-08-10 — reusable-debug-instrumentation-must-be-explicit → `memory/inbox/2026-08-10-reusable-debug-instrumentation-must-be-explicit.md`
 - 2026-08-10 — m1-every-step-requires-device-gate → `memory/inbox/2026-08-10-m1-every-step-requires-device-gate.md`
 - 2026-08-08 — git-stash-violates-a-preserve-index-ban → `memory/inbox/2026-08-08-git-stash-violates-a-preserve-index-ban.md`
 - 2026-08-08 — auto-replacement-early-stop-must-fail-closed → `memory/inbox/2026-08-08-auto-replacement-early-stop-must-fail-closed.md`
