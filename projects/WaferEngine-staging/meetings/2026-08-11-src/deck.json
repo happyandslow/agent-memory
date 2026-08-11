@@ -42,18 +42,18 @@
     {
       "type": "figure",
       "eyebrow": "Experiment A · reuse length × batch",
-      "title": "More reusable prefix translates into less round work",
+      "title": "More reusable prefix translates into higher output throughput",
       "image": "figures/experiment_a.png",
-      "caption": "Full Qwen3-1.7B, real WSE-3, three repetitions per point. bsz 3–4 reached the PE-memory compile boundary (no TSC); partial shortens the suffix, while exact holds F=1.",
-      "notes": "At bsz=1 partial R=768 is 1.57× faster than miss; exact R=256 is 1.82×. At bsz=2 the corresponding gains are 1.54× and 1.75×. Most relative SDs are below 0.1%."
+      "caption": "Throughput = batch×255 generated tokens / median round TSC at 0.85 GHz. Purple keeps P=1025 and reduces F as R grows; blue uses an exact resident prefix with P=R+1 and F=1.",
+      "notes": "Experiment A setting: real Qwen3-1.7B on one CS-3/WSE-3; Pw512×Ph1024; 2×4 blocks; P_BLOCK_SIZE=256; 28 layers; dim=2048; 16 attention heads / 8 KV heads; vocab=151936; three device repetitions per point; median raw TSC converted at 0.85 GHz. G=255 free-decode/generated tokens per lane for every point. Miss: P/R/F/G=1025/0/1025/255. Partial: P=1025,G=255 with R/F=256/769,512/513,768/257. Exact: F=1,G=255,P=R+1 with R/P=256/257,512/513,768/769,1024/1025. Throughput numerator is batch×G, so partial and exact are compared on the same generated-output budget. bsz 3–4 reached the ht_tail PE-memory compile boundary and produced no TSC."
     },
     {
       "type": "figure",
       "eyebrow": "Experiment B · synthetic locality × slots",
       "title": "More slots help only when they cross the working-set threshold",
       "image": "figures/experiment_b.png",
-      "caption": "Ten-round synthetic traces, fresh sequence IDs, 256-token shared prefixes. W3 thrashes with two slots but produces seven content hits with four slots: 1.69× lower TSC than no reuse.",
-      "notes": "W2 is the same with two and four slots; W5 remains no-reuse with both. This isolates temporal locality from exact-ID ownership and from a real workload distribution."
+      "caption": "Throughput = 10×512 logical prompt tokens / cumulative device TSC at 0.85 GHz. This is a G=0 pure KV-rebuild trace, so generated-output throughput would be zero by construction.",
+      "notes": "Experiment B setting: real Qwen3-1.7B on one CS-3/WSE-3; Pw512×Ph1024; 2×4 blocks; P_BLOCK_SIZE=256; 28 layers; dim=2048; 16 attention heads / 8 KV heads; vocab=151936; bsz=1; ten rounds; fresh sequence ID per access; P=512 tokens composed of a 256-token shared prefix plus 256 unique tokens; G=0. On a content-prefix hit, R=256 and F=256; on a miss, R=0 and F=512. W2/W3/W5 mean reuse distances 1/2/4; slot counts are 2 and 4. Because G=0, the plotted metric is logical prompt-token throughput, not generated-output throughput. W3 thrashes with 2 slots but achieves 7 hits/3 misses with 4 slots; W5 exceeds both capacities."
     },
     {
       "type": "statement",
