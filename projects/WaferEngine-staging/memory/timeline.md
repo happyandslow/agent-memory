@@ -2,7 +2,9 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-08-11 — source-comment-lossless-compression → `memory/inbox/2026-08-11-source-comment-lossless-compression.md`
 - 2026-08-11 — m1-s37-prefix-reuse-device-benchmarks → `memory/inbox/2026-08-11-m1-s37-prefix-reuse-device-benchmarks.md`
+- 2026-08-11 — excalidraw-diagram-workflow → `memory/inbox/2026-08-11-excalidraw-diagram-workflow.md`
 - 2026-08-10 — s37-positive-prefix-real-device-pass → `memory/inbox/2026-08-10-s37-positive-prefix-real-device-pass.md`
 - 2026-08-10 — reusable-debug-instrumentation-must-be-explicit → `memory/inbox/2026-08-10-reusable-debug-instrumentation-must-be-explicit.md`
 - 2026-08-10 — m1-every-step-requires-device-gate → `memory/inbox/2026-08-10-m1-every-step-requires-device-gate.md`
