@@ -277,25 +277,33 @@ def edge_strip():
 
 
 def eviction_model():
-    L=np.array([1024,4096,8192,16384])
-    force=np.array([76,323,698,1601])
-    host=np.array([11.7,47.0,93.9,187.9])
-    best=np.array([2.4,2.5,2.7,3.0])
-    serialized=np.array([4.8,17.5,35.0,70.0])
+    # Real full-scale E10 resume anchors. This is one boundary slice, not a
+    # universal policy threshold: full-target reload also depends on S/L_new.
+    L=np.array([512,1024,2048,4096,8192])
+    force=np.array([37.9,76.9,158.3,333.5,735.1])
+    host=np.array([46.236,56.141,85.684,169.891,338.266])
+    # M3 edge-strip band remains analytical until E1 measures it on device.
+    best=np.array([2.3,2.4,2.4,2.5,2.7])
+    serialized=np.array([2.4,4.8,9.0,17.5,35.0])
     fig,ax=plt.subplots(figsize=(15.6,6.5))
-    ax.plot(L,force,marker="o",lw=3,color=ACCENT,label="Recompute / force-decode")
-    ax.plot(L,host,marker="o",lw=3,color=BLUE,label="Host reload ceiling")
-    ax.fill_between(L,best,serialized,color=GREEN,alpha=.18,label="Edge-strip park+reload estimate")
+    ax.plot(L,force,marker="o",lw=3,color=ACCENT,label="Measured recompute / force-decode")
+    ax.plot(L,host,marker="o",lw=3,color=BLUE,label="Measured host reload (resume only)")
+    ax.fill_between(L,best,serialized,color=GREEN,alpha=.18,label="Analytical edge-strip park+reload")
     ax.plot(L,best,ls="--",lw=2,color=GREEN)
     ax.plot(L,serialized,ls="--",lw=2,color=GREEN)
+    ax.set_xscale("log",base=2)
     ax.set_yscale("log")
-    ax.set_xlabel("Resident prefix length L (tokens)")
-    ax.set_ylabel("Round-trip / rebuild cost (ms, log scale)")
+    ax.set_xticks(L,labels=[f"{x:,}" for x in L])
+    ax.set_xlabel("Resident history H (tokens)")
+    ax.set_ylabel("Resume / rebuild cost (ms, log scale)")
     ax.grid(True,which="both",color=RULE,lw=1)
     ax.spines[["top","right"]].set_visible(False)
     ax.legend(frameon=False,loc="upper left")
-    ax.text(9100,9.5,"analytic band only\n2.3 ms fixed floor if rows parallel\nup to k× if stripes serialize",color=GREEN,fontsize=13,weight="bold")
-    ax.text(9000,420,"Build only if measured E1\nkeeps the green band below rivals",color=BODY,fontsize=13)
+    ax.axvline(700,color=AMBER,ls=":",lw=2)
+    ax.text(725,30,"≈700-token crossing\n(this E10 slice)",color=AMBER,fontsize=13,weight="bold")
+    ax.text(2800,4.3,"analytic band only\n≈2.3 ms if rows move in parallel\nup to k× if stripes serialize",color=GREEN,fontsize=13,weight="bold")
+    ax.text(.99,.04,"Real Qwen3-1.7B · one WSE-3 · bsz 1 · 0.85 GHz TSC",
+            transform=ax.transAxes,ha="right",color=BODY,fontsize=11)
     fig.tight_layout()
     save(fig,"eviction_model")
 

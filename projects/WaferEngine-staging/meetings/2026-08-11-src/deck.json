@@ -96,11 +96,11 @@
     },
     {
       "type": "figure",
-      "eyebrow": "M3 cost model · discussion, not a measurement",
-      "title": "Eviction is attractive only if the movement mechanism lands in the green band",
+      "eyebrow": "M3 cost model · real CS-3 anchors + analytical candidate",
+      "title": "At full CS-3 scale, measured host reload crosses recompute",
       "image": "figures/eviction_model.png",
-      "caption": "Analytical edge-strip range: 2×P×4.54 µs ≈ 2.3 ms fixed round-trip if storage rows move in parallel; up to k× if rows serialize. E1 must measure payload, distance, row scaling and both directions.",
-      "notes": "The force-decode and host-ceiling curves are prior real-device-derived anchors; the green band is not measured. Decision rule: park when q·(C_recompute−C_reload) > C_park, subject to capacity and route interference."
+      "caption": "Real Qwen3-1.7B, one WSE-3, Pw512×Ph1024, 2×4 blocks, bsz 1. This E10 resume-only slice crosses near 700 tokens; the green edge-strip band remains analytical.",
+      "notes": "This is one measured boundary slice, not a universal policy threshold. Full-target reload shifts with S, H and L_new; a true eviction decision must also add decode-to-host D2H and resume probability. E1 must measure the green band."
     },
     {
       "type": "next_steps",
