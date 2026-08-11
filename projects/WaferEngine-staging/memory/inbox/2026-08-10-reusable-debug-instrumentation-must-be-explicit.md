@@ -2,7 +2,8 @@
 
 **Project:** WaferEngine-staging  
 **Author:** human  
-**Status:** captured
+**Status:** drained
+**Drained to:** `memory/topics/explicit-default-off-debug-instrumentation.md` (2026-08-11)
 
 ## Situation
 

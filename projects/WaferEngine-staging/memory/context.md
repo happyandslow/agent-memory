@@ -10,7 +10,7 @@ Compact startup packet for fresh agent sessions. This generated view is intentio
 
 ## Current state
 
-- Daily maintenance last checked this project on 2026-08-10.
+- Daily maintenance last checked this project on 2026-08-11.
 - Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
 
 ## Current focus
@@ -42,6 +42,8 @@ Compact startup packet for fresh agent sessions. This generated view is intentio
 - `memory/topics/e9-forced-segment-tsc.md` — E9 force-decode segment timing — why it lives in ht_tail and not the block PE, the 4-way burst-width contract, and the two silent-failure bugs found in review.
 - `memory/topics/epcc-cs3-has-four-systems.md` — The EPCC CS-3 cluster has FOUR systems, not one — a guard that waits on "any wsjob exists" blocks on an idle cluster and costs wall-clock for nothing.
 - `memory/topics/force-decode-startup-depends-on-prefix.md` — Force-decode startup depends on prefix length — 2026-08-02
+- `memory/topics/m1-s37-prefix-reuse-device-gates.md` — M1/S3.7 real-device gate, full-model prefix-reuse benchmarks, and batch/slot capacity boundary.
+- `memory/topics/explicit-default-off-debug-instrumentation.md` — Retained debug/verifier instrumentation must be explicit, default-off, and fail-closed.
 - `memory/topics/forced-max-is-a-compile-time-ceiling-on-f.md` — You set a large forced_decode_len and the run dies before touching the wafer — 2026-07-31
 - `memory/topics/forced-token-cost-is-a-curve-not-a-constant.md` — Forced-decode token cost is a curve, not the single 13.5% number — 2026-07-31
 

@@ -2,7 +2,8 @@
 
 **Project:** WaferEngine-staging
 **Author:** human
-**Status:** captured
+**Status:** drained
+**Drained to:** `memory/topics/m1-s37-prefix-reuse-device-gates.md` (2026-08-11)
 
 ## What happened / finding
 

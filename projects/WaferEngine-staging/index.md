@@ -34,6 +34,7 @@
 - [[memory/topics/e2e-pdSeparate-device-validation]]
 - [[memory/topics/e9-forced-segment-tsc]]
 - [[memory/topics/epcc-cs3-has-four-systems]]
+- [[memory/topics/explicit-default-off-debug-instrumentation]]
 - [[memory/topics/force-decode-startup-depends-on-prefix]]
 - [[memory/topics/forced-max-is-a-compile-time-ceiling-on-f]]
 - [[memory/topics/forced-token-cost-is-a-curve-not-a-constant]]
@@ -42,6 +43,7 @@
 - [[memory/topics/h2d-host-device-bandwidth]]
 - [[memory/topics/kv-cache-policy-tradeoffs]]
 - [[memory/topics/m1-s1-multi-slot-kv-seam]]
+- [[memory/topics/m1-s37-prefix-reuse-device-gates]]
 - [[memory/topics/m2-experiment-register]]
 - [[memory/topics/m2-s0-baseline-and-timer-provenance]]
 - [[memory/topics/m2-s1-measurement-lenses]]
@@ -88,6 +90,7 @@
 | e2e vs pdSeparate — CS-3 Device Validation, Real-Weights Gap, Max-Context | Device-validation and max-context findings for qwen3 e2e and pdSeparate deployments. | waferengine-staging, qwen3, device-validation, pd-disaggregation | `memory/topics/e2e-pdSeparate-device-validation.md` |
 | E9 · force-decode segment TSC — design, and the two ways it silently failed | E9 force-decode segment timing — why it lives in ht_tail and not the block PE, the 4-way burst-width contract, and the two silent-failure bugs found in review. | waferengine-staging, m2, e9, tsc, instrumentation, cerebras-sdk | `memory/topics/e9-forced-segment-tsc.md` |
 | EPCC CS-3 has FOUR systems — "any wsjob exists" is the wrong busy-test | The EPCC CS-3 cluster has FOUR systems, not one — a guard that waits on "any wsjob exists" blocks on an idle cluster and costs wall-clock for nothing. | waferengine-staging, cs3, epcc, operations, cluster | `memory/topics/epcc-cs3-has-four-systems.md` |
+| Explicit default-off debug instrumentation — 2026-08-10 | Retained verification/debug instrumentation is allowed only when explicit, default-off, fail-closed, and rejected on unsupported device entry points. | WaferEngine-staging, instrumentation, verification, debug, device-gate, fail-closed, drained-inbox, 2026-08-10 | `memory/topics/explicit-default-off-debug-instrumentation.md` |
 | Force-decode startup depends on prefix length — 2026-08-02 | Force-decode startup depends on prefix length — 2026-08-02 | WaferEngine-staging, drained-inbox, 2026-08-02 | `memory/topics/force-decode-startup-depends-on-prefix.md` |
 | You set a large forced_decode_len and the run dies before touching the wafer — 2026-07-31 | You set a large forced_decode_len and the run dies before touching the wafer — 2026-07-31 | WaferEngine-staging, drained-inbox, 2026-07-31 | `memory/topics/forced-max-is-a-compile-time-ceiling-on-f.md` |
 | Forced-decode token cost is a curve, not the single 13.5% number — 2026-07-31 | Forced-decode token cost is a curve, not the single 13.5% number — 2026-07-31 | WaferEngine-staging, drained-inbox, 2026-07-31 | `memory/topics/forced-token-cost-is-a-curve-not-a-constant.md` |
@@ -96,6 +99,7 @@
 | Host↔Device Bandwidth — the `h2d-playground` series | Findings, techniques and measured numbers from the h2d-playground experiment series (bringup, e1-e16, bandwidth-test, rdma-explore) on host-device and host-host data movement for WSE-3 on the EPCC CS-3 cluster. | waferengine-staging, bandwidth, h2d, d2h, sdklayout, memcpy, cs3-cluster, measurement, latency, networking | `memory/topics/h2d-host-device-bandwidth.md` |
 | KV-Cache Preserve-vs-Evict Policy Tradeoffs (WSE-3) | WSE-3 KV preserve-vs-evict/offload tiering analysis across e2e and pdSeparate deployments. | waferengine-staging, kv-cache, policy, offload, wse3 | `memory/topics/kv-cache-policy-tradeoffs.md` |
 | M1-S1 — multi-slot KV addressing seam: engineering learnings | > Curated, transferable learnings from implementing + verifying the multi-slot KV |  | `memory/topics/m1-s1-multi-slot-kv-seam.md` |
+| M1/S3.7 prefix reuse device gates and full-model benchmarks — 2026-08-10/11 | M1/S3.7 now has a real CS-3 positive-prefix reuse gate and full-model TSC baselines; future steps require explicit device gates, and S5 must separate batch size from slot count. | WaferEngine-staging, M1, S3.7, prefix-reuse, device-gate, cs3, qwen3, performance, capacity, drained-inbox, 2026-08-11 | `memory/topics/m1-s37-prefix-reuse-device-gates.md` |
 | M2 · Experiment Register (index + results + three-lane design) | > **What this document is.** The single index of every M2 experiment: what it asks, what it plots, what data it uses, and what it found. **Chapter 1 is the table** — read it to see where we are. **Chapter 2 is the results**, one section per row, in the same order. **Chapter 3 is the design of the next experiments.** |  | `memory/topics/m2-experiment-register.md` |
 | M2-S0 — pr14 pdSeparate baseline + `timing.json` provenance | M2-S0 measurement session — the pr14 pdSeparate mtbench8 baseline reproduced bit-identical on real WSE-3 at snapshot a3a509c, what mtbench8's workload shape can and cannot measure, the code-derived KV wire payload (32.000 MiB/request, 8/7 layer-envelope factor), which timing.json fields are safe to quote, and the provenance failures (prose divisor, over-wide wall clock, wrong regression x-axis) that put wrong numbers into durable docs. | waferengine-staging, m2, pdseparate, measurement, timing, bandwidth, cs3-cluster, provenance | `memory/topics/m2-s0-baseline-and-timer-provenance.md` |
 | M2-S1 — measurement lenses, and the uplink nobody had timed | M2-S1 — fixing the three broken measurement lenses in the pdSeparate launcher, measuring the KV host→device uplink for the first time (1.85x slower than the downlink that had proxied for it), and the placement/tooling lessons that made it a zero-perturbation measurement. | waferengine-staging, m2, pdseparate, measurement, timing, bandwidth, sdklayout, io_loc, cs3-cluster, provenance | `memory/topics/m2-s1-measurement-lenses.md` |

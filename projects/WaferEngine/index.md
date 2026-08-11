@@ -17,6 +17,7 @@
 - [[memory/topics/h2d-playground-transport]]
 - [[memory/topics/meshjit-code-relocation]]
 - [[memory/topics/pe-sram-memory-breakdown]]
+- [[memory/topics/qwen3-force-prefill-output-backpressure]]
 
 ## Topic catalog
 
@@ -26,4 +27,5 @@
 | h2d-playground transport experiments | CS-3 host/device and cross-pod transport experiments from h2d-playground. | waferengine, cs3, h2d, transport, rdma, latency | `memory/topics/h2d-playground-transport.md` |
 | MeshJIT code relocation (relieving the .text-dominated prefill PE) | MeshJIT fabric code relocation to relieve the .text-dominated prefill PE — silicon-validated address-matched-slot rule (forward branches relocate, backward loops are absolute), pipelined hardware router multicast cost model, and real c512 function sizes / exact-body use times that say fetch per-phase not per-leaf. | waferengine, wse3, meshjit, code-relocation, multicast, sram, prefill, tsc | `memory/topics/meshjit-code-relocation.md` |
 | PE SRAM Memory Breakdown (qwen3-1.7B decode + prefill, real WSE-3) | Device-measured WSE-3 per-PE SRAM/fabric resource analysis for qwen3 decode and prefill. | waferengine, wse3, sram, qwen3, resource-analysis | `memory/topics/pe-sram-memory-breakdown.md` |
+| Qwen3 force-prefill output-backpressure correction — 2026-08-09 | Qwen3 force-decode-as-prefill throughput measurements were corrected after host D2H receive scheduling backpressured the WSE program; co-drain protocol restores the 28-stage advantage. | WaferEngine, qwen3, force-decode, prefill, throughput, backpressure, cs3, drained-inbox, 2026-08-09 | `memory/topics/qwen3-force-prefill-output-backpressure.md` |
 

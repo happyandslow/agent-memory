@@ -31,10 +31,21 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Verify live WaferEngine branch/PR state before acting; memory is context, not proof. In particular, check PR #14 (`real_qwen3_1p7`) and branches `lexu/specdec-dual-kernels` / `lexu/pe-mem-breakdown` before edits.
 - [ ] For SpecDec M1, continue with decode `launch.py` real-weights reconcile + cold compile-only, then co-resident layout/device bring-up.
 - [ ] On PR #14 merge, update code-facing docs to reflect that `KV_TRANSFER=0`/compile-time KV baking was deleted, and that decode rounds terminate by runtime token-path budget/EOS STOP flood.
+- [ ] For future SdkLayout throughput measurements with per-step output, pre-post D2H receives before ingress so device TSC does not include host-induced output backpressure; see `memory/topics/qwen3-force-prefill-output-backpressure.md`.
 - [ ] Add WaferOS/session examples for keeping KV cache on chip and recompute/evict behavior; recover or replace the missing Obsidian image noted in `tracking/conflicts.md`.
 - [ ] Decide whether to merge `lexu/pe-mem-breakdown`; optional follow-up: run seq_len/layers-per-block sweeps.
 
 ## Narrative progress log
+
+### 2026-08-11
+
+- **Drained the paired Qwen3 force-decode-as-prefill throughput captures** into
+  `memory/topics/qwen3-force-prefill-output-backpressure.md`. The 2026-08-08 late-drain
+  interpretation is superseded: the host sent all teacher-forced X vectors before posting the
+  output/TSC receive, so D2H backpressure entered the device-TSC interval. The corrected co-drain
+  harness pre-posts the receive and restores the 28-stage advantage (N=1024: 37.4–46.9K tok/s,
+  2.90–2.97× the 8-stage layout across prefixes). Device TSC can include host receive-scheduling
+  stalls, so bidirectional throughput measurements must arm D2H before ingress.
 
 ### 2026-08-06
 

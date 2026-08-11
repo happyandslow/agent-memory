@@ -2,8 +2,9 @@
 
 **Project:** WaferEngine
 **Author:** claude (perf implementation/operations agent)
-**Status:** superseded
+**Status:** drained
 **Superseded by:** `2026-08-09-qwen3-force-prefill-output-backpressure-correction.md`
+**Drained to:** `memory/topics/qwen3-force-prefill-output-backpressure.md` (2026-08-11)
 
 ## Correction
 

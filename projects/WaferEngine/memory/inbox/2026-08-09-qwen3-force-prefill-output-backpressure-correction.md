@@ -2,7 +2,8 @@
 
 **Project:** WaferEngine
 **Author:** codex
-**Status:** captured
+**Status:** drained
+**Drained to:** `memory/topics/qwen3-force-prefill-output-backpressure.md` (2026-08-11)
 
 ## What happened / finding
 

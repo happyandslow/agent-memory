@@ -52,6 +52,12 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
       The temporary S3.5 rule fails closed after draining trailing TSC because host slot length may have
       advanced to planned `RoundPlan.end` while the device produced fewer resident KV positions. See
       `memory/topics/automatic-replacement-early-stop-fails-closed.md`.
+- [ ] **For every M1 implementation step after S3.7, define and run a real-device gate before closure.**
+      Host tests, mocks, compilation, and simulator runs are diagnostic layers only; if the device gate
+      is unavailable, keep the step incomplete/blocked. See `memory/topics/m1-s37-prefix-reuse-device-gates.md`.
+- [ ] **For M1-S5, separate `bsz` from `SLOT_COUNT` and include `ht_tail` batch scratch in the SRAM model.**
+      Full-model `bsz=SLOT_COUNT=3,4` failed before execution from shared PE data-SRAM exhaustion, while
+      `1,2` compile/run. Reducing `MAX_SEQ_LEN` alone cannot fix this boundary.
 - [ ] **If D9 is ever relaxed, design per-PE resume payloads before arbitrary truncate-then-branch.**
       Current host-seeded and decode-appended KV share one strided placement, so one scalar is exact for
       P-aligned boundaries only; non-P-multiple resumes need per-row valid lengths. See
@@ -81,6 +87,24 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Fix e2e source/documentation hygiene found in the 2026-07-09 read: stale `route_calc.csl:5` axis comment, prefill vocab-padding asymmetry, K-pipe alias invariant check, and `csl_color_audit` raw `@set_config` parsing.
 
 ## Narrative progress log
+
+### 2026-08-11 — maintain pass drained four M1/S3.7 captures
+
+- **M1/S3.7 device-gate policy and evidence:** created
+  `memory/topics/m1-s37-prefix-reuse-device-gates.md`. Starting with S3.7, each implementation
+  step requires an explicit CS-3 gate before being marked complete; simulator/host tests cannot
+  substitute for a device verdict. S3.7's tracked positive-prefix reuse case passed on real WSE-3
+  (`P_BLOCK_SIZE=8`, `bsz=2`, `slot_count=2`, two 16-step rounds, `PREFIX-REUSE` with no host KV
+  reload, ledger `OK`, `rc=0`).
+- **Full-model S3.7 baselines:** the same topic now records CS-3 TSC reuse-length and locality
+  sweeps at full Qwen3-1.7B geometry. Exact reuse gives about 1.76–1.82× at `bsz=1` and 1.72–1.75×
+  at `bsz=2`; slot capacity helps only when it crosses the temporal-locality working-set threshold.
+  Coupled `bsz=SLOT_COUNT=3,4` fail before execution from `ht_tail` shared PE SRAM exhaustion, so
+  S5 must separate batch and slot count and model batch scratch explicitly.
+- **Reusable instrumentation rule:** created
+  `memory/topics/explicit-default-off-debug-instrumentation.md`. Retained debug/verifier code must
+  be explicit, default-off, fail-closed, and report `SKIPPED` rather than implying an omitted check
+  passed; device entry points should reject simulator-only flags before layout/runtime setup.
 
 ### 2026-08-10 — maintain pass drained four 2026-08-06→08 captures
 
