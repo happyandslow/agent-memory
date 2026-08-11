@@ -2,6 +2,8 @@
 
 # WaferEngine Timeline
 
+- 2026-08-09 — qwen3-force-prefill-output-backpressure-correction → `memory/inbox/2026-08-09-qwen3-force-prefill-output-backpressure-correction.md`
+- 2026-08-08 — qwen3-force-decode-as-prefill-throughput → `memory/inbox/2026-08-08-qwen3-force-decode-as-prefill-throughput.md`
 - 2026-08-06 — qwen3-1p7b-decode-pipeline-depth-profile → `memory/inbox/2026-08-06-qwen3-1p7b-decode-pipeline-depth-profile.md`
 - 2026-08-05 — ssh-cs3-connection-closed-port-65535-gateway-exhaustion → `memory/inbox/2026-08-05-ssh-cs3-connection-closed-port-65535-gateway-exhaustion.md`
 - 2026-08-04 — pr14-sram-profile → `memory/inbox/2026-08-04-pr14-sram-profile.md`

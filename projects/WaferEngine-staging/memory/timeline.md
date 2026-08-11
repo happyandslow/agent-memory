@@ -2,6 +2,10 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-08-11 — m1-s37-prefix-reuse-device-benchmarks → `memory/inbox/2026-08-11-m1-s37-prefix-reuse-device-benchmarks.md`
+- 2026-08-10 — s37-positive-prefix-real-device-pass → `memory/inbox/2026-08-10-s37-positive-prefix-real-device-pass.md`
+- 2026-08-10 — reusable-debug-instrumentation-must-be-explicit → `memory/inbox/2026-08-10-reusable-debug-instrumentation-must-be-explicit.md`
+- 2026-08-10 — m1-every-step-requires-device-gate → `memory/inbox/2026-08-10-m1-every-step-requires-device-gate.md`
 - 2026-08-08 — git-stash-violates-a-preserve-index-ban → `memory/inbox/2026-08-08-git-stash-violates-a-preserve-index-ban.md`
 - 2026-08-08 — auto-replacement-early-stop-must-fail-closed → `memory/inbox/2026-08-08-auto-replacement-early-stop-must-fail-closed.md`
 - 2026-08-07 — kv-seed-and-decode-share-strided-placement → `memory/inbox/2026-08-07-kv-seed-and-decode-share-strided-placement.md`
