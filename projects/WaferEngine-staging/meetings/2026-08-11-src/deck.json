@@ -1,0 +1,118 @@
+{
+  "slides": [
+    {
+      "type": "title",
+      "team": "WaferEngine · CS-3",
+      "kicker": "Weekly collaborator discussion",
+      "title": "In-PE KV Reuse",
+      "subtitle": "Measured benefits, execution constraints, and an on-wafer secondary KV tier.",
+      "meta": [
+        {"label": "Model", "value": "Qwen3-1.7B"},
+        {"label": "Evidence", "value": "Real CS-3 TSC"},
+        {"label": "Scope", "value": "M1 reuse + M3 exploration"},
+        {"label": "Date", "value": "2026-08-11"}
+      ],
+      "notes": "Discussion deck: focus on the serving behavior, measured effects, and architecture questions rather than host implementation details."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "What has been enabled · serving example",
+      "title": "A later request can reuse KV left by an earlier request",
+      "image": "figures/serving_timeline.png",
+      "caption": "One slot across three time steps: match the resident prefix, force only the new suffix, then continue normal decode and commit the new resident history.",
+      "notes": "The example is content-prefix reuse: Request B may have a new sequence ID. Green is already resident, violet is forced input, blue is normal free decode."
+    },
+    {
+      "type": "split",
+      "eyebrow": "Current feature surface",
+      "title": "Resident KV is now a serving resource, not a one-request scratchpad",
+      "left": {
+        "eyebrow": "Round behavior",
+        "heading": "Reuse, rebuild, or replace",
+        "body": "The host chooses a one-to-one resident slot assignment for the batch. The appliance starts from a shared safe prefix, receives no host KV payload on this path, and extends the slot with real prompt and sampled tokens."
+      },
+      "panel_title": "Enabled scenarios",
+      "highlights": [
+        "Hit — reuse in place; exact retains one seed, prefix forces only prompt[start:]",
+        "Miss — start at zero and rebuild the prompt by force-decode",
+        "Pressure — use an empty slot, otherwise replace one whole slot by LRU"
+      ],
+      "notes": "Success-only state update matters operationally, but keep the slide at the serving-contract level. Equal-length lanes and one common start are still required."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Experiment A · reuse length × batch",
+      "title": "More reusable prefix translates into less round work",
+      "image": "figures/experiment_a.png",
+      "caption": "Full Qwen3-1.7B, real WSE-3, three repetitions per point. bsz 3–4 reached the PE-memory compile boundary (no TSC); partial shortens the suffix, while exact holds F=1.",
+      "notes": "At bsz=1 partial R=768 is 1.57× faster than miss; exact R=256 is 1.82×. At bsz=2 the corresponding gains are 1.54× and 1.75×. Most relative SDs are below 0.1%."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Experiment B · synthetic locality × slots",
+      "title": "More slots help only when they cross the working-set threshold",
+      "image": "figures/experiment_b.png",
+      "caption": "Ten-round synthetic traces, fresh sequence IDs, 256-token shared prefixes. W3 thrashes with two slots but produces seven content hits with four slots: 1.69× lower TSC than no reuse.",
+      "notes": "W2 is the same with two and four slots; W5 remains no-reuse with both. This isolates temporal locality from exact-ID ownership and from a real workload distribution."
+    },
+    {
+      "type": "statement",
+      "eyebrow": "Limitation",
+      "title": "Matching works; divergent execution is still missing.",
+      "subtitle": "Today every lane in a round is forced onto one common safe start, even when its reusable prefix is longer.",
+      "notes": "This is why the current implementation is still a toy serving setting despite using the full model for the microbenchmarks."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Limitation A · ragged execution",
+      "title": "One shared start is unfair to requests with long reusable prefixes",
+      "image": "figures/ragged_execution.png",
+      "caption": "Example: Lane A can reuse 768 tokens and Lane B only 256. The current batch starts both at 256; ragged execution would let the same PE block compute different token positions per lane.",
+      "notes": "This resembles the kernel contract required by continuous batching: per-lane cursor, active mask, forced length and completion state. It may materially change the gain for long system prompts."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Limitation B · per-row KV layout",
+      "title": "Seed and decode KV can produce different local reuse depths",
+      "image": "figures/mixed_layout.png",
+      "caption": "After a contiguous host seed and round-robin decode appends, one logical prefix can end at different local indices across PE rows. The current safe mitigation truncates to a shared boundary.",
+      "notes": "The mitigation loses less than one P-token block. Because the block edge is moderate, this is lower priority than ragged execution. A full solution may require per-row cursors and more on-chip addressing/control."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "M3 initial exploration · placement contract",
+      "title": "Support flexible placement through measured, static movement profiles",
+      "image": "figures/m3_placement.png",
+      "caption": "Logical placement can be general, but WSE routes are not keyed by request ID. Each usable storage region should expose capacity plus measured park/reload curves for a precompiled route family.",
+      "notes": "The planner remains placement-agnostic. The fabric mechanism must still be static/count-exact or serialized through a known mux; arbitrary runtime destinations are not directly supported."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "M3 concrete candidate · edge-attached storage",
+      "title": "A horizontal storage strip gives a simple first mechanism—and a clear capacity bill",
+      "image": "figures/edge_strip.png",
+      "caption": "Nominal analytical sizing: 42 KiB payload per storage PE and 128 KiB/token across the eight-block model. One 1×256 strip stores about 672 tokens per block; an 8K request needs about 13 rows.",
+      "notes": "This placement can use vertical gather/scatter and avoid the serpentine inter-block direction at the conceptual level, but color/queue coexistence must be audited. The 42 KiB payload is not yet compile-probed for this storage kernel."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "M3 cost model · discussion, not a measurement",
+      "title": "Eviction is attractive only if the movement mechanism lands in the green band",
+      "image": "figures/eviction_model.png",
+      "caption": "Analytical edge-strip range: 2×P×4.54 µs ≈ 2.3 ms fixed round-trip if storage rows move in parallel; up to k× if rows serialize. E1 must measure payload, distance, row scaling and both directions.",
+      "notes": "The force-decode and host-ceiling curves are prior real-device-derived anchors; the green band is not measured. Decision rule: park when q·(C_recompute−C_reload) > C_park, subject to capacity and route interference."
+    },
+    {
+      "type": "next_steps",
+      "eyebrow": "Questions for collaborators",
+      "title": "What should we resolve next?",
+      "items": [
+        {"owner": "Ragged", "action": "Prioritize per-lane starts; choose the long-prefix success workload."},
+        {"owner": "Row layout", "action": "Measure bounded reuse loss before moving per-row addressing on-chip."},
+        {"owner": "M3-E1", "action": "Sweep park/reload by payload, distance, active rows and direction."},
+        {"owner": "Placement + policy", "action": "Prototype one profiled edge strip; let measured cost drive eviction."}
+      ],
+      "notes": "No decision is implied on arbitrary distributed storage versus a fixed strip. The immediate ask is whether the profile abstraction and edge-strip first probe are the right decomposition."
+    }
+  ]
+}
