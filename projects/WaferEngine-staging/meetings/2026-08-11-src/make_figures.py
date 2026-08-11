@@ -109,58 +109,78 @@ def serving_timeline():
 
 def experiment_a():
     r_partial = np.array([0, 256, 512, 768])
-    m1_partial = np.array([222.986, 191.574, 160.156, 141.672])
-    m2_partial = np.array([264.269, 232.592, 201.164, 172.098])
+    # E2E generated-output throughput = bsz * G * 0.85 GHz / median raw cycles.
+    m1_partial = np.array([883.7, 1028.6, 1230.3, 1390.9])
+    m2_partial = np.array([1491.2, 1694.3, 1959.0, 2289.9])
     r_exact = np.array([256, 512, 768, 1024])
-    m1_exact = np.array([122.662, 124.071, 125.464, 126.957])
-    m2_exact = np.array([151.223, 152.035, 152.819, 153.763])
-    fig, axes = plt.subplots(1, 2, figsize=(15.6, 6.6), sharey=True)
+    m1_exact = np.array([1606.4, 1588.2, 1570.5, 1552.1])
+    m2_exact = np.array([2606.0, 2592.1, 2578.8, 2563.0])
+    fig, axes = plt.subplots(1, 2, figsize=(15.6, 7.2), sharey=True)
     for ax, title, partial, exact in zip(
             axes, ["Batch size 1", "Batch size 2"], [m1_partial, m2_partial], [m1_exact, m2_exact]):
-        ax.plot(r_partial, partial, marker="o", ms=8, lw=3, color=ACCENT, label="Miss → partial hit")
-        ax.plot(r_exact, exact, marker="o", ms=8, lw=3, color=BLUE, label="Exact hit (F=1)")
-        ax.fill_between(r_partial, partial - 0.8, partial + 0.8, color=ACCENT, alpha=0.08)
+        ax.plot(r_partial, partial, marker="o", ms=8, lw=3, color=ACCENT,
+                label="Miss / partial: P=1025, F=P−R")
+        ax.scatter([0], [partial[0]], marker="s", s=95, color=ACCENT, zorder=4)
+        ax.plot(r_exact, exact, marker="o", ms=8, lw=3, color=BLUE,
+                label="Exact: P=R+1, F=1")
         ax.set_title(title, loc="left", weight="bold", pad=12)
-        ax.set_xlabel("Reusable prefix R (tokens)")
+        ax.set_xlabel("Resident / reusable prefix R (tokens)")
         ax.grid(axis="y", color=RULE, linewidth=1)
         ax.spines[["top", "right"]].set_visible(False)
-        ax.set_xlim(-30, 1060); ax.set_ylim(105, 285)
-        ax.annotate(f"{partial[0]/partial[-1]:.2f}×", (768, partial[-1]), xytext=(680, partial[-1]+24),
+        ax.set_xlim(-45, 1060); ax.set_ylim(750, 2780)
+        ax.annotate("MISS\nR=0, F=1025", (0, partial[0]), xytext=(65, partial[0]-170),
+                    arrowprops=dict(arrowstyle="->", color=ACCENT), color=ACCENT,
+                fontsize=11, weight="bold")
+        ax.annotate(f"{partial[-1]/partial[0]:.2f}×", (768, partial[-1]), xytext=(650, partial[-1]-230),
                     arrowprops=dict(arrowstyle="->", color=ACCENT), color=ACCENT, weight="bold")
-        ax.annotate(f"{partial[0]/exact[0]:.2f}×", (256, exact[0]), xytext=(330, exact[0]-5),
+        ax.annotate(f"{exact[0]/partial[0]:.2f}×", (256, exact[0]), xytext=(330, exact[0]+160),
                     arrowprops=dict(arrowstyle="->", color=BLUE), color=BLUE, weight="bold")
-    axes[0].set_ylabel("Round TSC time (ms @ 1.1 GHz)")
+    axes[0].set_ylabel("E2E output throughput (generated tok/s @ 0.85 GHz)")
     handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(0.5, -0.01))
-    fig.suptitle("Longer resident prefixes reduce total round work", x=0.06, ha="left", fontsize=19, weight="bold")
-    fig.tight_layout(rect=[0, 0.08, 1, 0.92])
+    fig.legend(handles, labels, loc="lower center", ncol=2, frameon=False,
+               fontsize=12, bbox_to_anchor=(0.5, 0.145))
+    fig.suptitle("Same G=255 output budget; more resident prefix raises throughput",
+                 x=0.06, ha="left", fontsize=19, weight="bold")
+    fig.text(.06,.075,
+             "MISS     P=1025, R=0, F=1025, G=255\n"
+             "PARTIAL  P=1025, G=255   ·   (R,F)=(256,769), (512,513), (768,257)\n"
+             "EXACT    F=1, G=255, P=R+1   ·   R=256, 512, 768, 1024",
+             color=BODY,fontsize=14,ha="left",va="bottom",linespacing=1.25)
+    fig.tight_layout(rect=[0, 0.27, 1, 0.91])
     save(fig, "experiment_a")
 
 
 def experiment_b():
     labels = ["W2\ndistance 1", "W3\ndistance 2", "W5\ndistance 4", "No reuse"]
-    s2 = np.array([171.366, 322.685, 322.678, 322.291])
-    s4 = np.array([171.728, 190.633, 322.926, 322.735])
-    hits2 = [8, 0, 0, 0]; hits4 = [8, 7, 0, 0]
+    # Logical prompt throughput = 10 rounds * P=512 * 0.85 GHz / raw cycles.
+    s2 = np.array([23087.2, 12260.8, 12261.0, 12275.7])
+    s4 = np.array([23038.5, 20753.8, 12251.6, 12258.9])
+    facts2 = [(8,2,0,3072),(0,10,8,5120),(0,10,8,5120),(0,10,8,5120)]
+    facts4 = [(8,2,0,3072),(7,3,0,3328),(0,10,6,5120),(0,10,6,5120)]
     x = np.arange(len(labels)); w = 0.34
-    fig, ax = plt.subplots(figsize=(15.6, 6.5))
+    fig, ax = plt.subplots(figsize=(15.6, 7.0))
     b1 = ax.bar(x-w/2, s2, w, color=VIOLET_TINT, edgecolor=ACCENT, linewidth=2, label="2 slots")
     b2 = ax.bar(x+w/2, s4, w, color=BLUE_TINT, edgecolor=BLUE, linewidth=2, label="4 slots")
-    for bars, hits in [(b1, hits2), (b2, hits4)]:
-        for bar, h in zip(bars, hits):
-            ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()+8, f"{h}/10 hits",
-                    ha="center", va="bottom", fontsize=12, color=BODY, weight="bold")
+    for bars, facts in [(b1, facts2), (b2, facts4)]:
+        for bar, (h,m,v,f) in zip(bars, facts):
+            ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()+430,
+                    f"H/M/V={h}/{m}/{v}\nΣF={f}",
+                    ha="center", va="bottom", fontsize=10.5, color=BODY, weight="bold")
     ax.annotate("4 slots cross the W3\nworking-set threshold\n1.69× faster",
-                xy=(1+w/2, s4[1]), xytext=(1.75, 225),
+                xy=(1+w/2, s4[1]), xytext=(1.62, 19200),
                 arrowprops=dict(arrowstyle="->", color=GREEN, lw=2), color=GREEN,
-                fontsize=14, weight="bold", ha="left")
-    ax.set_ylabel("10-round TSC time (ms @ 1.1 GHz)")
+                fontsize=13, weight="bold", ha="left")
+    ax.set_ylabel("E2E prompt-service throughput (logical input tok/s @ 0.85 GHz)")
     ax.set_xticks(x, labels)
-    ax.set_ylim(0, 390)
+    ax.set_ylim(0, 27500)
     ax.grid(axis="y", color=RULE, linewidth=1)
     ax.spines[["top", "right"]].set_visible(False)
     ax.legend(frameon=False, loc="upper left", ncol=2)
-    fig.tight_layout()
+    fig.text(.06,.055,
+             "PER ACCESS  P=512 (=256 shared + 256 unique), G=0   ·   HIT R=256, F=256   ·   MISS R=0, F=512\n"
+             "TRACE       10 rounds, bsz=1, fresh sequence ID/access   ·   H/M/V=hits/misses/victims   ·   ΣF=total forced tokens",
+             color=BODY,fontsize=14,ha="left",va="bottom",linespacing=1.25)
+    fig.tight_layout(rect=[0, 0.20, 1, 1])
     save(fig, "experiment_b")
 
 
