@@ -52,23 +52,53 @@ Full Qwen3-1.7B geometry for the CS-3 TSC measurements:
 - `Pw=512`, `Ph=1024`, `P_BLOCK_SIZE=256`;
 - `MAX_SEQ_LEN=1792`.
 
-Reuse-length sweep, three appliance repetitions per point:
+Raw device cycles are the durable measurement. For the 2026-08-11 collaborator deck, throughput is converted with **0.85 GHz**, as requested for this decode benchmark. This is a local reporting convention, not a resolution of the project's open 0.85-vs-1.1-GHz TSC-clock question.
+
+Reuse-length sweep, three appliance repetitions per point; every lane generates `G=255` tokens:
+
+- miss: `P/R/F/G=1025/0/1025/255`;
+- partial: fixed `P=1025,G=255`, with `(R,F)=(256,769),(512,513),(768,257)`;
+- exact: `F=1,G=255,P=R+1`, with `R/P=256/257,512/513,768/769,1024/1025`.
+
+The partial and exact series share resident-prefix length `R` on the x-axis, but not prompt length `P`. Partial reuse keeps the prompt fixed and shrinks the force-decoded suffix; exact reuse retains only the required one-token seed.
 
 | Batch | Baseline miss | Partial reuse R=256/512/768 | Exact R=256/512/768/1024 |
 |---:|---:|---|---|
 | bsz=1 | 245.285M cycles | 210.731 / 176.171 / 155.839M cycles (1.164× / 1.392× / 1.574×) | 134.928 / 136.479 / 138.011 / 139.652M cycles (1.818× / 1.797× / 1.777× / 1.756×) |
 | bsz=2 | 290.696M cycles | 255.852 / 221.281 / 189.308M cycles (1.136× / 1.314× / 1.536×) | 166.345 / 167.239 / 168.100 / 169.139M cycles (1.748× / 1.738× / 1.729× / 1.719×) |
 
+Generated-output throughput at 0.85 GHz:
+
+| Batch | Miss | Partial R=256/512/768 | Exact R=256/512/768/1024 |
+|---:|---:|---|---|
+| bsz=1 | 883.7 tok/s | 1028.6 / 1230.3 / 1390.9 tok/s | 1606.4 / 1588.2 / 1570.5 / 1552.1 tok/s |
+| bsz=2 | 1491.2 tok/s | 1694.3 / 1959.0 / 2289.9 tok/s | 2606.0 / 2592.1 / 2578.8 / 2563.0 tok/s |
+
 Most relative sample SDs were below 0.1%; maximum was 0.443%. Use these CS-3 device-TSC comparisons as the current S3.7 performance baseline; do not replace them with simulator timing or host wall-clock time.
 
 ## Temporal locality and slot capacity
 
-Synthetic temporal-locality sweeps used fresh sequence IDs and multiple 256-token prefix groups:
+Synthetic temporal-locality sweeps used ten rounds, `bsz=1`, `P=512=256 shared-prefix + 256 unique-suffix`, `G=0`, fresh sequence IDs, and multiple prefix groups. A content-prefix hit has `R=256,F=256`; a miss has `R=0,F=512`. Since `G=0`, the honest throughput metric is **logical prompt tokens/s**, `10×512×0.85e9 / cumulative_cycles`, not generated tokens/s.
 
-- With `SLOT_COUNT=2`, W2 produced 8 hits / 2 misses and 188.503M cycles; W3/W5/no-reuse all thrashed around 355M cycles.
-- With `SLOT_COUNT=4`, W3 retained seven prefixes and improved from the matching 355.008M no-reuse control to 209.696M cycles (1.693×); W5 still thrashed at 355.218M cycles.
+Locality is controlled solely by the round-robin group sequence: W2=`A,B,A,B,…` gives reuse distance 1; W3=`A,B,C,A,…` gives 2; W5=`A,B,C,D,E,A,…` gives 4; no-reuse uses a fresh group each round. For this LRU trace, a group hits iff `reuse distance < SLOT_COUNT`.
+
+- With `SLOT_COUNT=2`, W2 produced 8H/2M/0 victims, forced=3072, **23,087.2 prompt tok/s**; W3/W5/no-reuse produced 0H/10M/8 victims, forced=5120, and **12,260.8 / 12,261.0 / 12,275.7 prompt tok/s**.
+- With `SLOT_COUNT=4`, W2 produced 8H/2M/0 victims, forced=3072, **23,038.5 prompt tok/s**; W3 produced 7H/3M/0 victims, forced=3328, **20,753.8 prompt tok/s**; W5/no-reuse produced 0H/10M/6 victims, forced=5120, and **12,251.6 / 12,258.9 prompt tok/s**.
 
 Slots help when capacity crosses the locality working-set threshold, not merely because the configured count is larger.
+
+## Recompute/reload interpretation and M3 discussion
+
+The collaborator slide originally compared recompute with a theoretical host-reload ceiling that omitted the measured fixed floor, which made recompute appear slower over the entire plotted range. The corrected full-CS-3 E10 resume-only slice uses:
+
+| Reused history H | 512 | 1024 | 2048 | 4096 | 8192 |
+|---:|---:|---:|---:|---:|---:|
+| Recompute | 37.9 ms | 76.9 ms | 158.3 ms | 333.5 ms | 735.1 ms |
+| Host reload | 46.236 ms | 56.141 ms | 85.684 ms | 169.891 ms | 338.266 ms |
+
+These measured lines cross near **700 tokens for this E10 slice**. This is not a universal eviction boundary: E10 prices resume-only delta reload; a full-target reload shifts with retained suffix and target length, and a real eviction decision adds D2H cost plus future-resume probability. Existing full-context estimates therefore remain separately scoped (about 932 tokens at suffix 256, 2756 at suffix 1024, and no crossing through history 4096 at suffix 4096).
+
+M3's controller-facing contract should be placement-agnostic over static/precompiled storage profiles. Each profile must expose capacity and measured park/reload cost. A horizontal storage row attached to the lower edge of each PE block is the first candidate, not a committed topology. Nominal analytical capacity is about 10.5 MiB for a 1×256 row at 42 KiB/PE (about 672 tokens/block, about 13 rows for an 8K request). E1 must measure payload × distance × active rows × direction × transit mode before any eviction threshold is defensible; the existing 4.54 µs/step movement band is derived/unmeasured for M3.
 
 ## Batch-capacity boundary
 

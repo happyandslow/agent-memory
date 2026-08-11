@@ -36,6 +36,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 | 2026-07-20 | Model prefix-reuse value with position weighting, not linear hit rate. | Real-scale WSE-3 results show 50% prefix reuse saves only 22.8% latency and 75% saves 45.2%; reused prefix chunks are the cheapest part, while recomputed suffix chunks dominate. | `memory/topics/s6a-prefill-warm-start.md` |
 | 2026-07-20 | Decode retain's benefit is skipping already-executed decode steps, not making each equal-work step cheaper. | Equal-work decode comparisons differ by only ~0.02% fixed overhead; the correct end-state comparison saves 34.6% total decode work by avoiding redoing discarded steps. | `memory/topics/s6a-prefill-warm-start.md` |
 | 2026-08-04 | M1-S3 implementation-role contract: Codex stays planner+reviewer and does NOT implement production changes itself; it dispatches the approved bounded task to Claude Code (`claude-fable-5`, fallback `claude-opus-4-8`), which implements + runs the agreed gates; Codex then independently reviews evidence+diff and iterates to gate-pass. | Every step boundary is a hard approval gate; a phrase like "do S3.1 first" selects the next planned step, it does not replace the role contract. The `launch.py` modularisation was scoped as a separate pure-move task with a bit-identical gate and has since been completed + merged before S3.3 (history, not open). | `memory/inbox/2026-08-04-m1-s3-planner-implementation-review-contract.md` (hermes) |
+| 2026-08-11 | Report the M1-S3.7 benchmark in raw TSC cycles plus throughput converted at 0.85 GHz. | This matches the decode baseline and the collaborator-deck convention requested for this experiment. It does not supersede the older 1.1-GHz e2e decision; the global clock reconciliation remains open and raw cycles stay authoritative. | `memory/topics/m1-s37-prefix-reuse-device-gates.md` |
 
 ## Next actions
 
@@ -87,6 +88,13 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Fix e2e source/documentation hygiene found in the 2026-07-09 read: stale `route_calc.csl:5` axis comment, prefill vocab-padding asymmetry, K-pipe alias invariant check, and `csl_color_audit` raw `@set_config` parsing.
 
 ## Narrative progress log
+
+### 2026-08-11 — S3.7 benchmark semantics and collaborator-deck corrections
+
+- Experiment A now records every setting as `P/R/F/G`: miss `1025/0/1025/255`; partial keeps `P=1025,G=255` while `R` grows and `F` shrinks; exact uses `P=R+1,F=1,G=255`. Its collaborator metric is generated-output tok/s at 0.85 GHz.
+- Experiment B now records the actual locality generator: W2/W3/W5 are round-robin 2/3/5-prefix working sets, so reuse distance is `W-1` and LRU hits iff that distance is below `SLOT_COUNT`. With `G=0`, its metric is logical prompt tok/s, not generated tok/s.
+- The current weekly deck replaces a misleading theoretical host-reload ceiling plot with actual full-CS-3 E10 resume-only measurements: recompute and reload cross near 700 tokens for that specific slice. This is not a universal policy boundary; full-target reload also depends on retained suffix, target length, eviction cost, and future resume probability.
+- M3 discussion is now placement-agnostic at the controller API but static/precompiled at realization time. A lower-edge storage row per PE block is a candidate for E1, not a selected topology; it must expose measured capacity and park/reload cost profiles and pass color/queue audit.
 
 ### 2026-08-11 — maintain pass drained four M1/S3.7 captures
 
