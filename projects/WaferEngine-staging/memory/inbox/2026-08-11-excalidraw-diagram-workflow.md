@@ -22,5 +22,5 @@ cannot create the Mac-side GUI/tunnel while it runs on gala2. The recommended
 direct editor is the VS Code `pomdtr.excalidraw-editor` extension; Cursor can
 try the same VS Code extension model, with browser editing as fallback.
 
-Status: captured
+Status: drained
 Promotion: procedural; the shared skill was created under `~/claude-skills`.

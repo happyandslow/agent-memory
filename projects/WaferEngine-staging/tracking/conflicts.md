@@ -47,6 +47,8 @@ Last reviewed: 2026-07-29
 - 2026-07-25: Consider promoting the git branch-status verification rule: before asserting commit/merge state, verify live branch topology and feature content; under squash merges, `merge-base --is-ancestor <original-tip>` can false-negative even when the branch contains the feature.
 - 2026-07-26: Consider promoting the per-request-dimension review heuristic: before adding a slot/request axis to a lockstep kernel, identify which invariants the old uniformity enforced for free (for M1 decode, equal active-lane length survives only as a host/test obligation because scalar `iter_num` is also the packed score stride).
 - 2026-08-10: Consider promoting the Git-safety rule from `memory/inbox/2026-08-08-git-stash-violates-a-preserve-index-ban.md`: a “preserve the index / do not mutate Git state” contract bans `git stash` too, because stash/pop mutates the index and worktree and can collapse staged-vs-unstaged boundaries.
+- 2026-08-12: Consider promoting the encapsulation-refactor review rule from `memory/inbox/2026-08-11-encapsulation-refactor-needs-a-source-boundary-test.md`: when the change goal is ownership/boundary closure rather than behaviour, remove test-only mutable escape hatches, expose immutable evidence, and add a source-boundary regression test.
+- 2026-08-12: Consider promoting the source-comment cleanup gate from `memory/inbox/2026-08-11-source-comment-lossless-compression.md`: for broad comment/docstring cleanups, compare docstring-stripped ASTs, run `git diff --check`, run the relevant suite, and verify the index boundary before/after.
 
 ### 2026-07-29 — one consolidated proposal, because seven captures turned out to be one lesson
 

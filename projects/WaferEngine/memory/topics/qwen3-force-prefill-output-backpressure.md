@@ -40,6 +40,26 @@ For any bidirectional SdkLayout throughput measurement, pre-post the D2H receive
 
 The 2026-08-08 capture and ContextBase report that claimed a 62–74K cycle/token kernel floor, a 12–13.6K tok/s force floor, or a 28-stage loss versus 8-stage are superseded. The late-drain raw measurements remain useful only as a host/device protocol backpressure demonstration.
 
+## Prefix-0 N=8192 measurement — 2026-08-11
+
+A decode-as-prefill run with zero initial tokens needs an explicit metadata-only path, not just a relaxed host guard. With `n_segs_rt == 0`, the KV adaptor/injector and decode block would otherwise try to execute a nonexistent segment or construct zero-length K/V ingress movements. The validated experiment path explicitly advances adaptor rows, completes injector row-sync, and skips block K/V phases after metadata.
+
+Device correctness at prefix 0 passed for ordinary D64 followed by replay-force D64: final valid top-k IDs matched exactly and top-k values were bit-identical. Intermediate forced steps intentionally skip lm_head/top-k and are not valid output oracles; sampled IDs also depend on non-reset RNG state.
+
+CS-3 measurement at bsz=1, prefix=0, N=F=8192, 0.85 GHz, five repeats:
+
+| Layout / mode | Throughput |
+|---|---:|
+| 8-stage steady | 14,882.69 tok/s |
+| 8-stage device end-to-end | 13,682.74 tok/s |
+| 28-stage steady | 44,185.79 tok/s |
+| 28-stage device end-to-end | 34,872.31 tok/s |
+| Native prefill c768 device TSC | 24,700.52 tok/s |
+
+Thus the 28-stage device end-to-end force path is **1.412× native prefill** and **2.549× the 8-stage** path; 8-stage force is **0.554× native**. This supersedes any prefix-0 estimate with the measured end-to-end value.
+
+Open implementation question: decide whether to port the metadata-only prefix-0 support from the isolated experiment snapshot into the maintained decode implementation.
+
 ## Pointers
 
 - Corrected ContextBase page: `https://context.ed-aisys.com/doc/2026-08-09-corrected-result-qwen3-17b-force-decode-as-prefill-CVoQosPFDs`
@@ -48,4 +68,5 @@ The 2026-08-08 capture and ContextBase report that claimed a 62–74K cycle/toke
 - Corrected N=512 aggregate: `aggregate_n512/comparison.{json,csv}`.
 - Same-harness trend: `aggregate/n512_vs_n1024_codrain.csv`.
 - Late-drain N=1024 raw result: `/home/lexu/experiments/qwen3-force-perf-n1024-20260809/results/20260809T0229Z_force_prefill_perf_n1024`.
+- Prefix-0 experiment: `/home/lexu/experiments/qwen3-force-prefill-p0-n8192-20260811/results/aggregate_raw.json`, `/home/lexu/experiments/qwen3-force-prefill-p0-n8192-20260811/results/remote_force/`, `/home/lexu/experiments/qwen3-force-prefill-p0-n8192-20260811/results/remote_prefill/`.
 - Source captures: `memory/inbox/2026-08-08-qwen3-force-decode-as-prefill-throughput.md`, `memory/inbox/2026-08-09-qwen3-force-prefill-output-backpressure-correction.md`.

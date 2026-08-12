@@ -89,6 +89,22 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Narrative progress log
 
+### 2026-08-12 — maintain pass drained three process/tooling captures
+
+- **Encapsulation boundary review:** created
+  `memory/topics/encapsulation-refactor-source-boundary-tests.md`. The M1 inner-PE-reuse
+  `RoundPlanner` cleanup only actually closed ownership after test-only mutable escape hatches were
+  removed and a source-boundary regression test asserted the immutable result surface.
+- **Source-comment cleanup gate:** created `memory/topics/source-comment-lossless-compression.md`.
+  Comment/docstring-only cleanup should preserve non-obvious contracts and prove executable
+  equivalence with docstring-stripped AST comparison, `git diff --check`, and the normal regression
+  suite; the exercised branch removed 1,006 net lines across 23 Python files with identical ASTs and
+  414 host tests passing.
+- **Excalidraw diagram workflow:** marked the capture drained. The durable procedural result lives in
+  the shared `excalidraw-diagrams` skill: `.excalidraw` is the source of truth for non-data figures,
+  SVG/PNG are derived exports, and agent/human collaboration reloads the source before minimal
+  patches.
+
 ### 2026-08-11 — S3.7 benchmark semantics and collaborator-deck corrections
 
 - Experiment A now records every setting as `P/R/F/G`: miss `1025/0/1025/255`; partial keeps `P=1025,G=255` while `R` grows and `F` shrinks; exact uses `P=R+1,F=1,G=255`. Its collaborator metric is generated-output tok/s at 0.85 GHz.

@@ -32,10 +32,20 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] For SpecDec M1, continue with decode `launch.py` real-weights reconcile + cold compile-only, then co-resident layout/device bring-up.
 - [ ] On PR #14 merge, update code-facing docs to reflect that `KV_TRANSFER=0`/compile-time KV baking was deleted, and that decode rounds terminate by runtime token-path budget/EOS STOP flood.
 - [ ] For future SdkLayout throughput measurements with per-step output, pre-post D2H receives before ingress so device TSC does not include host-induced output backpressure; see `memory/topics/qwen3-force-prefill-output-backpressure.md`.
+- [ ] Decide whether to port the validated metadata-only prefix-0 force-prefill path from the isolated experiment snapshot into the maintained decode implementation; see `memory/topics/qwen3-force-prefill-output-backpressure.md`.
 - [ ] Add WaferOS/session examples for keeping KV cache on chip and recompute/evict behavior; recover or replace the missing Obsidian image noted in `tracking/conflicts.md`.
 - [ ] Decide whether to merge `lexu/pe-mem-breakdown`; optional follow-up: run seq_len/layers-per-block sweeps.
 
 ## Narrative progress log
+
+### 2026-08-12
+
+- Drained `memory/inbox/2026-08-11-qwen3-force-prefill-prefix0-8k.md` into
+  `memory/topics/qwen3-force-prefill-output-backpressure.md`. Prefix-0 force-prefill now has a
+  CS-3 measured end-to-end result at `N=F=8192`: 28-stage force reaches 34,872.31 tok/s
+  device end-to-end at 0.85 GHz, **1.412× native prefill** and **2.549× 8-stage force**. The
+  measurement also records that zero-prefix support requires an explicit metadata-only path in the
+  adaptor/injector/block phases, not merely a relaxed host guard.
 
 ### 2026-08-11
 
