@@ -2,6 +2,16 @@
 
 # WaferEngine Timeline
 
+- 2026-08-13 — wse-pageability-audit-qwen3-decode → `memory/inbox/2026-08-13-wse-pageability-audit-qwen3-decode.md`
+- 2026-08-13 — waferllm-dedicated-holder-cs3-proof → `memory/inbox/2026-08-13-waferllm-dedicated-holder-cs3-proof.md`
+- 2026-08-13 — waferllm-decode-candidate-granularity-profile → `memory/inbox/2026-08-13-waferllm-decode-candidate-granularity-profile.md`
+- 2026-08-13 — qwen3-decode-pageability.tar → `assets/pageability-audit/2026-08-13-qwen3-decode/2026-08-13-qwen3-decode-pageability.tar.zst`
+- 2026-08-12 — waferllm-vecmat-dynamic-load-sdk210 → `memory/inbox/2026-08-12-waferllm-vecmat-dynamic-load-sdk210.md`
+- 2026-08-12 — waferllm-real-decode-xq-vecmat-sim-proof → `memory/inbox/2026-08-12-waferllm-real-decode-xq-vecmat-sim-proof.md`
+- 2026-08-12 — waferllm-dedicated-holder-static-audit → `memory/inbox/2026-08-12-waferllm-dedicated-holder-static-audit.md`
+- 2026-08-12 — waferllm-decode-gemv-runtime-pointer-proof → `memory/inbox/2026-08-12-waferllm-decode-gemv-runtime-pointer-proof.md`
+- 2026-08-12 — meshjit-experiment-suite-handoff → `memory/inbox/2026-08-12-meshjit-experiment-suite-handoff.md`
+- 2026-08-11 — qwen3-force-prefill-prefix0-8k → `memory/inbox/2026-08-11-qwen3-force-prefill-prefix0-8k.md`
 - 2026-08-09 — qwen3-force-prefill-output-backpressure-correction → `memory/inbox/2026-08-09-qwen3-force-prefill-output-backpressure-correction.md`
 - 2026-08-08 — qwen3-force-decode-as-prefill-throughput → `memory/inbox/2026-08-08-qwen3-force-decode-as-prefill-throughput.md`
 - 2026-08-06 — qwen3-1p7b-decode-pipeline-depth-profile → `memory/inbox/2026-08-06-qwen3-1p7b-decode-pipeline-depth-profile.md`
