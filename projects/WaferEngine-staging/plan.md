@@ -56,6 +56,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] **For every M1 implementation step after S3.7, define and run a real-device gate before closure.**
       Host tests, mocks, compilation, and simulator runs are diagnostic layers only; if the device gate
       is unavailable, keep the step incomplete/blocked. See `memory/topics/m1-s37-prefix-reuse-device-gates.md`.
+- [ ] For MeshJIT duplicate-pattern / code distribution claims, require loaded-SRAM and amortization evidence, not only lower replicated code bytes; see `memory/topics/meshjit-code-dedup-sram-latency.md`.
 - [ ] **For M1-S5, separate `bsz` from `SLOT_COUNT` and include `ht_tail` batch scratch in the SRAM model.**
       Full-model `bsz=SLOT_COUNT=3,4` failed before execution from shared PE data-SRAM exhaustion, while
       `1,2` compile/run. Reducing `MAX_SEQ_LEN` alone cannot fix this boundary.
@@ -88,6 +89,14 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Fix e2e source/documentation hygiene found in the 2026-07-09 read: stale `route_calc.csl:5` axis comment, prefill vocab-padding asymmetry, K-pipe alias invariant check, and `csl_color_audit` raw `@set_config` parsing.
 
 ## Narrative progress log
+
+### 2026-08-14 — maintain pass drained MeshJIT de-duplication capture
+
+- Created `memory/topics/meshjit-code-dedup-sram-latency.md` from the 2026-08-12 duplicate-pattern
+  capture. The durable rule is that code-byte de-duplication is not a memory/latency win by itself:
+  receiver staging/dispatch/cache infrastructure can dominate saved leaf `.text`, and static
+  replication was the strict Pareto winner in the tiny 20×20 experiment. Future MeshJIT claims need
+  released usable `.text` capacity plus phase-reuse amortization evidence.
 
 ### 2026-08-12 — maintain pass drained three process/tooling captures
 

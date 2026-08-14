@@ -2,6 +2,9 @@
 
 Date: 2026-08-12
 
+**Status:** drained
+**Drained to:** `memory/topics/meshjit-code-relocation.md` (2026-08-14)
+
 `WaferLLM` main at `fd1c2da` (SDK-2.10 migration) now has an isolated proof
 at `/home/lexu/WaferLLM/MeshJIT-Decode-Vecmat/` for the current decode
 `vecmat_computation` boundary.

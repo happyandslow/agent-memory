@@ -139,6 +139,14 @@ calls); one PE profiled, no uninstrumented A/B baseline.
 4. Treat attention as a closure-placement problem, not nine independent functions.
 5. Test the leaf half of the relocation rule (a candidate that calls a helper).
 
+## Updates — 2026-08-14
+
+Drained three 2026-08-12 WaferLLM/MeshJIT captures into this topic:
+
+- `/home/lexu/WaferLLM/MeshJIT-Decode-GEMV/` proved a minimal SDK-2.10 runtime-pointer GEMV body substitution in simulator: an 8-byte `cand_gemv_step` FMACH body was copied holder `0xa000` → receiver `0xa000`, the receiver retained no candidate symbol, and non-constant K=N=8 GEMV output was bit-exact. This is a feasibility result only: gross body saving 8 B vs a 512-B slot; no SRAM-saving, timing, physical-WSE-3, or production-decode claim. SDK 2.10 rejects runtime function pointers inside lowered `@map`, so integration must use a resident direct-pointer traversal loop or a larger relocated driver, not an unchanged `@map(gemv_static_step, ...)`.
+- `/home/lexu/WaferLLM/MeshJIT-Decode-Vecmat/` proved a larger `vecmat_computation`-boundary simulator substitution at WaferLLM main `fd1c2da`: candidate size 228 B / 57 u32, receiver 128-u32 slot at `0xa000`, final holder ELF has no external `gemv_static_step`, receiver ELF has neither candidate nor callback, and signed FP16 8×8 GEMV output was bit-exact. The holder/receiver `.vecmat_abi` section must be byte-identical (46 B at `0x8800`) and kept live explicitly; earlier receiver pruning caused `Invalid address 0x6000 for SRC1`. Treat ABI/DSD/global closure retention as part of the contract.
+- The cross-experiment handoff confirms the next target remains one-projection decode-path substitution after an approved SDK-2.10-compatible resident Decode baseline is restored. Keep loop-driver relocation separate until its broader closure is reduced and independently debugged; do not use host wall time as load latency.
+
 ## Provenance
 
 Drained from two dated captures (2026-08-06 maintain pass):

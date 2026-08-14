@@ -2,7 +2,8 @@
 
 **Project:** WaferEngine-staging
 **Author:** codex
-**Status:** captured
+**Status:** drained
+**Drained to:** `memory/topics/meshjit-code-dedup-sram-latency.md` (2026-08-14)
 
 ## What happened / finding
 

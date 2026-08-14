@@ -33,10 +33,20 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] On PR #14 merge, update code-facing docs to reflect that `KV_TRANSFER=0`/compile-time KV baking was deleted, and that decode rounds terminate by runtime token-path budget/EOS STOP flood.
 - [ ] For future SdkLayout throughput measurements with per-step output, pre-post D2H receives before ingress so device TSC does not include host-induced output backpressure; see `memory/topics/qwen3-force-prefill-output-backpressure.md`.
 - [ ] Decide whether to port the validated metadata-only prefix-0 force-prefill path from the isolated experiment snapshot into the maintained decode implementation; see `memory/topics/qwen3-force-prefill-output-backpressure.md`.
+- [ ] For MeshJIT/WaferLLM SDK-2.10, restore an approved resident Decode baseline, then attempt a one-projection direct-pointer substitution with explicit ABI/DSD closure retention and receiver-ELF audit; see `memory/topics/meshjit-code-relocation.md`.
 - [ ] Add WaferOS/session examples for keeping KV cache on chip and recompute/evict behavior; recover or replace the missing Obsidian image noted in `tracking/conflicts.md`.
 - [ ] Decide whether to merge `lexu/pe-mem-breakdown`; optional follow-up: run seq_len/layers-per-block sweeps.
 
 ## Narrative progress log
+
+### 2026-08-14
+
+- Drained three 2026-08-12 MeshJIT/WaferLLM captures into
+  `memory/topics/meshjit-code-relocation.md`. SDK-2.10 simulator proofs now cover both a minimal
+  `cand_gemv_step` runtime-pointer body and a larger `vecmat_computation` boundary with bit-exact
+  K=N=8 FP16 GEMV output. Both are feasibility results only: no physical-WSE-3 timing/SRAM claim,
+  `@map` still requires comptime callbacks, and production integration needs explicit ABI/DSD/global
+  closure retention plus a receiver-ELF audit.
 
 ### 2026-08-12
 

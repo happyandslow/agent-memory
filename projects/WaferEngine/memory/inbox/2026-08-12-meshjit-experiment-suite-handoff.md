@@ -2,7 +2,7 @@
 topic: meshjit-code-relocation
 tags: [MeshJIT, WSE-3, remote-code-loading, multicast, TSC, prefill, chunk-size, handoff]
 date: 2026-08-12
-status: captured
+status: drained
 ---
 
 ## Situation
@@ -10,6 +10,8 @@ status: captured
 MeshJIT was evaluated as a way to reclaim per-PE SRAM by storing phase-kernel `.text` on holder PEs and moving it over the WSE-3 fabric only when needed. The immediate motivation was the PR #14 Qwen3-1.7B prefill deployment: the 512×1024 compute rectangle at chunk size 512 used 45,078 of 49,152 bytes on its tightest compute PE, leaving 4,074 bytes, while `.text` alone occupied 30,664 bytes and was the largest SRAM category.
 
 This note is a cross-experiment handoff. The detailed 1→1 relocation and line-multicast captures have already been promoted into `memory/topics/meshjit-code-relocation.md`; this note adds the later real-kernel timing and maximum-chunk findings and records the next integration target.
+
+Drained to: `memory/topics/meshjit-code-relocation.md` (2026-08-14).
 
 ## Implementations and settings
 

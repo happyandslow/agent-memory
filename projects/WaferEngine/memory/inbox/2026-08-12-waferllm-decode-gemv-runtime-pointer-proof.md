@@ -2,7 +2,8 @@
 
 **Project:** WaferEngine
 **Author:** codex
-**Status:** captured
+**Status:** drained
+**Drained to:** `memory/topics/meshjit-code-relocation.md` (2026-08-14)
 
 ## What happened / finding
 
