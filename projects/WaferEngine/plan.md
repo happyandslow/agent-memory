@@ -28,6 +28,8 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Next actions
 
+- [ ] Complete the explicitly approved read-only M1 function-container review, then decide whether M1 is accepted; do not begin M2 until accepted.
+- [ ] If continuing WaferLLM pageability, measure baseline/body-absent/dynamic receiver images plus phase load/use timing before making any SRAM/performance claim; current CS-3 vecmat is correctness-only and Q+K RoPE isolated economics are negative.
 - [ ] Verify live WaferEngine branch/PR state before acting; memory is context, not proof. In particular, check PR #14 (`real_qwen3_1p7`) and branches `lexu/specdec-dual-kernels` / `lexu/pe-mem-breakdown` before edits.
 - [ ] For SpecDec M1, continue with decode `launch.py` real-weights reconcile + cold compile-only, then co-resident layout/device bring-up.
 - [ ] On PR #14 merge, update code-facing docs to reflect that `KV_TRANSFER=0`/compile-time KV baking was deleted, and that decode rounds terminate by runtime token-path budget/EOS STOP flood.
@@ -38,6 +40,10 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Decide whether to merge `lexu/pe-mem-breakdown`; optional follow-up: run seq_len/layers-per-block sweeps.
 
 ## Narrative progress log
+
+### 2026-08-15
+
+- Drained nine WaferLLM/MeshJIT/pageability captures into `memory/topics/meshjit-code-relocation.md`. The topic now records the CS-3 dedicated-holder `vecmat_computation` correctness proof, production-shaped candidate ownership profile, reusable WSE pageability audit, isolated Q+K RoPE correctness with negative receiver economics, Attention/FFN shared-slot design checkpoint, Phase 1 joint removable-ownership result, MeshRT source-scope correction, and M1 ABI checkpoint. Durable guardrail: correctness and removable ownership are not SRAM/performance savings; next gates are explicit M1 review/acceptance and controlled baseline/body-absent/dynamic receiver + load/use measurements.
 
 ### 2026-08-14
 

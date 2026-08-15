@@ -1,6 +1,7 @@
 # MeshRT Attention/FFN dynamic-page-region audit — scope correction
 
 Date: 2026-08-13
+Status: drained
 
 ## Supersession
 

@@ -2,7 +2,7 @@
 
 Date: 2026-08-12
 Project: WaferEngine
-Status: simulator correctness gate complete; CS-3 pending
+Status: drained
 
 An isolated experiment at
 `/home/lexu/WaferLLM/MeshJit-Decode/mirror-xq-phase/` now substitutes the

@@ -2,7 +2,7 @@
 
 Date: 2026-08-12
 Project: WaferEngine
-Status: captured; CS-3 execution pending
+Status: drained
 
 `/home/lexu/WaferLLM/MeshJit-Decode/mirror-xq-phase/` now separates the
 function-storage holder from every Decode compute PE.

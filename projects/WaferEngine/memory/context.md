@@ -10,7 +10,7 @@ Compact startup packet for fresh agent sessions. This generated view is intentio
 
 ## Current state
 
-- Daily maintenance last checked this project on 2026-08-14.
+- Daily maintenance last checked this project on 2026-08-15.
 - Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
 
 ## Current focus
@@ -27,6 +27,7 @@ Compact startup packet for fresh agent sessions. This generated view is intentio
 - `memory/topics/dynamic-kv-load.md` — Runtime KV ingress for qwen3 decode so one compiled artifact can serve variable-prefill requests.
 - `memory/topics/h2d-playground-transport.md` — CS-3 host/device and cross-pod transport experiments from h2d-playground.
 - `memory/topics/pe-sram-memory-breakdown.md` — Device-measured WSE-3 per-PE SRAM/fabric resource analysis for qwen3 decode and prefill.
+- `memory/topics/meshjit-code-relocation.md` — MeshJIT/WaferLLM code relocation, CS-3 vecmat holder proof, pageability evidence grades, and Attention/FFN shared-slot gates.
 - `memory/topics/qwen3-force-prefill-output-backpressure.md` — Corrected Qwen3 force-decode-as-prefill throughput after removing host D2H backpressure.
 
 ## Important constraints
