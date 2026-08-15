@@ -2,10 +2,14 @@
 
 # WaferEngine Timeline
 
+- 2026-08-14 — waferllm-function-container-m1-abi → `memory/inbox/2026-08-14-waferllm-function-container-m1-abi.md`
 - 2026-08-13 — wse-pageability-audit-qwen3-decode → `memory/inbox/2026-08-13-wse-pageability-audit-qwen3-decode.md`
 - 2026-08-13 — waferllm-dedicated-holder-cs3-proof → `memory/inbox/2026-08-13-waferllm-dedicated-holder-cs3-proof.md`
 - 2026-08-13 — waferllm-decode-candidate-granularity-profile → `memory/inbox/2026-08-13-waferllm-decode-candidate-granularity-profile.md`
+- 2026-08-13 — waferllm-attention-ffn-phase1-joint-ownership → `memory/inbox/2026-08-13-waferllm-attention-ffn-phase1-joint-ownership.md`
 - 2026-08-13 — qwen3-decode-pageability.tar → `assets/pageability-audit/2026-08-13-qwen3-decode/2026-08-13-qwen3-decode-pageability.tar.zst`
+- 2026-08-13 — meshrt-attention-ffn-region-audit-correction → `memory/inbox/2026-08-13-meshrt-attention-ffn-region-audit-correction.md`
+- 2026-08-13 — meshjit-phase1-and-meshrt-eight-operator-audits → `memory/inbox/2026-08-13-meshjit-phase1-and-meshrt-eight-operator-audits.md`
 - 2026-08-12 — waferllm-vecmat-dynamic-load-sdk210 → `memory/inbox/2026-08-12-waferllm-vecmat-dynamic-load-sdk210.md`
 - 2026-08-12 — waferllm-real-decode-xq-vecmat-sim-proof → `memory/inbox/2026-08-12-waferllm-real-decode-xq-vecmat-sim-proof.md`
 - 2026-08-12 — waferllm-dedicated-holder-static-audit → `memory/inbox/2026-08-12-waferllm-dedicated-holder-static-audit.md`
