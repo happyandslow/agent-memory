@@ -2,6 +2,11 @@
 
 # WaferEngine Timeline
 
+- 2026-08-16 — waferllm-function-container-m4-page-generation → `memory/inbox/2026-08-16-waferllm-function-container-m4-page-generation.md`
+- 2026-08-16 — waferllm-function-container-m35-resident-helper-fork → `memory/inbox/2026-08-16-waferllm-function-container-m35-resident-helper-fork.md`
+- 2026-08-16 — m35-claude-review-pass-conflicts-with-note → `memory/inbox/2026-08-16-m35-claude-review-pass-conflicts-with-note.md`
+- 2026-08-15 — waferllm-function-container-m3-placement-contract → `memory/inbox/2026-08-15-waferllm-function-container-m3-placement-contract.md`
+- 2026-08-15 — waferllm-function-container-m2-yield-contract → `memory/inbox/2026-08-15-waferllm-function-container-m2-yield-contract.md`
 - 2026-08-14 — waferllm-function-container-m1-abi → `memory/inbox/2026-08-14-waferllm-function-container-m1-abi.md`
 - 2026-08-13 — wse-pageability-audit-qwen3-decode → `memory/inbox/2026-08-13-wse-pageability-audit-qwen3-decode.md`
 - 2026-08-13 — waferllm-dedicated-holder-cs3-proof → `memory/inbox/2026-08-13-waferllm-dedicated-holder-cs3-proof.md`
