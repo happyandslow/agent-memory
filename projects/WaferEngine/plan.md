@@ -41,6 +41,10 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Narrative progress log
 
+### 2026-08-17
+
+- Drained four WaferLLM function-container captures into `memory/topics/meshjit-code-relocation.md`. The topic now records the M2 compile-only yield/control contract, M3 declarative page ownership and entry-profile contract, and M3.5 symmetric resident-helper fork economics. Durable guardrails: M2/M3/M3.5 are still Grade-E/static/compile-only style evidence, communication stays on the approved M2 command/yield path for M4, and M5 must decide vecmat placement from full-page Attention/FFN images rather than the M3.5 minimal probe. Recorded a manual conflict in `tracking/conflicts.md` because one M3.5 capture says no Claude PASS should be cited, while a separate capture points to a completed Claude PASS for the staging artifact.
+
 ### 2026-08-15
 
 - Drained nine WaferLLM/MeshJIT/pageability captures into `memory/topics/meshjit-code-relocation.md`. The topic now records the CS-3 dedicated-holder `vecmat_computation` correctness proof, production-shaped candidate ownership profile, reusable WSE pageability audit, isolated Q+K RoPE correctness with negative receiver economics, Attention/FFN shared-slot design checkpoint, Phase 1 joint removable-ownership result, MeshRT source-scope correction, and M1 ABI checkpoint. Durable guardrail: correctness and removable ownership are not SRAM/performance savings; next gates are explicit M1 review/acceptance and controlled baseline/body-absent/dynamic receiver + load/use measurements.

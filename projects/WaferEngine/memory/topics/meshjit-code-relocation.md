@@ -163,6 +163,17 @@ Drained nine 2026-08-12..14 WaferLLM/MeshJIT/pageability captures into this topi
 
 Next gates: complete the user-approved M1 review, do not begin M2 until accepted, and if continuing pageability experiments measure baseline/body-absent/dynamic receiver images plus phase load/use timing before any SRAM/performance claim.
 
+## Updates — 2026-08-17
+
+Drained four 2026-08-15..16 WaferLLM function-container captures into this topic:
+
+- M2 established the compile-only yield/control contract for Decode Attention A0--A7 and FFN F0--F3b. Each page-local compute entry writes a bounded yield record and returns; collectives, route repaint, tasks, queues, loader, and `decode_entry` remain resident/absent from the page bodies. The key continuation split is `PageControlBlock.profile_id` for the current entry profile vs `Continuation.required_profile_id` for the next profile resident control must bind. Terminal A7/F3b request `RECONFIG_Y -> MARK_DONE`; only resident control may later mark `DONE`/`EVICTABLE`. SDK 2.10 compile-only yield fixture passed with ELF SHA-256 `9e2c018afb824bb86c36c9dc6b6c04b090c2600beab09879eed71f2bf6c5fe3f`; this does not validate compute semantics, page link closure, transfer, runtime, or device execution.
+- M3 produced a source-hash-pinned declarative ownership and re-entry contract with 24 uniquely owned components and 13 entry profiles. Source-shared compute helpers (`vecmat_computation`, `gemv_static_step`, `fmulh_norm_func`, `fast_exp`) are private-linked into each page that uses them, not placed in a resident common compute library. Yield invalidates mutable DSD/DSR state, and entry profiles explicitly rebind or assign descriptors instead of relying on prior entry contents. U01--U03 remain final-link gates: compiler math/division lowering, `@map`/loop/branch lowering, and global/DSD address plus DSR-kind realization. M3 evidence SHA-256 is `e2e25b1531ce74b95986812bf02af32dc525542459f9601484b698b2e30faae4`.
+- M3.5 superseded the first asymmetric accounting (`188 - 1,120 = -932 B`) with a symmetric four-counterpart Grade-E probe built from frozen SDK-2.10 `A_both`. The authoritative actual-sized minimal-probe delta is `SRAM(D_P)-SRAM(D_R)=+188 B`, favoring resident-side vecmat for that probe only. ABI is fixed at `0x3e00/10 B`, pages at `0x4100`; P/R entry offsets are 196/0 B; resident vecmat is `0x3f00/188 B`, callback `0x3fc0/8 B`. The host now accepts only build-generated paired bundles and checks payload SHA-256 plus receiver `out.json` values for P, slot words/address, and entry offset before loading all 256x256 PEs.
+- Manual conflict recorded: the M3.5 codex capture says Claude attempts produced no verdict and must not be cited as PASS, while a later Claude capture points to a completed read-only PASS review on staging artifact `.m35_symmetric_refactor` (session `72054b9f`). Maintenance did not decide whether that PASS applies byte-identically to the WaferLLM `m35/` tree; see `tracking/conflicts.md`.
+
+Next gates: start M4 only after user acceptance; generate P/private and R/resident-direct full Attention/FFN candidates from one production-derived, hash-guarded generator; keep communication on the approved M2 command/yield path; and leave vecmat placement for M5 using complete full-page `max(attention, ffn)` slots and complete receiver images rather than the M3.5 minimal-probe result.
+
 ## Provenance
 
 Drained from two dated captures (2026-08-06 maintain pass):

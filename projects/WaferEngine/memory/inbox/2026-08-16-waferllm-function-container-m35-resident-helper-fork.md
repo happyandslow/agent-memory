@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine
 **Author:** codex
-**Status:** corrected capture; supersedes the earlier asymmetric M3.5 note
+**Status:** drained 2026-08-17 into `memory/topics/meshjit-code-relocation.md`; Claude PASS scope conflict recorded in `tracking/conflicts.md`
 
 ## What happened / finding
 

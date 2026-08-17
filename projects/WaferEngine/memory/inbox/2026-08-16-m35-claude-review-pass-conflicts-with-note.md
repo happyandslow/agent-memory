@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine
 **Author:** claude
-**Status:** captured
+**Status:** drained 2026-08-17 into `memory/topics/meshjit-code-relocation.md`; unresolved applicability recorded in `tracking/conflicts.md`
 
 ## What happened / finding
 
