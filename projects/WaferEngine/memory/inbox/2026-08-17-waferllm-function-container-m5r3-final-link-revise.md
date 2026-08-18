@@ -65,3 +65,36 @@
 - `/home/lexu/WaferLLM/MeshJit-Decode/attention-ffn-phase1/step3-page-regions/m5r3-final-link/README.md`
 - `/home/lexu/WaferLLM/MeshJit-Decode/attention-ffn-phase1/step3-page-regions/m5r3-final-link/results/m5r3_report/`
 - Scratch raw evidence: `/home/lexu/WaferEngine-staging/.m5r3_final_link/`
+
+## Division-blocker follow-up after DIV-4 (2026-08-18)
+
+The original external `__divhf3` blocker is superseded at the named-target
+level. DIV-4 production-shaped final relinks have empty page relocation tables
+and zero named `.m4_page -> __divhf3` targets for Routes A/B/C2. The division
+sub-verdict is now `PASS_DIVISION_STATIC_NAMED_TARGET_GATES`, Grade E.
+
+The overall Step 3 verdict remains `REVISE`, not PASS: U04 RoPE odd-DSD
+semantics remain unresolved, and no WSE-aware disassembler proves every unnamed
+call/branch/back-edge. Route A is the default, Route B the fail-closed fallback,
+and C1/C2 are rejected. See
+`memory/inbox/2026-08-18-waferllm-division-closure-div4-final-comparison.md`.
+
+## Route-A/P and U04 source checkpoint (2026-08-18)
+
+The active Step-3 source policy is now frozen to Route A + P. DIV-4 measured
+P at 20,524 bytes complete receiver allocation versus R at 20,644 bytes: R
+saves 256 slot bytes but adds 376 permanent bytes, so it loses 120 bytes in
+the complete static receiver. Route B + P remains the fail-closed division
+fallback.
+
+U04 is no longer silently deferred. The M5R-3 composition generator repairs
+both fresh A2 odd-lane RoPE DSD constructors from offset 0 to offset 1; the K
+path then adds `bsz*dim_p_pe`, and per-batch increments preserve the +1 odd
+component. Production Decode is unchanged. Deterministic source generation and
+validation pass at Grade S, including exact Route-A anchor counts and hashes of
+the DIV-4 decision inputs.
+
+This is not a final-linked result. Historical M5R-3 and DIV-4 ELFs still encode
+the old U04 source and must remain immutable. The canonical M5 gate stays open
+until Route-A/P+U04-repaired source is relinked, receiver/link audit hygiene is
+closed, and a WSE-aware whole-page control-flow audit succeeds.
