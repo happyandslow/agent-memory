@@ -28,7 +28,9 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Next actions
 
-- [ ] Complete the explicitly approved read-only M1 function-container review, then decide whether M1 is accepted; do not begin M2 until accepted.
+- [ ] Complete the fresh independent review of the materialized Step-3 pre-review package; if it passes, produce M6 and stop Phase 1 Step 3. Do not enter loader/runtime/Phase 2 from static evidence alone.
+- [ ] Preserve Route A + vecmat policy P as the active Step-3 source policy; keep Route B + P as the fail-closed fallback if Route-A lowering/hash/target evidence drifts, WSE-aware closure fails, or numerical comparison fails.
+- [ ] Before any production correctness claim, run separate numerical/special-value comparison of Route A/B against the frozen slash expressions and later loader/transfer/invoke/runtime gates.
 - [ ] If continuing WaferLLM pageability, measure baseline/body-absent/dynamic receiver images plus phase load/use timing before making any SRAM/performance claim; current CS-3 vecmat is correctness-only and Q+K RoPE isolated economics are negative.
 - [ ] Verify live WaferEngine branch/PR state before acting; memory is context, not proof. In particular, check PR #14 (`real_qwen3_1p7`) and branches `lexu/specdec-dual-kernels` / `lexu/pe-mem-breakdown` before edits.
 - [ ] For SpecDec M1, continue with decode `launch.py` real-weights reconcile + cold compile-only, then co-resident layout/device bring-up.
@@ -40,6 +42,10 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Decide whether to merge `lexu/pe-mem-breakdown`; optional follow-up: run seq_len/layers-per-block sweeps.
 
 ## Narrative progress log
+
+### 2026-08-19
+
+- Drained ten 2026-08-16..18 WaferLLM function-container/division-closure captures into `memory/topics/meshjit-code-relocation.md`. The current Step-3 state is `PENDING_INDEPENDENT_REVIEW`: Route A + vecmat policy P is the active static source policy; Route B + P is the fail-closed fallback; C1/C2 resident division helper routes are rejected; and R vecmat placement is not selected because complete receiver SRAM is 120 B worse than P without runtime performance evidence. WSE-aware AM disassembly now covers all final page ELFs for static control-flow closure, but numerical equivalence, loader/transfer/invoke correctness, simulator/device correctness, latency, and dynamic net savings remain unproven.
 
 ### 2026-08-17
 

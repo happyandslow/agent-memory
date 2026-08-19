@@ -1,6 +1,6 @@
 # WaferLLM Attention/FFN function-container Step 3 pre-review checkpoint
 
-Status: captured
+Status: drained 2026-08-19 into `memory/topics/meshjit-code-relocation.md` and `plan.md`
 
 Situation: an Attention page and an FFN page must share one address-matched
 executable slot on a Decode compute receiver.  Source-level closure, empty ELF

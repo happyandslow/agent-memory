@@ -1,6 +1,6 @@
 # WaferLLM division closure Route C2: owned helpers support fixed resident targets
 
-Status: captured
+Status: drained 2026-08-19 into `memory/topics/meshjit-code-relocation.md` and `plan.md`
 
 Situation: a transferred Attention/FFN page needs reciprocal and inverse-square-root
 code, but SDK 2.10's compiler-local `__divhf3` cannot be given an enforceable

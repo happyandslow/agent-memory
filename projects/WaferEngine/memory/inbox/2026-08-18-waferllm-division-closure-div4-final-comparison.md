@@ -1,6 +1,6 @@
 # WaferLLM DIV-4 production-shaped division-closure comparison
 
-Status: captured
+Status: drained 2026-08-19 into `memory/topics/meshjit-code-relocation.md` and `plan.md`
 
 Situation: Attention and FFN share one executable slot, and division closure
 can use SDK `<math>` lowering (Route A), page-private SDK-derived helpers

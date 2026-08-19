@@ -8,7 +8,7 @@ tags: [workflow, plan-mode, codex-review, gotcha, verification]
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained 2026-08-19 into `memory/topics/derived-scripts-and-editing-a-running-script.md`; promotion candidate recorded in `tracking/conflicts.md`
 
 ## The situation this applies to
 

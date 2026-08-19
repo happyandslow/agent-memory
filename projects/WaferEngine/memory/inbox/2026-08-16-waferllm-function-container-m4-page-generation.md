@@ -2,6 +2,8 @@
 
 Date: 2026-08-16
 
+Status: drained 2026-08-19 into `memory/topics/meshjit-code-relocation.md` and `plan.md`
+
 ## Scope and frozen inputs
 
 - Work is Phase 1 Step 3 M4 only; it stops before M5 link/closure audit and

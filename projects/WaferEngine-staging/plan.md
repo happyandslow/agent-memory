@@ -90,6 +90,10 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Narrative progress log
 
+### 2026-08-19 — maintain pass drained editor-sync plan-reversion capture
+
+- Appended the approved-plan/live-editor-sync gotcha to `memory/topics/derived-scripts-and-editing-a-running-script.md`: after a review loop approves a plan, verify on-disk bytes with approved-only and rejected-only discriminator strings before implementing. A stale external editor buffer can silently restore a rejected version after approval; the agent Read cache may not catch it.
+
 ### 2026-08-14 — maintain pass drained MeshJIT de-duplication capture
 
 - Created `memory/topics/meshjit-code-dedup-sram-latency.md` from the 2026-08-12 duplicate-pattern

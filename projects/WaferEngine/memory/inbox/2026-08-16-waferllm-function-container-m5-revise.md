@@ -4,6 +4,8 @@ Date: 2026-08-16
 
 Project: WaferEngine / WaferLLM MeshJIT Decode
 
+Status: drained 2026-08-19 into `memory/topics/meshjit-code-relocation.md` and `plan.md`
+
 ## Durable conclusion
 
 Phase 1 Step 3 M5 did not establish a final address-matched Attention/FFN

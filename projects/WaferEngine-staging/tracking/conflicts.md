@@ -49,6 +49,7 @@ Last reviewed: 2026-07-29
 - 2026-08-10: Consider promoting the Git-safety rule from `memory/inbox/2026-08-08-git-stash-violates-a-preserve-index-ban.md`: a “preserve the index / do not mutate Git state” contract bans `git stash` too, because stash/pop mutates the index and worktree and can collapse staged-vs-unstaged boundaries.
 - 2026-08-12: Consider promoting the encapsulation-refactor review rule from `memory/inbox/2026-08-11-encapsulation-refactor-needs-a-source-boundary-test.md`: when the change goal is ownership/boundary closure rather than behaviour, remove test-only mutable escape hatches, expose immutable evidence, and add a source-boundary regression test.
 - 2026-08-12: Consider promoting the source-comment cleanup gate from `memory/inbox/2026-08-11-source-comment-lossless-compression.md`: for broad comment/docstring cleanups, compare docstring-stripped ASTs, run `git diff --check`, run the relevant suite, and verify the index boundary before/after.
+- 2026-08-19: Consider promoting the approved-artifact/live-editor-sync gate from `memory/inbox/2026-08-18-approved-plan-can-be-silently-reverted-by-editor-sync.md`: before implementing an approved plan/doc that a human editor may still have open, verify on-disk bytes with approved-only and rejected-only discriminator greps; do not trust a cached read or the fact that a review loop approved an earlier version.
 
 ### 2026-07-29 — one consolidated proposal, because seven captures turned out to be one lesson
 

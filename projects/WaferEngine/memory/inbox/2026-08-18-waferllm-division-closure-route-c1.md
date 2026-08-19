@@ -4,6 +4,8 @@ Date: 2026-08-18
 
 Project: WaferLLM Decode MeshJIT/function-container, Phase 1 Step 3 division-closure study.
 
+Status: drained 2026-08-19 into `memory/topics/meshjit-code-relocation.md` and `plan.md`
+
 ## Durable conclusion
 
 Route C1 preserved the existing CSL `/` expressions and tested whether the SDK
