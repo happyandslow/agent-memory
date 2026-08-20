@@ -2,6 +2,9 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-08-20 — m3-park-tail-reload-transition → `memory/inbox/2026-08-20-m3-park-tail-reload-transition.md`
+- 2026-08-20 — current-kernel-communication-map → `memory/inbox/2026-08-20-current-kernel-communication-map.md`
+- 2026-08-18 — approved-plan-can-be-silently-reverted-by-editor-sync → `memory/inbox/2026-08-18-approved-plan-can-be-silently-reverted-by-editor-sync.md`
 - 2026-08-12 — meshjit-code-dedup-does-not-imply-loaded-sram-savings → `memory/inbox/2026-08-12-meshjit-code-dedup-does-not-imply-loaded-sram-savings.md`
 - 2026-08-11 — source-comment-lossless-compression → `memory/inbox/2026-08-11-source-comment-lossless-compression.md`
 - 2026-08-11 — m1-s37-prefix-reuse-device-benchmarks → `memory/inbox/2026-08-11-m1-s37-prefix-reuse-device-benchmarks.md`
