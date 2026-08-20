@@ -57,3 +57,18 @@ constant descriptor-table/dynamic-index probe was 920 B worse, added 260 B BSS,
 288 B runtime code, 372 B ordinary text, and introduced external memcpy closure.
 Only revisit with a different fixed-index encoding or new compiler-lowering
 evidence.
+
+## Interpretation and sequencing decision
+
+`A_both` is a controlled ownership ablation, not a functional baseline: it
+cannot perform Attention or FFN. Its purpose is to separate gross jointly
+removed ownership (`B - A_both`) from the dynamic infrastructure floor
+(`D_full - A_both`). Only `B` versus a correctness-validated `D_full` is the
+functional comparison; Phase 1 currently establishes only the static shape.
+
+D3 is the dominant common-floor cost. At bsz=1 it adds 8,770 B over D2c
+(29,470 - 20,700); at bsz=2 it adds 8,778 B (30,998 - 22,220), about 93.2% of
+the D0-to-D3 increase in both cases. The agreed order is: first complete Phase
+1 Step 6 exact `B`/`A_both`/`D_full` economics and admission verdict, then
+return to D3 optimization with the measured target. Do not modify the frozen
+D3 baseline before Step 6.

@@ -47,6 +47,25 @@ The diagrams are an orientation map, not a route-paint specification. For the ta
 
 **Prefill exclusions:** no keyed routing, all-to-all, or cross-block collective exists. All routes and wavelet counts are compile-time coordinate permutations; a mismatched count hangs rather than reporting an error.
 
+## KV propagation and offload catalogue
+
+This table separates a **local cache operation** from actual fabric movement. In particular, neither model moves existing decode KV just because a logical cursor changes.
+
+| Model / intent | Actual mechanism | Pattern classification | Current anchors |
+| --- | --- | --- | --- |
+| Decode: append/read the local KV sequence shard | Each PE owns fixed absolute positions `p, p+P, ...`; changing `iter_num` changes DSD extents, not cache placement. | **No fabric movement** | [decode KV ingress/shard contract](</home/lexu/WaferEngine-staging/models/qwen3_1p7b-decode/src/decode.csl:142>) |
+| Decode: reload host-prepared KV into a block | Host → adaptor → vertical switch injector → west shift across block columns → local K/V cache copy. | **P-4 seam**, then **G-1** parity chain; **G-4** header; **G-12** opaque relay; **G-14** drain/rebind before reuse. | [adaptor](</home/lexu/WaferEngine-staging/models/qwen3_1p7b-decode/src/kv_ingress_adaptor.csl:1>), [injector](</home/lexu/WaferEngine-staging/models/qwen3_1p7b-decode/src/kv_ingress_injector.csl:1>), [block west shift](</home/lexu/WaferEngine-staging/models/qwen3_1p7b-decode/src/decode.csl:1596>) |
+| Decode: offload existing decode KV | Not implemented in this standalone artifact; it has ingress/reload but no matching decode KV egress seam. | **Absent** — do not infer P-4 egress from ingress. | [communication map](#decode) |
+| Prefill: create and reread its own KV | `cache_kv` writes K/V locally; later chunk-pairs copy a banked tile into scratch before the QK/ScoreV communication. | **No fabric movement** for cache write/read; attention later uses **P-3** and **P-7**. | [cache write](</home/lexu/WaferEngine-staging/models/qwen3_1p7b-prefill/src/prefill.csl:794>), [pair staging](</home/lexu/WaferEngine-staging/models/qwen3_1p7b-prefill/src/prefill.csl:1347>) |
+| Prefill: offload KV to host | Per-row eastward switch gather, then column-wise northward drain to host. | **P-4 seam** with **G-4** length header, **G-12** payload-opaque relay, and **G-14** drain/re-arm. | [row egress](</home/lexu/WaferEngine-staging/models/qwen3_1p7b-prefill/src/prefill.csl:805>), [column mux](</home/lexu/WaferEngine-staging/models/qwen3_1p7b-prefill/src/kv_egress_colmux.csl:1>) |
+| Prefill: offload KV to another block or idle PE | Not implemented. The P-5/P-6 serpentinely moves the activation tile `X/Z`, not a KV-cache tier. | **Absent** | [shuttle entry](</home/lexu/WaferEngine-staging/models/qwen3_1p7b-prefill/src/comm_lib/comm_pe.csl:886>) |
+
+### Route-state ownership at the P-4 boundaries
+
+- **Prefill compute-row gather:** `kv_egress_color` is color 21. Its static positions are painted once: row head is `RAMP→EAST`; each non-head is position 0 `WEST→EAST` (forward) and position 1 `RAMP→EAST` (emit). Per-row `SWITCH_ADV` changes only the current position. After the producer's OQ4 is drained, every PE reaches `enter_request()`, whose `clear_current_position(kv_egress_color)` returns the gather switch to position 0 before the next request.
+- **Prefill colmux drain:** this is a separate switching color (`out_color`, one of 6/8/9/17). A non-tail colmux PE cannot reset after draining its own row because it must still forward southern rows. The south-most PE therefore emits `round_sync` only after the entire column has drained; each receiving colmux PE clears `out_color` and re-arms its header peel.
+- **Decode injector:** position 0 means `NORTH→RAMP` (take this row); position 1 means `NORTH→SOUTH` (forward later rows). After the south-most injector has taken the final row, it emits a reverse-direction `round_sync`. Each earlier injector clears its `in_color` back to position 0 and re-arms. The west-scatter color has no switch position; it is a parity-alternating block-internal chain.
+
 ## Tracking rules
 
 - Treat `launch.py` color-allocation and placement comments as the source of truth for colors, queues, and PE rectangles. This index links the algorithm entry points; it does not replace a color/queue occupancy audit.
