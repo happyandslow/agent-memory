@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="490" viewBox="0 0 1160 490">
+  <rect width="1160" height="490" fill="#f8fafc"/>
+  <style>text{font-family:Arial,sans-serif;fill:#172033}.title{font-size:28px;font-weight:700}.note{font-size:16px;fill:#475569}.label{font-size:19px;font-weight:600}.small{font-size:16px}.box{stroke-width:2;rx:12;ry:12}.arrow{fill:none;stroke-width:2;marker-end:url(#arrow)}</style>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8z" fill="#475569"/></marker></defs>
+  <text x="40" y="52" class="title">Qwen3-1.7B decode — on-wafer communication map</text><text x="40" y="82" class="note">Static coordinate routes only. Blocks pipeline layer slices; they do not collectively shard one tensor.</text>
+  <rect class="box" x="45" y="135" width="240" height="115" fill="#ede9fe" stroke="#7c3aed"/><text x="165" y="180" text-anchor="middle" class="label" fill="#5b21b6">P-4 KV ingress seam</text><text x="165" y="208" text-anchor="middle" class="small">switch scatter + relay</text>
+  <rect class="box" x="385" y="120" width="370" height="160" fill="#dbeafe" stroke="#2563eb"/><text x="570" y="165" text-anchor="middle" class="label">Decode block</text><text x="570" y="195" text-anchor="middle" class="small">P-1 reduce + P-2 multicast</text><text x="570" y="220" text-anchor="middle" class="small">Y: hidden / KV sequence · X: attention / FFN</text>
+  <rect class="box" x="850" y="135" width="255" height="115" fill="#fef3c7" stroke="#b45309"/><text x="978" y="177" text-anchor="middle" class="label">P-7 KV-head band</text><text x="978" y="205" text-anchor="middle" class="small">P-8: max → exp → sum</text>
+  <rect class="box" x="45" y="345" width="310" height="102" fill="#ccfbf1" stroke="#0f766e"/><text x="200" y="387" text-anchor="middle" class="label">P-5 / G-1 K-pipe</text><text x="200" y="415" text-anchor="middle" class="small">parity relay and local fanout</text>
+  <rect class="box" x="455" y="345" width="300" height="102" fill="#ffe4e6" stroke="#be123c"/><text x="605" y="387" text-anchor="middle" class="label">P-6 snake pipeline</text><text x="605" y="415" text-anchor="middle" class="small">Z block → block X</text>
+  <rect class="box" x="855" y="345" width="250" height="102" fill="#e2e8f0" stroke="#475569"/><text x="980" y="387" text-anchor="middle" class="label">HT head / tail</text><text x="980" y="415" text-anchor="middle" class="small">lookup, Top-K, host mux</text>
+  <path class="arrow" stroke="#7c3aed" d="M285 192H385"/><path class="arrow" stroke="#b45309" d="M755 192H850"/><path class="arrow" stroke="#be123c" d="M605 280V345"/>
+</svg>

@@ -2,7 +2,15 @@
 
 # WaferEngine Timeline
 
+- 2026-08-20 — waferllm-step5-profile-ownership → `memory/inbox/2026-08-20-waferllm-step5-profile-ownership.md`
+- 2026-08-20 — waferllm-step3-m6-step4-bsz2-closeout → `memory/inbox/2026-08-20-waferllm-step3-m6-step4-bsz2-closeout.md`
+- 2026-08-19 — waferllm-function-container-d3-final-link → `memory/inbox/2026-08-19-waferllm-function-container-d3-final-link.md`
+- 2026-08-19 — waferllm-function-container-d2-final-link → `memory/inbox/2026-08-19-waferllm-function-container-d2-final-link.md`
+- 2026-08-19 — waferllm-d3-materializer-compression → `memory/inbox/2026-08-19-waferllm-d3-materializer-compression.md`
+- 2026-08-18 — waferllm-function-container-step3-review-pass → `memory/inbox/2026-08-18-waferllm-function-container-step3-review-pass.md`
 - 2026-08-18 — waferllm-function-container-step3-pre-review → `memory/inbox/2026-08-18-waferllm-function-container-step3-pre-review.md`
+- 2026-08-18 — waferllm-function-container-d1-final-link → `memory/inbox/2026-08-18-waferllm-function-container-d1-final-link.md`
+- 2026-08-18 — waferllm-function-container-d1-decomposition → `memory/inbox/2026-08-18-waferllm-function-container-d1-decomposition.md`
 - 2026-08-18 — waferllm-division-closure-route-c2 → `memory/inbox/2026-08-18-waferllm-division-closure-route-c2.md`
 - 2026-08-18 — waferllm-division-closure-route-c1 → `memory/inbox/2026-08-18-waferllm-division-closure-route-c1.md`
 - 2026-08-18 — waferllm-division-closure-route-b → `memory/inbox/2026-08-18-waferllm-division-closure-route-b.md`
