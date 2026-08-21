@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained 2026-08-21 into `memory/topics/csl-control-payload-mechanisms.md`, `plan.md`, and promotion follow-up in `tracking/conflicts.md`
 
 ## What happened / finding
 

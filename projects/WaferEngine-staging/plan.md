@@ -90,6 +90,12 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Narrative progress log
 
+### 2026-08-21 — maintain pass drained communication/M3/tooling captures
+
+- Drained `memory/inbox/2026-08-20-current-kernel-communication-map.md`: `memory/topics/qwen3-decode-prefill-communication-map.md` is now the current source-linked index for qwen3 decode/prefill communication paths inspected on 2026-08-20. Refresh it and related diagrams when active CSL kernels change.
+- Created `memory/topics/m3-idle-pe-tier.md` from the Mode-L park-tail/reload-transition capture. Preferred protocol: final park source appends southbound `PARK_TAIL`, storage starts northbound reload only after exact payload count + tail, and storage appends `RELOAD_TAIL`; same-color CE segment relay remains an unproven compile/device gate.
+- Appended the non-interactive `csl-knowledge` MCP fallback to `memory/topics/csl-control-payload-mechanisms.md`: if MCP read tools are permission-blocked, read the on-disk KB at `/home/lexu/CSL-Demo-Code/versions/v<X.Y>/`. Added promotion follow-up in `tracking/conflicts.md`.
+
 ### 2026-08-19 — maintain pass drained editor-sync plan-reversion capture
 
 - Appended the approved-plan/live-editor-sync gotcha to `memory/topics/derived-scripts-and-editing-a-running-script.md`: after a review loop approves a plan, verify on-disk bytes with approved-only and rejected-only discriminator strings before implementing. A stale external editor buffer can silently restore a rejected version after approval; the agent Read cache may not catch it.

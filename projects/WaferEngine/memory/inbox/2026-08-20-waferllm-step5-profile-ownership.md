@@ -1,6 +1,7 @@
 # WaferLLM Decode Phase-1 Step-5 profile ownership
 
 Date: 2026-08-20
+Status: drained 2026-08-21 into `memory/topics/meshjit-code-relocation.md` and `plan.md`
 
 ## Durable conclusion
 

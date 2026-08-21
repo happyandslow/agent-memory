@@ -43,6 +43,10 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Narrative progress log
 
+### 2026-08-21
+
+- Drained nine 2026-08-18..20 WaferLLM function-container/static-proxy captures into `memory/topics/meshjit-code-relocation.md`. Phase-1 Step 3 and Step 4 are now Grade-E closed for static final-link/control-flow evidence; Step 5 profile ownership adds a 1,200-B union at both bsz=1 and bsz=2; Step 6 static-proxy economics are negative (`B-proxy=-4,954 B` bsz=1, `-5,018 B` bsz=2) but the exact design gate remains `REVISE_STEP6_DFULL_UNRESOLVED` until production seams are frozen and `D_full_admitted` is measured. Next discussion target: D3 SRAM optimization against the measured 5,018-B zero / 5,274-B +256-margin recovery target.
+
 ### 2026-08-19
 
 - Drained ten 2026-08-16..18 WaferLLM function-container/division-closure captures into `memory/topics/meshjit-code-relocation.md`. The current Step-3 state is `PENDING_INDEPENDENT_REVIEW`: Route A + vecmat policy P is the active static source policy; Route B + P is the fail-closed fallback; C1/C2 resident division helper routes are rejected; and R vecmat placement is not selected because complete receiver SRAM is 120 B worse than P without runtime performance evidence. WSE-aware AM disassembly now covers all final page ELFs for static control-flow closure, but numerical equivalence, loader/transfer/invoke correctness, simulator/device correctness, latency, and dynamic net savings remain unproven.

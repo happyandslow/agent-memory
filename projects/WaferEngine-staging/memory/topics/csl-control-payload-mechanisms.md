@@ -154,8 +154,16 @@ The redesign **removed the standalone Topic 5/6/7 tutorial pages**; several earl
 - Language index: `https://sdk.cerebras.ai/csl/language_index`; full machine index: `https://sdk.cerebras.ai/llms.txt`
 - **Control wavelets / switches / sentinels tutorials → GitHub (canonical, stable):** `https://github.com/Cerebras/sdk-examples/tree/master/tutorials` (`topic-05-sentinels`, `topic-06-switches`, `topic-07-switches-entrypt`).
 
+## Updates — 2026-08-21
+
+Drained `memory/inbox/2026-08-20-csl-knowledge-mcp-blocked-kb-on-disk.md` into this topic.
+
+- In non-interactive worker sessions, `csl-knowledge` MCP read tools can be permission-blocked even when `search_docs` works. Do not stall if that happens.
+- The same CSL/SDK knowledge base is readable on disk at `/home/lexu/CSL-Demo-Code/versions/v<X.Y>/`; for SDK 2.10 use `/home/lexu/CSL-Demo-Code/versions/v2.10/`. The stdlib sources such as `control.csl` and `switch_config.csl` are available there and were validated independently by two M3 Phase-A workers on 2026-08-20.
+- Procedural promotion candidate: add the disk-path fallback to non-interactive worker dispatch prompts or CSL knowledge guidance.
+
 ## Last updated
 
-2026-07-18 (added no-keyed-routing/static-orchestration framing from KV egress baton); 2026-07-12 (enriched: concrete topic-07 example, task-type limits, switch-vs-control-task routing
+2026-08-21 (added non-interactive MCP-blocked disk-KB fallback); 2026-07-18 (added no-keyed-routing/static-orchestration framing from KV egress baton); 2026-07-12 (enriched: concrete topic-07 example, task-type limits, switch-vs-control-task routing
 correction, "non-routable" precision, 16-bit capacity, CE-dispatch/control-bit mechanism, post-redesign
 SDK URL mapping). Original capture same day: M0/S4 design input from csl-knowledge KB v2.10.
