@@ -59,3 +59,31 @@
 - `models/qwen3_1p7b-decode/bench/m3_park_band/popfalse_probe/` (sim+device evidence)
 - skill: `csl-switch-adv-pop-semantics` (claude-skills repo)
 - supersedes parts of: `memory/inbox/2026-08-20-m3-park-tail-reload-transition.md`
+
+## Update 2026-08-21 (later same day): DEVICE-PROVEN at 256 PEs + A1 + queue_flush doc gap
+
+- **`column_cycle_demo` is DEVICE-PROVEN at decode block height**: real CS-3
+  (wsjob-frfycsmtzugnjjoitj5jjp), `--n-pes 256 --payload-len 64` — strict checker
+  fully green: 16,384 park words verified word-for-word in exact 255..0 order,
+  dual-predicate join, 256-owner reload demux with TURN-arg cross-checks, FENCE at
+  P0 only, ledger gather in exact baton order, unexpected=0. Functional evidence
+  only; no performance claim. (Also passed the appliance road: read_symbol is
+  simulator-only and a zero-host-stream SdkLayout layout asserts in wio_group_config
+  — both in the `csl-switch-adv-pop-semantics` skill.)
+- **ASSUMPTION A1 (recorded, doc-checked):** the door-open rewrite relies on
+  OQ-empty ⇒ "my payload cannot be overtaken by newly admitted northern wavelets
+  inside the router". SDK `builtins_wse3.md` guarantees ONLY "the respective queue
+  will be empty" (CE queue drained into the router) — router-internal no-overtake
+  has **no documentation backing**. Falsifier is built in: storage's exact-order
+  automaton re-tests A1 on every run; held at 16/10 PE sim and 256-PE device.
+- The storage-side queue_flush non-firing gotcha above now **contradicts the
+  documented semantics** ("activates ... once the queue becomes empty *or is
+  already empty*"), so already-empty is not the explanation; root cause still open.
+- **Per-request payload equations (qwen3_1p7b decode, serve 2x4, P=256,
+  kv_dim=1024 ⇒ kv_cols=4 fp16/PE, layers-per-block lpb ∈ {2,4} as [2,4,4,4,4,4,4,2]):**
+  per compute PE `S_PE(L) = lpb·ceil(L/256)·16 B`; per column = per storage PE
+  `S_col(L) = 256·S_PE = 16·L·lpb B`; demo words `E = S_PE/4 = 4·lpb·ceil(L/256)`.
+  Cross-checks: Σ_blocks 4096·lpb = 114,688 B/token = the known B_tok ≈ 112 KB;
+  S_col(672, lpb=4) = 43,008 B ≈ the 42 KiB/PE storage-strip budget (the ~672
+  tokens/block capacity in the M3 study). Next: payload-size variation experiment
+  on the demo (round-boundary offload/reload overhead vs E), device-only numbers.
