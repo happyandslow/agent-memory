@@ -2,6 +2,8 @@
 
 # WaferEngine Timeline
 
+- 2026-08-21 — waferllm-step6-dfull-admitted-policy-p → `memory/inbox/2026-08-21-waferllm-step6-dfull-admitted-policy-p.md`
+- 2026-08-20 — waferllm-step6-static-proxy-economics → `memory/inbox/2026-08-20-waferllm-step6-static-proxy-economics.md`
 - 2026-08-20 — waferllm-step5-profile-ownership → `memory/inbox/2026-08-20-waferllm-step5-profile-ownership.md`
 - 2026-08-20 — waferllm-step3-m6-step4-bsz2-closeout → `memory/inbox/2026-08-20-waferllm-step3-m6-step4-bsz2-closeout.md`
 - 2026-08-19 — waferllm-function-container-d3-final-link → `memory/inbox/2026-08-19-waferllm-function-container-d3-final-link.md`
