@@ -2,6 +2,7 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-08-21 — m3-column-cycle-demo-v3-sim-proven → `memory/inbox/2026-08-21-m3-column-cycle-demo-v3-sim-proven.md`
 - 2026-08-20 — m3-park-tail-reload-transition → `memory/inbox/2026-08-20-m3-park-tail-reload-transition.md`
 - 2026-08-20 — current-kernel-communication-map → `memory/inbox/2026-08-20-current-kernel-communication-map.md`
 - 2026-08-20 — csl-knowledge-mcp-blocked-kb-on-disk → `memory/inbox/2026-08-20-csl-knowledge-mcp-blocked-kb-on-disk.md`
