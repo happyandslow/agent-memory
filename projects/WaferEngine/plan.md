@@ -28,7 +28,8 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Next actions
 
-- [ ] Complete the fresh independent review of the materialized Step-3 pre-review package; if it passes, produce M6 and stop Phase 1 Step 3. Do not enter loader/runtime/Phase 2 from static evidence alone.
+- [ ] If continuing WaferLLM pageability after Step 6, do not enter Phase 2 from the current result. First compare Policy R using the same exact admitted `D_full` method, and optimize against the measured worst-batch gaps: 5,908 B to break even or 6,164 B for the evaluated +256-B margin.
+- [x] Complete the fresh independent review of the materialized Step-3 pre-review package and produce M6; Phase 1 Step 3 is closed at PASS / Grade E. Do not enter loader/runtime/Phase 2 from static evidence alone.
 - [ ] Preserve Route A + vecmat policy P as the active Step-3 source policy; keep Route B + P as the fail-closed fallback if Route-A lowering/hash/target evidence drifts, WSE-aware closure fails, or numerical comparison fails.
 - [ ] Before any production correctness claim, run separate numerical/special-value comparison of Route A/B against the frozen slash expressions and later loader/transfer/invoke/runtime gates.
 - [ ] If continuing WaferLLM pageability, measure baseline/body-absent/dynamic receiver images plus phase load/use timing before making any SRAM/performance claim; current CS-3 vecmat is correctness-only and Q+K RoPE isolated economics are negative.
@@ -42,6 +43,10 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Decide whether to merge `lexu/pe-mem-breakdown`; optional follow-up: run seq_len/layers-per-block sweeps.
 
 ## Narrative progress log
+
+### 2026-08-22
+
+- Drained `memory/inbox/2026-08-21-waferllm-step6-dfull-admitted-policy-p.md` into `memory/topics/meshjit-code-relocation.md`. The exact admitted Step-6 `D_full_admitted` Policy-P receiver is static-validated but capacity NO-GO: 31,560 B at bsz=1 and 33,088 B at bsz=2, leaving `B-D_full=-5,844 B` and `-5,908 B` respectively. The fair next decision is Policy R measurement under the same admitted method and/or D3 optimization against the 5,908-B zero / 6,164-B +256-margin worst-batch target; transferred-page execution remains a separate later runtime gate.
 
 ### 2026-08-21
 

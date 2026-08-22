@@ -162,8 +162,17 @@ Drained `memory/inbox/2026-08-20-csl-knowledge-mcp-blocked-kb-on-disk.md` into t
 - The same CSL/SDK knowledge base is readable on disk at `/home/lexu/CSL-Demo-Code/versions/v<X.Y>/`; for SDK 2.10 use `/home/lexu/CSL-Demo-Code/versions/v2.10/`. The stdlib sources such as `control.csl` and `switch_config.csl` are available there and were validated independently by two M3 Phase-A workers on 2026-08-20.
 - Procedural promotion candidate: add the disk-path fallback to non-interactive worker dispatch prompts or CSL knowledge guidance.
 
+## Updates — 2026-08-22
+
+Drained the control-semantics parts of `memory/inbox/2026-08-21-m3-column-cycle-demo-v3-sim-proven.md` into this topic.
+
+- `SWITCH_ADV` with NO_POP is a broadcast route-advance wavelet: it advances every advance-capable PE it passes and survives to the end of the route. This is verified by `popfalse_probe` on simfab and physical CS-3.
+- The 8-command control-payload limit applies to targeted pop=true switch chains, not to NO_POP broadcast sweeps. Long columns no longer need segmented PREP/COMMIT CE relays just to advance route switches.
+- Pop mode is per-PE-per-color state rather than a wavelet attribute. A protocol cannot safely combine same-color per-PE TURN death with a later NO_POP column sweep unless it has an explicit, verified mode-switch point.
+- Side gotchas promoted/recorded elsewhere: pop corrupts the low-16 arg; spent control wavelets can still fire RAMP-tap tasks; `read_symbol` is simulator-only; a zero-host-stream `SdkLayout` asserts in appliance `wio_group_config`.
+
 ## Last updated
 
-2026-08-21 (added non-interactive MCP-blocked disk-KB fallback); 2026-07-18 (added no-keyed-routing/static-orchestration framing from KV egress baton); 2026-07-12 (enriched: concrete topic-07 example, task-type limits, switch-vs-control-task routing
+2026-08-22 (added NO_POP `SWITCH_ADV` broadcast semantics from M3 popfalse/column-cycle work); 2026-08-21 (added non-interactive MCP-blocked disk-KB fallback); 2026-07-18 (added no-keyed-routing/static-orchestration framing from KV egress baton); 2026-07-12 (enriched: concrete topic-07 example, task-type limits, switch-vs-control-task routing
 correction, "non-routable" precision, 16-bit capacity, CE-dispatch/control-bit mechanism, post-redesign
 SDK URL mapping). Original capture same day: M0/S4 design input from csl-knowledge KB v2.10.

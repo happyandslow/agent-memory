@@ -205,6 +205,20 @@ Drained nine 2026-08-18..20 WaferLLM function-container / static-proxy captures 
 
 Next gate: stop before Step 7 and Phase 2. The agreed next discussion is D3 SRAM optimization against the measured 5,018-B zero / 5,274-B +256-margin target. Exact Step 6 can close only after production seams are frozen and final-linked `D_full_admitted` is measured.
 
+## Updates — 2026-08-22
+
+Drained `memory/inbox/2026-08-21-waferllm-step6-dfull-admitted-policy-p.md` into this topic.
+
+- Step 6 now has the exact admitted `D_full_admitted` Policy-P receiver/holder/filler image family for SDK 2.10, P=256, Route A, bsz=1/2. Evidence remains static Grade E: no page transfer or execution has been proven on simfab or CS-3.
+- Complete receiver SRAM uses the occupied union of all SHF_ALLOC ranges below `0xc000`, including NOBITS and the fixed 1-KiB task table. The admitted receiver is 31,560 B at bsz=1 and 33,088 B at bsz=2, exactly 890 B larger than the Step-5 proxy in both batches.
+- Capacity verdict is `COMPLETE_STEP6_NO_GO_CAPACITY`: bsz=1 has `B-D_full=-5,844 B` and bsz=2 has `B-D_full=-5,908 B`; recovery to the evaluated +256-B margin needs 6,100 B / 6,164 B respectively. The controlled 890-B increase decomposes as topology normalization -8 B, authoritative load/latch +554 B, phase loop +364 B, release plus real holder protocol +100 B, and production-root pruning -120 B.
+- Holder/filler overhead is whole-wafer, not part of per-receiver `B-D_full`: holder SRAM is 13,530 B at bsz=1 and 15,066 B at bsz=2; fillers use 4,440 B. The holder owns two full zero-padded catalog slots, OQ2, asynchronous `@mov32` sender, queue-flush task/empty handler, and a holder identity latch.
+- Frozen host-attested load contract: one blocking host launch of layout-wide `d_full_load_page` reaches receivers, holder, and fillers; the holder streams the selected full slot and unblocks only after OQ2 drain; receivers perform fixed-count IQ2-to-slot `@mov32`, publish READY last, then unblock. Treat the blocking host return as a contract to validate later, not a runtime proof.
+- The holder catalog must be host-provisioned, not linker-zero initialized: extract `.m4_page` from frozen Attention/FFN ELFs, check raw/padded hashes from `page_catalog.json`, concatenate two full slots, reject all-zero catalogs, write only holder `(P,0)`, and D2H-readback exactly before the first load RPC. Check-only evidence records 8,704 B / 2,176 u32 words at bsz=1 and 10,240 B / 2,560 u32 words at bsz=2.
+- Review fixes now included: explicit holder catalog provisioning; validation against freshly regenerated machine-audit inventory; fail-closed tombstones before validation prerequisites; and hard rejection of any SHF_ALLOC section crossing `0xc000`. Six host-only tests pass. Keep technical static validation PASS separate from independent review: the expanded external recheck was blocked pending explicit approval to transmit the larger private evidence set.
+
+Next decision: do not enter Phase 2 from this result. Fair comparison requires measuring Policy R with the same exact admitted `D_full` method. Use 5,908 B as the worst-batch break-even gap, or 6,164 B for the +256-B admission margin; D3 remains the dominant common-floor optimization candidate. Correct transferred-page execution is a later runtime-validation gate.
+
 ## Provenance
 
 Drained from two dated captures (2026-08-06 maintain pass):
