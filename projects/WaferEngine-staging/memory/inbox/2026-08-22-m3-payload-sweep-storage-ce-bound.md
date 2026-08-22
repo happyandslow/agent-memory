@@ -47,10 +47,13 @@ protocol timing measurement on SdkLayout probes whose cycle "starts at boot".
   (2×1024 B across the bottleneck edge at 3.91 GB/s); measured 20.25 µs =
   39× slower. Mechanism located: **storage CE per-wavelet costs** — ~43
   cycles per park wavelet (data-task automaton) + ~44 cycles per reload
-  wavelet (synchronous @mov32 emit loop). Effective per-column payload rate
-  ≈ **101 MB/s AS-BUILT** vs ~3.91 GB/s wire ceiling. Do not quote 101 MB/s
-  as a physical cost — the lever is removing per-wavelet CE involvement at
-  storage (fabin-DSD bulk receive / DSD block emit).
+  wavelet (synchronous @mov32 emit loop). The derived ~101 MB/s per-column
+  figure is **as-built cycle THROUGHPUT, not a bandwidth** — this experiment
+  never measured the wire (it was never the binding constraint). Keep link
+  bandwidth a separate model input, measured fine-grained (single-PE span of
+  a bulk DSD transfer, or ref-corrected two-PE stamps); until then the
+  3.91 GB/s single-link anchor stands in. Lever: remove per-wavelet CE
+  involvement at storage (fabin-DSD bulk receive / DSD block emit).
 - Model form: `t_cycle(L) ≈ 57 µs + 1.265 µs × L` at lpb=4 (E=L/16). In free
   decode tokens (654.95 µs): L=512 -> 0.94 tok, L=2048 -> 3.9, L=8192 ->
   15.8, L=20480 -> 39.5.
