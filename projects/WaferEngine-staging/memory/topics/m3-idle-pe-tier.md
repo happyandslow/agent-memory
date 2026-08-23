@@ -37,3 +37,13 @@ Drained `memory/inbox/2026-08-21-m3-column-cycle-demo-v3-sim-proven.md` into thi
 - Payload sizing equation for qwen3_1p7b decode, serve 2x4, P=256, kv_dim=1024 (`kv_cols=4` fp16/PE): per compute PE `S_PE(L)=lpb·ceil(L/256)·16 B`; per column/storage PE `S_col(L)=16·L·lpb B`; demo words `E=4·lpb·ceil(L/256)`. Cross-check: Σblocks `4096·lpb = 114,688 B/token`; `S_col(672, lpb=4)=43,008 B`, matching the ~42 KiB/PE storage-strip budget.
 
 Next gates: run payload-size variation on the demo to measure round-boundary offload/reload overhead vs `E`, then integrate round-boundary reset/re-arm and release semantics into decode round boundaries. Keep `read_symbol` simulator-only and avoid zero-host-stream `SdkLayout` layouts on the appliance.
+
+## Updates — 2026-08-23
+
+Drained `memory/inbox/2026-08-22-m3-payload-sweep-storage-ce-bound.md` into this topic.
+
+- The 256-compute-PE + one-storage-PE `column_cycle_demo` payload sweep on real WSE-3 is deterministic and storage-CE-bound, not wire-bound. Setting: work-repo commit `48467e5` / result commit `facc8c4`, branch `lexu/staging/m3-on-chip-kv-offload-study`, SDK 2.10 client / 1.13.2 cluster, E ∈ {4,32,64,128,256,512,1280} u32 words/PE, n=3 each.
+- Timing must start from a host GO wavelet after `runtime.run()`, not from each PE's init task. The rejected init-task method measured ~90 ms of per-PE load skew (device E=32: 91,684 µs vs 614 µs after the fix). Do not time SdkLayout protocols from boot.
+- Device result: floor ≈57 µs/cycle; for E ≥ 32, full cycle is linear at **20.247 µs per word-per-PE**, split into serial park and emit phases (~10.01 + 10.24 µs). Representative points: E=4 → 57.4 µs, E=32 → 614.3 µs, E=512 → 10,333.0 µs, E=1280 → 25,882.9 µs.
+- The pre-registered wire-bound model (0.524 µs/word from 2×1024 B over a 3.91 GB/s edge) is refuted by 39×. The located mechanism is storage-side CE per-wavelet work: ~43 cycles per park wavelet plus ~44 cycles per reload wavelet. The derived ~101 MB/s per-column number is as-built cycle throughput, **not** a link bandwidth measurement; keep link bandwidth as a separate, still-needed model input.
+- Model form at lpb=4: `t_cycle(L) ≈ 57 µs + 1.265 µs × L`. In free-decode-token units (654.95 µs/token), L=512 costs ~0.94 token, L=2048 ~3.9, L=8192 ~15.8, and L=20480 ~39.5. Next lever is a storage-side DSD bulk-receive / DSD block-emit variant to remove per-wavelet CE involvement.

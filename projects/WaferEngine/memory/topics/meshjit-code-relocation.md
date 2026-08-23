@@ -219,6 +219,16 @@ Drained `memory/inbox/2026-08-21-waferllm-step6-dfull-admitted-policy-p.md` into
 
 Next decision: do not enter Phase 2 from this result. Fair comparison requires measuring Policy R with the same exact admitted `D_full` method. Use 5,908 B as the worst-batch break-even gap, or 6,164 B for the +256-B admission margin; D3 remains the dominant common-floor optimization candidate. Correct transferred-page execution is a later runtime-validation gate.
 
+## Updates — 2026-08-23
+
+Drained `memory/inbox/2026-08-22-shared-slot-validation-after-first-load.md` into this topic.
+
+- Shared-slot Route-A/Policy-P runtime validation reached the first dynamic-load stop point only: a coherent P=8 simulator build passed, the original baseline completed on deterministic input, receiver-arena H2D plus `init_task` completed, holder catalog H2D/D2H readback succeeded, and `d_full_load_page(page=1, epoch=1)` returned.
+- The run then blocked on the immediate receiver-state D2H readback after page load. No admitted-run RPC or release RPC began, so this does **not** prove slot bytes, page-function invocation, transferred-page correctness, latency, or `B_original == D_dynamic`.
+- Treat the post-load receiver-state D2H block as the current runtime-validation gate. Do not continue Phase 2 claims until a separately authorized investigation explains why receiver-state readback cannot complete after the first dynamic load.
+
+Pointers: `/home/lexu/WaferLLM/MeshJit-Decode/attention-ffn-runtime-validation/results/simulator_failure.json`; `/home/lexu/WaferLLM/MeshJit-Decode/attention-ffn-runtime-validation/runs/p8-v4/dynamic_host_trace.jsonl`.
+
 ## Provenance
 
 Drained from two dated captures (2026-08-06 maintain pass):

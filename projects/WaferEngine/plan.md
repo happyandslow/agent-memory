@@ -28,6 +28,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Next actions
 
+- [ ] Before any shared-slot Phase 2 correctness/performance claim, investigate the receiver-state D2H block that occurs immediately after the first `d_full_load_page(page=1, epoch=1)`; no admitted-run/release RPC or `B_original == D_dynamic` proof exists yet.
 - [ ] If continuing WaferLLM pageability after Step 6, do not enter Phase 2 from the current result. First compare Policy R using the same exact admitted `D_full` method, and optimize against the measured worst-batch gaps: 5,908 B to break even or 6,164 B for the evaluated +256-B margin.
 - [x] Complete the fresh independent review of the materialized Step-3 pre-review package and produce M6; Phase 1 Step 3 is closed at PASS / Grade E. Do not enter loader/runtime/Phase 2 from static evidence alone.
 - [ ] Preserve Route A + vecmat policy P as the active Step-3 source policy; keep Route B + P as the fail-closed fallback if Route-A lowering/hash/target evidence drifts, WSE-aware closure fails, or numerical comparison fails.
@@ -43,6 +44,10 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Decide whether to merge `lexu/pe-mem-breakdown`; optional follow-up: run seq_len/layers-per-block sweeps.
 
 ## Narrative progress log
+
+### 2026-08-23
+
+- Drained `memory/inbox/2026-08-22-shared-slot-validation-after-first-load.md` into `memory/topics/meshjit-code-relocation.md`. Shared-slot Route-A/Policy-P runtime validation reached the first dynamic-load boundary in simulator — original baseline, receiver arena, holder catalog readback, and `d_full_load_page(page=1, epoch=1)` all completed — but then blocked on immediate receiver-state D2H. No admitted-run/release RPC began, so slot-byte/function-invocation/equivalence claims remain unproven until that readback block is investigated.
 
 ### 2026-08-22
 
