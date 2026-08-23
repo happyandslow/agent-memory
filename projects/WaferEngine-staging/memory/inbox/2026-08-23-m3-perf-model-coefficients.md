@@ -73,3 +73,25 @@ Key cells (cycles; µs@0.85): (256,4,1)=63,157 (74.3); (256,64,1)=1,388,470
   mildly convex below E≈64 — documented, not tuned away).
 - Everything labeled AS-BUILT: the wire is ~39× under-used; coefficients
   price per-wavelet CE involvement, which the DSD variants remove.
+
+## Update (later 2026-08-23): Exp-B verdict — owner data task WAS the reload bottleneck
+
+- Paired device runs (commit fd94986, 12 jobs, n=3, spread ≤1 cyc): with
+  owner-side bulk fabin-DSD receive, roundtrip marginal **86.87 → 56.00
+  cyc/word**; park EXACTLY 43.00 both modes; reload share 43.9 → **13.00**
+  = the storage @mov32 emit loop, now a clean serial measurement. Full-cycle
+  speedup 1.51–1.55×. Stage model survives with corrected constants:
+  reload = max(owner-consume, storage-emit 13.0, wire 0.7); baseline max was
+  the owner task (43.6).
+- Prereg band (73–83) was missed LOW — the old 30–40 "emit loop" estimate
+  was backpressure-contaminated, exactly as Exp-C warned. Never take a
+  backpressure-coupled span as a stage cost.
+- **New hardware semantics [sim-observed, design now robust to it either
+  way]: an input queue claimed by a pending fabin microthread does NOT
+  deliver control-task activations for control wavelets arriving on that
+  color** — router-level SWITCH_ADV still executes (demux kept working),
+  only the CE tap vanishes. dsd variant therefore suppresses TURN taps
+  (ce_ignore=1) and sends no fence; export/TSC end = read completion.
+- Next as-built rungs: storage-side DSD emit (13.0 → ~wire), storage-side
+  DSD park receive (43.3 → ~wire) — both required for real KV store anyway.
+  cost_per_token (owner-DSD): 56×16 = 896 cyc = 1.054 µs @0.85.
