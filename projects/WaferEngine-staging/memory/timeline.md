@@ -5,6 +5,7 @@
 - 2026-08-23 — m3-perf-model-coefficients → `memory/inbox/2026-08-23-m3-perf-model-coefficients.md`
 - 2026-08-23 — m1-s4-real-workload-shape-review → `memory/inbox/2026-08-23-m1-s4-real-workload-shape-review.md`
 - 2026-08-23 — m1-s4-c1-mechanism-review → `memory/inbox/2026-08-23-m1-s4-c1-mechanism-review.md`
+- 2026-08-23 — m1-s4-c1-device-kv-seed-boundary → `memory/inbox/2026-08-23-m1-s4-c1-device-kv-seed-boundary.md`
 - 2026-08-22 — m3-payload-sweep-storage-ce-bound → `memory/inbox/2026-08-22-m3-payload-sweep-storage-ce-bound.md`
 - 2026-08-21 — m3-column-cycle-demo-v3-sim-proven → `memory/inbox/2026-08-21-m3-column-cycle-demo-v3-sim-proven.md`
 - 2026-08-20 — m3-park-tail-reload-transition → `memory/inbox/2026-08-20-m3-park-tail-reload-transition.md`
