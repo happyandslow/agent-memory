@@ -2,6 +2,7 @@
 
 # WaferEngine Timeline
 
+- 2026-08-23 — meshjit-p256-cs3-bitexact-failure → `memory/inbox/2026-08-23-meshjit-p256-cs3-bitexact-failure.md`
 - 2026-08-22 — shared-slot-validation-after-first-load → `memory/inbox/2026-08-22-shared-slot-validation-after-first-load.md`
 - 2026-08-22 — shared-slot-cs3-bit-exact-and-artifact-gates → `memory/inbox/2026-08-22-shared-slot-cs3-bit-exact-and-artifact-gates.md`
 - 2026-08-21 — waferllm-step6-dfull-admitted-policy-p → `memory/inbox/2026-08-21-waferllm-step6-dfull-admitted-policy-p.md`
