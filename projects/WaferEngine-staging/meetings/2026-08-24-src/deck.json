@@ -44,53 +44,61 @@
   },
   {
    "type": "table",
-   "eyebrow": "Results · 81 runs, every cell n=3 with 0-cycle spread",
-   "title": "Full park+reload cycle (cycles): v5 wins single-row, v4 wins every multi-row cell",
+   "eyebrow": "Capacity · nominal 42 KiB/storage PE = 672 KV-token equivalents per 1×256 row/block",
+   "title": "Each row adds 672-token capacity; v4 wins every multi-row setting",
    "columns": [
-    "Config (N=256)",
+    "KV moved",
+    "Rows · capacity",
     "v3 single-row",
     "v4 GO-chain",
     "v5 cascade"
    ],
    "rows": [
     [
-     "task E=64 · R=1",
+     "task · 1,024 tok",
+     "1 · 672 tok (under)",
      "1,388,470",
      "1,535,920",
      "1,420,244"
     ],
     [
-     "task E=64 · R=2",
+     "task · 1,024 tok",
+     "2 · 1,344 tok (fits)",
      "—",
      "1,544,946",
      "1,675,327"
     ],
     [
-     "task E=64 · R=4",
+     "task · 1,024 tok",
+     "4 · 2,688 tok (fits)",
      "—",
      "1,550,855",
      "1,812,526"
     ],
     [
-     "dsd E=512 · R=1",
+     "DSD · 8,192 tok",
+     "1 · 672 tok (under)",
      "7,350,234",
      "8,542,434",
      "7,482,812"
     ],
     [
-     "dsd E=512 · R=2",
+     "DSD · 8,192 tok",
+     "2 · 1,344 tok (under)",
      "—",
      "8,619,349",
      "10,669,498"
     ],
     [
-     "dsd E=512 · R=4",
+     "DSD · 8,192 tok",
+     "4 · 2,688 tok (under)",
      "—",
      "8,675,026",
      "12,343,610"
     ]
    ],
-   "notes": "EPCC CS-3, distance=1, n=3 per cell, zero infrastructure failures across 81 runs; every cell reproduced to the cycle. E = words per PE (E=64 ~ L=1024 tokens at lpb=4; E=512 ~ L=8192). v4 metric = sum of per-band spans (excludes inter-epoch GO gaps, ~2*bh cycles each). dsd = owner-side bulk fabin-DSD reload receive (Exp-B mechanism). Crossover: each design pays an always-on R=1 premium over v3 (v4 ~ +9.6 cyc/word for role machinery, v5 ~ +1.6 for cascade branches), but for R>=2 v4's cheap transit dominates: dsd E=512 R=4 is 30% faster than v5."
+   "weights": [1.2, 1.35, 1, 1, 1],
+   "notes": "EPCC CS-3, distance=1, n=3 per cell, zero infrastructure failures across 81 runs; every cell reproduced to the cycle. Visible payload labels replace benchmark notation: with compute-column height N=256 and lpb=4, E=64 u32 words/compute PE maps to 1,024 KV tokens and E=512 maps to 8,192. R is the number of 1×256 storage rows. Capacity is nominal analytical sizing, not compile-fit: 42 KiB/storage PE gives 672 KV-token equivalents per row/block, so R=1/2/4 gives 672/1,344/2,688 tokens. The demo verifies movement rather than retaining the full payload; therefore the 8,192-token rows shown are intentionally capacity-undersized measurements (about 13 rows are needed nominally). v4 metric = sum of per-band spans (excludes inter-epoch GO gaps, ~2*bh cycles each). DSD = owner-side bulk fabin-DSD reload receive. v4 wins every measured R>=2 cell; DSD 8,192-token payload at R=4 is 30% faster than v5."
   },
   {
    "type": "figure",

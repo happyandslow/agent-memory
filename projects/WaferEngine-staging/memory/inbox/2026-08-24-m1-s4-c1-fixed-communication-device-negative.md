@@ -47,3 +47,6 @@
 - `docs/analysis/m1-s4-c1-workload-step-review.md`
 - `cs3-c1-s256-manual-comparison/run-20260824T0340Z/`
 - `tools/m1_s4/collect_c1_s256_manual_comparison.py`
+- `docs/slides/2026-08-24-m1-s4-ragged-c1/m1-s4-ragged-c1-weekly-insert-2026-08-24.pptx`
+- `docs/slides/2026-08-24-m1-s4-ragged-c1/deck.json`
+- ContextBase: <https://context.ed-aisys.com/doc/2026-08-23-study-review-m1-s4-c1-and-workload-shape-selW5g7f72>

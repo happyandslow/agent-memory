@@ -105,6 +105,18 @@ gaps, bounded ~2·bh cyc each); v5/v3 metric = P0 full-cycle TSC.
 
 Full-cycle cycles (mean of n=3):
 
+Slide 4 presents the benchmark axes in model-facing units rather than the
+internal `N/E/R` notation. The fixed compute-column height is `N=256` PEs.
+At `lpb=4`, `E=64` u32 words per compute PE represents a 1,024-token KV
+history and `E=512` represents 8,192 tokens. `R` is the number of 1×256
+storage rows. The current capacity label is explicitly **nominal analytical
+sizing, not compile-fit evidence**: 42 KiB per storage PE gives 672 logical
+KV-token equivalents per row/block, so `R=1/2/4` exposes 672/1,344/2,688
+token-equivalents. Consequently, 1,024 tokens nominally needs two rows and
+8,192 tokens needs about thirteen. These demos verify movement and do not
+retain the full payload, so capacity-undersized cells remain valid movement
+measurements but are not deployable storage profiles.
+
 task | E | v3 | v5 R=1 | v5 R=2 | v5 R=4 | v4 R=1 | v4 R=2 | v4 R=4
 ---|---|---|---|---|---|---|---|---
  | 4 | 63,157 | 63,609 | 101,153 | 117,080 | – | – | –
