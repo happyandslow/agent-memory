@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** codex
-**Status:** captured
+**Status:** drained 2026-08-21 into `memory/topics/qwen3-decode-prefill-communication-map.md` and `plan.md`
 
 ## What happened / finding
 

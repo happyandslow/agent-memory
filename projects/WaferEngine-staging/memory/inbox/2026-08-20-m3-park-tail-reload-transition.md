@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** codex
-**Status:** captured
+**Status:** drained 2026-08-21 into `memory/topics/m3-idle-pe-tier.md` and `plan.md`
 
 ## What happened / finding
 

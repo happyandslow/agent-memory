@@ -56,6 +56,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] **For every M1 implementation step after S3.7, define and run a real-device gate before closure.**
       Host tests, mocks, compilation, and simulator runs are diagnostic layers only; if the device gate
       is unavailable, keep the step incomplete/blocked. See `memory/topics/m1-s37-prefix-reuse-device-gates.md`.
+- [ ] For M3, prototype/measure a storage-side DSD bulk-receive / DSD block-emit variant; the real-CS-3 payload sweep shows current round-boundary park/reload is storage-CE per-wavelet bound, not wire-bound.
 - [ ] For MeshJIT duplicate-pattern / code distribution claims, require loaded-SRAM and amortization evidence, not only lower replicated code bytes; see `memory/topics/meshjit-code-dedup-sram-latency.md`.
 - [ ] **For M1-S5, separate `bsz` from `SLOT_COUNT` and include `ht_tail` batch scratch in the SRAM model.**
       Full-model `bsz=SLOT_COUNT=3,4` failed before execution from shared PE data-SRAM exhaustion, while
@@ -89,6 +90,20 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Fix e2e source/documentation hygiene found in the 2026-07-09 read: stale `route_calc.csl:5` axis comment, prefill vocab-padding asymmetry, K-pipe alias invariant check, and `csl_color_audit` raw `@set_config` parsing.
 
 ## Narrative progress log
+
+### 2026-08-23 — maintain pass drained M3 payload sweep capture
+
+- Drained `memory/inbox/2026-08-22-m3-payload-sweep-storage-ce-bound.md` into `memory/topics/m3-idle-pe-tier.md`. The real-CS-3 256-compute-PE + storage-PE payload sweep refutes the wire-bound T1 cost model: for E≥32, the full cycle is linear at 20.247 µs per word-per-PE (park ~10.01 + emit ~10.24), with floor ~57 µs and representative E=512 cost 10.333 ms. The bottleneck is storage-side CE per-wavelet work (~43 cycles park + ~44 reload), so the ~101 MB/s figure is as-built cycle throughput, not link bandwidth. Next M3 lever is a storage-side DSD bulk-receive / DSD block-emit variant.
+
+### 2026-08-22 — maintain pass drained M3 column-cycle demo capture
+
+- Drained `memory/inbox/2026-08-21-m3-column-cycle-demo-v3-sim-proven.md` into `memory/topics/m3-idle-pe-tier.md`. The earlier segmented CE relay framing is superseded: NO_POP `SWITCH_ADV` broadcast advances every PE it passes, so the 8-command control-payload limit does not constrain column length. `column_cycle_demo` is DEVICE-PROVEN at 256 PEs on real CS-3 (`wsjob-frfycsmtzugnjjoitj5jjp`) with exact park/reload/FENCE/ledger checks green; this is functional evidence only, not a performance result. Open gates are payload-size variation, round-boundary integration, A1 no-overtake falsification retention, and the wavelet-task-context `queue_flush` callback root cause.
+
+### 2026-08-21 — maintain pass drained communication/M3/tooling captures
+
+- Drained `memory/inbox/2026-08-20-current-kernel-communication-map.md`: `memory/topics/qwen3-decode-prefill-communication-map.md` is now the current source-linked index for qwen3 decode/prefill communication paths inspected on 2026-08-20. Refresh it and related diagrams when active CSL kernels change.
+- Created `memory/topics/m3-idle-pe-tier.md` from the Mode-L park-tail/reload-transition capture. Preferred protocol: final park source appends southbound `PARK_TAIL`, storage starts northbound reload only after exact payload count + tail, and storage appends `RELOAD_TAIL`; same-color CE segment relay remains an unproven compile/device gate.
+- Appended the non-interactive `csl-knowledge` MCP fallback to `memory/topics/csl-control-payload-mechanisms.md`: if MCP read tools are permission-blocked, read the on-disk KB at `/home/lexu/CSL-Demo-Code/versions/v<X.Y>/`. Added promotion follow-up in `tracking/conflicts.md`.
 
 ### 2026-08-19 — maintain pass drained editor-sync plan-reversion capture
 

@@ -191,6 +191,44 @@ Drained ten 2026-08-16..18 WaferLLM function-container / division-closure captur
 
 Next gate: fresh independent review of the materialized Step-3 pre-review package. If it passes, produce M6 and stop Phase 1 Step 3. Do not claim loader/transfer/invoke correctness, numerical equivalence, simulator/device correctness, latency, or dynamic net savings from the static evidence.
 
+## Updates — 2026-08-21
+
+Drained nine 2026-08-18..20 WaferLLM function-container / static-proxy captures into this topic:
+
+- Phase-1 Step 3 is now canonically closed at PASS / Grade E. Route A plus private-link vecmat Policy P remains the capacity-active policy; Route B/P is the deterministic division fallback; resident vecmat Policy R remains an unmeasured performance alternative and costs 120 B more complete receiver SRAM at bsz=1. The M6 aggregate is authoritative over older immutable pre-machine and pre-review envelopes, which correctly retain REVISE/PENDING dispositions.
+- Step 4 D0--D3 is canonically closed at Grade E for bsz=1: D0=20,060 B, D1=20,426 B, D2=20,700 B, D3=29,470 B. D1 is the direct-to-slot loader floor (366 B over D0) with no payload-sized shadow buffer; D2 adds the scalar page ABI, fixed root invoke seam, and two-record command arena (274 B over D1); D3 adds resident command/continuation runtime and terminal quiescence seam (8,770 B over D2). Evidence remains static final-link and machine-control-flow only.
+- bsz=2 cannot reuse bsz=1 page roots, continuation offsets, slot capacity, or loader/invoke placement. Its Route-A/P slot is 5,120 B at `[0x1a00,0x2e00)`, loader at `0x2e00`, invoke at `0x2f00`, and pre-profile capacity is already negative: B=27,180 B, D3d=30,998 B, so `B-D3d=-3,818 B` before Step-5 profile ownership.
+- Step 5 profile ownership is identical at bsz=1 and bsz=2 under Route-A/P: Attention profile delta 884 B, FFN profile delta 720 B, controlled union delta 1,200 B, interaction 404 B. Complete receivers are 29,470→30,670 B at bsz=1 and 30,998→32,198 B at bsz=2. Receiver compute DSD/Kt/Nt/pointer/scalar ownership is 0 B; unused page DSR declarations and DSR incremental SRAM are 0 B, though kind/id reuse remains a serialized-lifetime protocol constraint.
+- Step 6 static-proxy economics fail capacity under the same final-linked occupied-union metric: bsz=1 B=25,716 B vs `D_full_static_proxy`=30,670 B (`B-proxy=-4,954 B`); bsz=2 B=27,180 B vs 32,198 B (`B-proxy=-5,018 B`). Recovering to zero needs 5,018 B in the worst batch; reaching the evaluated +256 B alignment margin needs 5,274 B.
+- The Step 6 evidence verdict is `PASS_STEP6_STATIC_PROXY_EVIDENCE / Grade E`, but the design gate remains `REVISE_STEP6_DFULL_UNRESOLVED`: authoritative page-id/epoch/payload latch, all-receiver completion/global quiescence, holder drain/fence, and final production-vs-audit RPC ownership are not frozen. Do not generalize the negative proxy into a universal design NO-GO.
+- D3 materializer compression probe: descriptor-table generic copy loop is rejected (+920 B diagnostic and forbidden slot-external `memcpy` closure). A two-word header-guard sparse variant saves 60 B only if a stronger arena-freshness invariant becomes authoritative; it is not selected. Keep official D3d for the frozen baseline.
+
+Next gate: stop before Step 7 and Phase 2. The agreed next discussion is D3 SRAM optimization against the measured 5,018-B zero / 5,274-B +256-margin target. Exact Step 6 can close only after production seams are frozen and final-linked `D_full_admitted` is measured.
+
+## Updates — 2026-08-22
+
+Drained `memory/inbox/2026-08-21-waferllm-step6-dfull-admitted-policy-p.md` into this topic.
+
+- Step 6 now has the exact admitted `D_full_admitted` Policy-P receiver/holder/filler image family for SDK 2.10, P=256, Route A, bsz=1/2. Evidence remains static Grade E: no page transfer or execution has been proven on simfab or CS-3.
+- Complete receiver SRAM uses the occupied union of all SHF_ALLOC ranges below `0xc000`, including NOBITS and the fixed 1-KiB task table. The admitted receiver is 31,560 B at bsz=1 and 33,088 B at bsz=2, exactly 890 B larger than the Step-5 proxy in both batches.
+- Capacity verdict is `COMPLETE_STEP6_NO_GO_CAPACITY`: bsz=1 has `B-D_full=-5,844 B` and bsz=2 has `B-D_full=-5,908 B`; recovery to the evaluated +256-B margin needs 6,100 B / 6,164 B respectively. The controlled 890-B increase decomposes as topology normalization -8 B, authoritative load/latch +554 B, phase loop +364 B, release plus real holder protocol +100 B, and production-root pruning -120 B.
+- Holder/filler overhead is whole-wafer, not part of per-receiver `B-D_full`: holder SRAM is 13,530 B at bsz=1 and 15,066 B at bsz=2; fillers use 4,440 B. The holder owns two full zero-padded catalog slots, OQ2, asynchronous `@mov32` sender, queue-flush task/empty handler, and a holder identity latch.
+- Frozen host-attested load contract: one blocking host launch of layout-wide `d_full_load_page` reaches receivers, holder, and fillers; the holder streams the selected full slot and unblocks only after OQ2 drain; receivers perform fixed-count IQ2-to-slot `@mov32`, publish READY last, then unblock. Treat the blocking host return as a contract to validate later, not a runtime proof.
+- The holder catalog must be host-provisioned, not linker-zero initialized: extract `.m4_page` from frozen Attention/FFN ELFs, check raw/padded hashes from `page_catalog.json`, concatenate two full slots, reject all-zero catalogs, write only holder `(P,0)`, and D2H-readback exactly before the first load RPC. Check-only evidence records 8,704 B / 2,176 u32 words at bsz=1 and 10,240 B / 2,560 u32 words at bsz=2.
+- Review fixes now included: explicit holder catalog provisioning; validation against freshly regenerated machine-audit inventory; fail-closed tombstones before validation prerequisites; and hard rejection of any SHF_ALLOC section crossing `0xc000`. Six host-only tests pass. Keep technical static validation PASS separate from independent review: the expanded external recheck was blocked pending explicit approval to transmit the larger private evidence set.
+
+Next decision: do not enter Phase 2 from this result. Fair comparison requires measuring Policy R with the same exact admitted `D_full` method. Use 5,908 B as the worst-batch break-even gap, or 6,164 B for the +256-B admission margin; D3 remains the dominant common-floor optimization candidate. Correct transferred-page execution is a later runtime-validation gate.
+
+## Updates — 2026-08-23
+
+Drained `memory/inbox/2026-08-22-shared-slot-validation-after-first-load.md` into this topic.
+
+- Shared-slot Route-A/Policy-P runtime validation reached the first dynamic-load stop point only: a coherent P=8 simulator build passed, the original baseline completed on deterministic input, receiver-arena H2D plus `init_task` completed, holder catalog H2D/D2H readback succeeded, and `d_full_load_page(page=1, epoch=1)` returned.
+- The run then blocked on the immediate receiver-state D2H readback after page load. No admitted-run RPC or release RPC began, so this does **not** prove slot bytes, page-function invocation, transferred-page correctness, latency, or `B_original == D_dynamic`.
+- Treat the post-load receiver-state D2H block as the current runtime-validation gate. Do not continue Phase 2 claims until a separately authorized investigation explains why receiver-state readback cannot complete after the first dynamic load.
+
+Pointers: `/home/lexu/WaferLLM/MeshJit-Decode/attention-ffn-runtime-validation/results/simulator_failure.json`; `/home/lexu/WaferLLM/MeshJit-Decode/attention-ffn-runtime-validation/runs/p8-v4/dynamic_host_trace.jsonl`.
+
 ## Provenance
 
 Drained from two dated captures (2026-08-06 maintain pass):

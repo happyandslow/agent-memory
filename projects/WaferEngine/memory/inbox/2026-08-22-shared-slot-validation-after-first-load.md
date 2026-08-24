@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine
 **Author:** codex
-**Status:** captured
+**Status:** drained 2026-08-23 into `memory/topics/meshjit-code-relocation.md`, `plan.md`, and generated views
 
 ## What happened / finding
 

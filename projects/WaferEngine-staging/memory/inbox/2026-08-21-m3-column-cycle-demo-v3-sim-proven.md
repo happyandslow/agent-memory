@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained
 
 ## What happened / finding
 
@@ -59,6 +59,8 @@
 - `models/qwen3_1p7b-decode/bench/m3_park_band/popfalse_probe/` (sim+device evidence)
 - skill: `csl-switch-adv-pop-semantics` (claude-skills repo)
 - supersedes parts of: `memory/inbox/2026-08-20-m3-park-tail-reload-transition.md`
+
+Drained 2026-08-22 into `memory/topics/m3-idle-pe-tier.md`, `memory/topics/csl-control-payload-mechanisms.md`, and `plan.md`.
 
 ## Update 2026-08-21 (later same day): DEVICE-PROVEN at 256 PEs + A1 + queue_flush doc gap
 

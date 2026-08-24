@@ -1,7 +1,7 @@
 # WaferLLM Decode Phase-1 Step-6 admitted Policy-P receiver
 
 Date: 2026-08-21
-Status: captured
+Status: drained
 
 ## Situation
 
@@ -74,6 +74,8 @@ independent-review status.
 
 Canonical evidence:
 `/home/lexu/WaferLLM/MeshJit-Decode/attention-ffn-phase1/step6-dfull-admitted/`.
+
+Drained 2026-08-22 into `memory/topics/meshjit-code-relocation.md` and `plan.md`.
 
 ## Next decision
 

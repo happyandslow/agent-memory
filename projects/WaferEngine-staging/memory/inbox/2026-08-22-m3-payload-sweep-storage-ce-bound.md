@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained 2026-08-23 into `memory/topics/m3-idle-pe-tier.md`, `plan.md`, and generated views
 
 ## Situation this applies to
 
