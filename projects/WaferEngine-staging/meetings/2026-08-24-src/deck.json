@@ -1,0 +1,140 @@
+{
+ "slides": [
+  {
+   "type": "title",
+   "team": "WaferEngine · CS-3",
+   "kicker": "Weekly collaborator discussion",
+   "title": "On-Chip KV Offload as a Storage Tier",
+   "subtitle": "Two multi-row storage designs measured on real WSE-3; the on-chip tier now sits under both prior resume options.",
+   "meta": [
+    {
+     "label": "Model",
+     "value": "Qwen3-1.7B geometry"
+    },
+    {
+     "label": "Evidence",
+     "value": "81 CS-3 runs, 0-cycle spread"
+    },
+    {
+     "label": "Scope",
+     "value": "M3 idle-PE tier"
+    },
+    {
+     "label": "Date",
+     "value": "2026-08-24"
+    }
+   ],
+   "notes": "This week closes the M3 multi-row storage question with device data: both candidate designs (v4 GO-chain, v5 cascade) ran on real CS-3, both are modeled to <1%, and the combined result upgrades the M2 resume tradeoff from a two-way A/B to a three-tier hierarchy."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Goal · where we are in the milestones",
+   "title": "M2 ended at recompute-vs-host with a 744-token crossing; M3 asks if idle PEs beat both",
+   "image": "figures/recap_e10d.png",
+   "caption": "Last time (M2 E10/E10D, all device-measured): below H*=744 recompute wins, above it host reload wins — but reload rides shared edge IO and the host. M3's question: can idle on-chip PEs hold parked KV as a middle tier? This week: build the multi-row storage strip both candidate ways, measure both end-to-end, and price the tier.",
+   "notes": "Position: M1 in-PE reuse is done (tier 0). M2 priced recompute (A, 77.4 us/token) vs host reload (B, E5 ingress 46-338 ms) and found the crossing at 744 tokens. M3 (idle-PE tier) needs multi-row storage because one storage PE holds ~11K words: L=1024 already needs R=2 rows, L=8192 needs ~12. The single-row protocol was device-proven earlier (51 runs); the open question was HOW to coordinate R rows — and at what cost."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Implementation · two coordination designs",
+   "title": "v4 reprograms compute roles per epoch; v5 keeps compute byte-identical and cascades inside the strip",
+   "image": "figures/v4_vs_v5.png",
+   "caption": "Both share the proven single-row protocol on one borrowed color. v4: bands park in sequential epochs, chained fully on-chip by a GO color; every tapped PE rewrites its switch positions per epoch. v5: row 0 keeps the nearest band and store-and-forwards deeper words on static per-hop colors; a STRIP_TAIL word rides behind the data as the causal end-of-stream. Reload returns over the same paths reversed.",
+   "notes": "v4 needed direct switch-position byte writes (the tile_config library writes the wrong tx bit for RAMP - register-dump proven; byte = in_sel<<5|out_bits, S->RAMP=0x50). First-ever v4 silicon this week: GO chain, role reprogramming, and the byte writes all work at 256 PEs. v5's compute column is cmp-verified byte-identical to the single-row demo; every strip route is static so cross-color ordering hazards are impossible by construction. Editable source: docs/diagrams/m3-multirow-v4-vs-v5.excalidraw."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Results · 81 runs, every cell n=3 with 0-cycle spread",
+   "title": "Full park+reload cycle (cycles): v5 wins single-row, v4 wins every multi-row cell",
+   "columns": [
+    "Config (N=256)",
+    "v3 single-row",
+    "v4 GO-chain",
+    "v5 cascade"
+   ],
+   "rows": [
+    [
+     "task E=64 · R=1",
+     "1,388,470",
+     "1,535,920",
+     "1,420,244"
+    ],
+    [
+     "task E=64 · R=2",
+     "—",
+     "1,544,946",
+     "1,675,327"
+    ],
+    [
+     "task E=64 · R=4",
+     "—",
+     "1,550,855",
+     "1,812,526"
+    ],
+    [
+     "dsd E=512 · R=1",
+     "7,350,234",
+     "8,542,434",
+     "7,482,812"
+    ],
+    [
+     "dsd E=512 · R=2",
+     "—",
+     "8,619,349",
+     "10,669,498"
+    ],
+    [
+     "dsd E=512 · R=4",
+     "—",
+     "8,675,026",
+     "12,343,610"
+    ]
+   ],
+   "notes": "EPCC CS-3, distance=1, n=3 per cell, zero infrastructure failures across 81 runs; every cell reproduced to the cycle. E = words per PE (E=64 ~ L=1024 tokens at lpb=4; E=512 ~ L=8192). v4 metric = sum of per-band spans (excludes inter-epoch GO gaps, ~2*bh cycles each). dsd = owner-side bulk fabin-DSD reload receive (Exp-B mechanism). Crossover: each design pays an always-on R=1 premium over v3 (v4 ~ +9.6 cyc/word for role machinery, v5 ~ +1.6 for cascade branches), but for R>=2 v4's cheap transit dominates: dsd E=512 R=4 is 30% faster than v5."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Model · one law, two coefficients",
+   "title": "Both designs obey delta = tax x forwarded words — the tax is the mechanism, 25-35x apart",
+   "image": "figures/fig_samelaw.png",
+   "caption": "Delta vs each design's own R=1 baseline collapses on the same axis, fwd_words = (N - N/R)·E. v4's tax is router-level transit (1.06/1.29 cyc/word, near wire speed); v5's is a CE data-task per forwarded word (30.7/47.0). The v5 dsd fit needs one extra constant (~157k cycles): strip rows emit their own block before relaying, which fast owners expose.",
+   "notes": "The preregistered hypotheses were productively falsified: H1 (v5 R=1 reproduces v3 anchors) failed at +0.7-2.3% - the cascade's per-word branches do not compile out, so every implementation carries its own baseline. H2 (v4 overhead = per-epoch constant) failed in form - v4's delta is also per-forwarded-word, just router-priced. H3 (linearity in fwd_words) confirmed for E>=64 in both designs. Fitting: taxes from delta-vs-fwd slopes over (R,E) grid; c_fwd_word=75.4 from four independent park-span decompositions; c_relay_word~28.8 from the dsd identity, cross-checked against task mode to 1.6%."
+  },
+  {
+   "type": "metrics",
+   "eyebrow": "Model · the coefficient ladder (all device-fit)",
+   "title": "Every per-word cost in the tier, pinned",
+   "hero": {
+    "value": "39 anchors, <1%",
+    "label": "three device-fit models in one file: v3 0.89% / v5 0.83% / v4 0.23% max error"
+   },
+   "cards": [
+    {
+     "value": "75.4",
+     "label": "c_fwd_word cyc/word: row-0 park receive + forward (receive-only was 43.3)"
+    },
+    {
+     "value": "28.8",
+     "label": "c_relay_word cyc/word: row-0 reload relay (bare emit loop: 13.0)"
+    },
+    {
+     "value": "1.1 vs 31",
+     "label": "multirow tax cyc/word, task: v4 router transit vs v5 CE store-and-forward"
+    },
+    {
+     "value": "+9.6 / +1.6",
+     "label": "always-on R=1 premium over v3, cyc/word: v4 roles / v5 cascade branches"
+    }
+   ],
+   "notes": "The recurring dichotomy, now measured four independent ways: anything the CE touches per word costs ~13-75 cycles; anything router-level costs ~1-2. This is the design rule for every future on-chip transfer mechanism. Remaining as-built headroom: the storage-side park receive (43.3) and emit (13.0) are still CE-per-word; DSD-ifying them (the next Exp-B-style rung) is projected to cut the tier's marginal ~4-5x. The wire itself is 39x under-used as built."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "So what · the tier holds",
+   "title": "The on-chip tier sits under both old options: resume is now delta-dominated",
+   "image": "figures/tier_tradeoff.png",
+   "caption": "Same axes and setting as the M2 boundary figure, plus measured tier C: on-chip strip reload adds only 0.06-2.0 ms (13.0 cyc/word), 46-170x below host ingress I(H), flattening resume onto the ~20 ms L_new delta floor. The old 744-token crossing becomes a fallback choice for un-parked history. Next lever for resume latency is the delta/restart path, not the transfer.",
+   "notes": "Tier reading: T0 in-PE resident (free, scarcest SRAM) / T1 on-chip strip (swap ~ L/692 token-equivalents as-built; capacity R x ~11K words per column, columns parallel) / T2 recompute (only for tiny or un-parked history) / T2 DRAM (capacity overflow; shared edge IO, host in the loop). Caveats stated: delta floor is L_new=256 at 77.4 us/token - smaller L_new shrinks it; throughput view still wants the storage-DSD rung; concurrent-decode interference and round-gap fit are the remaining unmeasured items. Open design: a hybrid (v4 router transit + v5 static compute column) would dominate both at ~1.6 baseline + ~1.1 tax."
+  }
+ ]
+}

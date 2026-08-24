@@ -2,7 +2,11 @@
 
 # WaferEngine Timeline
 
+- 2026-08-23 — meshjit-p256-route-repaint-minimal-negative → `memory/inbox/2026-08-23-meshjit-p256-route-repaint-minimal-negative.md`
+- 2026-08-23 — meshjit-p256-full-baseline-fence-negative → `memory/inbox/2026-08-23-meshjit-p256-full-baseline-fence-negative.md`
+- 2026-08-23 — meshjit-p256-cs3-bitexact-failure → `memory/inbox/2026-08-23-meshjit-p256-cs3-bitexact-failure.md`
 - 2026-08-22 — shared-slot-validation-after-first-load → `memory/inbox/2026-08-22-shared-slot-validation-after-first-load.md`
+- 2026-08-22 — shared-slot-cs3-bit-exact-and-artifact-gates → `memory/inbox/2026-08-22-shared-slot-cs3-bit-exact-and-artifact-gates.md`
 - 2026-08-21 — waferllm-step6-dfull-admitted-policy-p → `memory/inbox/2026-08-21-waferllm-step6-dfull-admitted-policy-p.md`
 - 2026-08-20 — waferllm-step6-static-proxy-economics → `memory/inbox/2026-08-20-waferllm-step6-static-proxy-economics.md`
 - 2026-08-20 — waferllm-step5-profile-ownership → `memory/inbox/2026-08-20-waferllm-step5-profile-ownership.md`
