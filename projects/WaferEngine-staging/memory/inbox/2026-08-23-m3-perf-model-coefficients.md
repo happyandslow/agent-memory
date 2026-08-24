@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging
 **Author:** claude
-**Status:** captured
+**Status:** drained (2026-08-24 → topics/m3-idle-pe-tier.md)
 
 ## Situation this applies to
 

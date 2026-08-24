@@ -3,7 +3,7 @@
 # WaferEngine-staging Status
 > Generated/current-state dashboard. Safe for deterministic scripts or hooks to overwrite. This is a thin projection; do not use it as the canonical roadmap.
 
-Last updated: 2026-08-23 08:32 BST
+Last updated: 2026-08-24 05:55 BST
 Status: Active
 
 ## Canonical current state
@@ -14,6 +14,7 @@ Status: Active
 
 ## Recent changes
 
+- 2026-08-24: Maintenance drained `memory/inbox/2026-08-23-m3-perf-model-coefficients.md` and `memory/inbox/2026-08-24-m3-multirow-v4-v5-device-comparison.md` into `memory/topics/m3-idle-pe-tier.md`: single-row model device-fit (0.85 GHz convention, Exp-A/B/C coefficients, owner-DSD 86.9->56.0), and the multirow v4/v5 study (81 runs, same-law taxes 1.06-1.29 vs 30.7-47.0 cyc/fwd-word, v4 wins R>=2, tier verdict: on-chip reload 46-170x below host ingress; resume is delta-dominated). Weekly deck + full REPORT at `meetings/2026-08-24{.pptx,-src/}`.
 - 2026-08-23: Daily maintenance drained `memory/inbox/2026-08-22-m3-payload-sweep-storage-ce-bound.md` into `memory/topics/m3-idle-pe-tier.md`; real-CS-3 M3 payload sweep shows round-boundary park/reload is storage-CE per-wavelet bound (20.247 µs per word-per-PE), not wire-bound; next lever is storage-side DSD bulk receive/emit.
 - 2026-08-22: Daily maintenance drained `memory/inbox/2026-08-21-m3-column-cycle-demo-v3-sim-proven.md` into M3/control topics; NO_POP `SWITCH_ADV` broadcast supersedes segmented-relay framing, and `column_cycle_demo` is functional DEVICE-PROVEN at 256 PEs on real CS-3.
 - 2026-08-21: Daily maintenance drained 3 captures: current qwen3 decode/prefill communication-map pointer, new `memory/topics/m3-idle-pe-tier.md` Mode-L park/reload tail-marker protocol, and `csl-knowledge` MCP disk-KB fallback with promotion follow-up.

@@ -10,11 +10,12 @@ Compact startup packet for fresh agent sessions. This generated view is intentio
 
 ## Current state
 
-- Daily maintenance last checked this project on 2026-08-23.
+- Daily maintenance last checked this project on 2026-08-24.
 - Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
 
 ## Current focus
 
+- M3 idle-PE tier: multirow storage measured both ways on CS-3 (v4 GO-chain vs v5 cascade, 81 runs); three device-fit models in `column_cycle_demo_multirow_v5/perf_model.py`; tier verdict = on-chip reload 46-170x below host ingress, resume delta-dominated. See `memory/topics/m3-idle-pe-tier.md` (updated 2026-08-24).
 - Use `plan.md` next actions plus any project-specific topic notes below.
 
 ## Next likely actions
