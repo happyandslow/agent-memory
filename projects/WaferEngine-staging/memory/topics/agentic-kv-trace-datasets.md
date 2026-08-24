@@ -76,3 +76,7 @@ Recommended plan: use **TraceLab** for the full agentic timeline; use the
 ## Last updated
 
 2026-07-05
+
+## Update — 2026-08-24
+
+M1-S4 workload-shape review now uses TraceLab and Mooncake only after geometry filtering/projection. TraceLab v0.0.2 (`syfi_coding_trace.jsonl.gz`, SHA-256 `11ce51ec0a25e3d1d95b025bca2f7d1647e47571eb7cc968acd5fc64d4b4fb65`) supplies real Claude Code/Codex session shape, but raw public rows are far outside the current 1,792-token device envelope: only 29 requests pass prefix geometry, 28 also satisfy `P+G-1 <= 1792`, and no FIFO `bsz=2/4` batch is geometrically executable. Mooncake ToolAgent has exact 512-token block-hash history and 2,342 prefix-geometry rows / 1,899 full-round rows, but output is capped at 2,000 and first-block grouping is only a proxy. For device-facing M1-S4 projection, preserve FIFO batch membership and joint ranks/correlations, map to legal `(S,K)` cells, report out-of-range as right-censored, and keep TraceLab/Mooncake separate.

@@ -247,3 +247,16 @@ ContextBase: https://context.ed-aisys.com/doc/2026-08-04-result-meshjit-physical
 
 - [[pe-sram-memory-breakdown]] (the `.text` budget this relieves); skill
   `wse-runtime-remote-code-loading` (invariant #1 refined here).
+
+## Updates — 2026-08-24
+
+Drained six 2026-08-22..24 MeshJIT/P=256 shared-slot validation captures into this topic.
+
+- P=8 shared-slot runtime validation reached a stronger positive result than the earlier first-load block: after artifact/archive fail-closed checks and a validation-only `B_U04_corrected` control for odd-lane RoPE offset repair, Route-A/Policy-P with a resident fixed-address f16 division wrapper ran Attention→FFN on real CS-3 and was bit-exact at 11 raw-f16 checkpoints plus final Z. This proves the P=8 guarded artifact/run procedure only; do not generalize it to P=256 capacity/performance, Policy R, or Phase 2.
+- P=256 first CS-3 comparison failed raw-f16 correctness even though the transfer protocol passed: catalog H2D/D2H, page readbacks, and `loaded → terminal → released` were clean, but `attention_score` first differed (`0x0bba` vs `0x0bb8`) and final Z had 959,744 differing u16 values. The reciprocal/slash explanation was an early hypothesis and is superseded by later max-reduction localization; the authoritative P=256 verdict remains `FAIL_BITWISE_MISMATCH` until a same-artifact rerun passes.
+- The standalone P=256 route-repaint minimal reproducer was negative: production `comm_pe.csl`, 256×256 geometry, QKV X/Y collectives, repaint, and scalar max all returned raw-f16 `255.0` in immediate/delay/fence arms. Route repaint and production extents alone are not sufficient to reproduce the full Attention partial-max symptom.
+- The full-baseline host-fence diagnostic was also negative: common-helper one-RPC and two-RPC host-fence arms were raw-bit identical and correct. Do not cite a successful host-fence arm as the fix unless the same-instrumentation one-RPC control fails. When validating Y-axis collectives from SDK arrays, reduce NumPy axis 0 (`[py, px, local]`), not axis 1.
+- Passive late-visibility was falsified: after the production max reduction returned, scalar samples after 0, 1, 8, 64, 512, and 4096 local-loop iterations all stayed uniformly wrong at `15.015625`. More elapsed local work did not make the final max appear.
+- Decisive localization: the wrong P=256 max is exactly the maximum of each PE's **last local lane**. First-phase group roots equal each group's `score[..., lane_15]` max, and phase 2/broadcast coherently propagate group 11 (`15.015625`), while the true max is lane 3 in group 14 (`19.90625`). The fabric tree is coherent for the inputs it receives; the first fault is upstream, a missing/provable completion/dependency handoff from PE-local `@fmaxh` reduction before `all_reduceMax_bsz` consumes it in the max-only path.
+
+Next gate: add a minimal same-artifact device-side dependency between the PE-local max destination and `all_reduceMax_bsz`, preserve unchanged legacy max-only and shifted controls, require max-only to move from the exact last-lane model to `19.90625`, then rerun the full P=256 baseline-vs-dynamic shared-slot comparison before any correctness claim.

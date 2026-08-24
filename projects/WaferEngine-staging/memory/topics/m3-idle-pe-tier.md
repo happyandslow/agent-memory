@@ -47,3 +47,15 @@ Drained `memory/inbox/2026-08-22-m3-payload-sweep-storage-ce-bound.md` into this
 - Device result: floor ≈57 µs/cycle; for E ≥ 32, full cycle is linear at **20.247 µs per word-per-PE**, split into serial park and emit phases (~10.01 + 10.24 µs). Representative points: E=4 → 57.4 µs, E=32 → 614.3 µs, E=512 → 10,333.0 µs, E=1280 → 25,882.9 µs.
 - The pre-registered wire-bound model (0.524 µs/word from 2×1024 B over a 3.91 GB/s edge) is refuted by 39×. The located mechanism is storage-side CE per-wavelet work: ~43 cycles per park wavelet plus ~44 cycles per reload wavelet. The derived ~101 MB/s per-column number is as-built cycle throughput, **not** a link bandwidth measurement; keep link bandwidth as a separate, still-needed model input.
 - Model form at lpb=4: `t_cycle(L) ≈ 57 µs + 1.265 µs × L`. In free-decode-token units (654.95 µs/token), L=512 costs ~0.94 token, L=2048 ~3.9, L=8192 ~15.8, and L=20480 ~39.5. Next lever is a storage-side DSD bulk-receive / DSD block-emit variant to remove per-wavelet CE involvement.
+
+## Updates — 2026-08-24
+
+Drained two 2026-08-23..24 M3 performance/model captures into this topic.
+
+- Clock convention for this M3 path is **0.85 GHz** (Le, 2026-08-23); raw device cycles are authoritative. Earlier <=2026-08-22 JSON µs used 1.1 GHz and must be multiplied by 1.294 to re-express at 0.85 GHz. `bench/layer_block/utils.py` still carrying `FREQ_GHZ=1.1` is a known in-repo convention conflict, not silently unified.
+- The as-built single-row model is pinned: `t_full(N,E,D) = c_floor_per_row*N + c_floor_const + (E-4)*N*c_word_roundtrip + 2*(D-1)*t_hop_router`, with `c_park_storage=43.3 cyc/word`, `c_word_roundtrip=86.3 cyc/word`, `c_floor_per_row=245.4 cyc`, `c_floor_const=326 cyc`, `t_hop_router=2.0 cyc/hop`. The bottleneck is CE per-wavelet work, not wire bandwidth.
+- Exp-B owner-side bulk fabin-DSD receive proved owner data-task consumption was the reload bottleneck: full-cycle marginal improved from 86.87 to 56.00 cyc/word, park stayed 43.00, and reload fell from ~43.9 to 13.00 cyc/word (storage emit loop). Do not treat a backpressure-coupled span as a stage cost.
+- Multi-row v4/v5 verdict: v4 GO-chain and v5 cascade both fit a forwarded-word law over `fwd_words=(N-N/R)*E`, but the coefficient exposes the mechanism. v4 is router-priced (`~1.06 task / 1.29 dsd cyc/word`); v5 is CE store-and-forward (`30.7 / 47.0 cyc/word` plus a ~157k-cycle DSD constant for R>1). v3/v5 win the single-row degenerate case, but v4 wins for all `R >= 2`; a hybrid with v4 router transit and v5 static compute column would dominate both.
+- Durable design lessons: always measure each implementation's own R=1/degenerate baseline; CE-touch vs router-touch is the 30-75 cyc/word vs ~1-2 cyc/word dichotomy on WSE-3; preregistered bands are useful when falsified; and DSD can expose serialization that task-mode backpressure hides.
+
+Next as-built rungs: storage-side DSD emit, storage-side DSD park receive, and/or a hybrid multi-row design that keeps v4's router-priced transit without v4's high R=1 role-machinery premium.

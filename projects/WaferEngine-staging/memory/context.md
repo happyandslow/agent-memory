@@ -10,42 +10,29 @@ Compact startup packet for fresh agent sessions. This generated view is intentio
 
 ## Current state
 
-- Daily maintenance last checked this project on 2026-08-23.
+- Daily maintenance last checked this project on 2026-08-24.
 - Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
 
 ## Current focus
 
-- Use `plan.md` next actions plus any project-specific topic notes below.
+- M1-S4 C1 fixed-communication ragged-prefix result is throughput-negative on real CS-3; use zero/sub-0.1% critical-path gain unless a trace replay proves more matrices matter.
+- M3 idle-PE offload is now modeled in raw cycles at 0.85 GHz; v4 GO-chain wins for multi-row R>=2 because router-priced forwarding is far cheaper than CE store-and-forward.
 
 ## Next likely actions
 
 - [ ] Verify live repo/server state before acting; memory is context, not proof of current external state.
-- [ ] Read `tracking/status.md` and relevant topic notes.
+- [ ] For M1-S4, replay realistic TraceLab/Mooncake-derived projections with C1-M critical-path gain set to zero/sub-0.1% before further device matrices.
+- [ ] For M3, prototype storage-side DSD emit/park-receive and/or a v4/v5 hybrid.
 
 ## Must-read topic notes
 
-- `memory/topics/a-queue-that-looks-idle-can-hold-a-parked-async-op.md` — A queue that looks idle between phases can be holding a parked async op — 2026-07-31
-- `memory/topics/a-regression-gate-that-cannot-pass-by-construction.md` — Your "prove it changed nothing" gate fails, and the code is fine — the tolerance was calibrated on the wrong comparison — 2026-07-30
-- `memory/topics/a-throughput-that-does-not-move-with-payload.md` — A GB/s that does not move when you change the payload — 2026-07-30
-- `memory/topics/a7-Lp-vs-Lg-settled-on-tracelab.md` — A7 (L_g >> L_p) is FALSIFIED on TraceLab — 665k real Claude Code/Codex rounds, uncapped output, L_p = 99.7% of tokens. Supersedes both the Mooncake-based falsification and its withdrawal.
-- `memory/topics/agentic-kv-trace-datasets.md` — Dataset and trace pointers for agentic/request-length KV preserve-vs-evict analysis.
-- `memory/topics/codex-review-hangs-under-nohup-on-stdin.md` — Driving codex-review in a loop — background passes finish with empty output, foreground passes time out
-- `memory/topics/compression-subagent-drops-tracking-checkboxes.md` — A content-fact verifier passed the compressed doc — but every unchecked subtask lost its checkbox — 2026-08-01
-- `memory/topics/cs3-relaunch-loop-guards-and-a-cheap-store-build.md` — Automating "retry the CS-3 run when the 502 clears" — three things that bite, and a store build that takes 5 minutes instead of 20 — 2026-07-30
-- `memory/topics/csl-control-payload-mechanisms.md` — CSL (WSE-3, SDK v2.10) supports control payloads that instruct PE actions — control wavelets (opcode + control-task entrypoint + 16-bit arg), switch-advance/reset/teardown, data-task-by-color, header-peel, and async .on_control termination. Input to the M0/S4 metadata-carrying on-chip KV relay.
-- `memory/topics/decode-context-ceiling-lives-in-the-elf-and-wraps-silently.md` — How long a sequence the pr14 decode can actually hold — and the wall that wraps silently — 2026-07-30
-- `memory/topics/decode-egress-has-no-switch-gather-color.md` — S3b/E13 decode→host KV egress — the "clone prefill's switch-gather" plan has no valid color on the decode artifact
-- `memory/topics/derived-scripts-and-editing-a-running-script.md` — A chained remote job never fires, or a long-running script suddenly executes garbage — two traps in `sed`-derived driver scripts
-- `memory/topics/e11-must-be-priced-as-cross-card-pd.md` — Pricing the re-prefill baseline (lane C0) — the register's "free same-fixture comparison" is the wrong scenario — real PD is cross-card — 2026-08-01
-- `memory/topics/e2e-kernel-dataflow-and-topology.md` — Source-read reference for qwen3_1p7b-e2e token/KV dataflow, decode strips/K-pipe, HT_head/demux seams, and tensor layout findings.
-- `memory/topics/e2e-pdSeparate-device-validation.md` — Device-validation and max-context findings for qwen3 e2e and pdSeparate deployments.
-- `memory/topics/e9-forced-segment-tsc.md` — E9 force-decode segment timing — why it lives in ht_tail and not the block PE, the 4-way burst-width contract, and the two silent-failure bugs found in review.
-- `memory/topics/epcc-cs3-has-four-systems.md` — The EPCC CS-3 cluster has FOUR systems, not one — a guard that waits on "any wsjob exists" blocks on an idle cluster and costs wall-clock for nothing.
-- `memory/topics/force-decode-startup-depends-on-prefix.md` — Force-decode startup depends on prefix length — 2026-08-02
+- `memory/topics/m1-s4-c1-ragged-fixed-communication.md` — C1-M seed boundary, workload projection, and real-CS-3 fixed-communication negative timing result.
+- `memory/topics/m3-idle-pe-tier.md` — M3 idle-PE storage protocol, single-row and multi-row cycle models, and v4/v5 verdict.
 - `memory/topics/m1-s37-prefix-reuse-device-gates.md` — M1/S3.7 real-device gate, full-model prefix-reuse benchmarks, and batch/slot capacity boundary.
-- `memory/topics/explicit-default-off-debug-instrumentation.md` — Retained debug/verifier instrumentation must be explicit, default-off, and fail-closed.
-- `memory/topics/forced-max-is-a-compile-time-ceiling-on-f.md` — You set a large forced_decode_len and the run dies before touching the wafer — 2026-07-31
-- `memory/topics/forced-token-cost-is-a-curve-not-a-constant.md` — Forced-decode token cost is a curve, not the single 13.5% number — 2026-07-31
+- `memory/topics/agentic-kv-trace-datasets.md` — TraceLab/Mooncake dataset shape and geometry-projection caveats.
+- `memory/topics/a7-Lp-vs-Lg-settled-on-tracelab.md` — Prompt-vs-generation ratio result and TraceLab scale gap.
+- `memory/topics/csl-control-payload-mechanisms.md` — CSL control payload mechanisms used by M3 route transitions.
+- `memory/topics/prefill-decode-transfer-bandwidth.md` — Both-segments-counted KV transfer and TSC/toolchain gotchas.
 
 ## Important constraints
 

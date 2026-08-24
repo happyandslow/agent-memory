@@ -28,7 +28,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Next actions
 
-- [ ] Before any shared-slot Phase 2 correctness/performance claim, investigate the receiver-state D2H block that occurs immediately after the first `d_full_load_page(page=1, epoch=1)`; no admitted-run/release RPC or `B_original == D_dynamic` proof exists yet.
+- [ ] Before any P=256 shared-slot correctness/performance claim, fix and device-prove the PE-local max-reduction dependency handoff: current max-only path consumes the last local lane, while P=8 bit-exact success does not generalize to P=256.
 - [ ] If continuing WaferLLM pageability after Step 6, do not enter Phase 2 from the current result. First compare Policy R using the same exact admitted `D_full` method, and optimize against the measured worst-batch gaps: 5,908 B to break even or 6,164 B for the evaluated +256-B margin.
 - [x] Complete the fresh independent review of the materialized Step-3 pre-review package and produce M6; Phase 1 Step 3 is closed at PASS / Grade E. Do not enter loader/runtime/Phase 2 from static evidence alone.
 - [ ] Preserve Route A + vecmat policy P as the active Step-3 source policy; keep Route B + P as the fail-closed fallback if Route-A lowering/hash/target evidence drifts, WSE-aware closure fails, or numerical comparison fails.
@@ -139,3 +139,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 ### 2026-06-28
 
 - PE SRAM/fabric resource analysis measured on real CS-3/WSE-3 and recorded in `memory/topics/pe-sram-memory-breakdown.md`.
+
+### 2026-08-24 — maintain pass drained P=256 MeshJIT captures
+
+- Drained six MeshJIT/P=256 shared-slot captures into `memory/topics/meshjit-code-relocation.md`. P=8 Route-A/Policy-P + resident fdiv reached a guarded real-CS-3 bit-exact Attention→FFN run, but P=256 still fails raw-f16 correctness. Route-repaint-only, host-fence, and passive-late-visibility hypotheses were negative; the decisive localization is that the max-only path reduces the last PE-local lane, not all lanes. Next gate is a same-artifact dependency handoff fix before rerunning the full P=256 baseline-vs-dynamic comparison.

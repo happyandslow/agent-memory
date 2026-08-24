@@ -49,6 +49,8 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
       enabling automatic M1-S3 cache-hit scheduling — `F=0` (seedless exact-history hit) deadlocks
       the step-0 HT_head/HT_tail dependency; M1 runs an exact reuse at `F=1`, not `F=0`. See
       `memory/topics/force-decode-startup-depends-on-prefix.md` § Updates 2026-08-04.
+- [ ] **For M1-S4, treat fixed-communication C1-M as throughput-negative unless a trace replay changes the decision.**
+      The matched CS-3 manual matrix avoided up to 37.49% of lane-steps but gave -0.03% to -0.09% speedup; replay realistic traces with zero/sub-0.1% critical-path gain before launching more C1-M matrices. See `memory/topics/m1-s4-c1-ragged-fixed-communication.md`.
 - [ ] **For M1-S4, define actual-length/EOS commit semantics for automatic replacement early-stop.**
       The temporary S3.5 rule fails closed after draining trailing TSC because host slot length may have
       advanced to planned `RoundPlan.end` while the device produced fewer resident KV positions. See
@@ -56,7 +58,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] **For every M1 implementation step after S3.7, define and run a real-device gate before closure.**
       Host tests, mocks, compilation, and simulator runs are diagnostic layers only; if the device gate
       is unavailable, keep the step incomplete/blocked. See `memory/topics/m1-s37-prefix-reuse-device-gates.md`.
-- [ ] For M3, prototype/measure a storage-side DSD bulk-receive / DSD block-emit variant; the real-CS-3 payload sweep shows current round-boundary park/reload is storage-CE per-wavelet bound, not wire-bound.
+- [ ] For M3, prototype storage-side DSD emit/park-receive and/or a hybrid multi-row route; measured v4 GO-chain wins for R>=2 via router-priced transit, while v5/single-row are only better at R=1.
 - [ ] For MeshJIT duplicate-pattern / code distribution claims, require loaded-SRAM and amortization evidence, not only lower replicated code bytes; see `memory/topics/meshjit-code-dedup-sram-latency.md`.
 - [ ] **For M1-S5, separate `bsz` from `SLOT_COUNT` and include `ht_tail` batch scratch in the SRAM model.**
       Full-model `bsz=SLOT_COUNT=3,4` failed before execution from shared PE data-SRAM exhaustion, while
@@ -338,3 +340,8 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - Updated `memory/topics/s6a-decode-kv-retain.md` with the retain/recompute distinction: retain carries the effective-length counter; RoPE phase is recomputed from that counter each round, not carried as live phase state.
 - Updated `memory/topics/prefill-decode-transfer-bandwidth.md`: profiler-off `fullT` proves full-size KV transfer is healthy; the widened per-step profiler is the hang. Single-link WSE-3 device ceiling is 3.91 GB/s, so the ~1.8 GB/s aggregate KV-transfer result is latency/serialization-bound, not fabric-ceiling-bound. Added e2e TSC/toolchain gotchas.
 - Added a CS-3 operational pitfall to `memory/project.md`: ssh transport death (`rc=255`) can bypass the timeout guard’s `csctl cancel`, so check for orphan wafer jobs on reconnect.
+
+### 2026-08-24 — maintain pass drained M1-S4 C1 and M3 captures
+
+- Drained four M1-S4/C1 captures into new `memory/topics/m1-s4-c1-ragged-fixed-communication.md`. C1-M can rejoin lanes by threshold without per-lane RoPE, but fixed communication keeps the critical path; the real-CS-3 manual matrix at `S=256,N=1024,F=769,G=255` showed -0.03% to -0.09% speedup despite skipping up to 37.49% of lane-steps. TraceLab/Mooncake workload shape must be projected into legal device cells before use.
+- Drained two M3 captures into `memory/topics/m3-idle-pe-tier.md`. The M3 clock convention is 0.85 GHz; raw cycles are canonical. Owner-side DSD receive reduced single-row roundtrip marginal to 56 cyc/word, and multi-row v4 GO-chain is router-priced and wins for R>=2 while v5 cascade is CE store-and-forward. Next M3 lever is storage-side DSD emit/park-receive or a v4/v5 hybrid.
