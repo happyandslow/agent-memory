@@ -2,7 +2,9 @@
 
 # WaferEngine Timeline
 
+- 2026-08-24 — meshjit-p256-pointer-alias-fmaxh-isolated → `memory/inbox/2026-08-24-meshjit-p256-pointer-alias-fmaxh-isolated.md`
 - 2026-08-24 — meshjit-p256-max-reduce-passive-late-visibility-negative → `memory/inbox/2026-08-24-meshjit-p256-max-reduce-passive-late-visibility-negative.md`
+- 2026-08-24 — meshjit-p256-max-reduce-last-lane-input → `memory/inbox/2026-08-24-meshjit-p256-max-reduce-last-lane-input.md`
 - 2026-08-23 — meshjit-p256-route-repaint-minimal-negative → `memory/inbox/2026-08-23-meshjit-p256-route-repaint-minimal-negative.md`
 - 2026-08-23 — meshjit-p256-full-baseline-fence-negative → `memory/inbox/2026-08-23-meshjit-p256-full-baseline-fence-negative.md`
 - 2026-08-23 — meshjit-p256-cs3-bitexact-failure → `memory/inbox/2026-08-23-meshjit-p256-cs3-bitexact-failure.md`
