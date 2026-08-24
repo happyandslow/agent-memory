@@ -1,102 +1,69 @@
 #!/usr/bin/env python3
-"""Render slide-7 content: define router-only and compare CE coefficients."""
-
-from pathlib import Path
-
+"""Transport vs CE decomposition of the on-chip tier, with the knob that
+moves each class. All bars device-measured except the wire floor (spec)."""
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.patches import FancyBboxPatch
 
+BLUE, PURPLE, GRAY = "#1a56db", "#7048e8", "#98a2b3"
+fig = plt.figure(figsize=(13.6, 6.8))
 
-HERE = Path(__file__).resolve().parent
-OUT = HERE / "fig_router_vs_ce.png"
-
-INK = "#18181B"
-BODY = "#52525B"
-MUTED = "#A1A1AA"
-VIOLET = "#6D28D9"
-BLUE = "#1D4ED8"
-GREEN = "#047857"
-RULE = "#E4E4E7"
-CARD = "#F7F7F8"
-
-plt.rcParams.update({"font.family": "Arimo"})
-
-fig = plt.figure(figsize=(16, 6.2), dpi=180, facecolor="white")
-gs = fig.add_gridspec(1, 2, width_ratios=[0.82, 1.18], wspace=0.28)
-ax_l = fig.add_subplot(gs[0, 0])
-ax_r = fig.add_subplot(gs[0, 1])
-ax_l.set_axis_off()
-
-ax_l.text(0.00, 0.96, "WHAT ‘ROUTER-ONLY’ MEANS", color=MUTED,
-          fontsize=15, fontweight="bold", va="top", transform=ax_l.transAxes)
-ax_l.text(0.00, 0.84, "Wavelet stays in the fabric switch",
-          color=INK, fontsize=20, fontweight="bold", va="top",
-          transform=ax_l.transAxes)
-
-path_box = FancyBboxPatch((0.00, 0.58), 0.92, 0.18,
-                          boxstyle="round,pad=0.018,rounding_size=0.02",
-                          linewidth=1.2, edgecolor=BLUE, facecolor="#E9F0FE",
-                          transform=ax_l.transAxes)
-ax_l.add_patch(path_box)
-ax_l.text(0.05, 0.69, "NORTH input  →  switch  →  SOUTH output",
-          color=BLUE, fontsize=14.5, fontweight="bold", va="center",
-          transform=ax_l.transAxes)
-ax_l.text(0.05, 0.62, "no RAMP · no IQ/task · no CE · no local copy/re-emit",
-          color=BODY, fontsize=11, va="center", transform=ax_l.transAxes)
-
-ax_l.text(0.00, 0.49, "Measured router-only terms", color=INK,
-          fontsize=16, fontweight="bold", va="top", transform=ax_l.transAxes)
-ax_l.text(0.03, 0.40,
-          "Distance latency\n"
-          "  t_hop = 2.0 cycles/hop\n"
-          "  round trip = 2(D-1)t_hop\n"
-          "  +28 cycles at D=8; +124 at D=32",
-          color=BODY, fontsize=12.2, linespacing=1.42, va="top",
-          transform=ax_l.transAxes)
-ax_l.text(0.03, 0.19,
-          "Multi-row forwarding\n"
-          "  v4 tax = 1.06 | 1.29 cycles/forwarded-word",
-          color=BODY, fontsize=12.2, linespacing=1.42, va="top",
-          transform=ax_l.transAxes)
-ax_l.text(0.00, 0.02,
-          "Still consumes fabric links and may backpressure.\n"
-          "Current measurements are isolated, single-lane runs.",
-          color=VIOLET, fontsize=10.5, fontweight="bold", va="bottom",
-          transform=ax_l.transAxes)
-
-labels = [
-    "router fwd · task",
-    "router fwd · DSD",
-    "emit loop",
-    "reload relay",
-    "park receive",
-    "receive + forward",
+# ---------------- left: per-word cost ladder, colored by class
+axl = fig.add_axes([0.205, 0.10, 0.325, 0.80])
+axl.set_facecolor("#fafafa")
+items = [  # (label, cyc/word, class, note)
+    ("wire throughput floor", 1.0, "wire", "spec: 1 word/cyc/link"),
+    ("v4 fwd tax · task", 1.06, "wire", "measured"),
+    ("v4 fwd tax · dsd", 1.29, "wire", "measured"),
+    ("storage emit loop (sync @mov32)", 13.0, "ce", "measured"),
+    ("row-0 reload relay", 28.8, "ce", "measured"),
+    ("storage park receive (task)", 43.3, "ce", "measured"),
+    ("owner reload receive (task)", 43.6, "ce", "measured; dsd -> ~0 exposed"),
+    ("row-0 receive + forward", 75.4, "ce", "measured"),
 ]
-values = np.array([1.06, 1.29, 13.0, 28.8, 43.3, 75.4])
-colors = [BLUE, BLUE, GREEN, GREEN, VIOLET, VIOLET]
-y = np.arange(len(labels))
-bars = ax_r.barh(y, values, color=colors, alpha=0.88, height=0.58)
-ax_r.set_yticks(y, labels, fontsize=11.5, color=INK)
-ax_r.invert_yaxis()
-ax_r.set_xlim(0, 82)
-ax_r.set_xlabel("measured coefficient (cycles / word)", fontsize=12,
-                color=BODY)
-ax_r.set_title("Measured per-word coefficients",
-               loc="left", fontsize=18, fontweight="bold", color=INK, pad=26)
-ax_r.text(0.99, 1.02, "CE terms are 10–71× the v4 router coefficient",
-          transform=ax_r.transAxes, ha="right", va="bottom", color=VIOLET,
-          fontsize=11.5, fontweight="bold")
-ax_r.grid(axis="x", color=RULE, linewidth=0.8)
-ax_r.set_axisbelow(True)
-for spine in ax_r.spines.values():
-    spine.set_visible(False)
-ax_r.tick_params(axis="x", colors=BODY, labelsize=11)
-for bar, value in zip(bars, values):
-    ax_r.text(value + 1.1, bar.get_y() + bar.get_height()/2,
-              f"{value:g}", va="center", ha="left", fontsize=12,
-              color=INK, fontweight="bold")
-ax_r.axvspan(0, 2.5, color="#E9F0FE", alpha=0.6, zorder=0)
+ys = range(len(items))
+for y, (lb, v, cls, note) in zip(ys, items):
+    c = BLUE if cls == "wire" else PURPLE
+    axl.barh(y, v, color=c, height=0.62, alpha=0.35 if lb.startswith("wire") else 0.95)
+    axl.text(v + 1.2, y, f"{v:g}", va="center", fontsize=11.5, fontweight="bold")
+    if "spec" in note or "dsd" in note:
+        axl.text(v + 11, y, note, va="center", fontsize=8.8, color="#888888")
+axl.set_yticks(list(ys))
+axl.set_yticklabels([i[0] for i in items], fontsize=10.6)
+axl.invert_yaxis()
+axl.set_xlim(0, 92)
+axl.set_xlabel("cycles per word", fontsize=12)
+axl.set_title("Every per-word cost, by class", fontsize=14, fontweight="bold", loc="left")
+axl.grid(axis="x", color="#e0e0e0", lw=0.6)
+for sp in ("top", "right"):
+    axl.spines[sp].set_visible(False)
+axl.text(26, 2.0, "transport (router/wire)", color=BLUE, fontsize=12, fontweight="bold")
+axl.text(60, 4.6, "CE send/recv", color=PURPLE, fontsize=12, fontweight="bold")
 
-fig.savefig(OUT, bbox_inches="tight", pad_inches=0.04, facecolor="white")
-print(OUT)
+# ---------------- right: the knob that moves each class
+axr = fig.add_axes([0.565, 0.02, 0.425, 0.94]); axr.axis("off")
+axr.set_xlim(0, 1); axr.set_ylim(0, 1); axr.set_autoscale_on(False)
+def block(y, title, color, lines):
+    axr.text(0.02, y, title, fontsize=13, fontweight="bold", color=color)
+    for j, ln in enumerate(lines):
+        axr.text(0.04, y - 0.055 - j * 0.048, ln, fontsize=10.6)
+block(0.95, "TRANSPORT — knob: storage-PE placement", BLUE, [
+    "measured: t_hop = 2.0 cyc/hop, NO per-word term (Exp-C, D up to 32)",
+    "⇒ strip placement is latency-free; depth budget is capacity/routing",
+    "unmeasured: link sharing with live decode, multi-lane aggregation",
+    "(all runs so far are isolated single-lane)",
+])
+block(0.62, "CE — knob 1: thread model (task → DSD)", PURPLE, [
+    "owner receive: 43.6 → ~0 exposed  (Exp-B, measured)",
+    "storage park receive 43.3 and emit 13.0 are still task/sync-loop:",
+    "the next rung; projected ~4-5x on the tier marginal (projection)",
+])
+block(0.36, "CE — knob 2: allocation across CEs", PURPLE, [
+    "v5 concentrates: row-0 CE handles ALL N·E words (44-75 cyc each)",
+    "while deeper rows' CEs idle — tax 30.7-47.0",
+    "v4 distributes: each row's CE touches only its own band (bh·E);",
+    "inter-row movement is routers — tax 1.06-1.29",
+    "⇒ the 25-35x tax gap IS the allocation decision, measured",
+])
+fig.savefig(__file__.rsplit("/", 1)[0] + "/fig_router_vs_ce.png", dpi=175)
+print("router-vs-ce decomposition written")

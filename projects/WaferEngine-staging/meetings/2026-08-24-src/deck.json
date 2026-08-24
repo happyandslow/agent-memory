@@ -97,7 +97,13 @@
      "12,343,610"
     ]
    ],
-   "weights": [1.2, 1.35, 1, 1, 1],
+   "weights": [
+    1.2,
+    1.35,
+    1,
+    1,
+    1
+   ],
    "notes": "EPCC CS-3, distance=1, n=3 per cell, zero infrastructure failures across 81 runs; every cell reproduced to the cycle. Visible payload labels replace benchmark notation: with compute-column height N=256 and lpb=4, E=64 u32 words/compute PE maps to 1,024 KV tokens and E=512 maps to 8,192. R is the number of 1×256 storage rows. Capacity is nominal analytical sizing, not compile-fit: 42 KiB/storage PE gives 672 KV-token equivalents per row/block, so R=1/2/4 gives 672/1,344/2,688 tokens. The demo verifies movement rather than retaining the full payload; therefore the 8,192-token rows shown are intentionally capacity-undersized measurements (about 13 rows are needed nominally). v4 metric = sum of per-band spans (excludes inter-epoch GO gaps, ~2*bh cycles each). DSD = owner-side bulk fabin-DSD reload receive. v4 wins every measured R>=2 cell; DSD 8,192-token payload at R=4 is 30% faster than v5."
   },
   {
@@ -110,19 +116,19 @@
   },
   {
    "type": "figure",
-   "eyebrow": "Model · v4 GO-chain, measured winner for R >= 2",
-   "title": "v4 cost = endpoint baseline + router-only forwarding",
-   "image": "figures/fig_v4_model_topology.png",
-   "caption": "Generic equation first, fitted coefficients second, topology at right. Setting: N=256, E>=64; pairs are task | owner-side bulk-DSD. v4 epoch_sum excludes small inter-epoch GO gaps.",
-   "notes": "v4 wins every measured R>=2 cell, so this page intentionally removes v3/v5. Model form: C_v4 = C_floor + (E-4)N*C_owner + W_fwd*C_router, W_fwd=(N-N/R)E. C_floor prices launch/control and role setup. C_owner prices the ordinary endpoint path per payload word: 96.00 task / 65.08 owner-DSD. C_router is the incremental multi-row forwarding tax: 1.06 / 1.29 cycles per forwarded word. The topology crop is derived from docs/diagrams/m3-multirow-v4-vs-v5.excalidraw; it shows the sequential GO epoch and router transit row."
+   "eyebrow": "Model · equations and fitted coefficients",
+   "title": "Three device-fit models, one coefficient table",
+   "image": "figures/fig_model_panel.png",
+   "caption": "Internal-discussion reference: the three fitted equations (task | dsd pairs) and every coefficient with its meaning and fit provenance. All values are real CS-3 measurements; selftest reproduces 39 device anchors under 1%.",
+   "notes": "Replaces the earlier v4-equation slide per Le's request: full model view, modest typography. The v4-topology figure remains in figures/fig_v4_model_topology.png if wanted back. Deeper provenance: PREREGISTRATION-multirow.md consolidated record; perf_model.py --selftest."
   },
   {
    "type": "figure",
-   "eyebrow": "Mechanism · router transit vs CE processing",
-   "title": "The fabric is not binding: CE per-word handling dominates",
+   "eyebrow": "Insight · transport vs CE, and the knob for each",
+   "title": "Pure transport is 1-2 cyc/word; CE send/recv is 13-75 — and each class has its own lever",
    "image": "figures/fig_router_vs_ce.png",
-   "caption": "Router-only means switch-to-switch transit with no RAMP, IQ/task, CE landing, or local copy/re-emit. It still consumes links and can backpressure; current measurements are isolated, single-lane runs.",
-   "notes": "Two measured router-only terms: distance adds t_hop=2.0 cycles per transit hop per direction, so the full-cycle increment is 2(D-1)t_hop; v4 multi-row forwarding adds 1.06/1.29 cycles per forwarded word. CE coefficients are much larger: emit loop 13.0, reload relay about 28.8, park receive 43.3, receive+validate+forward 75.4 cycles/word. The comparison is mechanism-level: t_hop has units cycles/hop and is not plotted beside cycles/word. Pipeline stages combine by the binding maximum, not an unconditional sum. The demo blocks compute at the round boundary, so live concurrent-CE interference remains unmeasured."
+   "caption": "Left: every measured per-word cost, colored by class — transport (router/wire) vs CE send/recv. Right: what moves each class. Transport depends on storage-PE placement, measured latency-free (2.0 cyc/hop, no per-word term). CE depends on the thread model (task -> DSD, measured on the owner side) and on how work is allocated across CEs: v5 concentrates all forwarding on row-0's CE (tax 30.7-47.0) while v4 leaves inter-row movement to routers (tax 1.06-1.29) — the 25-35x gap is the allocation decision itself, measured.",
+   "notes": "The remaining CE items on the tier's critical path are storage park receive (43.3, task) and emit (13.0, sync loop) — the projected ~4-5x next rung (labeled projection). Transport-side open items are congestion-class, not latency-class: link sharing with live decode and multi-lane aggregation are unmeasured (all runs isolated single-lane). Wire floor 1 word/cyc/link is spec, not measured; everything else on the chart is a device fit."
   },
   {
    "type": "figure",

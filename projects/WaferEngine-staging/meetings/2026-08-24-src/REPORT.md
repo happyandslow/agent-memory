@@ -14,7 +14,7 @@ projection. Cycles are authoritative; µs at 0.85 GHz (project decision, Le
 | 2 (goal recap) | `figures/recap_e10d.png` | M2 E10D, `agent-memory/.../assets/2026-07-31-e10-ab-boundary/` |
 | 3 (implementation) | `figures/v4_vs_v5.png` | **editable**: `WaferEngine-staging/docs/diagrams/m3-multirow-v4-vs-v5.excalidraw` (SVG/PNG derived) |
 | 5 (same-law fit) | `figures/fig_samelaw.png` | `figures/fig_samelaw.py` (data inline, from the two device matrices) |
-| 6 (v4 equation + topology) | `figures/fig_v4_model_topology.png` | `figures/fig_v4_model_topology.py`; topology crop derives from the editable slide-3 Excalidraw source |
+| 6 (model panel) | `figures/fig_model_panel.png` | `figures/fig_model_panel.py` — equations + full coefficient table (replaced the v4-topology slide per Le 2026-08-24; `fig_v4_model_topology.png` kept in figures/, unused) |
 | 7 (router vs CE) | `figures/fig_router_vs_ce.png` | `figures/fig_router_vs_ce.py`; coefficients from v3/v4/v5 device fits |
 | 8 (tier tradeoff) | `figures/tier_tradeoff.png` | `agent-memory/.../assets/2026-08-24-m3-tier-tradeoff/fig_tier_tradeoff.py` |
 
@@ -309,3 +309,36 @@ construction-matched manual `K=0` baseline. This supports a throughput NO-GO
 for fixed-communication C1-M at this point; it does not bound C2 independent
 progress, communication compaction, EOS masking, fairness, energy, or
 continuous batching.
+
+
+## 7. Transport-vs-CE decomposition (slide 7; added 2026-08-24 per Le)
+
+The tier's per-word costs split into two classes with independent levers:
+
+**Transport (router/wire)** — measured: t_hop_router = 2.0 cyc/hop with NO
+per-word term (Exp-C, D up to 32); v4's forwarding tax 1.06/1.29 cyc/word
+is this class (deeper bands transit shallower rows at router level); wire
+throughput floor is 1 word/cyc/link (spec, not measured). Lever:
+**storage-PE placement** — measured latency-free, so strip depth/position
+is a capacity-and-routing decision, not a latency one. Open (congestion
+class, unmeasured): link sharing with live decode, multi-lane aggregation;
+all runs so far are isolated single-lane.
+
+**CE send/recv** — measured ladder: emit loop 13.0 (sync @mov32), relay
+28.8, park receive 43.3 (task), owner receive 43.6 (task) -> ~0 exposed
+under DSD (Exp-B), receive+forward 75.4. Two levers:
+1. **Thread model** (task -> DSD): proven on the owner side; storage-side
+   park receive and emit are the remaining task/sync items — the next
+   rung, projected ~4-5x on the tier marginal (projection, not measured).
+   Known constraint to design around: a microthread-claimed queue delivers
+   no control-task activations.
+2. **Allocation across CEs**: v5 concentrates every forwarded word through
+   row-0's single CE (44-75 cyc each; deeper rows' CEs idle during park)
+   -> tax 30.7/47.0. v4 gives each row's CE only its own band (bh*E words)
+   and moves inter-row transport to routers -> tax 1.06/1.29. The measured
+   25-35x tax gap IS the allocation decision. Row TSC spans quantify the
+   imbalance directly (v5 strip emit spans deepen 40 -> 120 cyc/word with
+   row depth: backpressure onto the concentrated CE).
+
+Figure: figures/fig_router_vs_ce.png (rebuilt 2026-08-24 to carry this
+decomposition; generator fig_router_vs_ce.py).
