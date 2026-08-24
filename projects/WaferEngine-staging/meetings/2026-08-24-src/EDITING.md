@@ -8,6 +8,13 @@
 - Figures under `figures/`:
   - `fig_samelaw.png` — regenerate with `python3 figures/fig_samelaw.py`
     (data inline, from the two device matrices).
+  - `fig_v4_model_topology.png` — regenerate with
+    `python3 figures/fig_v4_model_topology.py`; its topology panel is a
+    derived crop of `v4_vs_v5.png`, whose editable source is the Excalidraw
+    file below.
+  - `fig_router_vs_ce.png` — regenerate with
+    `python3 figures/fig_router_vs_ce.py`; values come from the device-fit
+    coefficient table in `REPORT.md`.
   - `v4_vs_v5.png` — derived; the EDITABLE source is
     `WaferEngine-staging/docs/diagrams/m3-multirow-v4-vs-v5.excalidraw`
     (generator: scratchpad `gen_v4v5_diagram.py`; or edit the .excalidraw

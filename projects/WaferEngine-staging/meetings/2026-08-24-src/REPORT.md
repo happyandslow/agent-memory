@@ -14,10 +14,12 @@ projection. Cycles are authoritative; µs at 0.85 GHz (project decision, Le
 | 2 (goal recap) | `figures/recap_e10d.png` | M2 E10D, `agent-memory/.../assets/2026-07-31-e10-ab-boundary/` |
 | 3 (implementation) | `figures/v4_vs_v5.png` | **editable**: `WaferEngine-staging/docs/diagrams/m3-multirow-v4-vs-v5.excalidraw` (SVG/PNG derived) |
 | 5 (same-law fit) | `figures/fig_samelaw.png` | `figures/fig_samelaw.py` (data inline, from the two device matrices) |
-| 7 (tier tradeoff) | `figures/tier_tradeoff.png` | `agent-memory/.../assets/2026-08-24-m3-tier-tradeoff/fig_tier_tradeoff.py` |
+| 6 (v4 equation + topology) | `figures/fig_v4_model_topology.png` | `figures/fig_v4_model_topology.py`; topology crop derives from the editable slide-3 Excalidraw source |
+| 7 (router vs CE) | `figures/fig_router_vs_ce.png` | `figures/fig_router_vs_ce.py`; coefficients from v3/v4/v5 device fits |
+| 8 (tier tradeoff) | `figures/tier_tradeoff.png` | `agent-memory/.../assets/2026-08-24-m3-tier-tradeoff/fig_tier_tradeoff.py` |
 
-Slide 4 (results table) and 6 (metrics) carry their numbers in `deck.json`
-directly. All numbers cross-check against
+Slide 4 carries its results table directly in `deck.json`; slides 6--7 are
+generated from the fitted coefficients recorded below. All numbers cross-check against
 `column_cycle_demo_multirow_v5/results/PREREGISTRATION-multirow.md`
 (the authoritative tracking doc, work repo, branch
 `lexu/staging/m3-on-chip-kv-offload-study`).
@@ -173,7 +175,57 @@ deployment mechanism; v5 remains the minimum-intrusion option. Obvious
 hybrid: v4's transit + v5's static compute column (~1.6 baseline + ~1.1
 tax) would dominate both — open design question.
 
-## 5. Tier tradeoff (slide 7)
+### Slide 6: v4 equation, fit, and topology
+
+Slide 6 intentionally keeps only v4 because it wins every measured `R>=2`
+cell. It presents the model form before substituting numbers:
+
+```
+C_v4(N,E,R,m) = C_floor[m]
+              + (E-4) N C_owner[m]
+              + W_fwd(N,E,R) C_router[m]
+W_fwd = (N-N/R) E,    m in {task, owner-DSD}
+```
+
+The fitted coefficients for `N=256`, `E>=64` are:
+
+| coefficient | task | owner DSD | interpretation |
+|---|---:|---:|---|
+| `C_floor` | 61,058 | 78,676 | launch/control and role setup |
+| `C_owner` | 96.00 | 65.08 | ordinary endpoint path, cycles/payload-word |
+| `C_router` | 1.06 | 1.29 | router-only multi-row tax, cycles/forwarded-word |
+
+The right panel shows the corresponding v4 GO-chain topology at `R=2`:
+one band is done, the next band participates, storage row 0 is transit, and
+storage row 1 is the active endpoint. The additional words stay in router
+routes; they are not consumed and re-emitted by the transit PE's CE. The v4
+metric is still `epoch_sum` and excludes the small inter-epoch GO gaps.
+
+### Slide 7: router-only versus CE processing
+
+“Router-only” has an exact meaning here: a wavelet enters a fabric switch and
+leaves through another directional output without a RAMP output, IQ/task
+activation, CE execution, or local-memory copy/re-emission. It is not free:
+it occupies fabric links and can backpressure. The measured terms are:
+
+- distance pipeline latency: `t_hop_router≈2.0 cycles/hop` per direction,
+  giving full-cycle `2(D-1)t_hop_router` (`+28` raw cycles at `D=8`, `+124`
+  at `D=32` relative to `D=1`);
+- v4 multi-row forwarded-word tax: `1.06/1.29 cycles/word` in task/DSD.
+
+CE per-word processing is much larger: storage emit loop `13.0`, reload relay
+about `28.8`, park receive `43.3`, and receive+validate+forward `75.4±0.9`
+cycles/word. These are pipelined stages, so throughput is governed by the
+binding maximum rather than an unconditional sum. The isolated demo blocks
+compute at the round boundary; it does not yet measure concurrent decode/CE
+interference.
+
+Placement therefore has two qualitatively different effects. Extra pure
+router hops add the small distance term in the measured range. A topology
+that forces transit data into a storage CE changes the mechanism class and
+pays tens of cycles per forwarded word.
+
+## 5. Tier tradeoff (slide 8)
 
 Resume span decomposes as transfer(H) + Δ(L_new), where Δ is
 lane-independent (E10 cancellation) and ≈19.6 ms at L_new=256. The three

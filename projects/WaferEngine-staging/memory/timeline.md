@@ -3,6 +3,7 @@
 # WaferEngine-staging Timeline
 
 - 2026-08-24 — m3-multirow-v4-v5-device-comparison → `memory/inbox/2026-08-24-m3-multirow-v4-v5-device-comparison.md`
+- 2026-08-24 — m1-s4-c1-fixed-communication-device-negative → `memory/inbox/2026-08-24-m1-s4-c1-fixed-communication-device-negative.md`
 - 2026-08-23 — m3-perf-model-coefficients → `memory/inbox/2026-08-23-m3-perf-model-coefficients.md`
 - 2026-08-23 — m1-s4-real-workload-shape-review → `memory/inbox/2026-08-23-m1-s4-real-workload-shape-review.md`
 - 2026-08-23 — m1-s4-c1-mechanism-review → `memory/inbox/2026-08-23-m1-s4-c1-mechanism-review.md`

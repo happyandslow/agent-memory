@@ -101,32 +101,20 @@
    "notes": "The preregistered hypotheses were productively falsified: H1 (v5 R=1 reproduces v3 anchors) failed at +0.7-2.3% - the cascade's per-word branches do not compile out, so every implementation carries its own baseline. H2 (v4 overhead = per-epoch constant) failed in form - v4's delta is also per-forwarded-word, just router-priced. H3 (linearity in fwd_words) confirmed for E>=64 in both designs. Fitting: taxes from delta-vs-fwd slopes over (R,E) grid; c_fwd_word=75.4 from four independent park-span decompositions; c_relay_word~28.8 from the dsd identity, cross-checked against task mode to 1.6%."
   },
   {
-   "type": "metrics",
-   "eyebrow": "Model · the coefficient ladder (all device-fit)",
-   "title": "Every per-word cost in the tier, pinned",
-   "hero": {
-    "value": "39 anchors, <1%",
-    "label": "three device-fit models in one file: v3 0.89% / v5 0.83% / v4 0.23% max error"
-   },
-   "cards": [
-    {
-     "value": "75.4",
-     "label": "c_fwd_word cyc/word: row-0 park receive + forward (receive-only was 43.3)"
-    },
-    {
-     "value": "28.8",
-     "label": "c_relay_word cyc/word: row-0 reload relay (bare emit loop: 13.0)"
-    },
-    {
-     "value": "1.1 vs 31",
-     "label": "multirow tax cyc/word, task: v4 router transit vs v5 CE store-and-forward"
-    },
-    {
-     "value": "+9.6 / +1.6",
-     "label": "always-on R=1 premium over v3, cyc/word: v4 roles / v5 cascade branches"
-    }
-   ],
-   "notes": "The recurring dichotomy, now measured four independent ways: anything the CE touches per word costs ~13-75 cycles; anything router-level costs ~1-2. This is the design rule for every future on-chip transfer mechanism. Remaining as-built headroom: the storage-side park receive (43.3) and emit (13.0) are still CE-per-word; DSD-ifying them (the next Exp-B-style rung) is projected to cut the tier's marginal ~4-5x. The wire itself is 39x under-used as built."
+   "type": "figure",
+   "eyebrow": "Model · v4 GO-chain, measured winner for R >= 2",
+   "title": "v4 cost = endpoint baseline + router-only forwarding",
+   "image": "figures/fig_v4_model_topology.png",
+   "caption": "Generic equation first, fitted coefficients second, topology at right. Setting: N=256, E>=64; pairs are task | owner-side bulk-DSD. v4 epoch_sum excludes small inter-epoch GO gaps.",
+   "notes": "v4 wins every measured R>=2 cell, so this page intentionally removes v3/v5. Model form: C_v4 = C_floor + (E-4)N*C_owner + W_fwd*C_router, W_fwd=(N-N/R)E. C_floor prices launch/control and role setup. C_owner prices the ordinary endpoint path per payload word: 96.00 task / 65.08 owner-DSD. C_router is the incremental multi-row forwarding tax: 1.06 / 1.29 cycles per forwarded word. The topology crop is derived from docs/diagrams/m3-multirow-v4-vs-v5.excalidraw; it shows the sequential GO epoch and router transit row."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Mechanism · router transit vs CE processing",
+   "title": "The fabric is not binding: CE per-word handling dominates",
+   "image": "figures/fig_router_vs_ce.png",
+   "caption": "Router-only means switch-to-switch transit with no RAMP, IQ/task, CE landing, or local copy/re-emit. It still consumes links and can backpressure; current measurements are isolated, single-lane runs.",
+   "notes": "Two measured router-only terms: distance adds t_hop=2.0 cycles per transit hop per direction, so the full-cycle increment is 2(D-1)t_hop; v4 multi-row forwarding adds 1.06/1.29 cycles per forwarded word. CE coefficients are much larger: emit loop 13.0, reload relay about 28.8, park receive 43.3, receive+validate+forward 75.4 cycles/word. The comparison is mechanism-level: t_hop has units cycles/hop and is not plotted beside cycles/word. Pipeline stages combine by the binding maximum, not an unconditional sum. The demo blocks compute at the round boundary, so live concurrent-CE interference remains unmeasured."
   },
   {
    "type": "figure",
