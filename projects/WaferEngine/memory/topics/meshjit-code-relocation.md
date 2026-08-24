@@ -229,6 +229,12 @@ Drained `memory/inbox/2026-08-22-shared-slot-validation-after-first-load.md` int
 
 Pointers: `/home/lexu/WaferLLM/MeshJit-Decode/attention-ffn-runtime-validation/results/simulator_failure.json`; `/home/lexu/WaferLLM/MeshJit-Decode/attention-ffn-runtime-validation/runs/p8-v4/dynamic_host_trace.jsonl`.
 
+## Updates — 2026-08-24
+
+- The canonical real-size shared-slot validation is now code-snapshotted in WaferLLM branch `attn-ffn-pageability`, commit `b9f5d43a581f70d905e16bcf1959dc8979101194` (parent `fd1c2daae37cd68706c03fc8009887ecee9900f8`). Its committed `attention-ffn-phase1` and `attention-ffn-runtime-validation` subtree hashes are `10e055b0282f3fe03063231f3d5905df218ab2b1` and `20d128baabf9c2ba4f68ad06463a361c93e827c2`.
+- The bound result is P=256 `p256-map-e2e-20260824-v5`: validation-only `B_U04_corrected` versus `D_dynamic`, 19/19 checkpoints and Final Z raw-f16 bit-exact on CS-3, with final audit `PASS_P256_MAP_MAX_SHARED_SLOT_E2E`. Dynamic receiver SRAM remains larger than the corrected baseline; no latency/throughput claim exists.
+- At the recorded observation time the branch was local-only: no upstream and no matching head on `origin`. Post-commit untracked roots are outside the snapshot. Full commit boundary, recovery commands, and working-tree exclusions are recorded in `memory/inbox/2026-08-24-waferllm-attn-ffn-code-snapshot.md` and the ContextBase P=256 session log.
+
 ## Provenance
 
 Drained from two dated captures (2026-08-06 maintain pass):

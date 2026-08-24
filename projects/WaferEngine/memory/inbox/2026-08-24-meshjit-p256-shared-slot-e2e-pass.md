@@ -16,6 +16,13 @@
 - Performance scope: these are SRAM/code-ownership/page/catalog economics only. No synchronized TSC/host-wall latency or throughput benchmark was run; cloud compile/job wall-clock is not performance data.
 - Procedural promotion: the validated reproduction and first-divergence rules were added to the canonical `wse-shared-slot-artifact-validation` skill.
 
+## Code snapshot / backtracking
+
+- The committed source/evidence snapshot is WaferLLM branch `attn-ffn-pageability` at `b9f5d43a581f70d905e16bcf1959dc8979101194` (`attention ffn pageability validation initial snapshot`, parent `fd1c2daae37cd68706c03fc8009887ecee9900f8`).
+- The exact committed subtree identities are `attention-ffn-phase1@10e055b0282f3fe03063231f3d5905df218ab2b1` and `attention-ffn-runtime-validation@20d128baabf9c2ba4f68ad06463a361c93e827c2`.
+- At `2026-08-24T16:43:44Z` the branch had no upstream and did not exist on `origin`; treat it as local-only until independently pushed or copied.
+- Post-commit untracked roots are not part of the snapshot. The exact boundary and recovery commands are in `memory/inbox/2026-08-24-waferllm-attn-ffn-code-snapshot.md`.
+
 ## Implications / next actions
 
 - [ ] Treat `PASS_P256_MAP_MAX_SHARED_SLOT_E2E` as the correctness result only for this bsz1 Route-A/Policy-P/F4 construction and frozen source/config identities; use a fresh run ID and all fail-closed gates after any config, ABI, placement, policy, or source change.
@@ -29,5 +36,6 @@
 - `/home/lexu/WaferLLM/MeshJit-Decode/attention-ffn-runtime-validation/p256-map-e2e/evidence/p256-map-e2e-20260824-v5/device_compare_result.json`
 - `/home/lexu/WaferLLM/MeshJit-Decode/attention-ffn-runtime-validation/p256-map-e2e/evidence/p256-map-e2e-20260824-v5/sram_audit.json`
 - `/home/lexu/.codex/skills/wse-shared-slot-artifact-validation/references/waferllm-attention-ffn-p256.md`
+- `projects/WaferEngine/memory/inbox/2026-08-24-waferllm-attn-ffn-code-snapshot.md`
 - `projects/WaferEngine/memory/inbox/2026-08-24-meshjit-p256-pointer-alias-fmaxh-isolated.md`
 - `https://context.ed-aisys.com/doc/2026-08-24-session-p256-shared-slot-validation-and-max-reduction-localization-OYpotFI2Ld`
