@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-describedby="desc">
+  <desc id="desc">A two-row decoder-layer pipeline. Green boxes are skipped today, yellow boxes remain lane work, and a grey band lists the fixed communication and whole-buffer floor.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/></marker>
+    <style>
+      .row{font:700 21px Arial,sans-serif;fill:#334155}.card{stroke-width:2}.green{fill:#d8f3dc;stroke:#25855a}.yellow{fill:#fff3bf;stroke:#b7791f}.grey{fill:#e2e8f0;stroke:#64748b}.label{font:600 16px Arial,sans-serif;fill:#263142;text-anchor:middle}.greenText{fill:#173b2a}.yellowText{fill:#3d3320}.detail{font:16px Arial,sans-serif;fill:#334155}.floorHead{font:700 18px Arial,sans-serif;fill:#334155}.callHead{font:700 16px Arial,sans-serif;fill:#173b2a}.callText{font:16px Arial,sans-serif;fill:#173b2a}.arrow{stroke:#94a3b8;stroke-width:2;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1600" height="900" fill="#ffffff"/>
+  <text x="60" y="142" class="row">Attention</text>
+  <path class="arrow" d="M280 141H290 M422 141H432 M564 141H574 M706 141H716 M848 141H858 M990 141H1000 M1132 141H1142 M1274 141H1284 M1416 141H1426"/>
+  <g>
+    <rect class="card yellow" x="150" y="105" rx="8" width="130" height="72"/><text class="label yellowText" x="215" y="146">RMSNorm(X)</text>
+    <rect class="card green" x="292" y="105" rx="8" width="130" height="72"/><text class="label greenText" x="357" y="135"><tspan x="357">Q/K/V</tspan><tspan x="357" dy="19">projections</tspan></text>
+    <rect class="card yellow" x="434" y="105" rx="8" width="130" height="72"/><text class="label yellowText" x="499" y="146">QK norm</text>
+    <rect class="card yellow" x="576" y="105" rx="8" width="130" height="72"/><text class="label yellowText" x="641" y="146">RoPE</text>
+    <rect class="card green" x="718" y="105" rx="8" width="130" height="72"/><text class="label greenText" x="783" y="146">KV write</text>
+    <rect class="card green" x="860" y="105" rx="8" width="130" height="72"/><text class="label greenText" x="925" y="135"><tspan x="925">Q·K score</tspan><tspan x="925" dy="19">GEMV</tspan></text>
+    <rect class="card yellow" x="1002" y="105" rx="8" width="130" height="72"/><text class="label yellowText" x="1067" y="146">softmax</text>
+    <rect class="card green" x="1144" y="105" rx="8" width="130" height="72"/><text class="label greenText" x="1209" y="135"><tspan x="1209">P·V</tspan><tspan x="1209" dy="19">aggregation</tspan></text>
+    <rect class="card green" x="1286" y="105" rx="8" width="130" height="72"/><text class="label greenText" x="1351" y="146">O projection</text>
+    <rect class="card yellow" x="1428" y="105" rx="8" width="130" height="72"/><text class="label yellowText" x="1493" y="135"><tspan x="1493">attention</tspan><tspan x="1493" dy="19">residual</tspan></text>
+  </g>
+  <text x="60" y="342" class="row">FFN</text>
+  <path class="arrow" d="M510 341H533 M745 341H768 M960 341H983 M1175 341H1198"/>
+  <g>
+    <rect class="card yellow" x="320" y="305" rx="8" width="190" height="72"/><text class="label yellowText" x="415" y="346">RMSNorm(Z)</text>
+    <rect class="card green" x="535" y="305" rx="8" width="210" height="72"/><text class="label greenText" x="640" y="346">up/gate projections</text>
+    <rect class="card yellow" x="770" y="305" rx="8" width="190" height="72"/><text class="label yellowText" x="865" y="346">SiLU × gate</text>
+    <rect class="card green" x="985" y="305" rx="8" width="190" height="72"/><text class="label greenText" x="1080" y="346">down projection</text>
+    <rect class="card yellow" x="1200" y="305" rx="8" width="190" height="72"/><text class="label yellowText" x="1295" y="346">FFN residual</text>
+  </g>
+  <g class="detail"><rect x="60" y="425" width="18" height="18" rx="3" fill="#d8f3dc" stroke="#25855a"/><text x="88" y="439">green = skipped today for inactive lane</text><rect x="443" y="425" width="18" height="18" rx="3" fill="#fff3bf" stroke="#b7791f"/><text x="471" y="439">yellow = lane work still executed / candidate for a broader C1</text><rect x="1082" y="425" width="18" height="18" rx="3" fill="#e2e8f0" stroke="#64748b"/><text x="1110" y="439">grey = fixed communication/whole-buffer floor</text></g>
+  <rect class="card grey" x="60" y="475" rx="10" width="1480" height="130"/>
+  <text x="90" y="510" class="floorHead">FIXED COMMUNICATION / WHOLE-BUFFER FLOOR</text>
+  <text x="90" y="542" class="detail">QKV/score/output/FFN collectives  •  whole-buffer zero/cast  •  route reconfiguration</text>
+  <text x="90" y="572" class="detail">X/Z + head/tail transport remain full bsz extent</text>
+  <rect x="60" y="640" rx="10" width="1480" height="105" fill="#ecfdf3" stroke="#25855a" stroke-width="2"/>
+  <text x="90" y="675" class="callHead">GREEN SKIPS</text>
+  <text x="90" y="705" class="callText">vecmat driver (Q/K/V/O/up/gate/down), score_matvec_mult, output_matvec_mult, process_kv</text>
+  <text x="90" y="730" class="callText">c1_zero_inactive_x is deterministic dummy setup, not saved work.</text>
+</svg>

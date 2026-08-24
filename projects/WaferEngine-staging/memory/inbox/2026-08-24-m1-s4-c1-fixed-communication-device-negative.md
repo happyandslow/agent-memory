@@ -49,4 +49,7 @@
 - `tools/m1_s4/collect_c1_s256_manual_comparison.py`
 - `docs/slides/2026-08-24-m1-s4-ragged-c1/m1-s4-ragged-c1-weekly-insert-2026-08-24.pptx`
 - `docs/slides/2026-08-24-m1-s4-ragged-c1/deck.json`
+- Canonical standalone insert: `projects/WaferEngine-staging/meetings/2026-08-24-m1-s4-ragged-c1.pptx`
+- Canonical editable source: `projects/WaferEngine-staging/meetings/2026-08-24-m1-s4-ragged-c1-src/`
+- Appended weekly deck: `projects/WaferEngine-staging/meetings/2026-08-24.pptx`, slides 9–12
 - ContextBase: <https://context.ed-aisys.com/doc/2026-08-23-study-review-m1-s4-c1-and-workload-shape-selW5g7f72>

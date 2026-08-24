@@ -1,0 +1,52 @@
+{
+  "slides": [
+    {
+      "type": "figure",
+      "eyebrow": "Why this optimization · follow-up to Aug 11",
+      "title": "Common-start is correct—but recomputes longer prefix hits",
+      "image": "figures/last_week_ragged_execution.png",
+      "caption": "Lane A can reuse 768 tokens while Lane B can reuse only 256. The current batch starts both at 256, so Lane A re-executes 512 already-known token positions.",
+      "notes": "This directly follows last week's ragged-execution limitation slide. Current common-start assignment is numerically correct; the open question was whether suppressing redundant lane work would shorten the lockstep batch critical path, or only reduce operation count and improve fairness/energy. Source figure: 2026-08-11 weekly collaborator deck, slide 7."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Benchmark-only C1-M change",
+      "title": "We skipped lane-sliced compute; the fixed batch floor stayed",
+      "image": "figures/decode_step_c1_scope.png",
+      "caption": "Green is predicated while step < Rᵢ − min(R); yellow still executes for the inactive lane; grey remains full-bsz communication or whole-buffer work.",
+      "notes": "Exact implemented skip surface: vecmat_computation_f32 avoids Q/K/V/O/up/gate/down GEMV maps; score_matvec_mult skips Q·K cache traversal; output_matvec_mult skips P·V cache aggregation; process_kv preserves resident KV. c1_zero_inactive_x establishes deterministic dummy state and is not saved work. RMSNorm, QK norm, RoPE, softmax, SiLU/SwiGLU, residuals, whole-buffer zero/cast, every collective, route reconfiguration, X/Z transport and head/tail remain active at fixed extent. One global token position remains; this is C1, not C2 independent progress."
+    },
+    {
+      "type": "figure",
+      "eyebrow": "Real CS-3 result · 20/20 accepted",
+      "title": "37.49% less lane-step work produced no critical-path speedup",
+      "image": "figures/c1_result.png",
+      "caption": "Full Qwen3-1.7B, bsz=2, S/N/F/G=256/1024/769/255, five repetitions per case, raw TSC cycles. At K=768, mean speedup is −0.0297%.",
+      "notes": "Construction-matched manual K0 is the only baseline used here. Mean speedups for K=256/512/768 are -0.0328%, -0.0924%, and -0.0297%; the response is non-monotonic and no break-even appears. A descriptive K=768 Welch sensitivity has an approximate +0.106% speedup upper edge, but serial case blocks make it non-universal. The automatic Experiment-A K0 is 12.2363% faster than this manual construction and must not be mixed into the ratio. Decision boundary: NO-GO for C1-M as a throughput mechanism at this point; operation reduction is real, end-to-end throughput/fairness/energy remain separate or unknown."
+    },
+    {
+      "type": "compare",
+      "eyebrow": "Next decision",
+      "title": "Pin the fixed floor—or move to independent lane progress",
+      "options": [
+        {
+          "label": "A · Profile the C1 fixed floor",
+          "points": [
+            "Time or ablate collectives, whole-buffer ops and transport by phase",
+            "Identify the single largest remaining critical-path item",
+            "Broaden masking only if that removable term can change the <0.1% result"
+          ]
+        },
+        {
+          "label": "B · Design C2 / continuous batching",
+          "points": [
+            "Independent per-lane start, cursor and completion state",
+            "Price added SRAM, protocol, admission and scheduler complexity",
+            "Only credit gains that survive a serving-like schedule replay"
+          ]
+        }
+      ],
+      "notes": "No recommendation is implied yet. Option A is one bounded profiling gate to explain the fixed floor. Option B targets the final mechanism in which a long-hit request can advance without waiting for another lane's missing prefix, but crosses into C2 and O1 continuous-batching scope. The realistic workload projection remains necessary before either path receives a serving-level gain."
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-# Editing the 2026-08-24 weekly deck (M3 multirow on-chip KV offload)
+# Editing the 2026-08-24 weekly deck
 
 - `deck.json` is the slide text/specification; the built deck lives at
   `../2026-08-24.pptx`.
@@ -27,6 +27,14 @@
 - Every number is a real CS-3 measurement except the L/~3000 projection
   (labeled projection) — see REPORT.md §5. v4 result-file meta says
   git-commit "2ffe1f6"; the true sources commit is b03bd6c.
+
+Slides 9–12 are the M1-S4 C1-M ragged-execution study insert. Their complete,
+independently buildable source lives in
+`../2026-08-24-m1-s4-ragged-c1-src/`, and the standalone deck is
+`../2026-08-24-m1-s4-ragged-c1.pptx`. The merged slide spec deliberately
+references that sibling source directory so the editable Excalidraw, plot
+script, derived figures, standalone deck, and merged slides share one source
+of truth.
 
 Regenerate:
 

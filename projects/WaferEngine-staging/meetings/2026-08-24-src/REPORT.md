@@ -293,3 +293,19 @@ prefill-recompute curve for T2a at large L.
   `docs/diagrams/m3-multirow-band-epochs.excalidraw`.
 - M2 inputs reused: `milestones/M2-experiment-register.md` (E5/E9/E10/E10D),
   `agent-memory/.../assets/2026-07-31-e10-ab-boundary/`.
+
+## 7. M1-S4 C1-M ragged-execution insert (slides 9–12)
+
+The four appended slides are maintained independently under
+`../2026-08-24-m1-s4-ragged-c1-src/`; see its `EDITING.md` for regeneration,
+device provenance, and claim boundaries. The standalone insert deck is
+`../2026-08-24-m1-s4-ragged-c1.pptx`.
+
+The measured point is full-model Qwen3-1.7B, `bsz=2`,
+`S/N/F/G=256/1024/769/255`, five real-CS-3 repetitions for each of
+`K=0/256/512/768`, using raw TSC cycles. At `K=768`, C1-M avoids 37.49% of
+timed lane-step work but measures −0.0297% speedup relative to the
+construction-matched manual `K=0` baseline. This supports a throughput NO-GO
+for fixed-communication C1-M at this point; it does not bound C2 independent
+progress, communication compaction, EOS masking, fairness, energy, or
+continuous batching.
