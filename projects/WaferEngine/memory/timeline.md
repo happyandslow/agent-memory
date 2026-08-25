@@ -2,6 +2,8 @@
 
 # WaferEngine Timeline
 
+- 2026-08-24 — waferllm-pageability-demo-code-redistribution → `memory/inbox/2026-08-24-waferllm-pageability-demo-code-redistribution.md`
+- 2026-08-24 — waferllm-attn-ffn-code-snapshot → `memory/inbox/2026-08-24-waferllm-attn-ffn-code-snapshot.md`
 - 2026-08-24 — meshjit-p256-shared-slot-e2e-pass → `memory/inbox/2026-08-24-meshjit-p256-shared-slot-e2e-pass.md`
 - 2026-08-24 — meshjit-p256-pointer-alias-fmaxh-isolated → `memory/inbox/2026-08-24-meshjit-p256-pointer-alias-fmaxh-isolated.md`
 - 2026-08-24 — meshjit-p256-max-reduce-passive-late-visibility-negative → `memory/inbox/2026-08-24-meshjit-p256-max-reduce-passive-late-visibility-negative.md`

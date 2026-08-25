@@ -2,7 +2,7 @@
 
 **Project:** WaferEngine-staging  
 **Author:** codex  
-**Status:** captured
+**Status:** superseded by the approved 2026-08-25 decision below
 
 ## What happened / finding
 
@@ -35,4 +35,5 @@
 
 - In-repo English design: `docs/analysis/2026-08-24-o1-continuous-batching-roadmap.md`
 - In-repo Chinese translation: `docs/analysis/2026-08-24-o1-continuous-batching-roadmap.zh-CN.md`
-- ContextBase: <https://context.ed-aisys.com/doc/2026-08-24-design-o1-continuous-batching-staged-roadmap-T8ZrZvjYEi>
+- ContextBase: <https://context.ed-aisys.com/doc/2026-08-25-decision-o1-main-first-continuous-batching-roadmap-T8ZrZvjYEi>
+- Superseding capture: `memory/inbox/2026-08-25-o1-main-first-continuous-batching-decision.md`
