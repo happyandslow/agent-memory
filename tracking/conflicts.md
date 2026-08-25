@@ -6,3 +6,11 @@
 - Local-only commits: `cfd5ef7`, `84ddb2d`, `fe92a54`, `fb5e3a8`, `f0c1742`, `6bafcb9`, `8e02cd6`.
 - Remote-only commit: `1709f5a memory: daily reflect captures 2026-08-19 (cron)`.
 - Cron did not push or rebase. Le/manual resolution needed: inspect and reconcile divergence, then push or reset intentionally.
+
+## 2026-08-25 — local branch still diverged from origin/main; pull blocked by binary worktree change
+
+- Daily maintenance could not safely start with `git pull --ff-only`: `main` is ahead 1 and behind 6 relative to `origin/main`.
+- Local-only commit: `6088518 memory: daily work maintenance 2026-08-24`.
+- Remote-only commits at status time: `dd06c1c`, `7487863`, `e9e480b`, `c5a7280`, `bf77964`, `ee67297`.
+- Worktree also has a modified binary meeting deck: `projects/WaferEngine-staging/meetings/2026-08-24.pptx` (`1809578 -> 2343557` bytes in `git diff --stat`).
+- Cron did not push, rebase, reset, or overwrite the deck. Le/manual resolution needed: decide whether to preserve/commit the PPTX change, then reconcile `main` with `origin/main`.
