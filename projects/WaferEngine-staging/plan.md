@@ -21,6 +21,9 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [x] Re-measure the prefill prefix-reuse saving on real-dim device configs; real-scale WSE-3 results now show strongly sub-linear savings (25% reuse → 7.7%, 50% → 22.8%, 75% → 45.2%).
 - [x] Scope forced-token decode, T0.5 in-bank reuse, and T1 idle-PE offload prototypes.
 - [x] Implement S6b forced-token decode in staged form: S0 inert `F=1`, S1 correctness with host-fed F embeddings, S2 tail-skip/token-drain guard; Step 2 is sim-verified at F=4 and the F-sweep shows the toy-scale speedup is mostly skip-compute, not pipeline fill.
+- [x] Close M1-S3 inner-PE KV reuse on `kv-feature@f5252b3`: automatic exact/content-prefix
+  planning, miss/suffix force-decode, empty-first/LRU replacement, success-only ledger commit,
+  controller-owned `KVStore`, 414 host tests, and a real CS-3 post-cleanup closure gate.
 - [ ] Decide whether fused e2e should carry prefill's sampled token into decode (host hop or new on-chip `pf_ht_tail` → HT_head wire) before making end-to-end accuracy claims.
 
 ## Decisions
@@ -37,6 +40,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 | 2026-07-20 | Decode retain's benefit is skipping already-executed decode steps, not making each equal-work step cheaper. | Equal-work decode comparisons differ by only ~0.02% fixed overhead; the correct end-state comparison saves 34.6% total decode work by avoiding redoing discarded steps. | `memory/topics/s6a-prefill-warm-start.md` |
 | 2026-08-04 | M1-S3 implementation-role contract: Codex stays planner+reviewer and does NOT implement production changes itself; it dispatches the approved bounded task to Claude Code (`claude-fable-5`, fallback `claude-opus-4-8`), which implements + runs the agreed gates; Codex then independently reviews evidence+diff and iterates to gate-pass. | Every step boundary is a hard approval gate; a phrase like "do S3.1 first" selects the next planned step, it does not replace the role contract. The `launch.py` modularisation was scoped as a separate pure-move task with a bit-identical gate and has since been completed + merged before S3.3 (history, not open). | `memory/inbox/2026-08-04-m1-s3-planner-implementation-review-contract.md` (hermes) |
 | 2026-08-11 | Report the M1-S3.7 benchmark in raw TSC cycles plus throughput converted at 0.85 GHz. | This matches the decode baseline and the collaborator-deck convention requested for this experiment. It does not supersede the older 1.1-GHz e2e decision; the global clock reconciliation remains open and raw cycles stay authoritative. | `memory/topics/m1-s37-prefix-reuse-device-gates.md` |
+| 2026-08-25 | Mark M1-S3 complete at `kv-feature@f5252b3`. | PR #5 merged controller ownership cleanup; 414 host tests and the real CS-3 miss→prefix-reuse closure gate passed. S4-S6 are separate follow-ons. | `memory/topics/m1-s37-prefix-reuse-device-gates.md` |
 
 ## Next actions
 
@@ -45,10 +49,9 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
       one double-counts); the next free-decode token is a common tail, charged to all lanes or none.
       Targets: `meetings/2026-08-02.pptx` slide 12, `meetings/2026-08-02-src/make_figures.py`. See
       `memory/topics/m2-experiment-register.md` change log 2026-08-03.
-- [ ] **Add the shared host/config `1 <= F = prompt_len - start <= decode_len` guard** before
-      enabling automatic M1-S3 cache-hit scheduling — `F=0` (seedless exact-history hit) deadlocks
-      the step-0 HT_head/HT_tail dependency; M1 runs an exact reuse at `F=1`, not `F=0`. See
-      `memory/topics/force-decode-startup-depends-on-prefix.md` § Updates 2026-08-04.
+- [x] **DONE in M1-S3.1 — shared host/config `1 <= F = prompt_len - start <= decode_len` guard.**
+      Automatic cache-hit scheduling keeps exact reuse at `F=1`; seedless `F=0` remains unsupported.
+      See `memory/topics/force-decode-startup-depends-on-prefix.md` § Updates 2026-08-04.
 - [ ] **For M1-S4, define actual-length/EOS commit semantics for automatic replacement early-stop.**
       The temporary S3.5 rule fails closed after draining trailing TSC because host slot length may have
       advanced to planned `RoundPlan.end` while the device produced fewer resident KV positions. See
@@ -90,6 +93,14 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 - [ ] Fix e2e source/documentation hygiene found in the 2026-07-09 read: stale `route_calc.csl:5` axis comment, prefill vocab-padding asymmetry, K-pipe alias invariant check, and `csl_color_audit` raw `@set_config` parsing.
 
 ## Narrative progress log
+
+### 2026-08-25 — M1-S3 closure merged and re-gated
+
+- PR #5 merged the remaining S3 closure artifacts into `kv-feature@f5252b3`; `RoundPlanner` now
+  privately owns `KVStore`, and launch uses controller start/commit/snapshot seams.
+- The post-cleanup host suite passed 414 tests. The real CS-3 closure case reproduced
+  `start/F = 0/16 → 8/9`, reconstructed both 24-token ledgers as `OK`, exited `rc=0`, and left no
+  job behind. M1-S3 is complete; S4 ragged execution, S5 capacity, and S6 mixed e2e remain open.
 
 ### 2026-08-23 — maintain pass drained M3 payload sweep capture
 

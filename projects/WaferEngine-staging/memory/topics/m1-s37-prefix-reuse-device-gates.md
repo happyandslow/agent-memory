@@ -1,11 +1,23 @@
 ---
-summary: M1/S3.7 now has a real CS-3 positive-prefix reuse gate and full-model TSC baselines; future steps require explicit device gates, and S5 must separate batch size from slot count.
-tags: [WaferEngine-staging, M1, S3.7, prefix-reuse, device-gate, cs3, qwen3, performance, capacity, drained-inbox, 2026-08-11]
+summary: M1-S3 is complete at kv-feature@f5252b3 after controller-ownership cleanup, 414 host tests, and a real CS-3 closure gate; S4-S6 remain separate.
+tags: [WaferEngine-staging, M1, S3, S3.7, prefix-reuse, closure, device-gate, cs3, qwen3, performance, capacity, drained-inbox, 2026-08-25]
 ---
 
 # M1/S3.7 prefix reuse device gates and full-model benchmarks — 2026-08-10/11
 
 This topic was created by the 2026-08-11 maintain pass from the dated M1/S3.7 inbox captures. In-repo milestone state still lives in `/home/lexu/WaferEngine-staging/milestones/M1-intra-pe-reuse.md`; this note preserves the durable memory-layer facts and operational constraints.
+
+## S3 closure — 2026-08-25
+
+M1-S3 is complete on `lexu/staging/kv-feature@f5252b3`. PR #4 supplied the feature body and PR #5
+merged the remaining closure artifacts. `RoundPlanner` now privately owns `KVStore`; launch uses the
+controller's planning, start-action, success-commit, and immutable-snapshot seams instead of
+coordinating a peer store. The post-cleanup host suite passed **414 tests**.
+
+The real CS-3 closure gate reproduced the tracked two-round miss→positive-prefix flow:
+`start/F = 0/16 → 8/9`; both final 24-token ledgers reconstructed `OK`; the launcher exited `rc=0`;
+and no job remained. Ragged execution, capacity, and the mixed end-to-end matrix remain M1-S4, S5,
+and S6. They are follow-on milestones, not S3 blockers.
 
 ## Device-gate policy
 

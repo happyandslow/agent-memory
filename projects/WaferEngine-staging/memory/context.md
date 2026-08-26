@@ -10,11 +10,14 @@ Compact startup packet for fresh agent sessions. This generated view is intentio
 
 ## Current state
 
-- Daily maintenance last checked this project on 2026-08-24.
+- Maintenance last checked this project on 2026-08-25.
 - Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
 
 ## Current focus
 
+- M1-S3 is complete at `kv-feature@f5252b3`: controller-owned KV state, 414 host tests, and the
+  real CS-3 post-cleanup gate passed. M1 continues with S4 ragged execution, then S5 capacity and
+  S6 mixed e2e. See `memory/topics/m1-s37-prefix-reuse-device-gates.md`.
 - M3 idle-PE tier: multirow storage measured both ways on CS-3 (v4 GO-chain vs v5 cascade, 81 runs); three device-fit models in `column_cycle_demo_multirow_v5/perf_model.py`; tier verdict = on-chip reload 46-170x below host ingress, resume delta-dominated. See `memory/topics/m3-idle-pe-tier.md` (updated 2026-08-24).
 - Use `plan.md` next actions plus any project-specific topic notes below.
 

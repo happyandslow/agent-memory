@@ -2,7 +2,10 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-08-25 — o1-promoted-to-m1b-milestone → `memory/inbox/2026-08-25-o1-promoted-to-m1b-milestone.md`
 - 2026-08-25 — o1-main-first-continuous-batching-decision → `memory/inbox/2026-08-25-o1-main-first-continuous-batching-decision.md`
+- 2026-08-25 — meshrt-paper-result-provenance-gap → `memory/inbox/2026-08-25-meshrt-paper-result-provenance-gap.md`
+- 2026-08-25 — m1-s3-closure-merged → `memory/inbox/2026-08-25-m1-s3-closure-merged.md`
 - 2026-08-25 — expA-scripts-salvage.tar → `assets/2026-08-25-expA-scripts-salvage.tar.gz`
 - 2026-08-24 — staged-unified-diff-whitespace-false-positive → `memory/inbox/2026-08-24-staged-unified-diff-whitespace-false-positive.md`
 - 2026-08-24 — o1-continuous-batching-roadmap → `memory/inbox/2026-08-24-o1-continuous-batching-roadmap.md`
