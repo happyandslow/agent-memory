@@ -2,4 +2,7 @@
 
 # wse3-performance-model Timeline
 
-_No dated events yet._
+- 2026-08-28 — qwen3-4b-witness-path-stale → `memory/inbox/2026-08-28-qwen3-4b-witness-path-stale.md`
+- 2026-08-27 — project-session-git-safety-and-prompt-policy → `memory/inbox/2026-08-27-project-session-git-safety-and-prompt-policy.md`
+- 2026-08-27 — github-repository-and-local-tracking → `memory/inbox/2026-08-27-github-repository-and-local-tracking.md`
+- 2026-08-27 — codex-session-lifecycle-hooks → `memory/inbox/2026-08-27-codex-session-lifecycle-hooks.md`
