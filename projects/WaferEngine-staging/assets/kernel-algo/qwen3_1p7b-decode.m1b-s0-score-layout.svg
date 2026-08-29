@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1320" viewBox="0 0 1700 1320">
+  <defs>
+    <style>
+      .title{font:700 30px Arial,sans-serif;fill:#172033}.sub{font:16px Arial,sans-serif;fill:#475569}
+      .ph{font:700 23px Arial,sans-serif;fill:#172033}.h{font:700 18px Arial,sans-serif;fill:#172033}
+      .body{font:15px Arial,sans-serif;fill:#334155}.small{font:13px Arial,sans-serif;fill:#475569}
+      .tiny{font:12px Arial,sans-serif;fill:#475569}.mono{font:14px 'DejaVu Sans Mono',monospace;fill:#172033}
+      .cell{stroke:#334155;stroke-width:1}.grid{stroke:#64748b;stroke-width:1}.arrow{stroke:#64748b;stroke-width:2;fill:none}
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#64748b"/></marker>
+  </defs>
+  <rect width="1700" height="1320" fill="#ffffff"/>
+  <text x="45" y="48" class="title">score_matvec_mult(): Q × K → score memory layout</text>
+  <text x="45" y="78" class="sub">Code-derived dimensions: bsz=2, gqa_group_size=2, kv_cols=4. Drawn slot capacity=4 for readability; live test config kv_len_per_pe=68.</text>
+
+  <!-- left panel -->
+  <rect x="35" y="105" width="795" height="1000" rx="16" fill="#fff7ed" stroke="#c2410c" stroke-width="2"/>
+  <text x="65" y="145" class="ph">Before: scalar packed score (`iter_num=2` for both requests)</text>
+  <text x="65" y="174" class="mono">For each (b,g): Q[b,g,:] [1×4] × K[b,:,0:2] [4×2] → score [1×2]</text>
+
+  <text x="65" y="220" class="h">Left input — Q region of `QKV_tile`</text>
+  <text x="65" y="244" class="small">memory order `[bsz=2][gqa_group_size=2][kv_cols=4]` = `[2][2][4]` bf16; k is fastest</text>
+  <text x="78" y="280" class="body">request b=0</text>
+  <rect x="190" y="258" width="250" height="42" rx="6" fill="#fecdd3" stroke="#be123c"/><text x="315" y="284" text-anchor="middle" class="body">group g=0: k0  k1  k2  k3</text>
+  <rect x="450" y="258" width="250" height="42" rx="6" fill="#fce7f3" stroke="#9d174d"/><text x="575" y="284" text-anchor="middle" class="body">group g=1: k0  k1  k2  k3</text>
+  <text x="78" y="330" class="body">request b=1</text>
+  <rect x="190" y="308" width="250" height="42" rx="6" fill="#bfdbfe" stroke="#1d4ed8"/><text x="315" y="334" text-anchor="middle" class="body">group g=0: k0  k1  k2  k3</text>
+  <rect x="450" y="308" width="250" height="42" rx="6" fill="#dbeafe" stroke="#1e40af"/><text x="575" y="334" text-anchor="middle" class="body">group g=1: k0  k1  k2  k3</text>
+
+  <text x="65" y="395" class="h">Right input — `XKCache`</text>
+  <text x="65" y="419" class="small">physical memory order `[bsz=2][kv_cols=4][kv_len_per_pe]`; drawing uses 4 local columns, first 2 active</text>
+  <g transform="translate(90,460)">
+    <text x="120" y="-13" text-anchor="middle" class="body">request b=0 · K[4 features × 4 columns]</text>
+    <rect x="0" y="0" width="120" height="112" fill="#fecdd3"/><rect x="120" y="0" width="120" height="112" fill="#e2e8f0"/><rect x="0" y="0" width="240" height="112" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <path d="M60 0V112 M120 0V112 M180 0V112 M0 28H240 M0 56H240 M0 84H240" class="grid"/>
+    <text x="30" y="132" text-anchor="middle" class="tiny">j0</text><text x="90" y="132" text-anchor="middle" class="tiny">j1</text><text x="150" y="132" text-anchor="middle" class="tiny">j2</text><text x="210" y="132" text-anchor="middle" class="tiny">j3</text>
+    <text x="-12" y="19" text-anchor="end" class="tiny">k0</text><text x="-12" y="47" text-anchor="end" class="tiny">k1</text><text x="-12" y="75" text-anchor="end" class="tiny">k2</text><text x="-12" y="103" text-anchor="end" class="tiny">k3</text>
+    <text x="60" y="55" text-anchor="middle" class="body">L₀=2</text><text x="180" y="55" text-anchor="middle" class="small">not read</text>
+  </g>
+  <g transform="translate(470,460)">
+    <text x="120" y="-13" text-anchor="middle" class="body">request b=1 · K[4 features × 4 columns]</text>
+    <rect x="0" y="0" width="120" height="112" fill="#bfdbfe"/><rect x="120" y="0" width="120" height="112" fill="#e2e8f0"/><rect x="0" y="0" width="240" height="112" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <path d="M60 0V112 M120 0V112 M180 0V112 M0 28H240 M0 56H240 M0 84H240" class="grid"/>
+    <text x="30" y="132" text-anchor="middle" class="tiny">j0</text><text x="90" y="132" text-anchor="middle" class="tiny">j1</text><text x="150" y="132" text-anchor="middle" class="tiny">j2</text><text x="210" y="132" text-anchor="middle" class="tiny">j3</text>
+    <text x="-12" y="19" text-anchor="end" class="tiny">k0</text><text x="-12" y="47" text-anchor="end" class="tiny">k1</text><text x="-12" y="75" text-anchor="end" class="tiny">k2</text><text x="-12" y="103" text-anchor="end" class="tiny">k3</text>
+    <text x="60" y="55" text-anchor="middle" class="body">L₁=2</text><text x="180" y="55" text-anchor="middle" class="small">not read</text>
+  </g>
+
+  <path d="M410 612 V650" class="arrow" marker-end="url(#arrow)"/>
+  <text x="65" y="690" class="h">Output — packed prefix of `score_f32`</text>
+  <text x="65" y="714" class="small">logical order `[bsz=2][gqa_group_size=2][iter_num=2]`; full allocation still has `2×2×4=16` f32 cells</text>
+  <g transform="translate(80,748)">
+    <rect x="0" y="0" width="140" height="62" fill="#fecdd3" class="cell"/><text x="70" y="25" text-anchor="middle" class="body">b0,g0</text><text x="70" y="47" text-anchor="middle" class="small">2 scores</text>
+    <rect x="140" y="0" width="140" height="62" fill="#fce7f3" class="cell"/><text x="210" y="25" text-anchor="middle" class="body">b0,g1</text><text x="210" y="47" text-anchor="middle" class="small">2 scores</text>
+    <rect x="280" y="0" width="140" height="62" fill="#bfdbfe" class="cell"/><text x="350" y="25" text-anchor="middle" class="body">b1,g0</text><text x="350" y="47" text-anchor="middle" class="small">2 scores</text>
+    <rect x="420" y="0" width="140" height="62" fill="#dbeafe" class="cell"/><text x="490" y="25" text-anchor="middle" class="body">b1,g1</text><text x="490" y="47" text-anchor="middle" class="small">2 scores</text>
+    <rect x="560" y="0" width="140" height="62" fill="#e2e8f0" class="cell"/><text x="630" y="25" text-anchor="middle" class="body">unused tail</text><text x="630" y="47" text-anchor="middle" class="small">8 zero cells</text>
+  </g>
+  <text x="80" y="838" class="mono">bases = 0, 2, 4, 6  (each next base depends on shared iter_num=2)</text>
+  <rect x="65" y="872" width="730" height="95" rx="8" fill="#ffedd5" stroke="#c2410c"/>
+  <text x="85" y="902" class="h">Why this works on main</text>
+  <text x="85" y="930" class="body">Both requests use the same `iter_num=2`, so every packed slot has the same width.</text>
+  <text x="85" y="955" class="body">It has no address representation for request-local lengths such as `[1,3]`.</text>
+
+  <!-- right panel -->
+  <rect x="870" y="105" width="795" height="1000" rx="16" fill="#f0fdf4" stroke="#15803d" stroke-width="2"/>
+  <text x="900" y="145" class="ph">After: fixed request segments, packed groups (`current_len=[1,3]`)</text>
+  <text x="900" y="174" class="mono">For (b,g): Q[b,g,:] [1×4] × K[b,:,0:L_b] [4×L_b] → score [1×L_b]</text>
+
+  <text x="900" y="220" class="h">Left input — Q region of `QKV_tile` (unchanged)</text>
+  <text x="900" y="244" class="small">same physical order `[bsz=2][gqa_group_size=2][kv_cols=4]`; Q feature width never follows sequence length</text>
+  <text x="913" y="280" class="body">request b=0</text>
+  <rect x="1025" y="258" width="250" height="42" rx="6" fill="#fecdd3" stroke="#be123c"/><text x="1150" y="284" text-anchor="middle" class="body">group g=0: k0  k1  k2  k3</text>
+  <rect x="1285" y="258" width="250" height="42" rx="6" fill="#fce7f3" stroke="#9d174d"/><text x="1410" y="284" text-anchor="middle" class="body">group g=1: k0  k1  k2  k3</text>
+  <text x="913" y="330" class="body">request b=1</text>
+  <rect x="1025" y="308" width="250" height="42" rx="6" fill="#bfdbfe" stroke="#1d4ed8"/><text x="1150" y="334" text-anchor="middle" class="body">group g=0: k0  k1  k2  k3</text>
+  <rect x="1285" y="308" width="250" height="42" rx="6" fill="#dbeafe" stroke="#1e40af"/><text x="1410" y="334" text-anchor="middle" class="body">group g=1: k0  k1  k2  k3</text>
+
+  <text x="900" y="395" class="h">Right input — `XKCache` (storage order unchanged)</text>
+  <text x="900" y="419" class="small">same `[bsz=2][kv_cols=4][kv_len_per_pe]`; only each request's DSD traversal length differs</text>
+  <g transform="translate(925,460)">
+    <text x="120" y="-13" text-anchor="middle" class="body">request b=0 · K[4 features × 4 columns]</text>
+    <rect x="0" y="0" width="60" height="112" fill="#fecdd3"/><rect x="60" y="0" width="180" height="112" fill="#e2e8f0"/><rect x="0" y="0" width="240" height="112" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <path d="M60 0V112 M120 0V112 M180 0V112 M0 28H240 M0 56H240 M0 84H240" class="grid"/>
+    <text x="30" y="132" text-anchor="middle" class="tiny">j0</text><text x="90" y="132" text-anchor="middle" class="tiny">j1</text><text x="150" y="132" text-anchor="middle" class="tiny">j2</text><text x="210" y="132" text-anchor="middle" class="tiny">j3</text>
+    <text x="-12" y="19" text-anchor="end" class="tiny">k0</text><text x="-12" y="47" text-anchor="end" class="tiny">k1</text><text x="-12" y="75" text-anchor="end" class="tiny">k2</text><text x="-12" y="103" text-anchor="end" class="tiny">k3</text>
+    <text x="30" y="55" text-anchor="middle" class="body">L₀=1</text><text x="150" y="55" text-anchor="middle" class="small">not read</text>
+  </g>
+  <g transform="translate(1305,460)">
+    <text x="120" y="-13" text-anchor="middle" class="body">request b=1 · K[4 features × 4 columns]</text>
+    <rect x="0" y="0" width="180" height="112" fill="#bfdbfe"/><rect x="180" y="0" width="60" height="112" fill="#e2e8f0"/><rect x="0" y="0" width="240" height="112" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <path d="M60 0V112 M120 0V112 M180 0V112 M0 28H240 M0 56H240 M0 84H240" class="grid"/>
+    <text x="30" y="132" text-anchor="middle" class="tiny">j0</text><text x="90" y="132" text-anchor="middle" class="tiny">j1</text><text x="150" y="132" text-anchor="middle" class="tiny">j2</text><text x="210" y="132" text-anchor="middle" class="tiny">j3</text>
+    <text x="-12" y="19" text-anchor="end" class="tiny">k0</text><text x="-12" y="47" text-anchor="end" class="tiny">k1</text><text x="-12" y="75" text-anchor="end" class="tiny">k2</text><text x="-12" y="103" text-anchor="end" class="tiny">k3</text>
+    <text x="90" y="55" text-anchor="middle" class="body">L₁=3</text><text x="210" y="55" text-anchor="middle" class="small">tail</text>
+  </g>
+
+  <path d="M1245 612 V650" class="arrow" marker-end="url(#arrow)"/>
+  <text x="900" y="690" class="h">Output — fixed `G*C` request segments; groups packed inside</text>
+  <text x="900" y="714" class="small">physical arena `[bsz=2][G*C_draw=8]`; request base is fixed, group stride is that request's `current_len`</text>
+  <g transform="translate(900,748)">
+    <text x="150" y="-9" text-anchor="middle" class="small">request b0 · fixed base 0 · capacity 8</text>
+    <rect x="0" y="0" width="300" height="62" fill="#e2e8f0" class="cell"/>
+    <rect x="0" y="0" width="37.5" height="62" fill="#fecdd3" class="cell"/><text x="18.75" y="36" text-anchor="middle" class="tiny">g0</text>
+    <rect x="37.5" y="0" width="37.5" height="62" fill="#fce7f3" class="cell"/><text x="56.25" y="36" text-anchor="middle" class="tiny">g1</text>
+    <text x="187.5" y="27" text-anchor="middle" class="body">request tail</text><text x="187.5" y="49" text-anchor="middle" class="small">6 zero cells</text>
+
+    <text x="470" y="-9" text-anchor="middle" class="small">request b1 · fixed base 8 · capacity 8</text>
+    <rect x="320" y="0" width="300" height="62" fill="#e2e8f0" class="cell"/>
+    <rect x="320" y="0" width="112.5" height="62" fill="#bfdbfe" class="cell"/><text x="376.25" y="27" text-anchor="middle" class="body">g0</text><text x="376.25" y="49" text-anchor="middle" class="small">3 cells</text>
+    <rect x="432.5" y="0" width="112.5" height="62" fill="#dbeafe" class="cell"/><text x="488.75" y="27" text-anchor="middle" class="body">g1</text><text x="488.75" y="49" text-anchor="middle" class="small">3 cells</text>
+    <text x="582.5" y="27" text-anchor="middle" class="tiny">tail</text><text x="582.5" y="49" text-anchor="middle" class="tiny">2 zero</text>
+  </g>
+  <text x="900" y="838" class="mono">request_base=b*G*C; group_base=request_base+g*current_len</text>
+  <rect x="900" y="872" width="730" height="95" rx="8" fill="#dcfce7" stroke="#15803d"/>
+  <text x="920" y="902" class="h">Why `[1,3]` fits</text>
+  <text x="920" y="930" class="body">Requests never move; groups stay packed so QK keeps one `@map(G)` per feature.</text>
+  <text x="920" y="955" class="body">The full arena is zeroed, so request tails remain neutral in the unchanged collective.</text>
+
+  <!-- legend -->
+  <rect x="35" y="1135" width="1630" height="145" rx="14" fill="#f8fafc" stroke="#64748b" stroke-width="1.5"/>
+  <text x="60" y="1170" class="h">Notation anchored to code</text>
+  <text x="60" y="1200" class="body">`b`: request/lane index (0..bsz-1) · `g`: GQA subgroup (0..gqa_group_size-1) · `k`: local Q/K feature (0..kv_cols-1) · `j`: local sequence column</text>
+  <text x="60" y="1230" class="body">`L_b`: position_current_length(position[b], local_py) · `C_draw=4`: visual slot width only · live `kv_len_per_pe=68`, `P_BLOCK_SIZE=8`, `attn_per_pe=8`</text>
+  <text x="60" y="1260" class="small">P-aligned ingress justifies the local cell counts and next-free write column. Correct attention additionally requires the intended K/V pairs and matching K/V permutation.</text>
+  <text x="1645" y="1305" text-anchor="end" class="small">origin/main b136ab64 + uncommitted S0 Part 1 · audit 2026-08-29</text>
+</svg>
