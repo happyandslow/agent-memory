@@ -2,6 +2,8 @@
 
 # wse3-performance-model Timeline
 
+- 2026-08-30 — wavel-development-worktree-boundary → `memory/inbox/2026-08-30-wavel-development-worktree-boundary.md`
+- 2026-08-29 — baseline-first-wavel-adoption-order → `memory/inbox/2026-08-29-baseline-first-wavel-adoption-order.md`
 - 2026-08-28 — qwen3-4b-witness-path-stale → `memory/inbox/2026-08-28-qwen3-4b-witness-path-stale.md`
 - 2026-08-28 — on-chip-sram-offload-search-use-case → `memory/inbox/2026-08-28-on-chip-sram-offload-search-use-case.md`
 - 2026-08-28 — approved-two-level-sram-offload-scope → `memory/inbox/2026-08-28-approved-two-level-sram-offload-scope.md`

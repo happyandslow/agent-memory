@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1320" viewBox="0 0 1800 1320">
+  <defs>
+    <style>
+      text { font-family: Inter, Arial, sans-serif; fill: #172033; }
+      .title { font-size: 30px; font-weight: 700; }
+      .sub { font-size: 17px; fill: #475569; }
+      .head { font-size: 24px; font-weight: 700; }
+      .label { font-size: 17px; font-weight: 600; }
+      .body { font-size: 16px; }
+      .small { font-size: 13px; }
+      .mono { font-family: "DejaVu Sans Mono", monospace; font-size: 14px; }
+      .cell { stroke: #334155; stroke-width: 1.3; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><path d="M0,0 L10,3.5 L0,7 Z" fill="#475569"/></marker>
+  </defs>
+  <rect width="1800" height="1320" fill="#ffffff"/>
+  <text x="45" y="48" class="title">output_matvec_mult(): score × V → attention output memory layout</text>
+  <text x="45" y="80" class="sub">bsz=2, gqa_group_size=2, kv_cols=4, drawn kv_len_per_pe=4; before N=2, after current_len=[1,3]</text>
+
+  <rect x="35" y="110" width="835" height="1090" rx="18" fill="#fff7ed" stroke="#c2410c" stroke-width="2.5"/>
+  <rect x="930" y="110" width="835" height="1090" rx="18" fill="#f0fdf4" stroke="#15803d" stroke-width="2.5"/>
+  <text x="70" y="154" class="head">BEFORE — origin/main, one shared iter_num=2</text>
+  <text x="965" y="154" class="head">AFTER — S0, request lengths [1,3]</text>
+
+  <!-- left score old -->
+  <text x="70" y="198" class="label">LEFT INPUT: score bf16, allocation [bsz][G*C] = 16 cells</text>
+  <g transform="translate(72,220)">
+    <rect class="cell" x="0" y="0" width="44" height="50" fill="#fecaca"/><rect class="cell" x="44" y="0" width="44" height="50" fill="#fecaca"/>
+    <rect class="cell" x="88" y="0" width="44" height="50" fill="#fed7aa"/><rect class="cell" x="132" y="0" width="44" height="50" fill="#fed7aa"/>
+    <rect class="cell" x="176" y="0" width="44" height="50" fill="#bbf7d0"/><rect class="cell" x="220" y="0" width="44" height="50" fill="#bbf7d0"/>
+    <rect class="cell" x="264" y="0" width="44" height="50" fill="#bfdbfe"/><rect class="cell" x="308" y="0" width="44" height="50" fill="#bfdbfe"/>
+    <g fill="#e2e8f0"><rect class="cell" x="352" y="0" width="44" height="50"/><rect class="cell" x="396" y="0" width="44" height="50"/><rect class="cell" x="440" y="0" width="44" height="50"/><rect class="cell" x="484" y="0" width="44" height="50"/><rect class="cell" x="528" y="0" width="44" height="50"/><rect class="cell" x="572" y="0" width="44" height="50"/><rect class="cell" x="616" y="0" width="44" height="50"/><rect class="cell" x="660" y="0" width="44" height="50"/></g>
+    <text x="12" y="31" class="small">b0g0</text><text x="100" y="31" class="small">b0g1</text><text x="188" y="31" class="small">b1g0</text><text x="276" y="31" class="small">b1g1</text><text x="505" y="31" class="small">tail</text>
+    <text x="0" y="76" class="mono">score group bases = 0,2,4,6; each group length N=2</text>
+  </g>
+
+  <!-- left score new -->
+  <text x="965" y="198" class="label">LEFT INPUT: same allocation; fixed 8-cell request segments</text>
+  <g transform="translate(967,220)">
+    <rect class="cell" x="0" y="0" width="44" height="50" fill="#fecaca"/><rect class="cell" x="44" y="0" width="44" height="50" fill="#fed7aa"/>
+    <g fill="#e2e8f0"><rect class="cell" x="88" y="0" width="44" height="50"/><rect class="cell" x="132" y="0" width="44" height="50"/><rect class="cell" x="176" y="0" width="44" height="50"/><rect class="cell" x="220" y="0" width="44" height="50"/><rect class="cell" x="264" y="0" width="44" height="50"/><rect class="cell" x="308" y="0" width="44" height="50"/></g>
+    <rect class="cell" x="352" y="0" width="44" height="50" fill="#bbf7d0"/><rect class="cell" x="396" y="0" width="44" height="50" fill="#bbf7d0"/><rect class="cell" x="440" y="0" width="44" height="50" fill="#bbf7d0"/>
+    <rect class="cell" x="484" y="0" width="44" height="50" fill="#bfdbfe"/><rect class="cell" x="528" y="0" width="44" height="50" fill="#bfdbfe"/><rect class="cell" x="572" y="0" width="44" height="50" fill="#bfdbfe"/>
+    <g fill="#e2e8f0"><rect class="cell" x="616" y="0" width="44" height="50"/><rect class="cell" x="660" y="0" width="44" height="50"/></g>
+    <text x="5" y="31" class="small">b0g0</text><text x="49" y="31" class="small">b0g1</text><text x="165" y="31" class="small">b0 tail</text><text x="370" y="31" class="small">b1g0 ×3</text><text x="502" y="31" class="small">b1g1 ×3</text>
+    <text x="0" y="76" class="mono">group bases = 0,1,8,11; lengths = 1,1,3,3</text>
+  </g>
+
+  <!-- V matrices -->
+  <text x="70" y="335" class="label">RIGHT INPUT: XVCache order [bsz][kv_len_per_pe][kv_cols]</text>
+  <text x="965" y="335" class="label">RIGHT INPUT: V storage order unchanged</text>
+  <g transform="translate(85,365)">
+    <text x="0" y="-10" class="body">request b0 — 4 rows × 4 features</text>
+    <g fill="#fde68a"><rect class="cell" x="0" y="0" width="50" height="34"/><rect class="cell" x="50" y="0" width="50" height="34"/><rect class="cell" x="100" y="0" width="50" height="34"/><rect class="cell" x="150" y="0" width="50" height="34"/><rect class="cell" x="0" y="34" width="50" height="34"/><rect class="cell" x="50" y="34" width="50" height="34"/><rect class="cell" x="100" y="34" width="50" height="34"/><rect class="cell" x="150" y="34" width="50" height="34"/></g>
+    <g fill="#e2e8f0"><rect class="cell" x="0" y="68" width="50" height="34"/><rect class="cell" x="50" y="68" width="50" height="34"/><rect class="cell" x="100" y="68" width="50" height="34"/><rect class="cell" x="150" y="68" width="50" height="34"/><rect class="cell" x="0" y="102" width="50" height="34"/><rect class="cell" x="50" y="102" width="50" height="34"/><rect class="cell" x="100" y="102" width="50" height="34"/><rect class="cell" x="150" y="102" width="50" height="34"/></g>
+    <text x="218" y="53" class="body">2 live rows</text><text x="218" y="115" class="body">2 capacity rows</text>
+  </g>
+  <g transform="translate(470,365)">
+    <text x="0" y="-10" class="body">request b1 — same shape</text>
+    <g fill="#fde68a"><rect class="cell" x="0" y="0" width="50" height="34"/><rect class="cell" x="50" y="0" width="50" height="34"/><rect class="cell" x="100" y="0" width="50" height="34"/><rect class="cell" x="150" y="0" width="50" height="34"/><rect class="cell" x="0" y="34" width="50" height="34"/><rect class="cell" x="50" y="34" width="50" height="34"/><rect class="cell" x="100" y="34" width="50" height="34"/><rect class="cell" x="150" y="34" width="50" height="34"/></g>
+    <g fill="#e2e8f0"><rect class="cell" x="0" y="68" width="50" height="34"/><rect class="cell" x="50" y="68" width="50" height="34"/><rect class="cell" x="100" y="68" width="50" height="34"/><rect class="cell" x="150" y="68" width="50" height="34"/><rect class="cell" x="0" y="102" width="50" height="34"/><rect class="cell" x="50" y="102" width="50" height="34"/><rect class="cell" x="100" y="102" width="50" height="34"/><rect class="cell" x="150" y="102" width="50" height="34"/></g>
+    <text x="218" y="53" class="body">2 live rows</text><text x="218" y="115" class="body">2 capacity rows</text>
+  </g>
+  <g transform="translate(980,365)">
+    <text x="0" y="-10" class="body">request b0 — length 1</text>
+    <g fill="#fde68a"><rect class="cell" x="0" y="0" width="50" height="34"/><rect class="cell" x="50" y="0" width="50" height="34"/><rect class="cell" x="100" y="0" width="50" height="34"/><rect class="cell" x="150" y="0" width="50" height="34"/></g>
+    <g fill="#e2e8f0"><rect class="cell" x="0" y="34" width="50" height="34"/><rect class="cell" x="50" y="34" width="50" height="34"/><rect class="cell" x="100" y="34" width="50" height="34"/><rect class="cell" x="150" y="34" width="50" height="34"/><rect class="cell" x="0" y="68" width="50" height="34"/><rect class="cell" x="50" y="68" width="50" height="34"/><rect class="cell" x="100" y="68" width="50" height="34"/><rect class="cell" x="150" y="68" width="50" height="34"/><rect class="cell" x="0" y="102" width="50" height="34"/><rect class="cell" x="50" y="102" width="50" height="34"/><rect class="cell" x="100" y="102" width="50" height="34"/><rect class="cell" x="150" y="102" width="50" height="34"/></g>
+    <text x="218" y="28" class="body">1 live row</text><text x="218" y="100" class="body">3 capacity rows</text>
+  </g>
+  <g transform="translate(1365,365)">
+    <text x="0" y="-10" class="body">request b1 — length 3</text>
+    <g fill="#fde68a"><rect class="cell" x="0" y="0" width="50" height="34"/><rect class="cell" x="50" y="0" width="50" height="34"/><rect class="cell" x="100" y="0" width="50" height="34"/><rect class="cell" x="150" y="0" width="50" height="34"/><rect class="cell" x="0" y="34" width="50" height="34"/><rect class="cell" x="50" y="34" width="50" height="34"/><rect class="cell" x="100" y="34" width="50" height="34"/><rect class="cell" x="150" y="34" width="50" height="34"/><rect class="cell" x="0" y="68" width="50" height="34"/><rect class="cell" x="50" y="68" width="50" height="34"/><rect class="cell" x="100" y="68" width="50" height="34"/><rect class="cell" x="150" y="68" width="50" height="34"/></g>
+    <g fill="#e2e8f0"><rect class="cell" x="0" y="102" width="50" height="34"/><rect class="cell" x="50" y="102" width="50" height="34"/><rect class="cell" x="100" y="102" width="50" height="34"/><rect class="cell" x="150" y="102" width="50" height="34"/></g>
+    <text x="218" y="72" class="body">3 live rows</text><text x="218" y="126" class="body">1 capacity row</text>
+  </g>
+
+  <!-- operation -->
+  <text x="70" y="555" class="mono">score[1×2] @ V[2×4] → output[1×4], repeated for four (b,g) slots</text>
+  <text x="965" y="555" class="mono">b0: score[1×1] @ V[1×4] · b1: score[1×3] @ V[3×4]</text>
+  <path d="M450 575 L450 610" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M1345 575 L1345 610" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- outputs fixed -->
+  <text x="70" y="645" class="label">OUTPUT numerator: [bsz=2][G=2][kv_cols=4] = 16 f32 cells</text>
+  <text x="965" y="645" class="label">OUTPUT numerator: identical fixed shape and addresses</text>
+  <g transform="translate(85,675)">
+    <g fill="#fecaca"><rect class="cell" x="0" y="0" width="50" height="40"/><rect class="cell" x="50" y="0" width="50" height="40"/><rect class="cell" x="100" y="0" width="50" height="40"/><rect class="cell" x="150" y="0" width="50" height="40"/></g>
+    <g fill="#fed7aa"><rect class="cell" x="0" y="40" width="50" height="40"/><rect class="cell" x="50" y="40" width="50" height="40"/><rect class="cell" x="100" y="40" width="50" height="40"/><rect class="cell" x="150" y="40" width="50" height="40"/></g>
+    <g fill="#bbf7d0"><rect class="cell" x="0" y="80" width="50" height="40"/><rect class="cell" x="50" y="80" width="50" height="40"/><rect class="cell" x="100" y="80" width="50" height="40"/><rect class="cell" x="150" y="80" width="50" height="40"/></g>
+    <g fill="#bfdbfe"><rect class="cell" x="0" y="120" width="50" height="40"/><rect class="cell" x="50" y="120" width="50" height="40"/><rect class="cell" x="100" y="120" width="50" height="40"/><rect class="cell" x="150" y="120" width="50" height="40"/></g>
+    <text x="218" y="27" class="body">b0,g0, d0..d3</text><text x="218" y="67" class="body">b0,g1, d0..d3</text><text x="218" y="107" class="body">b1,g0, d0..d3</text><text x="218" y="147" class="body">b1,g1, d0..d3</text>
+  </g>
+  <g transform="translate(980,675)">
+    <g fill="#fecaca"><rect class="cell" x="0" y="0" width="50" height="40"/><rect class="cell" x="50" y="0" width="50" height="40"/><rect class="cell" x="100" y="0" width="50" height="40"/><rect class="cell" x="150" y="0" width="50" height="40"/></g>
+    <g fill="#fed7aa"><rect class="cell" x="0" y="40" width="50" height="40"/><rect class="cell" x="50" y="40" width="50" height="40"/><rect class="cell" x="100" y="40" width="50" height="40"/><rect class="cell" x="150" y="40" width="50" height="40"/></g>
+    <g fill="#bbf7d0"><rect class="cell" x="0" y="80" width="50" height="40"/><rect class="cell" x="50" y="80" width="50" height="40"/><rect class="cell" x="100" y="80" width="50" height="40"/><rect class="cell" x="150" y="80" width="50" height="40"/></g>
+    <g fill="#bfdbfe"><rect class="cell" x="0" y="120" width="50" height="40"/><rect class="cell" x="50" y="120" width="50" height="40"/><rect class="cell" x="100" y="120" width="50" height="40"/><rect class="cell" x="150" y="120" width="50" height="40"/></g>
+    <text x="218" y="27" class="body">b0,g0, d0..d3</text><text x="218" y="67" class="body">b0,g1, d0..d3</text><text x="218" y="107" class="body">b1,g0, d0..d3</text><text x="218" y="147" class="body">b1,g1, d0..d3</text>
+  </g>
+
+  <!-- traversal boxes -->
+  <rect x="70" y="865" width="765" height="180" rx="12" fill="#ffffff" stroke="#fb923c"/>
+  <text x="95" y="900" class="label">origin/main DSD walk</text>
+  <text x="95" y="932" class="mono">bind score once, length=N; bind output once</text>
+  <text x="95" y="960" class="mono">for b, for g: reset V base; @map(N)</text>
+  <text x="95" y="988" class="mono">increment score by N; increment output by kv_cols</text>
+  <text x="95" y="1023" class="body">V base reset is required because @map walks V rows.</text>
+  <rect x="965" y="865" width="765" height="180" rx="12" fill="#ffffff" stroke="#4ade80"/>
+  <text x="990" y="900" class="label">S0 minimal DSD walk</text>
+  <text x="990" y="932" class="mono">for b: derive L; if L&gt;0 bind score/output once</text>
+  <text x="990" y="960" class="mono">for g: reset V base; @map(L)</text>
+  <text x="990" y="988" class="mono">increment score by L; increment output by kv_cols</text>
+  <text x="990" y="1023" class="body">V base reset remains; invariant lengths are set only outside the group loop.</text>
+
+  <!-- fused collective -->
+  <rect x="70" y="1075" width="1660" height="90" rx="12" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5"/>
+  <text x="95" y="1110" class="label">Fused Y all-reduce arena (unchanged): [16 numerator f32][4 denominator f32] = bsz*(attn_per_pe+G) = 20 f32 cells</text>
+  <text x="95" y="1142" class="body">After reduction, each 4-feature output slot is divided by its matching denominator. No communication dimension depends on N or L_b.</text>
+
+  <rect x="35" y="1230" width="1730" height="62" rx="12" fill="#f8fafc" stroke="#64748b"/>
+  <text x="60" y="1258" class="body">Notation: L_b=position_current_length(position[b],local_py) · V order=[bsz][kv_len_per_pe][kv_cols] · output order=[bsz][G][kv_cols].</text>
+  <text x="60" y="1282" class="small">Source: origin/main b136ab64 + uncommitted S0 working tree. Performance delta is unknown until real CS-3 raw-TSC measurement.</text>
+</svg>

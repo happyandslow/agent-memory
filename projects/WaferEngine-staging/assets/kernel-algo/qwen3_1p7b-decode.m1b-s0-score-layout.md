@@ -104,6 +104,49 @@ safe: the full score-vector all-reduce runs only among X peers on the same Y row
 where the position vector is identical; Y communication carries fixed `[bsz,G]`
 maxima/sums rather than the full score arena.
 
+## Alpha-scale placement review
+
+The extra post-collective request loop exists because the live cells are no
+longer one global contiguous prefix. The current code scales exactly the
+`G*current_len(b,y)` live prefix inside each fixed request segment. Padding is
+zero, so one fixed-capacity `@fmuls` over all `M*G*C` cells would be
+numerically equivalent for the padding cells and would remove request-level
+control. It would also perform capacity-sized arithmetic when live lengths are
+small. Main itself scaled only its live `M*G*N` prefix, not the capacity tail.
+There is therefore no source-only performance winner between:
+
+1. one request-local scale per lane: `sum_b G*L_b` f32 multiplies plus `M`
+   control iterations; and
+2. one fixed-arena scale: `M*G*C` f32 multiplies with no request branch/rebind.
+
+For `bsz=1`, the current request loop executes once and scales `G*L_0` cells,
+which matches main's live arithmetic extent. Any performance difference is
+unknown until a real CS-3 raw-TSC comparison.
+
+Applying alpha before the X all-reduce is algebraically valid but changes f32
+rounding from
+
+```text
+alpha * reduce_x(local_partial_x)
+```
+
+to
+
+```text
+reduce_x(alpha * local_partial_x)
+```
+
+and therefore is not folded into this correctness patch. The 2026-08-30 review
+explicitly keeps the existing post-collective f32 alpha placement unchanged;
+this is treated as intentional rather than an S0 cleanup target. Folding alpha
+into the bf16 Q operand would additionally lose precision before the f32
+`@fmachs` accumulation. A specialized collective could instead scale the
+fully reduced f32 vector at the band root before broadcast, preserving the
+reduce-then-scale order, but it would couple attention semantics to the
+communication function and would still require a reviewed full-capacity or
+segmented extent. Reconsidering that placement requires a separate design
+review and measurement; it is not part of S0 Part 1.
+
 ## Deferred performance question
 
 The current collective still sends the full `M*G*C` arena, exactly as main did;
