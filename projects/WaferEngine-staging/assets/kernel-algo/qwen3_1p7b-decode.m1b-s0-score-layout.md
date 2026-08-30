@@ -45,7 +45,7 @@ Only K and score traverse `L_b`; Q always supplies all `kv_cols` features.
 | Per-lane extent | impossible; all lanes use the same `iter_num` | `position_current_length(position[b], local_py)` |
 | Compute loop | K-outer; `@map` walks all G groups and DSR auto-advances by `N` | same `b × k` control loops and `@map(G)`; output advances by the selected request's `current_len` |
 | Collective | fixed `M*G*C` reduce, relying on zeroed tail | unchanged fixed `M*G*C` reduce; every request tail is explicitly zero |
-| Alpha scale | one contiguous `M*G*N` prefix | one contiguous `G*current_len` prefix per fixed request segment |
+| Alpha scale | one contiguous `M*G*N` prefix | one post-all-reduce DSD operation over the fixed `M*G*C` arena; zero tails remain zero |
 
 Legacy aliases retained in older notes are `M=bsz`, `G=gqa_group_size`, `C=kv_len_per_pe`, `N=iter_num`, and `y=local_py`. Prefer the code identifiers above when updating this note.
 
@@ -73,19 +73,19 @@ The left-hand figure uses `iter_num=2` for both requests. The compact score orde
 ```text
 zero score[0 : M*G*C]
 
+bind Q, K, and score DSD bases once
+
 for lane b:
   current_len = position_current_length(position[b], local_py)
-  request_base = b*G*C
-  bind score[request_base : request_base+current_len]
-  bind K[b,:,0 : current_len]
+  set only the K and score extents to current_len
   for feature k:
     @map over G query groups
     destination auto-advances by current_len per group
+  advance Q and K DSD templates to the next fixed lane slab
+  advance score DSD template by fixed G*C
 
 all_reduce(score[0 : M*G*C])
-
-for lane b:
-  scale score[request_base(b) : request_base(b)+G*current_len(b,y)]
+scale score[0 : M*G*C] once with one post-reduce DSD @fmuls
 ```
 
 The right-hand figure uses `current_len=[1,3]`. Every request owns eight drawn
@@ -115,7 +115,9 @@ Consequently:
 
 - every QK K-cache read and Score@V V-cache read has extent at most `C`;
 - every group range stays within its request's fixed `G*C` score segment; and
-- alpha scaling and f32-to-bf16 casting touch at most that same `G*C` segment.
+- f32-to-bf16 casting touches at most that same `G*C` segment, while the
+  selected post-reduce alpha operation touches the fixed arena and preserves
+  its zero tails.
 
 This clamp was added after an independent Fable 5 review found that an
 unbounded position-derived length could outgrow both the KV slab and the final
@@ -123,22 +125,22 @@ request's score arena after capacity was reached.
 
 ## Alpha-scale placement review
 
-The extra post-collective request loop exists because the live cells are no
-longer one global contiguous prefix. The current code scales exactly the
-`G*current_len(b,y)` live prefix inside each fixed request segment. Padding is
-zero, so one fixed-capacity `@fmuls` over all `M*G*C` cells would be
-numerically equivalent for the padding cells and would remove request-level
-control. It would also perform capacity-sized arithmetic when live lengths are
-small. Main itself scaled only its live `M*G*N` prefix, not the capacity tail.
-There is therefore no source-only performance winner between:
+The implementation now selects one fixed-capacity `@fmuls` over all `M*G*C`
+cells after the X all-reduce. This is numerically equivalent to scaling each
+request's live prefix because the complete arena is zeroed before QK, the fixed
+collective sums zero tails, and `0*alpha` remains zero. It removes the
+request-level branch, base rebind, length update, and DSR loads. It also performs
+capacity-sized arithmetic when live lengths are small. Main itself scaled only
+its live `M*G*N` prefix, not the capacity tail. There is therefore no
+source-only performance winner between:
 
 1. one request-local scale per lane: `sum_b G*L_b` f32 multiplies plus `M`
    control iterations; and
 2. one fixed-arena scale: `M*G*C` f32 multiplies with no request branch/rebind.
 
-For `bsz=1`, the current request loop executes once and scales `G*L_0` cells,
-which matches main's live arithmetic extent. Any performance difference is
-unknown until a real CS-3 raw-TSC comparison.
+The fixed-arena implementation is the current code choice, not a measured
+winner. It must be A/B tested on CS-3 against the request-local live-slice
+variant, including the equal-position workload used to quantify S0 overhead.
 
 Applying alpha before the X all-reduce is algebraically valid but changes f32
 rounding from
@@ -191,6 +193,9 @@ The editable source is `qwen3_1p7b-decode.m1b-s0-score-layout.excalidraw`; the c
 
 ## Verification status
 
-- Local SDK compile-only gate: PASS after the capacity clamp; no simulator run.
-- Claude Code Fable 5 second-pass independent review: `APPROVED` on 2026-08-30.
+- Local SDK 2.10 compile-only gate: PASS after the capacity clamp and hot-path
+  DSD/DSR optimization; no simulator run.
+- Claude Code Fable 5 independently reviewed the fixed descriptor increments,
+  direct DSD/DSR reductions, full-arena post-reduce alpha equivalence, and
+  equal-position behavior and returned `APPROVED` on 2026-08-30.
 - No CS-3 run or runtime performance claim.

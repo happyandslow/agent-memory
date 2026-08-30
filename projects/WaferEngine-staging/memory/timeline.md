@@ -2,6 +2,7 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-08-30 — stateless-position-refactor-must-replay-the-old-guard → `memory/inbox/2026-08-30-stateless-position-refactor-must-replay-the-old-guard.md`
 - 2026-08-25 — o1-promoted-to-m1b-milestone → `memory/inbox/2026-08-25-o1-promoted-to-m1b-milestone.md`
 - 2026-08-25 — o1-main-first-continuous-batching-decision → `memory/inbox/2026-08-25-o1-main-first-continuous-batching-decision.md`
 - 2026-08-25 — meshrt-paper-result-provenance-gap → `memory/inbox/2026-08-25-meshrt-paper-result-provenance-gap.md`

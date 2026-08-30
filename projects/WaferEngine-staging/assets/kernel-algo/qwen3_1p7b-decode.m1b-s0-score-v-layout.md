@@ -35,9 +35,9 @@ score[b,g,0:length] [1, length]
 
 ## Before and after
 
-On `origin/main`, `left_vector_dsd` is bound once to the globally packed score prefix with length `N`, then incremented by `N` after every group. `right_matrix_dsd` must reset to the start of request `b`'s V slab for every group because the inner `@map` advances it by one V row per score element. `out_vector_dsd_f32` advances by `kv_cols` after every group.
+On `origin/main`, `left_vector_dsd` is bound once to the globally packed score prefix with length `N`, then incremented by `N` after every group. Each group must replay request `b`'s V slab from its start because the source DSR advances by one V row per score element. `out_vector_dsd_f32` advances by `kv_cols` after every group.
 
-S0 must rebind the score once at each fixed request segment because request bases are separated by capacity padding and lengths may differ. Inside that request, the groups are still packed and the existing `@increment_dsd_offset(left_vector_dsd, L_b)` is exactly the desired traversal. Output increments are unchanged. V storage and its per-group base reset are unchanged.
+S0 binds the score DSD once at the complete arena base. Inside request `b`, the groups remain packed and `@increment_dsd_offset(left_vector_dsd, L_b)` walks them; after the G groups, one remainder increment skips `G*(C-L_b)` to the next fixed request segment. Output increments are unchanged. The V DSD is bound once at the complete lane-slab arena base and advances by one fixed `C*kv_cols` slab after each request.
 
 The implemented working-tree traversal puts `if (current_len > 0)` outside the group loop. It increments score by `current_len` and output by `kv_cols`. Both invariant lengths are set before the group loop:
 
@@ -46,11 +46,13 @@ right_matrix_dsd length = kv_cols
 out_vector_dsd_f32 length = kv_cols
 ```
 
-The former repeated group-local length assignments have been removed. The
-per-group V base reset remains because `@map` advances through V rows. For
-`bsz=1`, the remaining structural difference from main is only the
-request-level position derivation/branch and the placement of the initial
-score/output base bind inside that one request iteration. Runtime impact remains
+The former repeated group-local length assignments and V DSD base rebinds have
+been removed. The V DSD template stays at the current lane's slab base; each
+group reloads that unchanged template into the source DSR, replaying the slab
+from row zero, while `.save_address=true` advances only the DSR during the
+`@map`. For `bsz=1`, the fixed descriptor setup is again outside the request
+loop; the remaining structural difference from main is the request-level
+position derivation/branch and dynamic score length. Runtime impact remains
 unknown until real CS-3 raw-TSC measurement.
 
 ## Fused normalization boundary
@@ -69,8 +71,9 @@ The editable source is `qwen3_1p7b-decode.m1b-s0-score-v-layout.excalidraw`; the
 
 ## Verification status
 
-The local SDK compile-only gate passed after the shared `current_len` helper was
-saturated at `kv_len_per_pe`. Claude Code Fable 5 independently re-reviewed the
-V-slab bounds, required per-group V-base reset, score/output increments,
-zero-row contribution, fused collective ABI, and `bsz=1` equivalence and
-returned `APPROVED` on 2026-08-30. No simulator or CS-3 run is claimed.
+The local SDK 2.10 compile-only gate passed after the shared `current_len`
+saturation and descriptor refactor. Claude Code Fable 5 independently
+re-reviewed V replay through per-group DSR loads, fixed lane-slab/request
+increments, zero-row contribution, fused collective ABI, and `bsz=1`
+equivalence and returned `APPROVED` on 2026-08-30. No simulator or CS-3 run is
+claimed.

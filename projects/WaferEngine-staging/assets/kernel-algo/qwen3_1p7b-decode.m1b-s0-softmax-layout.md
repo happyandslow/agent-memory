@@ -43,18 +43,27 @@ With `L=[1,3]`, request 0 uses two cells in segment `[0,8)`, and request 1 uses 
 The implemented S0 traversal is:
 
 ```text
+fill every max slot with -inf (one DSD operation)
+bind score source DSD once at score_f32[0]
 for b:
   L = current_len(b, local_py)
   if L > 0:                         // branch once per request
-    bind score DSD once at request_base(b), length L
+    set source DSD length to L
+    load source DSR once with save_address=true
     for g:
-      reduce current DSD into max[b,g] or sum[b,g]
-      increment DSD offset by L
-  else:
-    fill max[b,:] with -inf or sum[b,:] with 0
+      reduce the next DSR extent directly into max[b,g]
+  advance the DSD template by fixed G*C
+
+repeat the same traversal for sum after one DSD fill with 0
 ```
 
-This keeps the necessary request boundary reset but restores main's group traversal. For `bsz=1` and `L>0`, the hot reduction shape becomes the same as main: one base bind, one length, `G` reductions, and `G` fixed increments. The remaining additions are one position derivation and one request-level branch. Runtime impact remains unknown until measured with real CS-3 raw TSC cycles.
+The DSR's saved address advances by `L` after each reduction, so the G
+reductions reuse descriptor metadata while consuming consecutive packed groups.
+The module-scope DSD template itself does not move with that DSR traversal; one
+explicit fixed `G*C` increment moves it to the next request segment. Direct
+pointer-result overloads of `@fmaxs` and `@fadds` remove the intermediate
+`max_f32`/`sum_f32` copy used by the earlier implementation. Runtime impact
+remains unknown until measured with real CS-3 raw TSC cycles.
 
 `L_b` is zero exactly when `position[b] < local_py`. That can occur on physical
 Y rows ahead of a very short sequence. For example, at absolute position zero,
@@ -89,8 +98,8 @@ The editable source is `qwen3_1p7b-decode.m1b-s0-softmax-layout.excalidraw`; the
 
 ## Verification status
 
-The local SDK compile-only gate passed after `current_len` was saturated at
-`kv_len_per_pe`. Claude Code Fable 5 independently re-reviewed the max/sum DSD
-walk, empty-row identities, exp/cast ranges, collective participation, and
-capacity bounds and returned `APPROVED` on 2026-08-30. No simulator or CS-3 run
-is claimed.
+The local SDK 2.10 compile-only gate passed after `current_len` saturation and
+the hot-path DSD/DSR refactor. Claude Code Fable 5 independently re-reviewed the
+one-load saved-address reductions, direct result pointers, empty-row DSD fills,
+descriptor bounds, and collective participation and returned `APPROVED` on
+2026-08-30. No simulator or CS-3 run is claimed.
