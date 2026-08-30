@@ -104,6 +104,23 @@ safe: the full score-vector all-reduce runs only among X peers on the same Y row
 where the position vector is identical; Y communication carries fixed `[bsz,G]`
 maxima/sums rather than the full score arena.
 
+## Capacity saturation
+
+`position_current_length(position[b], local_py)` is bounded to
+`[0, kv_len_per_pe]`. The zero case represents a physical Y row that a very
+short sequence has not reached. At the other boundary, the length saturates at
+the physical row capacity, matching both `process_kv()`'s
+`column < kv_len_per_pe` write guard and origin/main's saturated `iter_num`.
+Consequently:
+
+- every QK K-cache read and Score@V V-cache read has extent at most `C`;
+- every group range stays within its request's fixed `G*C` score segment; and
+- alpha scaling and f32-to-bf16 casting touch at most that same `G*C` segment.
+
+This clamp was added after an independent Fable 5 review found that an
+unbounded position-derived length could outgrow both the KV slab and the final
+request's score arena after capacity was reached.
+
 ## Alpha-scale placement review
 
 The extra post-collective request loop exists because the live cells are no
@@ -171,3 +188,9 @@ This is why the helper formula and the decode write address do not change merely
 ## Visual
 
 The editable source is `qwen3_1p7b-decode.m1b-s0-score-layout.excalidraw`; the checked derived rendering is `qwen3_1p7b-decode.m1b-s0-score-layout.svg`.
+
+## Verification status
+
+- Local SDK compile-only gate: PASS after the capacity clamp; no simulator run.
+- Claude Code Fable 5 second-pass independent review: `APPROVED` on 2026-08-30.
+- No CS-3 run or runtime performance claim.

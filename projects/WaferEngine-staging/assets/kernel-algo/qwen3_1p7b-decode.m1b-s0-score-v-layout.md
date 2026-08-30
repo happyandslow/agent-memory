@@ -66,3 +66,11 @@ across Y. After the collective, `fmuls_softmax_func` divides each fixed output v
 ## Visual
 
 The editable source is `qwen3_1p7b-decode.m1b-s0-score-v-layout.excalidraw`; the derived rendering is `qwen3_1p7b-decode.m1b-s0-score-v-layout.svg`.
+
+## Verification status
+
+The local SDK compile-only gate passed after the shared `current_len` helper was
+saturated at `kv_len_per_pe`. Claude Code Fable 5 independently re-reviewed the
+V-slab bounds, required per-group V-base reset, score/output increments,
+zero-row contribution, fused collective ABI, and `bsz=1` equivalence and
+returned `APPROVED` on 2026-08-30. No simulator or CS-3 run is claimed.

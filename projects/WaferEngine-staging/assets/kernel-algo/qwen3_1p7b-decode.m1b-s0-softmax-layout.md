@@ -86,3 +86,11 @@ corrected back to `score_f32_slice_dsd` before the compile gate.
 ## Visual
 
 The editable source is `qwen3_1p7b-decode.m1b-s0-softmax-layout.excalidraw`; the derived rendering is `qwen3_1p7b-decode.m1b-s0-softmax-layout.svg`.
+
+## Verification status
+
+The local SDK compile-only gate passed after `current_len` was saturated at
+`kv_len_per_pe`. Claude Code Fable 5 independently re-reviewed the max/sum DSD
+walk, empty-row identities, exp/cast ranges, collective participation, and
+capacity bounds and returned `APPROVED` on 2026-08-30. No simulator or CS-3 run
+is claimed.
