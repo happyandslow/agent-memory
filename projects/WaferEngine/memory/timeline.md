@@ -2,6 +2,7 @@
 
 # WaferEngine Timeline
 
+- 2026-08-31 — waferllm-pageability-demo-relocated-to-meshjit → `memory/inbox/2026-08-31-waferllm-pageability-demo-relocated-to-meshjit.md`
 - 2026-08-27 — wavel-kair-argus-placement-planning → `memory/inbox/2026-08-27-wavel-kair-argus-placement-planning.md`
 - 2026-08-27 — kair-author-wavel-target-ir → `assets/2026-08-27-kair-author-wavel-target-ir.png`
 - 2026-08-24 — waferllm-pageability-demo-code-redistribution → `memory/inbox/2026-08-24-waferllm-pageability-demo-code-redistribution.md`
