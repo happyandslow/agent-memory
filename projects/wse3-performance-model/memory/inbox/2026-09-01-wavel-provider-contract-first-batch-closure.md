@@ -121,3 +121,19 @@ outside this capture and must not be inferred from these contract decisions.
 - Before Wavel adoption, U1/U2 experiment manifests and M2 providers must be
   exercised by a neutral handwritten-plan path. The deployment discussion is
   recorded in the project plan artifact rather than duplicated here.
+
+## 2026-09-01 schema-complete refinement
+
+- S2 is schema-complete after freezing canonical serialization/self-digest
+  rules, nested generator/source/dependency identity, concrete synthetic U1/U2
+  bundles with all three provider states, the design-time S3 manifest envelope,
+  and the final normative-field/control audit. No S2 material contract decision
+  remains open.
+- S2 overall remains open behind one external-input gate: the real Qwen3-4B,
+  Qwen3-1.7B, and SRAM-offload S3 baseline/benchmark manifests must preserve
+  their exact S2 identities through the frozen envelope. Real witnesses,
+  calibration, and models remain M2 work.
+- The separate S3 discussion prompt is explicitly an information-maximizing
+  experiment-axis/matrix-selection task. A handwritten plan only identifies
+  one exact experiment row; the prompt does not design the predictor, Wavel
+  search, CandidatePlan, or KAIR closure.

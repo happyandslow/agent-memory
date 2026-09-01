@@ -2,6 +2,12 @@
 
 # wse3-performance-model Timeline
 
+- 2026-09-01 — wavel-provider-contract-first-batch-closure → `memory/inbox/2026-09-01-wavel-provider-contract-first-batch-closure.md`
+- 2026-09-01 — wavel-placement-aware-communication-templates → `memory/inbox/2026-09-01-wavel-placement-aware-communication-templates.md`
+- 2026-09-01 — wavel-compute-profile-model-and-batch-domain → `memory/inbox/2026-09-01-wavel-compute-profile-model-and-batch-domain.md`
+- 2026-09-01 — qwen3-4b-placement-generator-boundary → `memory/inbox/2026-09-01-qwen3-4b-placement-generator-boundary.md`
+- 2026-09-01 — qwen3-4b-config-device-validation → `memory/inbox/2026-09-01-qwen3-4b-config-device-validation.md`
+- 2026-09-01 — qwen-coarse-geometry-kv-audit → `memory/inbox/2026-09-01-qwen-coarse-geometry-kv-audit.md`
 - 2026-08-31 — wavel-template-profile-identity-gap → `memory/inbox/2026-08-31-wavel-template-profile-identity-gap.md`
 - 2026-08-30 — wavel-kair-resource-legality-boundary → `memory/inbox/2026-08-30-wavel-kair-resource-legality-boundary.md`
 - 2026-08-30 — wavel-development-worktree-boundary → `memory/inbox/2026-08-30-wavel-development-worktree-boundary.md`
