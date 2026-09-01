@@ -2,7 +2,9 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-09-01 — m1b-s0-local-dsr-fmac-witness-contract → `memory/inbox/2026-09-01-m1b-s0-local-dsr-fmac-witness-contract.md`
 - 2026-09-01 — m1b-s0-c2c-host-gates-and-collective-source-binding → `memory/inbox/2026-09-01-m1b-s0-c2c-host-gates-and-collective-source-binding.md`
+- 2026-09-01 — cs3-run-stdin-is-not-forwarded → `memory/inbox/2026-09-01-cs3-run-stdin-is-not-forwarded.md`
 - 2026-08-31 — softmax-save-address-dsr-drops-first-live-cell → `memory/inbox/2026-08-31-softmax-save-address-dsr-drops-first-live-cell.md`
 - 2026-08-31 — simulator-overlay-execution-and-readback-plumbing → `memory/inbox/2026-08-31-simulator-overlay-execution-and-readback-plumbing.md`
 - 2026-08-31 — m1b-s0-qk-red-signature-and-approx-alpha → `memory/inbox/2026-08-31-m1b-s0-qk-red-signature-and-approx-alpha.md`
