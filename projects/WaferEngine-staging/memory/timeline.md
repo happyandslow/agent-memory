@@ -2,6 +2,8 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-09-02 — m1b-s0-part1-ragged-validation-complete → `memory/inbox/2026-09-02-m1b-s0-part1-ragged-validation-complete.md`
+- 2026-09-02 — m1b-s0-part1-commit-and-part2-parallel-status → `memory/inbox/2026-09-02-m1b-s0-part1-commit-and-part2-parallel-status.md`
 - 2026-09-01 — m1b-s0-local-dsr-fmac-witness-contract → `memory/inbox/2026-09-01-m1b-s0-local-dsr-fmac-witness-contract.md`
 - 2026-09-01 — m1b-s0-c2c-host-gates-and-collective-source-binding → `memory/inbox/2026-09-01-m1b-s0-c2c-host-gates-and-collective-source-binding.md`
 - 2026-09-01 — cs3-run-stdin-is-not-forwarded → `memory/inbox/2026-09-01-cs3-run-stdin-is-not-forwarded.md`
