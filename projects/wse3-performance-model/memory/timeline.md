@@ -2,6 +2,19 @@
 
 # wse3-performance-model Timeline
 
+- 2026-09-03 — mooncake-percall-latency → `assets/2026-09-03-mooncake-percall-latency.png`
+- 2026-09-03 — mooncake-percall-latency-serving-trace → `memory/inbox/2026-09-03-mooncake-percall-latency-serving-trace.md`
+- 2026-09-03 — keep-vs-reload → `assets/2026-09-03-keep-vs-reload.png`
+- 2026-09-03 — gc-demand-curve-v2 → `assets/2026-09-03-gc-demand-curve-v2.png`
+- 2026-09-03 — gc-curve-v2-idle-gaps-and-keep-vs-park → `memory/inbox/2026-09-03-gc-curve-v2-idle-gaps-and-keep-vs-park.md`
+- 2026-09-03 — gap-sharing → `assets/2026-09-03-gap-sharing.png`
+- 2026-09-03 — cs3-4b-prefill-measured-and-bsz-blockers → `memory/inbox/2026-09-03-cs3-4b-prefill-measured-and-bsz-blockers.md`
+- 2026-09-02 — sram-supply-merit-order → `assets/2026-09-02-sram-supply-merit-order.png`
+- 2026-09-02 — sram-supply-and-kv-demand-charts → `memory/inbox/2026-09-02-sram-supply-and-kv-demand-charts.md`
+- 2026-09-02 — score-buffer-wall-and-single-request-remote-kv → `memory/inbox/2026-09-02-score-buffer-wall-and-single-request-remote-kv.md`
+- 2026-09-02 — qwen3-4b-per-role-sram-breakdown → `memory/inbox/2026-09-02-qwen3-4b-per-role-sram-breakdown.md`
+- 2026-09-02 — qwen3-4b-host-route-table-lever → `memory/inbox/2026-09-02-qwen3-4b-host-route-table-lever.md`
+- 2026-09-02 — gc-demand-curve → `assets/2026-09-02-gc-demand-curve.png`
 - 2026-09-01 — wavel-provider-contract-first-batch-closure → `memory/inbox/2026-09-01-wavel-provider-contract-first-batch-closure.md`
 - 2026-09-01 — wavel-placement-aware-communication-templates → `memory/inbox/2026-09-01-wavel-placement-aware-communication-templates.md`
 - 2026-09-01 — wavel-compute-profile-model-and-batch-domain → `memory/inbox/2026-09-01-wavel-compute-profile-model-and-batch-domain.md`

@@ -78,7 +78,7 @@ HT head 27,360, HT tail 45,584) because the appliance compiler emits
 ## Pointers
 
 - `/home/lexu/wse3-performance-model/docs/analysis/2026-09-02-qwen3-4b-sram-usage-observation.md`
-- `/home/lexu/wse3-performance-model/demo/analysis/` (script, results, provenance)
+- `/home/lexu/wse3-performance-model/demo/qwen3-4b-decode-sram/tools/` (script, results, provenance)
 - artifacts: `/home/lexu/build/4b-sram/`
 - ContextBase log: https://context.ed-aisys.com/doc/2026-09-02-result-qwen3-4b-decodeprefill-per-pe-sram-breakdown-by-role-K0mf3Dd2WF
 - related topic: `projects/WaferEngine/memory/topics/pe-sram-memory-breakdown.md` (1.7B numbers, same method)

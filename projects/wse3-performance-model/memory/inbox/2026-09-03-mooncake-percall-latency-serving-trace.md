@@ -1,0 +1,76 @@
+# Per-request latency and KV-pool value on a real serving trace (Mooncake) — 2026-09-03
+
+**Project:** wse3-performance-model
+**Author:** claude
+**Status:** captured
+
+## Situation
+
+You want to position CS-3 against a GPU for agentic/tool inference and
+need a timed, multi-tenant, real workload rather than one user's Claude
+Code sessions; or you want to know whether on-chip KV residency matters on
+a serving trace at all. Mooncake's public FAST'25 traces
+(`kvcache-ai/Mooncake` → `FAST25-release/traces/`, one hour of Kimi
+production traffic, ms timestamps, input/output lengths, 512-token prefix
+block hashes) download directly on gala2; copies + sha256 in
+`wse3-performance-model/analyses/2026-09-03-mooncake-trace-study/`.
+Figure: `assets/2026-09-03-mooncake-percall-latency.png`. Doc:
+`docs/analysis/2026-09-03-mooncake-percall-latency-first-pass.md`.
+
+## What happened / finding
+
+- **Trace shape (measured on the trace):** conversation 3.4 req/s, input
+  p50 6.9K / p90 27K, output p50 350, 33 % of requests continue a session,
+  inter-turn gap p50 126 s. Toolagent 6.7 req/s, input p50 6.3K / p90 17K,
+  **output p50 30**, **70 % continue a session, gap p50 3.0 s** — the same
+  3-second intra-turn gap as Claude Code (3.3 s), so it is a property of
+  tool loops, not of one user. ~94 M unique tokens per hour in each trace.
+  Session reconstruction gotcha: an earlier request's last block is partial
+  (input not a multiple of 512), so match on its block list minus the last
+  block; matching on the full list finds almost no continuations.
+- **KV pool size is invisible on a serving trace.** Block-LRU token hit
+  rate is flat from 32K to 1M tokens (conversation 4.0 → 5.6 %, toolagent
+  27.5 → 35.9 %) and only approaches the infinite-cache value (37 % / 57 %)
+  at 16–64 M tokens. A 120K on-chip pool and a 490K HBM pool give identical
+  hit rates; what the small pools capture is the next call of the same
+  agent loop seconds later. The "one session resident on chip" framing does
+  not describe a multi-tenant chip; the relevant tier is DRAM/SSD and the
+  lever is reload bandwidth.
+- **Per-request latency model (4B constants; single stream, no queueing;
+  CS-3 decode measured 1,081.7 tok/s, prefill measured 10,545 tok/s on
+  2026-09-03, reload 12.5 GB/s expected; GPU decode 150 tok/s, prefill 40K
+  tok/s, PCIe 25 GB/s all ASSUMED):** toolagent mean 0.54 s (CS-3 + host
+  mirror; p50 0.13) vs 0.71 (no mirror) vs 1.32 s (GPU; p50 0.22);
+  conversation 1.08 / 1.41 / 2.50 s. **CS-3 is prefill-bound**
+  (0.35–0.72 s of the mean) and the GPU is decode-bound (1.2–2.3 s). The
+  host mirror cuts CS-3 prefill by a third for ~0.02 s of reload — cheap,
+  keep it. (First pass with the 1.7B prefill proxy read 0.64 / 0.86 and
+  1.29 / 1.73 s.)
+- **Cost side:** single-stream lane-seconds over the 3,537 s trace: CS-3
+  12.8–13.0K (= 3.6–3.7 wafers to keep up), GPU 30–31K single-stream but a
+  GPU batches tens of streams, so ~1 card. **CS-3 cannot batch today**: the
+  4B decode image fails to compile at bsz 2 on two small buffers (FFN SiLU
+  scratch in the 512 B D-cache window; HT-tail logits partials), see
+  `2026-09-03-cs3-4b-prefill-measured-and-bsz-blockers.md`. Throughput per
+  device is where the comparison is decided, and CS-3 is single-stream
+  until those kernel fixes land.
+- Le's framing (2026-09-03): compare against GPU + host DRAM, not a lone
+  wafer; GPU keeps far more KV near compute and agentic workloads need
+  little decode; CS-3's price makes idle lane time during tool calls the
+  critical cost; the account closes only with fast tool calls, efficient
+  KV recreation, or workload co-design. Implications are to be argued from
+  these per-dataset charts, not in general.
+
+## Implications / next actions
+
+- [ ] Replace GPU assumptions with measured single-stream vLLM/SGLang
+  numbers for a 4B dense model.
+- [ ] Measure 4B prefill throughput and bsz > 1 decode on CS-3.
+- [ ] Queueing replay at the trace arrival rates → devices needed at an SLO.
+- [ ] Same replay on SWE-smith / Nebius coding-agent trajectories (check
+  timestamps exist).
+
+## Pointers
+
+- `wse3-performance-model/analyses/2026-09-03-mooncake-trace-study/{trace_stats.py,percall_latency.py,results/}`
+- related: `2026-09-03-gc-curve-v2-idle-gaps-and-keep-vs-park.md`, `2026-09-02-sram-supply-and-kv-demand-charts.md`

@@ -39,7 +39,7 @@ Measured (working copy `/home/lexu/build/4b-sram/routetable/`, not merged):
 
 Simulator gates first: `route_check` 0/1,024 PE mismatches; table-only image
 bit-identical outputs and identical simulated TSC vs baseline over 3 rounds
-with re-arm. Report: `demo/analysis/results/cs3_baseline_vs_routetable.md`;
+with re-arm. Report: `demo/qwen3-4b-decode-sram/s1-init-route-table/results/cs3_baseline_vs_routetable.md`;
 diff: `results/route_table_src.diff`.
 
 ## Rejected alternatives (measured)
@@ -82,6 +82,6 @@ diff: `results/route_table_src.diff`.
 ## Pointers
 
 - `/home/lexu/wse3-performance-model/docs/design/2026-09-02-attn-column-split-compute-storage-hypothesis.md` (Addendum A1–A4)
-- `/home/lexu/wse3-performance-model/demo/analysis/results/` (`route_table.py`, `route_table_src.diff`, `cs3_baseline_vs_routetable.md`, `cs3/`)
+- `/home/lexu/wse3-performance-model/demo/qwen3-4b-decode-sram/` — `code/` (baseline + route-table trees, `diff.sh`), `s1-init-route-table/` (this lever: results, `cs3/`, `sim/`, sweeps), `s2-allreduce-shared-len/` (the padded-reduce trade), each with a README
 - ContextBase: https://context.ed-aisys.com/doc/2026-09-02-result-qwen3-4b-decodeprefill-per-pe-sram-breakdown-by-role-K0mf3Dd2WF
 - companion capture: `2026-09-02-qwen3-4b-per-role-sram-breakdown.md`
