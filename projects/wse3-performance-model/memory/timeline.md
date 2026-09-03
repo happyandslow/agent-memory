@@ -2,12 +2,15 @@
 
 # wse3-performance-model Timeline
 
+- 2026-09-03 — two-wafer-pp-hop-price-and-tsc-calibration → `memory/inbox/2026-09-03-two-wafer-pp-hop-price-and-tsc-calibration.md`
+- 2026-09-03 — simfab-real-time-stall-detector → `memory/inbox/2026-09-03-simfab-real-time-stall-detector.md`
 - 2026-09-03 — mooncake-percall-latency → `assets/2026-09-03-mooncake-percall-latency.png`
 - 2026-09-03 — mooncake-percall-latency-serving-trace → `memory/inbox/2026-09-03-mooncake-percall-latency-serving-trace.md`
 - 2026-09-03 — keep-vs-reload → `assets/2026-09-03-keep-vs-reload.png`
 - 2026-09-03 — gc-demand-curve-v2 → `assets/2026-09-03-gc-demand-curve-v2.png`
 - 2026-09-03 — gc-curve-v2-idle-gaps-and-keep-vs-park → `memory/inbox/2026-09-03-gc-curve-v2-idle-gaps-and-keep-vs-park.md`
 - 2026-09-03 — gap-sharing → `assets/2026-09-03-gap-sharing.png`
+- 2026-09-03 — cs3-run-heredoc-hang-and-container-env → `memory/inbox/2026-09-03-cs3-run-heredoc-hang-and-container-env.md`
 - 2026-09-03 — cs3-4b-prefill-measured-and-bsz-blockers → `memory/inbox/2026-09-03-cs3-4b-prefill-measured-and-bsz-blockers.md`
 - 2026-09-02 — sram-supply-merit-order → `assets/2026-09-02-sram-supply-merit-order.png`
 - 2026-09-02 — sram-supply-and-kv-demand-charts → `memory/inbox/2026-09-02-sram-supply-and-kv-demand-charts.md`
