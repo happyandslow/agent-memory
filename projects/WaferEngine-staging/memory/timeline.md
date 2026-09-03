@@ -2,6 +2,8 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-09-03 — red-fault-sims-stall-and-timeout-cannot-kill-container → `memory/inbox/2026-09-03-red-fault-sims-stall-and-timeout-cannot-kill-container.md`
+- 2026-09-03 — frozen-pin-cascade-after-intentional-source-change → `memory/inbox/2026-09-03-frozen-pin-cascade-after-intentional-source-change.md`
 - 2026-09-02 — m1b-s0-part1-ragged-validation-complete → `memory/inbox/2026-09-02-m1b-s0-part1-ragged-validation-complete.md`
 - 2026-09-02 — m1b-s0-part1-commit-and-part2-parallel-status → `memory/inbox/2026-09-02-m1b-s0-part1-commit-and-part2-parallel-status.md`
 - 2026-09-01 — m1b-s0-local-dsr-fmac-witness-contract → `memory/inbox/2026-09-01-m1b-s0-local-dsr-fmac-witness-contract.md`

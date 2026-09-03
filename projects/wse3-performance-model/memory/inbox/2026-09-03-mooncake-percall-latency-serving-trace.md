@@ -37,23 +37,25 @@ Figure: `assets/2026-09-03-mooncake-percall-latency.png`. Doc:
   not describe a multi-tenant chip; the relevant tier is DRAM/SSD and the
   lever is reload bandwidth.
 - **Per-request latency model (4B constants; single stream, no queueing;
-  CS-3 decode measured 1,081.7 tok/s, prefill measured 10,545 tok/s on
-  2026-09-03, reload 12.5 GB/s expected; GPU decode 150 tok/s, prefill 40K
-  tok/s, PCIe 25 GB/s all ASSUMED):** toolagent mean 0.54 s (CS-3 + host
-  mirror; p50 0.13) vs 0.71 (no mirror) vs 1.32 s (GPU; p50 0.22);
-  conversation 1.08 / 1.41 / 2.50 s. **CS-3 is prefill-bound**
-  (0.35–0.72 s of the mean) and the GPU is decode-bound (1.2–2.3 s). The
+  CS-3 decode 954 tok/s and prefill 9,304 tok/s — both measured, expressed
+  at the calibrated 750 MHz clock; reload 12.5 GB/s expected; GPU decode
+  150 tok/s, prefill 40K tok/s, PCIe 25 GB/s all ASSUMED):** toolagent mean
+  0.61 s (CS-3 + host mirror; p50 0.14) vs 0.80 (no mirror) vs 1.32 s (GPU;
+  p50 0.22); conversation 1.22 / 1.60 / 2.50 s. **CS-3 is prefill-bound**
+  (0.40–0.81 s of the mean) and the GPU is decode-bound (1.2–2.3 s). The
   host mirror cuts CS-3 prefill by a third for ~0.02 s of reload — cheap,
-  keep it. (First pass with the 1.7B prefill proxy read 0.64 / 0.86 and
-  1.29 / 1.73 s.)
+  keep it. (Earlier passes: 0.64/0.86 with the 1.7B prefill proxy;
+  0.54/0.71 with measured prefill at the launcher's 0.85 GHz.)
 - **Cost side:** single-stream lane-seconds over the 3,537 s trace: CS-3
-  12.8–13.0K (= 3.6–3.7 wafers to keep up), GPU 30–31K single-stream but a
-  GPU batches tens of streams, so ~1 card. **CS-3 cannot batch today**: the
-  4B decode image fails to compile at bsz 2 on two small buffers (FFN SiLU
-  scratch in the 512 B D-cache window; HT-tail logits partials), see
-  `2026-09-03-cs3-4b-prefill-measured-and-bsz-blockers.md`. Throughput per
-  device is where the comparison is decided, and CS-3 is single-stream
-  until those kernel fixes land.
+  14.4–14.6K (= 4.1 wafers), of which prefill 65 %, decode 31 %, reload
+  4 %; GPU 30–31K single-stream but a GPU batches tens of streams, so ~1
+  card. Decode can be multiplied by pipelining requests across the four
+  block rows (measured floor ≈ 4,500 tok/s per wafer) or by in-kernel
+  batching (measured asymptote ≈ 2,100 tok/s, after two experiment-only
+  kernel edits — see `2026-09-03-4b-batch-scaling-pipeline-and-750mhz-clock.md`);
+  with a 4-stage pipeline the trace needs ≈ 2.6 prefill wafers + 0.5 decode
+  wafer. **Prefill throughput per wafer, not decode batching, sets the CS-3
+  device count on this workload.**
 - Le's framing (2026-09-03): compare against GPU + host DRAM, not a lone
   wafer; GPU keeps far more KV near compute and agentic workloads need
   little decode; CS-3's price makes idle lane time during tool calls the

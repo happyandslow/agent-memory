@@ -31,6 +31,11 @@ in `csctl get jobs` or in the remote log dir. Or an env var you export before
 - Concurrent `launch_device_pp.py` runs must not share a staging dir —
   `stage()` rmtree's it while the other session may still be uploading;
   make it per `--tag`.
+- After a Claude session restart the CS-3 runs already done were relaunched
+  (context lost; `cs3_run_pp.sh <tag>` silently overwrote the remote
+  `logs/<tag>.log` and `out_pp_*_<tag>/` of a finished run). Before launching
+  anything after a restart, read the analysis doc's job-id list and
+  `demo/*/cs3/` first; the script now refuses a tag whose log exists.
 - Per-run job accounting: snapshot `csctl get jobs` before/after and cancel
   only the ids that appeared (`cs3_run_pp.sh`); `cancel-mine` sweeps every job
   under the shared login, including other people's sessions.

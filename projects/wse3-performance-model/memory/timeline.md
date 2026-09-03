@@ -3,7 +3,10 @@
 # wse3-performance-model Timeline
 
 - 2026-09-03 — two-wafer-pp-hop-price-and-tsc-calibration → `memory/inbox/2026-09-03-two-wafer-pp-hop-price-and-tsc-calibration.md`
+- 2026-09-03 — two-wafer-pp-floorplan → `artifacts/2026-09-03-two-wafer-pp-floorplan.png`
 - 2026-09-03 — simfab-real-time-stall-detector → `memory/inbox/2026-09-03-simfab-real-time-stall-detector.md`
+- 2026-09-03 — session-4b-wide-layer-conclusions → `memory/inbox/2026-09-03-session-4b-wide-layer-conclusions.md`
+- 2026-09-03 — plot_pp_floorplan → `artifacts/2026-09-03-plot_pp_floorplan.py`
 - 2026-09-03 — mooncake-percall-latency → `assets/2026-09-03-mooncake-percall-latency.png`
 - 2026-09-03 — mooncake-percall-latency-serving-trace → `memory/inbox/2026-09-03-mooncake-percall-latency-serving-trace.md`
 - 2026-09-03 — keep-vs-reload → `assets/2026-09-03-keep-vs-reload.png`
@@ -12,6 +15,8 @@
 - 2026-09-03 — gap-sharing → `assets/2026-09-03-gap-sharing.png`
 - 2026-09-03 — cs3-run-heredoc-hang-and-container-env → `memory/inbox/2026-09-03-cs3-run-heredoc-hang-and-container-env.md`
 - 2026-09-03 — cs3-4b-prefill-measured-and-bsz-blockers → `memory/inbox/2026-09-03-cs3-4b-prefill-measured-and-bsz-blockers.md`
+- 2026-09-03 — bsz-scaling → `assets/2026-09-03-bsz-scaling.png`
+- 2026-09-03 — 4b-batch-scaling-pipeline-and-750mhz-clock → `memory/inbox/2026-09-03-4b-batch-scaling-pipeline-and-750mhz-clock.md`
 - 2026-09-02 — sram-supply-merit-order → `assets/2026-09-02-sram-supply-merit-order.png`
 - 2026-09-02 — sram-supply-and-kv-demand-charts → `memory/inbox/2026-09-02-sram-supply-and-kv-demand-charts.md`
 - 2026-09-02 — score-buffer-wall-and-single-request-remote-kv → `memory/inbox/2026-09-02-score-buffer-wall-and-single-request-remote-kv.md`
