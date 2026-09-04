@@ -63,6 +63,21 @@ Figure: `assets/2026-09-03-mooncake-percall-latency.png`. Doc:
   KV recreation, or workload co-design. Implications are to be argued from
   these per-dataset charts, not in general.
 
+## Revision 2026-09-04 — measured H200 rates flip the single-wafer 4B comparison
+
+GPU rates replaced by the MeshRT paper's H200 + SGLang measurements
+(Qwen3.5-9B, bs 1: prefill 72,757 tok/s, decode 355 tok/s; used as 4B
+proxy). Result: the single-wafer 4B deployment no longer beats the GPU on
+mean per-request latency (toolagent 0.61 vs 0.57 s; conversation 1.22 vs
+1.09 s) — prefill-heavy requests reward the GPU's 8× faster prefill more
+than CS-3's 2.7× faster decode. A same-size comparison (MeshRT Qwen3.5-9B
+kernels on two wafers, 750 MHz, hops excluded: decode 1,475, prefill
+21,442 tok/s) leads the GPU again (toolagent mean 0.32 s, p50 0.07; conv
+0.63 s). Lesson: the CS-3 side is decided by prefill throughput per wafer
+at least as much as by decode speed; quote which kernel generation and
+how many wafers whenever comparing. Doc §7; figure
+`assets/2026-09-03-mooncake-percall-latency.png` (4 configs).
+
 ## Implications / next actions
 
 - [ ] Replace GPU assumptions with measured single-stream vLLM/SGLang

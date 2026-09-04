@@ -2,6 +2,13 @@
 
 # wse3-performance-model Timeline
 
+- 2026-09-04 — meshrt-9b-layer-time-flat-in-region-size → `memory/inbox/2026-09-04-meshrt-9b-layer-time-flat-in-region-size.md`
+- 2026-09-04 — increments → `assets/2026-09-04-increments.png`
+- 2026-09-04 — decode-breakdown → `assets/2026-09-04-decode-breakdown.png`
+- 2026-09-04 — context-sweep → `assets/2026-09-04-context-sweep.png`
+- 2026-09-04 — agentic-decode-is-mostly-hidden-reasoning → `memory/inbox/2026-09-04-agentic-decode-is-mostly-hidden-reasoning.md`
+- 2026-09-04 — 4b-row-is-serial-attn-ffn-block-times → `memory/inbox/2026-09-04-4b-row-is-serial-attn-ffn-block-times.md`
+- 2026-09-04 — 4b-decode-cost-vs-context-and-device-ceiling → `memory/inbox/2026-09-04-4b-decode-cost-vs-context-and-device-ceiling.md`
 - 2026-09-03 — two-wafer-pp-hop-price-and-tsc-calibration → `memory/inbox/2026-09-03-two-wafer-pp-hop-price-and-tsc-calibration.md`
 - 2026-09-03 — two-wafer-pp-floorplan → `artifacts/2026-09-03-two-wafer-pp-floorplan.png`
 - 2026-09-03 — simfab-real-time-stall-detector → `memory/inbox/2026-09-03-simfab-real-time-stall-detector.md`

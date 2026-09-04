@@ -85,6 +85,10 @@ Charts (all generated views, scripts in the repo):
 
 ## Pointers
 
+- Human-readable session report (round by round, all eight figures):
+  `wse3-performance-model/docs/reports/2026-09-04-4b-wide-layer-session-report.md`;
+  web version with embedded figures: https://claude.ai/code/artifact/52cee6ad-bc9a-4883-bcbc-dfd2b98fe338
+
 - ContextBase (MeshAgent/WaferOS › Logs): session results with all six charts —
   https://context.ed-aisys.com/doc/2026-09-03-result-session-4b-wide-layer-kv-levers-cs-3-measurements-agentic-positioning-nQpvM1Pzcd ;
   earlier chart page `2026-09-02 Result — SRAM supply merit order and KV demand curve` (2ITHmQd6XV).
