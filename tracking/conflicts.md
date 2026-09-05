@@ -68,3 +68,12 @@
 - Remote-only commits at status time: `5d9c785`, `af30d2c`, `0e968df`, `7df9a8e`, `89584ac`, `8ace038`, `7be79a2`, `33d76b3`, `74eb62b`, `addbd53`, `d94e42b`, `871c861`, `2c0cd72`, `129929a`, `4f1e68c`, `2bba311`, `c0b7a5a`, `fc21307`, `4dcafbd`, `8d7cd77`, `553c981`, `ffb93b1`, `27c0ba3`, `e51f788`, `2d0d6c6`, `dd06c1c`, `7487863`, `e9e480b`, `c5a7280`, `bf77964`, `ee67297`.
 - Worktree still has a modified binary meeting deck: `projects/WaferEngine-staging/meetings/2026-08-24.pptx` (`1809578 -> 2343557` bytes in `git diff --stat`).
 - Cron did not push, rebase, reset, or overwrite the deck. Le/manual resolution needed: decide whether to preserve/commit the PPTX change, then reconcile `main` with `origin/main`.
+
+## 2026-09-05 — local branch still diverged from origin/main; pull blocked
+
+- Daily maintenance fetched origin, then attempted `git pull --ff-only`; it failed with `fatal: Not possible to fast-forward, aborting.`
+- Status after fetch: `main` is ahead 8 and behind 34 relative to `origin/main` before this maintenance commit.
+- Local-only commits before this pass: `6cc723f`, `2ced549`, `a5768c1`, `562a141`, `764dc32`, `9194317`, `e1eff72`, `6088518`.
+- Remote-only commits at status time: `3a91971`, `08cde57`, `b5f8fa9`, `5d9c785`, `af30d2c`, `0e968df`, `7df9a8e`, `89584ac`, `8ace038`, `7be79a2`, `33d76b3`, `74eb62b`, `addbd53`, `d94e42b`, `871c861`, `2c0cd72`, `129929a`, `4f1e68c`, `2bba311`, `c0b7a5a`, `fc21307`, `4dcafbd`, `8d7cd77`, `553c981`, `ffb93b1`, `27c0ba3`, `e51f788`, `2d0d6c6`, `dd06c1c`, `7487863`, `e9e480b`, `c5a7280`, `bf77964`, `ee67297`.
+- Worktree still has a modified binary meeting deck: `projects/WaferEngine-staging/meetings/2026-08-24.pptx` (`1809578 -> 2343557` bytes in `git diff --stat`).
+- Cron did not push, rebase, reset, or overwrite the deck. Le/manual resolution needed: decide whether to preserve/commit the PPTX change, then reconcile `main` with `origin/main`.
