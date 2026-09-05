@@ -132,3 +132,19 @@ intra-turn gap in decode tokens forgone (@ 1,082 tok/s). Readings:
 - `wse3-performance-model/docs/analysis/2026-09-02-gc-trace-study-first-pass.md` §7 (revision)
 - ContextBase log: https://context.ed-aisys.com/doc/2026-09-02-result-sram-supply-merit-order-and-kv-demand-curve-qwen3-4b-on-wse-3-2ITHmQd6XV (revision section appended 2026-09-03)
 - related: `2026-09-02-sram-supply-and-kv-demand-charts.md`, `2026-09-02-score-buffer-wall-and-single-request-remote-kv.md`
+
+## CORRECTION (2026-09-04 evening) — streaming duplicates in the Claude Code trace
+
+The extractor counted every streamed assistant record (one per content block,
+same message id, same usage) as a separate API call — 58,581 of 105K rows
+were duplicates. After de-duplication (`extract_claude_code_traces.py` keeps
+the first record per message id): calls 102,517 → **46,650**; intra-turn gap
+p50 3.3 s → **10.9 s** (p90 50 s; 7.8 % of gaps > 60 s); prefix re-sent 96 %
+→ 98 %; calls per turn ~19 → **~12**; per-turn decode p50 14.4K → **5.8K**
+(p90 23.5K); per-turn new prefill p50 24.7K → 10.9K; hidden-reasoning share
+89 % → **75 %** (text 5.9 %, Edit/Write 9.1 %, Bash 6.0 %); decode/prefill
+ratio p50 0.63 → 0.59; median turn time CS-3 4B ≈ 7.3 s (8K rate) / 10.5 s
+(capped at 29K, measured curve) vs H200 ≈ 16.6 s — the ratios (CS-3 ≈ 1.6×
+faster per turn, turns decode-bound in time on both engines) are unchanged.
+Per-session max context and the G(C) supply/demand picture are unaffected.
+See report Round 28; corrected figures overwrite the assets of the same name.

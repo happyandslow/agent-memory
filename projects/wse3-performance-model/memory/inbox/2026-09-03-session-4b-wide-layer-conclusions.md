@@ -96,3 +96,24 @@ Charts (all generated views, scripts in the repo):
   `docs/analysis/2026-09-03-mooncake-percall-latency-first-pass.md`,
   `docs/analysis/2026-09-03-cs3-4b-prefill-and-bsz-measurement.md`,
   `docs/analysis/2026-09-03-4b-two-wafer-pp-decode-demo.md` (pp-demo session).
+
+## Update 2026-09-04 (end of day) — Rounds 17–28 and the open decision
+
+Later rounds of the session (all in `docs/reports/2026-09-04-4b-wide-layer-session-report.md`,
+published at https://claude.ai/code/artifact/52cee6ad-bc9a-4883-bcbc-dfd2b98fe338):
+attention path reading (16 cyc/context token is kernel, not hardware; 32-PE
+band collective; flash-decoding layout ~10–15×), slope levers and model
+choice, PD split vs re-layout break-evens, forced-prefill recap, block times
+vs batch (ATTN/FFN ratio 2.05→2.38, never inverts), thin-stage layouts
+B/C/D drawn with SRAM fit, throughput/$ first cut (GPU keeps 15–60× per $),
+decoder-only lever value on traces (reuse is real; capacity binds; decoded
+KV is not what is reused), and the trace de-duplication correction
+(per-turn decode 14.4K → 5.8K, hidden 89 % → 75 %).
+
+**Open decision (Le, weekend of 2026-09-05/06):** whether the on-chip SRAM
+KV storage work can be deferred in favour of another path (fast forced
+prefill / thin stages, attention slope, model choice). Report §2b is the
+neutral reading guide mapping that question to the evidence; no verdict was
+recorded. Captures: `2026-09-04-4b-block-times-vs-batch-and-thin-stage-sram-fit.md`,
+`2026-09-04-claude-code-trace-streaming-duplicates-correction.md`,
+`2026-09-04-4b-decode-cost-vs-context-and-device-ceiling.md` (corrected).
