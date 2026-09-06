@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1120" viewBox="0 0 1800 1120">
+  <defs>
+    <style>
+      text { font-family: Inter, Arial, sans-serif; fill: #172033; }
+      .title { font-size: 30px; font-weight: 700; }
+      .sub { font-size: 17px; fill: #475569; }
+      .head { font-size: 24px; font-weight: 700; }
+      .label { font-size: 17px; font-weight: 600; }
+      .body { font-size: 16px; }
+      .small { font-size: 14px; }
+      .mono { font-family: "DejaVu Sans Mono", monospace; font-size: 15px; }
+      .cell { stroke: #334155; stroke-width: 1.5; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><path d="M0,0 L10,3.5 L0,7 Z" fill="#475569"/></marker>
+  </defs>
+  <rect width="1800" height="1120" fill="#ffffff"/>
+  <text x="45" y="48" class="title">softmax_score(): memory layout and DSD traversal</text>
+  <text x="45" y="80" class="sub">Concrete example: bsz=2, gqa_group_size=2, drawn kv_len_per_pe=4; before N=2, after current_len=[1,3]</text>
+
+  <rect x="35" y="110" width="835" height="875" rx="18" fill="#fff7ed" stroke="#c2410c" stroke-width="2.5"/>
+  <rect x="930" y="110" width="835" height="875" rx="18" fill="#f0fdf4" stroke="#15803d" stroke-width="2.5"/>
+  <text x="70" y="154" class="head" fill="#9a3412">BEFORE — origin/main scalar packed prefix</text>
+  <text x="965" y="154" class="head" fill="#166534">AFTER — fixed request segments, packed groups</text>
+
+  <text x="70" y="195" class="label">Input / in-place output: score_f32 allocation = 2 × 2 × 4 = 16 f32 cells</text>
+  <text x="965" y="195" class="label">Input / in-place output: same 16-cell allocation</text>
+
+  <!-- old score cells -->
+  <g transform="translate(72,225)">
+    <rect class="cell" x="0" y="0" width="44" height="58" fill="#fecaca"/><rect class="cell" x="44" y="0" width="44" height="58" fill="#fecaca"/>
+    <rect class="cell" x="88" y="0" width="44" height="58" fill="#fed7aa"/><rect class="cell" x="132" y="0" width="44" height="58" fill="#fed7aa"/>
+    <rect class="cell" x="176" y="0" width="44" height="58" fill="#bbf7d0"/><rect class="cell" x="220" y="0" width="44" height="58" fill="#bbf7d0"/>
+    <rect class="cell" x="264" y="0" width="44" height="58" fill="#bfdbfe"/><rect class="cell" x="308" y="0" width="44" height="58" fill="#bfdbfe"/>
+    <g fill="#e2e8f0"><rect class="cell" x="352" y="0" width="44" height="58"/><rect class="cell" x="396" y="0" width="44" height="58"/><rect class="cell" x="440" y="0" width="44" height="58"/><rect class="cell" x="484" y="0" width="44" height="58"/><rect class="cell" x="528" y="0" width="44" height="58"/><rect class="cell" x="572" y="0" width="44" height="58"/><rect class="cell" x="616" y="0" width="44" height="58"/><rect class="cell" x="660" y="0" width="44" height="58"/></g>
+    <text x="12" y="24" class="small">b0g0</text><text x="100" y="24" class="small">b0g1</text><text x="188" y="24" class="small">b1g0</text><text x="276" y="24" class="small">b1g1</text>
+    <text x="10" y="45" class="small">2 live</text><text x="98" y="45" class="small">2 live</text><text x="186" y="45" class="small">2 live</text><text x="274" y="45" class="small">2 live</text><text x="500" y="36" class="small">8 zero tail cells</text>
+    <text x="0" y="82" class="mono">bases: 0, 2, 4, 6  ·  every group width = iter_num = 2</text>
+  </g>
+
+  <!-- new score cells -->
+  <g transform="translate(967,225)">
+    <rect class="cell" x="0" y="0" width="44" height="58" fill="#fecaca"/><rect class="cell" x="44" y="0" width="44" height="58" fill="#fed7aa"/>
+    <g fill="#e2e8f0"><rect class="cell" x="88" y="0" width="44" height="58"/><rect class="cell" x="132" y="0" width="44" height="58"/><rect class="cell" x="176" y="0" width="44" height="58"/><rect class="cell" x="220" y="0" width="44" height="58"/><rect class="cell" x="264" y="0" width="44" height="58"/><rect class="cell" x="308" y="0" width="44" height="58"/></g>
+    <rect class="cell" x="352" y="0" width="44" height="58" fill="#bbf7d0"/><rect class="cell" x="396" y="0" width="44" height="58" fill="#bbf7d0"/><rect class="cell" x="440" y="0" width="44" height="58" fill="#bbf7d0"/>
+    <rect class="cell" x="484" y="0" width="44" height="58" fill="#bfdbfe"/><rect class="cell" x="528" y="0" width="44" height="58" fill="#bfdbfe"/><rect class="cell" x="572" y="0" width="44" height="58" fill="#bfdbfe"/>
+    <g fill="#e2e8f0"><rect class="cell" x="616" y="0" width="44" height="58"/><rect class="cell" x="660" y="0" width="44" height="58"/></g>
+    <text x="5" y="25" class="small">b0g0</text><text x="49" y="25" class="small">b0g1</text><text x="166" y="38" class="small">request 0 tail: 6</text>
+    <text x="370" y="25" class="small">b1g0: 3</text><text x="502" y="25" class="small">b1g1: 3</text><text x="622" y="38" class="small">tail 2</text>
+    <text x="0" y="82" class="mono">request bases: 0, 8  ·  group bases: 0,1,8,11</text>
+  </g>
+
+  <!-- old traversal -->
+  <rect x="70" y="350" width="765" height="205" rx="12" fill="#ffffff" stroke="#fb923c" stroke-width="1.5"/>
+  <text x="95" y="386" class="label">Max traversal (sum is identical)</text>
+  <text x="95" y="420" class="mono">bind base=score[0], length=N once</text>
+  <text x="95" y="450" class="mono">for i in 0 .. bsz*G:</text>
+  <text x="125" y="478" class="mono">reduce current N-cell DSD → max[i]</text>
+  <text x="125" y="506" class="mono">increment score DSD by N</text>
+  <text x="95" y="538" class="body">One flat loop is legal because all four groups have the same width.</text>
+
+  <!-- new traversal -->
+  <rect x="965" y="350" width="765" height="250" rx="12" fill="#ffffff" stroke="#4ade80" stroke-width="1.5"/>
+  <text x="990" y="386" class="label">Implemented S0 traversal</text>
+  <text x="990" y="420" class="mono">for b:</text>
+  <text x="1020" y="448" class="mono">L = current_len(position[b], local_py)</text>
+  <text x="1020" y="476" class="mono">if L &gt; 0: bind request_base once, length=L</text>
+  <text x="1050" y="504" class="mono">for g: reduce → slot[b,g]; increment by L</text>
+  <text x="1020" y="532" class="mono">else: fill max=-inf (or sum=0) for G slots</text>
+  <text x="990" y="570" class="body">One necessary rebind per request; no per-group base reset.</text>
+
+  <!-- outputs -->
+  <text x="70" y="610" class="label">Fixed max / sum output order: [bsz=2][gqa_group_size=2]</text>
+  <text x="965" y="650" class="label">Fixed max / sum output order: unchanged</text>
+  <g transform="translate(72,640)">
+    <rect class="cell" x="0" y="0" width="150" height="55" fill="#fecaca"/><rect class="cell" x="150" y="0" width="150" height="55" fill="#fed7aa"/><rect class="cell" x="300" y="0" width="150" height="55" fill="#bbf7d0"/><rect class="cell" x="450" y="0" width="150" height="55" fill="#bfdbfe"/>
+    <text x="50" y="34" class="body">b0,g0</text><text x="200" y="34" class="body">b0,g1</text><text x="350" y="34" class="body">b1,g0</text><text x="500" y="34" class="body">b1,g1</text>
+  </g>
+  <g transform="translate(967,680)">
+    <rect class="cell" x="0" y="0" width="150" height="55" fill="#fecaca"/><rect class="cell" x="150" y="0" width="150" height="55" fill="#fed7aa"/><rect class="cell" x="300" y="0" width="150" height="55" fill="#bbf7d0"/><rect class="cell" x="450" y="0" width="150" height="55" fill="#bfdbfe"/>
+    <text x="50" y="34" class="body">b0,g0</text><text x="200" y="34" class="body">b0,g1</text><text x="350" y="34" class="body">b1,g0</text><text x="500" y="34" class="body">b1,g1</text>
+  </g>
+  <path d="M672 668 C780 668,780 730,835 730" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M1567 708 C1650 708,1650 760,1705 760" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <text x="70" y="730" class="body">Y max all-reduce extent = bsz*G = 4 f32 values.</text>
+  <text x="965" y="775" class="body">Y max all-reduce extent remains 4 f32 values.</text>
+  <text x="70" y="760" class="body">Denominators are carried later by the fused Score@V reduce.</text>
+  <text x="965" y="805" class="body">Only local score addresses change; the collective ABI does not.</text>
+
+  <rect x="70" y="815" width="765" height="125" rx="12" fill="#fffbeb" stroke="#d97706"/>
+  <text x="95" y="850" class="label">origin/main behavior</text>
+  <text x="95" y="880" class="body">One shared N makes a global increment walk possible.</text>
+  <text x="95" y="908" class="body">It cannot encode two request-local lengths [1,3].</text>
+  <rect x="965" y="850" width="765" height="90" rx="12" fill="#ecfdf5" stroke="#16a34a"/>
+  <text x="990" y="884" class="label">S0 requirement</text>
+  <text x="990" y="914" class="body">Reset only at request boundaries; increment across G packed groups.</text>
+
+  <rect x="35" y="1015" width="1730" height="75" rx="12" fill="#f8fafc" stroke="#64748b"/>
+  <text x="60" y="1048" class="body">Notation: N=origin/main scalar iter_num · L_b=position_current_length(position[b],local_py) · C=kv_len_per_pe · slot=b*G+g.</text>
+  <text x="60" y="1075" class="small">Source: origin/main b136ab64 + uncommitted S0 working tree. Runtime overhead is unknown; no simulator timing or CS-3 timing is used.</text>
+</svg>

@@ -2,9 +2,29 @@
 
 # WaferEngine-staging Timeline
 
+- 2026-09-03 — red-fault-sims-stall-and-timeout-cannot-kill-container → `memory/inbox/2026-09-03-red-fault-sims-stall-and-timeout-cannot-kill-container.md`
+- 2026-09-03 — frozen-pin-cascade-after-intentional-source-change → `memory/inbox/2026-09-03-frozen-pin-cascade-after-intentional-source-change.md`
+- 2026-09-02 — m1b-s0-part1-ragged-validation-complete → `memory/inbox/2026-09-02-m1b-s0-part1-ragged-validation-complete.md`
+- 2026-09-02 — m1b-s0-part1-commit-and-part2-parallel-status → `memory/inbox/2026-09-02-m1b-s0-part1-commit-and-part2-parallel-status.md`
+- 2026-09-01 — m1b-s0-local-dsr-fmac-witness-contract → `memory/inbox/2026-09-01-m1b-s0-local-dsr-fmac-witness-contract.md`
+- 2026-09-01 — m1b-s0-c2c-host-gates-and-collective-source-binding → `memory/inbox/2026-09-01-m1b-s0-c2c-host-gates-and-collective-source-binding.md`
+- 2026-09-01 — cs3-run-stdin-is-not-forwarded → `memory/inbox/2026-09-01-cs3-run-stdin-is-not-forwarded.md`
+- 2026-08-31 — softmax-save-address-dsr-drops-first-live-cell → `memory/inbox/2026-08-31-softmax-save-address-dsr-drops-first-live-cell.md`
+- 2026-08-31 — simulator-overlay-execution-and-readback-plumbing → `memory/inbox/2026-08-31-simulator-overlay-execution-and-readback-plumbing.md`
+- 2026-08-31 — m1b-s0-qk-red-signature-and-approx-alpha → `memory/inbox/2026-08-31-m1b-s0-qk-red-signature-and-approx-alpha.md`
+- 2026-08-30 — stateless-position-refactor-must-replay-the-old-guard → `memory/inbox/2026-08-30-stateless-position-refactor-must-replay-the-old-guard.md`
+- 2026-08-25 — o1-promoted-to-m1b-milestone → `memory/inbox/2026-08-25-o1-promoted-to-m1b-milestone.md`
+- 2026-08-25 — o1-main-first-continuous-batching-decision → `memory/inbox/2026-08-25-o1-main-first-continuous-batching-decision.md`
+- 2026-08-25 — meshrt-paper-result-provenance-gap → `memory/inbox/2026-08-25-meshrt-paper-result-provenance-gap.md`
+- 2026-08-25 — m1-s3-closure-merged → `memory/inbox/2026-08-25-m1-s3-closure-merged.md`
+- 2026-08-25 — expA-scripts-salvage.tar → `assets/2026-08-25-expA-scripts-salvage.tar.gz`
+- 2026-08-24 — staged-unified-diff-whitespace-false-positive → `memory/inbox/2026-08-24-staged-unified-diff-whitespace-false-positive.md`
+- 2026-08-24 — o1-continuous-batching-roadmap → `memory/inbox/2026-08-24-o1-continuous-batching-roadmap.md`
+- 2026-08-24 — matplotlib-transaxes-autoscale-and-dual-python → `memory/inbox/2026-08-24-matplotlib-transaxes-autoscale-and-dual-python.md`
 - 2026-08-24 — m3-multirow-v4-v5-device-comparison → `memory/inbox/2026-08-24-m3-multirow-v4-v5-device-comparison.md`
 - 2026-08-24 — m1-s4-ragged-c1 → `meetings/2026-08-24-m1-s4-ragged-c1.pptx`
 - 2026-08-24 — m1-s4-c1-fixed-communication-device-negative → `memory/inbox/2026-08-24-m1-s4-c1-fixed-communication-device-negative.md`
+- 2026-08-24 — cross-filesystem-git-worktree-relocation → `memory/inbox/2026-08-24-cross-filesystem-git-worktree-relocation.md`
 - 2026-08-23 — m3-perf-model-coefficients → `memory/inbox/2026-08-23-m3-perf-model-coefficients.md`
 - 2026-08-23 — m1-s4-real-workload-shape-review → `memory/inbox/2026-08-23-m1-s4-real-workload-shape-review.md`
 - 2026-08-23 — m1-s4-c1-mechanism-review → `memory/inbox/2026-08-23-m1-s4-c1-mechanism-review.md`

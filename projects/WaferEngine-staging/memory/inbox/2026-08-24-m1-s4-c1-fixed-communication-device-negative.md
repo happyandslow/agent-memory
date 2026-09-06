@@ -42,13 +42,16 @@
 
 ## Pointers
 
-- Branch `lexu/staging/m1-ragged-execution-study`, branch point `77d6d407`
+- Remote branch `lexu/staging/m1-ragged-execution-study`, based on
+  `77d6d407328f46314c90238d799f9ed5402d55b6`; C1-M implementation commit
+  `4a4e6c3d11b8b77b835446cde507351141f95f6c`; study/evidence tip
+  `a24beb4c6c3dcb4595dfd940fe5b8672ae9e1048` (verified equal to the GitHub
+  branch ref on 2026-08-24)
+- GitHub branch: <https://github.com/happyandslow/WaferEngine/tree/lexu/staging/m1-ragged-execution-study>
 - `docs/analysis/m1-s4-c1-s256-manual-comparison-provenance.md`
 - `docs/analysis/m1-s4-c1-workload-step-review.md`
 - `cs3-c1-s256-manual-comparison/run-20260824T0340Z/`
 - `tools/m1_s4/collect_c1_s256_manual_comparison.py`
-- `docs/slides/2026-08-24-m1-s4-ragged-c1/m1-s4-ragged-c1-weekly-insert-2026-08-24.pptx`
-- `docs/slides/2026-08-24-m1-s4-ragged-c1/deck.json`
 - Canonical standalone insert: `projects/WaferEngine-staging/meetings/2026-08-24-m1-s4-ragged-c1.pptx`
 - Canonical editable source: `projects/WaferEngine-staging/meetings/2026-08-24-m1-s4-ragged-c1-src/`
 - Appended weekly deck: `projects/WaferEngine-staging/meetings/2026-08-24.pptx`, slides 9–12

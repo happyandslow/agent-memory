@@ -31,6 +31,9 @@
 
 ## Pointers
 
-- `/tmp/WaferEngine-m1-ragged-study`, branch `lexu/staging/m1-ragged-execution-study`
+- Worktree `/home/lexu/WaferEngine-staging/.worktrees/m1-ragged-execution-study`;
+  pushed branch `lexu/staging/m1-ragged-execution-study`; implementation
+  commit `4a4e6c3d11b8b77b835446cde507351141f95f6c`; evidence tip
+  `a24beb4c6c3dcb4595dfd940fe5b8672ae9e1048`
 - `models/qwen3_1p7b-decode/launch.py`, `round_plan.py`, and `src/decode.csl`
 - `docs/analysis/m1-s4-c1-workload-step-review.md`

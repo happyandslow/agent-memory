@@ -41,11 +41,13 @@
 
 ## Pointers
 
-- Branch `lexu/staging/m1-ragged-execution-study` at reviewed HEAD `77d6d407`
+- Historical review base: `77d6d407328f46314c90238d799f9ed5402d55b6`.
+  The profiler, replay, study documents, and evidence were pushed on branch
+  `lexu/staging/m1-ragged-execution-study` at tip
+  `a24beb4c6c3dcb4595dfd940fe5b8672ae9e1048`.
 - `docs/analysis/m1-s4-real-workload-shape.md`
 - `docs/analysis/m1-s4-c1-workload-step-review.md`
 - `tools/m1_ragged_study/workload_profile.py`
 - `tools/m1_ragged_study/results/m1-s4-real-workload-shape-v1.json`
 - Related topics: `a7-Lp-vs-Lg-settled-on-tracelab.md`,
   `agentic-kv-trace-datasets.md`
-

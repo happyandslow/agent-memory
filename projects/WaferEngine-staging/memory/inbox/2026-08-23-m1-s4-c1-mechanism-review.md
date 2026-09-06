@@ -41,7 +41,10 @@
 
 ## Pointers
 
-- Branch `lexu/staging/m1-ragged-execution-study` at reviewed HEAD `77d6d407`
+- Historical review base: `77d6d407328f46314c90238d799f9ed5402d55b6`.
+  Final pushed branch `lexu/staging/m1-ragged-execution-study` records the
+  implementation at `4a4e6c3d11b8b77b835446cde507351141f95f6c` and the
+  study/evidence tip at `a24beb4c6c3dcb4595dfd940fe5b8672ae9e1048`.
 - `docs/analysis/m1-s4-c1-workload-step-review.md`
 - `docs/analysis/m1-s4-ragged-execution-ab-study.md`
 - `models/qwen3_1p7b-decode/round_plan.py`
@@ -50,4 +53,3 @@
 - Related topics: `mixed-hit-miss-batch-needs-no-ragged.md`,
   `m1-s37-prefix-reuse-device-gates.md`,
   `automatic-replacement-early-stop-fails-closed.md`
-
