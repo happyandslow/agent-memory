@@ -100,6 +100,25 @@ Source: session 4b-wide-layer, report Round 73–75
   arrive); a probe lane must never be the collector row's westmost cell
   (the host port drains from the east, so lane 0 does not feed it) — the
   cross-band-transit diagnosis for that one was REFUTED by bisect.
-- Pending: the A1 stall; the ~10-line KV stride-cap lift (diff written to
-  `demo/qwen3-4b-thin-stage/kv-stride-lift.md`); vstack device runs; the
-  128² two-lane family (width axis) scoped only.
+- **KV stride cap LIFTED and confirmed on silicon (2026-09-07)**: the one
+  strided K-cache descriptor in `process_kv` became `kv_cols` scalar
+  stores (~10 lines, `demo/qwen3-4b-thin-stage/kv-stride-lift.md`).
+  Gate: 1,000 device records byte-identical on both the free and forced
+  paths (S1F/S1P vs L1F/L1P). Cost +0.05% (17,780 vs 17,771 cyc/token).
+  Negative control exact: unpatched refuses to compile at
+  kv_len_per_pe 136 with "integer value '136' cannot be coerced to type
+  'i8'" on decode.csl:1378; patched runs. There was NO launcher assert —
+  the cap was enforced solely by the CSL cast.
+  **L = 1 ceiling 4,064 → 12,032 (2.96×)**, pinned (12,064 fails on PE
+  memory). Measured growth 47.9 B per position per PE.
+- Ceiling model, calibrated and then validated (predicted 11,520 vs
+  measured 12,032): per-PE context bytes = 16 × (context ÷ rows) ×
+  (L + 2) — 16 B K+V per layer, 16 B f32 score slice and 16 B unnamed,
+  both shared across layers. Post-lift ceilings by model, each still
+  needing its own compile: L = 2 ≈ 17,400, L = 4 ≈ 23,600, A unchanged
+  ≈ 30,200 (A was already SRAM-bound), stacked ATTN 128 ≈ 28,300.
+- Method note worth keeping: per-token cost tracks the LIVE context
+  (`iter_num`), not MAX_SEQ_LEN, so a capacity sweep must size each
+  point's prefill to its context or it measures nothing.
+- Pending: the A1 stall; vstack second lane (Le's decision); the 128²
+  two-lane family (width axis) scoped only.

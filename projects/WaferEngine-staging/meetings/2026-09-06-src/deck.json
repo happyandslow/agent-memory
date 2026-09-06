@@ -1,0 +1,570 @@
+{
+ "slides": [
+  {
+   "type": "title",
+   "team": "WaferEngine · CS-3",
+   "kicker": "Weekly collaborator discussion",
+   "title": "Where a Wafer Fits in Agentic Inference",
+   "subtitle": "96% of an agentic call's context is KV the decoder has already seen. What it costs to put that back in front of the scan decides everything else.",
+   "meta": [
+    {
+     "label": "Model",
+     "value": "Qwen3-4B"
+    },
+    {
+     "label": "Rates",
+     "value": "Device-measured, 750 MHz"
+    },
+    {
+     "label": "Scope",
+     "value": "Fits · doesn't · not yet"
+    },
+    {
+     "label": "Date",
+     "value": "2026-09-06"
+    }
+   ],
+   "notes": "Framing for the room: this is not a progress report, it is an argument about where a wafer belongs in agentic serving. Three verdicts — where it fits, where it does not, and where it should fit but cannot yet. Every CS-3 rate quoted is device-measured and cycle-canonical at 750 MHz; the launcher prints 0.85 GHz, which is 13% optimistic. No GPU comparison appears on any slide: every H200 number we have is an external figure for a 9B from the MeshRT paper, and no 4B GPU curve has been measured."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Frame · where a call's KV comes from",
+   "title": "Four kinds of token, and only three ways to supply them",
+   "image": "figures/kv_supply_paths.png",
+   "caption": "Evicted prefix needs movement only, not recomputation. Only context the decoder has never seen must actually be prefilled — and those two cost an order of magnitude apart, so collapsing them hides the answer.",
+   "notes": "This is the frame the whole deck rests on, and it came out of Le's observation that evicted KV only needs reload, never recompute. The supply paths matter because they are priced by different hardware: category 2 by bandwidth, category 3 by prefill throughput, category 1 by on-chip capacity alone. Prefill on this chip happens on the decoder, so 'recompute in place' means re-creating the KV at the destination and skipping the link entirely — which is why a short new increment can be cheaper to recreate than to ship."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Measured · the agentic trace",
+   "title": "Only 0.9% of an agentic call is context the decoder has never seen",
+   "image": "figures/four_way_split.png",
+   "caption": "At today's 29,184-token ceiling the median call is 28,672 tokens resident, 165,376 re-used but evicted, and 1,820 genuinely new. Capacity trades the evicted band for the resident one and never touches the third.",
+   "notes": "Method: analyses/2026-09-06-kv-four-way-decomposition/, new files, source studies untouched. Scoring uses the anyblock rule — every resident block counts wherever it sits — because the leading-contiguous-run rule that percall_latency.py uses breaks on this trace: its median context exceeds every capacity on the grid and LRU evicts the head first, so the leading run terminates at block 0 and median resident reads 0, which is not physically true. Under leading at C=29,184 the row is 0 / 186,880 / 1,820. Context medians: 196,590 over all 46,650 calls including sidechains; 301,617 main-thread only (n=26,144), which is the figure Round 27 quotes as 309K. Cross-check: gc_curve_partial.csv's avoided_per_step brackets the C=29,184 to 51,200 shift at +12,185 to +18,770; this method gives +14,637, inside the bracket."
+  },
+  {
+   "type": "table",
+   "eyebrow": "The pivot · one unmeasured fact",
+   "title": "Whether a host KV mirror exists changes the workload by 24×",
+   "subtitle": "Same trace, same replay, one assumption changed. Claude Code at today's 29,184-token capacity.",
+   "columns": [
+    "Quantity",
+    "With a host mirror",
+    "Without a mirror"
+   ],
+   "rows": [
+    [
+     "Median per-call new prefill",
+     "1,820 tok",
+     "175,704 tok"
+    ],
+    [
+     "Context tokens genuinely new",
+     "3.78%",
+     "92.57%"
+    ],
+    [
+     "What the bottleneck becomes",
+     "Moving seen KV back",
+     "Recomputing seen KV"
+    ],
+    [
+     "What a faster prefiller touches",
+     "3.78% of tokens",
+     "The whole workload"
+    ],
+    [
+     "Is that path measured?",
+     "No — the link was never measured",
+     "Yes — 4,224 to 42,203 tok/s"
+    ]
+   ],
+   "weights": [
+    1.5,
+    1.2,
+    1.2
+   ],
+   "notes": "This is the single most sensitive quantity in the decomposition — nothing else moves by anything like 24×. The reload category exists only if every block ever computed remains retrievable from a host-side mirror. Collapse category 2 into category 3 and the agentic workload stops being a movement problem and becomes a prefill problem, at which point this week's 5.7× is the dominant lever rather than a marginal one. The honest position for the room: we do not know which world we are in, because the GPU-box to CS-3 leg has never been measured (Round 21 records the access problem). The only bandwidth we have measured is host-to-wafer memcpy at 3.2 GB/s against a 12.5 GB/s design rate, which is a different leg. Figure caption: Same trace, same replay, one assumption changed."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Workload · the traces disagree exactly where it matters",
+   "title": "Whether decoded KV re-enters context is a platform choice, not a law",
+   "columns": [
+    "Trace",
+    "Is decoded KV re-used?",
+    "Consequence for on-chip KV"
+   ],
+   "rows": [
+    [
+     "Claude Code — agentic, one user, one month",
+     "~0% — thinking is stripped before the next call",
+     "Long decode consumes context and produces almost nothing keepable"
+    ],
+    [
+     "ServeGen — reasoning, multi-tenant, Feb 2025",
+     "83.4% of turn pairs re-send the full previous output, reasoning included",
+     "Decoded KV is worth keeping; the 29K and 51K rungs matter there"
+    ],
+    [
+     "Mooncake — chat and tool-agent, 2024",
+     "No thinking at all; output capped at 2,000 tokens",
+     "Informs the input side only — prefix sharing and arrival gaps"
+    ]
+   ],
+   "weights": [
+    1.3,
+    1.4,
+    1.5
+   ],
+   "notes": "This is the crux for whether the capacity work pays, and the three traces give opposite answers. It is a property of the serving platform — whether the harness strips reasoning before re-sending — not of the model or the hardware. Claude Code: keeping decode-produced KV is worth 0.003 to 0.13 s per call, essentially nothing. ServeGen: reuse length p50 7,498 tokens, 82% token-weighted. Caveat to state if asked: the Claude Code trace is one user, one harness, one month — it represents the newest usage shape but cannot represent user diversity, arrivals, provider concurrency, or cross-user prefix sharing."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Fits · where the wafer earns its place",
+   "title": "Three conditions — and the third is a property of the model, not the chip",
+   "columns": [
+    "Condition",
+    "Evidence",
+    "Class"
+   ],
+   "rows": [
+    [
+     "Decode is at least ~5% of newly prefilled tokens",
+     "Claude Code median turn sits at 63%",
+     "measured (trace)"
+    ],
+    [
+     "The user waits per turn, with a large reasoning budget",
+     "5,838 decode tokens per turn, 75% hidden reasoning",
+     "measured (trace)"
+    ],
+    [
+     "The decoder doubles as the prefiller",
+     "4.29–4.53× the native prefill kernel at 2K, 1.91–2.02× at 8K",
+     "measured (device)"
+    ],
+    [
+     "But thinking length follows the model class",
+     "The shape evidence is frontier-model; a 4B's own agentic trace does not exist",
+     "Le's reading"
+    ]
+   ],
+   "weights": [
+    1.6,
+    1.7,
+    0.8
+   ],
+   "notes": "The 5% threshold is derived from prefill and decode rates on both engines, so it moves if the GPU side is re-measured — and Le expects a real 4B GPU measurement to come in 2-3x faster than the 9B paper figures we currently substitute, which would raise the threshold and eat into the 63% margin. State that when the row is read. The fourth row is Le's inference, not the report's: Round 35 argues the 300K context depth is a frontier-model artefact that does not transfer to a 4B deployment, but it never extends the same argument to thinking length. That extension is what makes the model ladder two slides on necessary rather than optional."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Doesn't · where the case fails, on our own numbers",
+   "title": "Five ways the wafer loses",
+   "columns": [
+    "Situation",
+    "What happens"
+   ],
+   "rows": [
+    [
+     "No extended thinking in the turn",
+     "Parity — the per-turn advantage disappears entirely"
+    ],
+    [
+     "Large new prefill, little decode",
+     "About 8× slower: first turn, repository dump, big tool output"
+    ],
+    [
+     "Throughput per dollar",
+     "The GPU keeps a 15–60× margin under every lever set (modelled)"
+    ],
+    [
+     "Multi-tenant aggregation",
+     "Decode-stream concurrency p50 = 1; filling S stages needs about 12·S in-turn users"
+    ],
+    [
+     "Two wafers on chat-shaped traffic",
+     "Both Mooncake traces come out net negative at every prefill rate"
+    ]
+   ],
+   "weights": [
+    1.2,
+    2.0
+   ],
+   "notes": "Row 1 is the load-bearing caveat of the whole deck: without extended thinking the same turn is 4.3 s on CS-3 against 4.5 s on an H200 — and that H200 figure is the optimistic-for-us one, since it is a 9B paper number standing in for an unmeasured 4B. If the GPU is 2-3x faster than that substitute, row 1 becomes a loss, not a tie. Row 3's per-dollar verdict is a modelled first cut: a bytes-bound GPU model at 80% of 4.8 TB/s, measured CS-3 step laws, assumed list prices. Row 4 is measured on both traces and is an operator-scale fact, not a single-box one: about 50 in-turn users to fill 4 stages, about 700 to fill 54."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Fits · the model ladder",
+   "title": "Meeting the fit condition needs a bigger model — which needs more wafers",
+   "columns": [
+    "Model",
+    "Wafers",
+    "Resident context",
+    "Agentic fit"
+   ],
+   "rows": [
+    [
+     "Qwen3-4B bf16",
+     "1",
+     "32K — 29,184 measured",
+     "Tool use; weak on SWE"
+    ],
+    [
+     "Qwen3-8B bf16",
+     "1",
+     "24K",
+     "—"
+    ],
+    [
+     "Qwen3.5-9B, dense / 3:1 hybrid",
+     "2",
+     "62K / 247K",
+     "Agentic-tuned"
+    ],
+    [
+     "GPT-OSS-20B MXFP4",
+     "4",
+     "863K",
+     "Codex-class; reasoning-effort knob"
+    ],
+    [
+     "Qwen3-235B-A22B bf16",
+     "12",
+     "39K — only 3K per wafer",
+     "Weight-minimum: the wrong deployment"
+    ]
+   ],
+   "weights": [
+    1.5,
+    0.6,
+    1.1,
+    1.4
+   ],
+   "notes": "From the capacity rule of Round 36: resident KV = eta x (N x 44 GB - weights) / KV per token, with eta ~ 0.13 calibrated on two independent anchors — the 4B's measured 29,184 ceiling and MeshRT's GPT-OSS-20B 900K kernel on four wafers. Every column but the 4B's measured 29,184 is analytical. Two readings for the room. First, architecture dominates size: sliding-window and hybrid-linear models hold 5-10x more context per wafer than dense GQA, so a bigger model does not mean less context per wafer — GPT-OSS-20B holds 216K per wafer against the 4B's 32K. Second, every wafer beyond the weight minimum adds about 40K tokens for dense Qwen, 235K for GPT-OSS-20B. The 235B row is the counter-example: a weight-minimum deployment has almost no KV room."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Not yet · the capacity question, asked correctly",
+   "title": "\"Does the whole request fit\" is the wrong test",
+   "subtitle": "Capacity trades evicted KV for resident KV; it never reduces what must be prefilled.",
+   "columns": [
+    "On-chip KV capacity",
+    "resident",
+    "reload",
+    "new prefill"
+   ],
+   "rows": [
+    [
+     "12,032",
+     "2.96%",
+     "94.96%",
+     "0.93%"
+    ],
+    [
+     "29,184 — today, measured",
+     "7.65%",
+     "89.44%",
+     "0.93%"
+    ],
+    [
+     "51,200",
+     "13.83%",
+     "82.35%",
+     "0.93%"
+    ],
+    [
+     "95,000",
+     "27.25%",
+     "66.92%",
+     "0.93%"
+    ],
+    [
+     "167,000",
+     "51.04%",
+     "39.27%",
+     "0.93%"
+    ]
+   ],
+   "weights": [
+    1.6,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "notes": "The whole-request-fits criterion — which produced the familiar '29K covers 0.04% of calls' — asks whether an entire 300K context fits and counts a call as zero otherwise. That is the wrong question for a workload where 98.3% of a call is re-sent prefix and the median new increment is 1.5K tokens. Asked correctly, capacity moves real tokens: 29,184 to 51,200 moves a mean 14,637 tokens per call out of reload and into resident. The invariant last column is structural, not noise: a block counts as never-seen exactly once in the replay regardless of pool size. This is also why the multi-wafer net benefit two slides on hangs entirely on the mirror question. Figure caption: Claude Code, median per-call shares of context, anyblock scoring."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Not yet → measured · this week's throughput work",
+   "title": "Four stage granularities on silicon: 5.7×, paid for in context",
+   "columns": [
+    "Layout",
+    "Stages",
+    "cycles/token",
+    "tok/s",
+    "Context cap"
+   ],
+   "rows": [
+    [
+     "A — 4 rows × 256², 9 layers per block",
+     "8",
+     "101,670",
+     "7,377",
+     "29,184"
+    ],
+    [
+     "L = 4 — 9 rows × 256×128",
+     "18",
+     "48,872",
+     "15,346",
+     "16,256"
+    ],
+    [
+     "L = 2 — 18 rows × 256×64",
+     "36",
+     "27,348",
+     "27,424",
+     "8,128"
+    ],
+    [
+     "L = 1 — 36 rows × 256×32",
+     "72",
+     "17,771",
+     "42,203",
+     "4,064"
+    ]
+   ],
+   "weights": [
+    2.0,
+    0.7,
+    1.0,
+    0.9,
+    1.0
+   ],
+   "notes": "Each rung was predicted from a one-layer height rig before it ran, and the predictions held to 0.5-1.0%: L=4 measured 0.995x of prediction, L=2 1.001x, L=1 1.010x. The mechanism behind the flat region: at 256 rows the kernel is issue-bound, not compute-bound — each PE holds only 10 of 2,560 hidden dimensions, so every DSD operation's fixed setup dominates the work it does, and halving the rows doubles work per operation without adding operations. Stated plainly: at 2K the current layout uses 65,536 PEs to do work that 32,768 PEs do in the same time. Le's reading, which the numbers back: the tok/s x context product is near-constant at about 220M, so thinning L converts context into stages rather than creating throughput. It is a benchmark axis, not a deployment axis. The sustainable axis is splitting operations, because within a layer only the scan holds KV.",
+   "subtitle": "One wafer, single request, forced prefill at 2K context, 750 MHz. Every row device-measured and gated."
+  },
+  {
+   "type": "metrics",
+   "eyebrow": "Not yet → measured · the ceiling was one 8-bit field",
+   "title": "Ten lines moved L=1's context ceiling from 4,064 to 12,032",
+   "subtitle": "The K cache is stored [dimension][position], so writing one token strides by positions-per-PE — and that stride is a signed 8-bit hardware field.",
+   "hero": {
+    "value": "2.96×",
+    "label": "The context ceiling at L = 1, pinned by compile sweep at 47.9 bytes per position"
+   },
+   "cards": [
+    {
+     "value": "1 field",
+     "label": "A signed 8-bit stride",
+     "note": "Capped context at 127 × rows"
+    },
+    {
+     "value": "10 lines",
+     "label": "One copy, four stores",
+     "note": "Byte-identical by construction"
+    },
+    {
+     "value": "1,000",
+     "label": "Records bit-identical",
+     "note": "Free and forced paths"
+    },
+    {
+     "value": "+0.05%",
+     "label": "Cycle cost",
+     "note": "Inside run-to-run variation"
+    }
+   ],
+   "notes": "Byte-identity here is the strong form: 1,000 device-produced records matching bit for bit on sampled ids, top-k ids and top-k values, on both paths, reusing the original forced request file verbatim so the token sequence replays identically. The negative control is what proves the cap was removed rather than merely survived: at kv_len_per_pe = 136 the unpatched tree refuses to compile with 'integer value 136 cannot be coerced to type i8' named at the stride line, and the patched tree runs. Consequence for the ladder: the context column stops halving. Modelled ceilings after the lift are about 30,200 / 23,600 / 17,400 / 11,500 for A / L=4 / L=2 / L=1 — but only L=1's 12,032 is compiled; the rest are model, not compile, and each needs its own cheap compile sweep before anyone leans on it."
+  },
+  {
+   "type": "metrics",
+   "eyebrow": "Not yet → measured · decoupling the two roles",
+   "title": "Standing the roles in a column costs their compute nothing",
+   "subtitle": "Side by side forces attention and FFN to share a row band, so the FFN gets rows it does not need. Stacking frees the two heights.",
+   "hero": {
+    "value": "−1.3%",
+    "label": "Attention's own work when its block is moved out of a row and into a column of its own"
+   },
+   "cards": [
+    {
+     "value": "12,202",
+     "label": "cycles/token measured",
+     "note": "Three layers, gate passed"
+    },
+    {
+     "value": "+4.1%",
+     "label": "The strip hop",
+     "note": "The mechanism's whole price"
+    },
+    {
+     "value": "4.3%",
+     "label": "Half the FFN's rows",
+     "note": "Context-independent at every height"
+    },
+    {
+     "value": "1.34×",
+     "label": "Two lanes, projected",
+     "note": "Same area, same ceiling"
+    }
+   ],
+   "notes": "Gate: production final record bitwise equal to the free reference's last step, sampled id differing only by PRNG stream position, which is the documented contract. The projection to say out loud and label as a projection: two stacked lanes at ATTN 128 | FFN 64 give twelve stages of three layers where side-by-side fits nine of four — same area to the PE, same 16,256 context ceiling, about 20,489 tok/s, 1.34x over L=4's measured 15,346. It rests on two unvalidated assumptions: flat per-layer time for multi-layer stacked bands, and a lane-to-lane riser cheaper than the period. The honest boundary of the idea: at equal heights stacking buys nothing and costs the 4.1% hop. Its entire value is the asymmetry it can exploit."
+  },
+  {
+   "type": "metrics",
+   "eyebrow": "Not yet · two wafers",
+   "title": "The cost of a second wafer is the host, not the network",
+   "subtitle": "Qwen3-4B split by layer across two CS-3s, byte-exact over 4,096 steps. Each token crosses the boundary twice.",
+   "hero": {
+    "value": "3%",
+    "label": "Share of the crossing cost that is actually the network — a faster interconnect does not fix this"
+   },
+   "cards": [
+    {
+     "value": "+33%",
+     "label": "Two-wafer step",
+     "note": "1,380.2 against 1,036.2 µs"
+    },
+    {
+     "value": "170 µs",
+     "label": "Per crossing",
+     "note": "Two crossings per token"
+    },
+    {
+     "value": "70%",
+     "label": "Is SDK stream latency",
+     "note": "Flat from 8 B to 10 KB"
+    },
+    {
+     "value": "18 µs",
+     "label": "RDMA swapped for TCP",
+     "note": "On a 1,380 µs step"
+    }
+   ],
+   "notes": "Composition, all measured: about 250 us SDK direct-stream completion latency for the two wafers, 45 us on-wafer host-facing gather and fan-out columns, 19 us host work, 14 us RDMA wire and wait — 328 of the 344 us attributed, closing at 99.2%. Correction to carry: the report's 171 and 175 us figures are the same measurement at n=2 and n=1; the n=3 mean is 172, so quote about 170 and avoid false precision. The scaling rule is 170·N, not 170·(N-1), because the decode loop is closed — the sampled token must return to the wafer holding the embedding. Only N=2 was measured. Round 34's '+16% step' is superseded: it priced one crossing where the layout makes two."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Not yet · what two wafers actually buy",
+   "title": "The net turns on the same unmeasured fact",
+   "columns": [
+    "World",
+    "Priced saving",
+    "Net per call",
+    "Break-even"
+   ],
+   "rows": [
+    [
+     "With a host mirror, any rate",
+     "Exactly zero",
+     "−0.315 s",
+     "never"
+    ],
+    [
+     "No mirror, today's layout A at 8K",
+     "2.314 s",
+     "+1.998 s",
+     "6,726 decode tok"
+    ],
+    [
+     "No mirror, L = 4 at 8K",
+     "1.214 s",
+     "+0.899 s",
+     "3,529 decode tok"
+    ],
+    [
+     "No mirror, L = 1 at 2K",
+     "0.347 s",
+     "+0.031 s",
+     "1,008 decode tok"
+    ]
+   ],
+   "weights": [
+    1.8,
+    1.0,
+    1.0,
+    1.2
+   ],
+   "notes": "Capacity does move real tokens — a mean 14,637 per call out of reload into resident — so the old 'covers 3% of calls' objection was the wrong test. But with a mirror only new prefill is charged at a prefill rate, and new prefill is C-invariant, so the priced saving is exactly zero and the net is the raw decode penalty. The counter-intuitive result worth saying out loud: what kills the two-wafer case is making prefill faster, not the decode penalty. Break-even falls from 6,726 decode tokens at today's rate to 1,008 at L=1, against an actual mean of 917 — so this week's 5.7x has itself eroded the two-wafer argument. Three places it is negative: the mirror world at every rate, the pessimistic leading scoring rule at -0.078 s/call, and both Mooncake traces at every rate. The positive result belongs to the agentic trace and the no-mirror world only. Two biases, both understating the case: 51,200 is below the real 53K rung, and the prefill rates are measured at 2K-8K while the trace context is far longer.",
+   "subtitle": "Claude Code, capacity 29,184 → 51,200, cost charged at 344 µs per decode token. Actual mean is 917 decode tokens per call."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Not yet → measured · SRAM returned to the budget",
+   "title": "Boot-only routing code became a host-computed table",
+   "columns": [
+    "Region",
+    "Baseline",
+    "Route table",
+    "Freed"
+   ],
+   "rows": [
+    [
+     "Decode ATTN, 4 × 65,536 PE",
+     "39,328 B",
+     "34,080 B",
+     "−5,248 B"
+    ],
+    [
+     "Decode FFN, 4 × 65,536 PE",
+     "34,944 B",
+     "30,272 B",
+     "−4,672 B"
+    ],
+    [
+     "HT head / HT tail",
+     "unchanged",
+     "unchanged",
+     "0"
+    ],
+    [
+     "Compile-only context ceiling",
+     "23,040 tok",
+     "30,464 tok",
+     "1.32×"
+    ]
+   ],
+   "weights": [
+    1.8,
+    1.0,
+    1.0,
+    0.9
+   ],
+   "notes": "comm_mod.init was 5,632 B of .text that ran once at boot to derive 13 route words and never ran again, yet stayed resident for the life of the program. The host now computes the same values per PE — 34 x u16 = 68 B uploaded alongside the weights — and an 812 B apply function installs them. Gates, in order: a simulator self-check with both derivations running side by side found 0 of 1,024 role PEs disagreeing on any of the 34 entries; oracle and re-arm passed over 3 rounds; and on the device all 4,096 steps of top-20 values, indices and sampled ids are md5-identical to baseline. Steady-state cost +0.007% on one run each, which is noise — the real support is mechanical, since only boot-path code changed. Two things to keep off the slide: the 30,464 ceiling is a link ceiling from a compile sweep and has never been executed, and the separate shared-reduce change is not free (-1,136 B more but +0.39% per token), so 'pure SRAM saving' must mean the route table alone. Not landed — working copy, Le commits.",
+   "subtitle": "Appliance-compiled per-PE maxima of a 49,152 B bank. The per-PE routing setup moved to the host: 5.6 KB of boot-only code left every compute PE and 68 B of data replaced it."
+  },
+  {
+   "type": "next_steps",
+   "eyebrow": "Decide",
+   "title": "What would move the argument",
+   "items": [
+    {
+     "owner": "Measure first",
+     "action": "The GPU-to-CS-3 link, and a 4B GPU curve. Both unmeasured"
+    },
+    {
+     "owner": "Design call",
+     "action": "Is a host KV mirror part of the deployment? It moves the workload 24×"
+    },
+    {
+     "owner": "Kernel",
+     "action": "Cut (iii): 1.71× at 24,384 context, blocked on the A1 stall"
+    },
+    {
+     "owner": "Layout",
+     "action": "The second stacked lane: 1.34×, needs the multi-lane serpentine"
+    },
+    {
+     "owner": "Capacity",
+     "action": "Stream KV out of idle FFN SRAM: 36,800 tokens stranded today"
+    },
+    {
+     "owner": "Workload",
+     "action": "A same-model agentic trace on a 4B-class model"
+    }
+   ],
+   "notes": "The A1 stall in one line if asked: cut (ii) is functionally correct on the device — oracle gate passes with zero defects over 1,000 steps — but stalls 151.5K cycles on five of every six tokens against 8.1K of real work, localised to A1's first half, with the queue-7 rebind theory falsified by a controlled job. One bug blocks the operation-cut branch; the layout branch went around it. Le's standing rule stopped further device debugging pending a joint session. On the streaming prize: the FFN block's compiled SRAM is 27.8 KB of 48 per PE and does not grow with context, so 20.2 KB per PE idles across 262,144 PEs — about 5.42 GB, more KV capacity than the entire on-chip context we serve today. It is stranded because the scan reads the whole KV every step, so parked KV needs rate-matched streaming, not just placement. A peer session is already on that problem."
+  }
+ ]
+}
