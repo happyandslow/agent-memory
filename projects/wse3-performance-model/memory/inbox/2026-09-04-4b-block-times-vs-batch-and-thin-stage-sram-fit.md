@@ -68,3 +68,16 @@ f4pbfv3uetmpyzcf87gi2y, 9t9d8hgzjxhdnt2vzzufrx, 9sdgqjhg5nin2udesnjrcz.
 Files: `demo/qwen3-4b-thin-stage/step1-*`, `results/step1_results.json`.
 Gotcha: the head PE is 89 % full with a 16.4 KB baked token list at 8K — a
 production feed must stream tokens.
+
+## Compiled SRAM supersedes the fit tables; i8 KV-stride floor (2026-09-05, Le's rule: compiled numbers only)
+
+Real-geometry compile-only builds of the one-layer cut (i) strips at 2K:
+**height 16 does not compile** — the KV-cache DSD stride is an 8-bit field,
+so `kv_len_per_pe` ≤ 127 positions per PE → KV-holding stages need ≥ 32
+rows at 2K and ≥ 128 rows at 8K (widening to i16 = separate surgery).
+**Height 32 compiles**: per PE ATTN 32.2 KB, FFN 27.8, strips 4.0, head
+27.3, tail 42.8 (cs-readelf). Also: the FFN inner dimension is
+width-sharded, so FFN activation buffers do NOT grow at thin heights — both
+hand-derived fit tables (Rounds 33/52/53) mis-scaled them. Rule from Le:
+never hand-derive per-PE SRAM; every runnable deployment ships its compiled
+per-stage, per-PE breakdown next to its wsjob id.
