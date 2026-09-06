@@ -2,13 +2,47 @@
 
 # wse3-performance-model Timeline
 
+- 2026-09-06 — vertical-stack-topology → `assets/2026-09-06-vertical-stack-topology.png`
+- 2026-09-06 — thin-block-sublinear → `inbox/2026-09-06-thin-block-sublinear.md`
+- 2026-09-06 — kv-stride → `assets/2026-09-06-kv-stride.png`
+- 2026-09-06 — inplace-cuts → `assets/2026-09-06-inplace-cuts.png`
+- 2026-09-06 — cut3-inplace → `assets/2026-09-06-cut3-inplace.png`
+- 2026-09-06 — a1-shard-and-stall → `assets/2026-09-06-a1-shard-and-stall.png`
+- 2026-09-05 — servegen-reuse_incremental_cdf → `assets/2026-09-05-servegen-reuse_incremental_cdf.png`
+- 2026-09-05 — servegen-reason_ratio_pdf → `assets/2026-09-05-servegen-reason_ratio_pdf.png`
+- 2026-09-05 — servegen-output_reentry_ratio → `assets/2026-09-05-servegen-output_reentry_ratio.png`
+- 2026-09-05 — servegen-output_len_cdf → `assets/2026-09-05-servegen-output_len_cdf.png`
+- 2026-09-05 — servegen-offline_reuse → `assets/2026-09-05-servegen-offline_reuse.png`
+- 2026-09-05 — servegen-gap_cdf → `assets/2026-09-05-servegen-gap_cdf.png`
+- 2026-09-05 — servegen-context_capacity → `assets/2026-09-05-servegen-context_capacity.png`
+- 2026-09-05 — servegen-arrival_rate → `assets/2026-09-05-servegen-arrival_rate.png`
+- 2026-09-05 — one-layer-cuts → `assets/2026-09-05-one-layer-cuts.png`
+- 2026-09-05 — l4-layout → `assets/2026-09-05-l4-layout.png`
+- 2026-09-05 — equal-area-cuts → `assets/2026-09-05-equal-area-cuts.png`
+- 2026-09-05 — decoder-lever-fig5_concurrency → `assets/2026-09-05-decoder-lever-fig5_concurrency.png`
+- 2026-09-05 — decoder-lever-fig4_capacity_rungs → `assets/2026-09-05-decoder-lever-fig4_capacity_rungs.png`
+- 2026-09-05 — decoder-lever-fig3_keep_value → `assets/2026-09-05-decoder-lever-fig3_keep_value.png`
+- 2026-09-05 — decoder-lever-fig2_reuse_by_class → `assets/2026-09-05-decoder-lever-fig2_reuse_by_class.png`
+- 2026-09-05 — decoder-lever-fig1_decode_classes → `assets/2026-09-05-decoder-lever-fig1_decode_classes.png`
+- 2026-09-05 — cut2-device-layout → `assets/2026-09-05-cut2-device-layout.png`
+- 2026-09-05 — bprime-96rows → `assets/2026-09-05-bprime-96rows.png`
+- 2026-09-05 — 4b-softmax-exact-fusion-is-byte-identical-but-slower → `memory/inbox/2026-09-05-4b-softmax-exact-fusion-is-byte-identical-but-slower.md`
+- 2026-09-05 — 4b-phase-profile-softmax-dominates-stage-cut → `memory/inbox/2026-09-05-4b-phase-profile-softmax-dominates-stage-cut.md`
+- 2026-09-05 — 4b-phase-breakdown → `assets/2026-09-05-4b-phase-breakdown.png`
+- 2026-09-05 — 4b-optimisation-backlog → `memory/inbox/2026-09-05-4b-optimisation-backlog.md`
+- 2026-09-05 — 4b-ht-tail-colour-repaint-race-and-8-stage-forced-prefill → `memory/inbox/2026-09-05-4b-ht-tail-colour-repaint-race-and-8-stage-forced-prefill.md`
+- 2026-09-04 — throughput-vs-context → `assets/2026-09-04-throughput-vs-context.png`
 - 2026-09-04 — meshrt-9b-layer-time-flat-in-region-size → `memory/inbox/2026-09-04-meshrt-9b-layer-time-flat-in-region-size.md`
 - 2026-09-04 — increments → `assets/2026-09-04-increments.png`
+- 2026-09-04 — decoder-only-lever-value-and-trace-representativeness → `memory/inbox/2026-09-04-decoder-only-lever-value-and-trace-representativeness.md`
 - 2026-09-04 — decode-breakdown → `assets/2026-09-04-decode-breakdown.png`
 - 2026-09-04 — context-sweep → `assets/2026-09-04-context-sweep.png`
+- 2026-09-04 — claude-code-trace-streaming-duplicates-correction → `memory/inbox/2026-09-04-claude-code-trace-streaming-duplicates-correction.md`
 - 2026-09-04 — agentic-decode-is-mostly-hidden-reasoning → `memory/inbox/2026-09-04-agentic-decode-is-mostly-hidden-reasoning.md`
+- 2026-09-04 — 4b-thin-stage-layouts → `assets/2026-09-04-4b-thin-stage-layouts.png`
 - 2026-09-04 — 4b-row-is-serial-attn-ffn-block-times → `memory/inbox/2026-09-04-4b-row-is-serial-attn-ffn-block-times.md`
 - 2026-09-04 — 4b-decode-cost-vs-context-and-device-ceiling → `memory/inbox/2026-09-04-4b-decode-cost-vs-context-and-device-ceiling.md`
+- 2026-09-04 — 4b-block-times-vs-batch-and-thin-stage-sram-fit → `memory/inbox/2026-09-04-4b-block-times-vs-batch-and-thin-stage-sram-fit.md`
 - 2026-09-03 — two-wafer-pp-hop-price-and-tsc-calibration → `memory/inbox/2026-09-03-two-wafer-pp-hop-price-and-tsc-calibration.md`
 - 2026-09-03 — two-wafer-pp-floorplan → `artifacts/2026-09-03-two-wafer-pp-floorplan.png`
 - 2026-09-03 — simfab-real-time-stall-detector → `memory/inbox/2026-09-03-simfab-real-time-stall-detector.md`
