@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Qwen coarse-component geometry and KV audit — 2026-09-01
 
 **Project:** wse3-performance-model

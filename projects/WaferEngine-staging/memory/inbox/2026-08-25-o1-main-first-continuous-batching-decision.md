@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # O1 main-first decode continuous-batching roadmap approved — 2026-08-25
 
 **Project:** WaferEngine-staging  

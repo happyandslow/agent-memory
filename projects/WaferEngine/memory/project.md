@@ -66,3 +66,9 @@
 ## Important links
 
 - 
+
+
+## Updates — 2026-09-07 maintenance drain: Wavel/KAIR/Argus planning
+
+- Le chose the planning-only first slice for applying Wavel + KAIR + Argus to WaferEngine placement: Wavel explores candidate groupings/placements and explicit communication templates; KAIR is the future resource-time legality/certification IR; Argus orchestrates deterministic witness runs and campaign provenance. Current state is not integrated; do not claim Wavel→KAIR lowering exists yet.
+- Acceptance for the first slice: model the same compute unit at multiple PE shapes without code changes; expose communication choices with algorithm-specific costs; bind every cost to witness version/target/topology/measurement class; and make SRAM admission include code/control/weights/KV/scratch rather than Wavel's older parameter/activation/workspace estimate.

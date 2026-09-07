@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # A per-group reduction whose sum is short by exactly its first element — 2026-08-31
 
 **Project:** WaferEngine-staging

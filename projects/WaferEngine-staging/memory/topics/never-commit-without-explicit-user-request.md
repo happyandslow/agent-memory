@@ -61,3 +61,8 @@ Under a Git-mutation ban, use only read-only git inspection (`status`, `diff`, `
 `show`). If scratch isolation is needed, use a separate copy/worktree or plain file copies rather than
 mutating refs, the index, or the shared worktree. This generalizes the commit-specific rule above:
 approval to implement or test is not approval to mutate Git state.
+
+
+## Updates — 2026-09-07 maintenance drain: staged diff checks
+
+- Classify `git diff --check` findings by file type/provenance before altering source. Generated `.diff` artifacts can report trailing whitespace from the embedded historical diff, while real source whitespace defects should still be fixed or consciously documented.

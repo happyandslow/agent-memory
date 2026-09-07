@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # CS-3 ops gotchas: `cs3-run ssh … 'bash -s' <<heredoc` hangs forever; env into cs_python needs SINGULARITYENV_ — 2026-09-03
 
 **Project:** wse3-performance-model

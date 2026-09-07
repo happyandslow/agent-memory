@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # A stateless-position refactor drops the guard the old counter carried — 2026-08-30
 
 **Project:** WaferEngine-staging

@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Red-fault sims fail by permanent stall, and `timeout` cannot kill the singularity children — 2026-09-03
 
 **Project:** WaferEngine-staging

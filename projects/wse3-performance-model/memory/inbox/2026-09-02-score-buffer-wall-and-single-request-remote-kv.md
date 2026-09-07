@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Score-buffer wall, single-request remote KV, and pricing SRAM levers — 2026-09-02
 
 **Project:** wse3-performance-model

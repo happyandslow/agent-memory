@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Wavel compute-profile model and batch domain — 2026-09-01
 
 **Project:** wse3-performance-model

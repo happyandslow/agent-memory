@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # M1b-S0 Part 1 committed; Part 2 exists but is not integration-eligible — 2026-09-02
 
 **Project:** WaferEngine-staging

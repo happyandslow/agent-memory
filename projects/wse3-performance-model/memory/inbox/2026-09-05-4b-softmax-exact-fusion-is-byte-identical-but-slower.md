@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Fusing the 4B softmax passes (sum, cast) into the exp pass is byte-identical but 8–14 % slower; the real lever is DSD overhead and the exp kernel — 2026-09-05
 
 **Project:** wse3-performance-model

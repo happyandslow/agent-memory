@@ -183,3 +183,9 @@ export MEMORY=$AGENT_MEMORY_ROOT/projects/WaferEngine-staging   # or /home/lexu/
 - InferCept (KV preserve/swap/discard cost policy): <https://arxiv.org/abs/2402.01869>
 - Topic: [[kv-cache-policy-tradeoffs]], [[e2e-pdSeparate-device-validation]],
   [[m2-s0-baseline-and-timer-provenance]]
+
+
+## Updates — 2026-09-07 maintenance drain: CS-3/run operational gotchas
+
+- `cs3-run ssh CS-3-cmd 'bash -s' <<HEREDOC` can hang because the wrapper owns stdin and does not forward the caller's heredoc. Put remote scripts in files or pass explicit command strings; avoid stdin-dependent one-shot SSH through `cs3-run`.
+- Environment variables for `cs_python` inside the Singularity image need `SINGULARITYENV_` prefixes. Concurrent PP/device runs must not share staging dirs, and job accounting should snapshot `csctl get jobs` before/after and cancel leaked jobs explicitly.

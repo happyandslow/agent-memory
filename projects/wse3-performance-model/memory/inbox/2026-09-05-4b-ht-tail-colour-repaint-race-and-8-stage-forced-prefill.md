@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # 4B HT tail has a latent colour-repaint race that any faster hidden-state cadence triggers; 8-stage forced prefill measured 7,373 / 6,326 tok/s — 2026-09-05
 
 **Project:** wse3-performance-model

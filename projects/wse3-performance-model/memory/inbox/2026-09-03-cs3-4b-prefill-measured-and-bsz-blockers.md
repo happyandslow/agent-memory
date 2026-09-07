@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Qwen3-4B on CS-3: prefill throughput measured; decode bsz>1 blocked by two small buffers — 2026-09-03
 
 **Project:** wse3-performance-model

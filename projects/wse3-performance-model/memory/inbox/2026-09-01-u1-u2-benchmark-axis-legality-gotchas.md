@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # U1/U2 benchmark-axis legality gotchas — 2026-09-01
 
 **Project:** wse3-performance-model

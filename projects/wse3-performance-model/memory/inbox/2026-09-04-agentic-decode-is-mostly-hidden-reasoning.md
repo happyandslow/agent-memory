@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Agentic decode: short per call, ~89 % hidden reasoning, decode-bound per turn — 2026-09-04
 
 **Project:** wse3-performance-model

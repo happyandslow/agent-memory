@@ -10,26 +10,27 @@ Compact startup packet for fresh agent sessions. This generated view is intentio
 
 ## Current state
 
-- Daily maintenance last checked this project on 2026-09-06.
+- Daily maintenance last checked this project on 2026-09-07.
 - Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
 
 ## Current focus
 
-- MeshJIT/WaferLLM shared-slot validation: P=8 has guarded real-CS-3 bit-exact Attention->FFN evidence, but P=256 currently fails raw-f16 correctness.
-- The active P=256 blocker is PE-local max-reduction dependency handoff: max-only consumes the last local lane before `all_reduceMax_bsz`, while route-repaint-only, host-fence, and passive-late-visibility hypotheses are negative.
+- WaferLLM/MeshJIT pageability now has P=256 real-CS-3 bit-exact Attention→FFN shared-slot evidence for the corrected page package.
+- The key historical P=256 failure was isolated to the PE-local pointer-alias max producer, not the collective/fabric path.
+- Wavel/KAIR/Argus placement planning is recorded as a planning-only future slice, not implemented integration.
 
 ## Next likely actions
 
-- [ ] Verify live repo/server state before acting; memory is context, not proof of current external state.
-- [ ] For P=256, add/prove a same-artifact dependency handoff from PE-local max to `all_reduceMax_bsz`, preserve legacy max-only/shifted controls, then rerun full baseline-vs-dynamic comparison.
+- [ ] Verify live WaferLLM/MeshJIT/WaferEngine branch state before acting.
+- [ ] Use `/home/lexu/MeshJIT/WaferLLM/pageability-demo/` and frozen manifests/evidence as the pageability recovery entry point.
+- [ ] If applying Wavel to WaferEngine placement, start with the planning-only slice and bind every cost to measured witness provenance.
 
 ## Must-read topic notes
 
-- `memory/topics/meshjit-code-relocation.md` — MeshJIT/WaferLLM code relocation, CS-3 vecmat holder proof, pageability evidence grades, and Attention/FFN shared-slot gates.
-- `memory/topics/dynamic-kv-load.md` — Runtime KV ingress for qwen3 decode so one compiled artifact can serve variable-prefill requests.
-- `memory/topics/h2d-playground-transport.md` — CS-3 host/device and cross-pod transport experiments from h2d-playground.
-- `memory/topics/pe-sram-memory-breakdown.md` — Device-measured WSE-3 per-PE SRAM/fabric resource analysis for qwen3 decode and prefill.
-- `memory/topics/qwen3-force-prefill-output-backpressure.md` — Corrected Qwen3 force-decode-as-prefill throughput after removing host D2H backpressure.
+- `memory/topics/meshjit-code-relocation.md` — MeshJIT/WaferLLM code relocation, pageability evidence, P=256 max-producer isolation, and shared-slot E2E closure.
+- `memory/topics/pe-sram-memory-breakdown.md` — Device-measured WSE-3 per-PE SRAM/fabric resource analysis.
+- `memory/topics/dynamic-kv-load.md` — Runtime KV ingress for qwen3 decode.
+- `memory/project.md` — Wavel/KAIR/Argus placement-planning update and stable paths.
 
 ## Important constraints
 

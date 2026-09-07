@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Qwen3-4B decode: a block row is one serial resource; ATTN 127K + FFN 50K cycles per token — 2026-09-04
 
 **Project:** wse3-performance-model

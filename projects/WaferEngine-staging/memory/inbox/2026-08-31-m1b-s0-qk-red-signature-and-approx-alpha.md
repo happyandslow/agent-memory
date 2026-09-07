@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # M1b-S0 low-amplitude QK red controls need arithmetic-specific observability — 2026-08-31
 
 **Project:** WaferEngine-staging

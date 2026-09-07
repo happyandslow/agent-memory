@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Qwen3-4B block times vs batch (ATTN/FFN never invert) and the thin-stage SRAM fit — 2026-09-04
 
 **Project:** wse3-performance-model

@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Staged unified diff whitespace false positive — 2026-08-24
 
 **Project:** WaferEngine-staging

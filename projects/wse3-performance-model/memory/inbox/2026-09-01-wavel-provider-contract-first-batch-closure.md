@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Wavel provider-contract first-batch closure — 2026-09-01
 
 **Project:** wse3-performance-model  

@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Baseline-first Wavel adoption order — 2026-08-29
 
 **Project:** wse3-performance-model

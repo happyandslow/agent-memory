@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # WaferLLM pageability demo relocated into MeshJIT — 2026-08-31
 
 **Project:** WaferEngine

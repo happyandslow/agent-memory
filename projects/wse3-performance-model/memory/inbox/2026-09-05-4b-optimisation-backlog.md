@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Qwen3-4B decode/forced-prefill optimisation backlog (every lever found in session 4b-wide-layer, with its measured basis) — 2026-09-05
 
 **Project:** wse3-performance-model

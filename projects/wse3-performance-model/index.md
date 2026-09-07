@@ -13,4 +13,23 @@
 
 ## Topics
 
+- [[memory/topics/cs3-and-simfab-ops-gotchas]]
+- [[memory/topics/project-automation-and-git-safety]]
+- [[memory/topics/qwen3-4b-cs3-measurements]]
+- [[memory/topics/qwen3-4b-sram-capacity-and-levers]]
+- [[memory/topics/trace-kv-economics]]
+- [[memory/topics/two-wafer-pipeline-parallel]]
+- [[memory/topics/wavel-provider-contract-and-placement]]
+
+## Topic catalog
+
+| Topic | Summary | Tags | Path |
+| --- | --- | --- | --- |
+| CS-3 and simfab operational gotchas | `cs3-run` does not forward heredoc/stdin into nested SSH commands; write a remote script or pass a command string. |  | `memory/topics/cs3-and-simfab-ops-gotchas.md` |
+| Project automation and Git safety | Codex/Claude session lifecycle hooks should log starts/stops/precompact/subagent stops as pointers, not raw transcript stores. |  | `memory/topics/project-automation-and-git-safety.md` |
+| Qwen3-4B CS-3 measurements | CS-3 measurements pinned decode step cost, batch scaling, phase breakdown, forced-prefill rates, and stage-cut opportunities. Use raw cycles and 750 MHz calibration unless a specific artifact states otherwise. |  | `memory/topics/qwen3-4b-cs3-measurements.md` |
+| Qwen3-4B SRAM capacity and levers | Compiled-artifact measurement shows ATTN code/control, not weights, is the first-order SRAM cost for 4B decode; host-computed route tables remove `comm_mod.init` at roughly +5 KB/PE free SRAM and passed CS-3 verification for the slim tree. |  | `memory/topics/qwen3-4b-sram-capacity-and-levers.md` |
+| Trace KV economics and agentic workloads | Claude Code transcript analysis must de-duplicate streaming assistant records by message id; corrected trace shape is 1,057 contexts, 46,650 calls, and 4,032 turns at the 2026-09-04 snapshot. |  | `memory/topics/trace-kv-economics.md` |
+| Two-wafer pipeline-parallel decode | The 2026-09-03 two-wafer PP demo measured a per-hop price around 170-175 us; about 135 us is SDK stream floor, not tens of milliseconds. |  | `memory/topics/two-wafer-pipeline-parallel.md` |
+| Wavel provider contract and placement modeling | Wavel adoption is baseline-first: freeze measured/manual witnesses before asking Wavel/KAIR to own search or legality. |  | `memory/topics/wavel-provider-contract-and-placement.md` |
 

@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Per-request latency and KV-pool value on a real serving trace (Mooncake) — 2026-09-03
 
 **Project:** wse3-performance-model

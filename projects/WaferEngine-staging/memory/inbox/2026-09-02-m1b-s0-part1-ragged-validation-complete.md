@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # M1b-S0 Part 1 ragged validation complete — bit-exact on real CS-3, +2.36% overhead — 2026-09-02
 
 **Project:** WaferEngine-staging

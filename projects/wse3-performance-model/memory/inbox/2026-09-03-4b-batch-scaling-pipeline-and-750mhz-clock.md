@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Qwen3-4B decode on CS-3: batch scaling measured, pipelining wins, and the clock is 750 MHz — 2026-09-03
 
 **Project:** wse3-performance-model

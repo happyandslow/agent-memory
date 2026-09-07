@@ -34,3 +34,9 @@ Agents may propose edits, but should not overwrite this mechanically. Generated/
 
 - Created the project workspace scaffold and shared agent-memory project.
 - Recorded initial goals, evidence rules, and the first three milestones.
+
+
+### 2026-09-07 — maintain pass drained active modeling backlog
+
+- Drained 41 captured inbox notes from 2026-08-27..2026-09-05 into seven topic packets. The project now has durable memory for automation/Git safety, Wavel provider contracts, Qwen3-4B SRAM/capacity levers, CS-3 measurements, trace/KV economics, two-wafer PP, and CS-3/simfab operational gotchas.
+- Current evidence has moved beyond the original scaffold: Qwen3-4B SRAM breakdowns, context-cost measurements, trace-demand studies, and two-wafer PP hop timings are now recorded as source-linked topic memory. Treat individual rates as measured under their named artifacts/configs and verify live repo state before reusing them.

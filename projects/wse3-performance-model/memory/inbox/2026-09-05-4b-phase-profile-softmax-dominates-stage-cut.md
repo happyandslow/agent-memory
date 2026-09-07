@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Inside a Qwen3-4B decode layer, softmax is the largest phase and drives both the context and batch slopes; the finest control-flow cut is 5 stages per layer — 2026-09-05
 
 **Project:** wse3-performance-model

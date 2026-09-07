@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # MeshJIT P=256 Attention→FFN shared-slot E2E PASS — 2026-08-24
 
 **Project:** WaferEngine

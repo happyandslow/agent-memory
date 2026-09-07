@@ -10,29 +10,28 @@ Compact startup packet for fresh agent sessions. This generated view is intentio
 
 ## Current state
 
-- Daily maintenance last checked this project on 2026-09-06.
+- Daily maintenance last checked this project on 2026-09-07.
 - Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
 
 ## Current focus
 
-- M1-S4 C1 fixed-communication ragged-prefix result is throughput-negative on real CS-3; use zero/sub-0.1% critical-path gain unless a trace replay proves more matrices matter.
-- M3 idle-PE offload is now modeled in raw cycles at 0.85 GHz; v4 GO-chain wins for multi-row R>=2 because router-priced forwarding is far cheaper than CE store-and-forward.
+- M1b decode continuous batching is now the active formal milestone memory; M1b-S0 Part 1 is real-CS-3 bit-exact with +2.36% overhead, and Part 2+3 correctness is captured as complete with performance still unclaimed.
+- Operational/procedural backlog was drained: CS-3 stdin/env gotchas, worktree relocation, staged diff classification, frozen pins, simulator-overlay readback, and softmax DSR first-cell bug.
+- A manual conflict is open for untracked `meetings/2026-09-06 copy.pptx` versus the tracked 2026-09-06 deck.
 
 ## Next likely actions
 
-- [ ] Verify live repo/server state before acting; memory is context, not proof of current external state.
-- [ ] For M1-S4, replay realistic TraceLab/Mooncake-derived projections with C1-M critical-path gain set to zero/sub-0.1% before further device matrices.
-- [ ] For M3, prototype storage-side DSD emit/park-receive and/or a v4/v5 hybrid.
+- [ ] Verify live repo/server branch state before acting; memory is not proof.
+- [ ] Before M1b performance claims, check the post-2026-09-04 sweep/artifacts directly.
+- [ ] Resolve the 2026-09-06 meeting deck copy conflict manually before adding or deleting slide variants.
 
 ## Must-read topic notes
 
-- `memory/topics/m1-s4-c1-ragged-fixed-communication.md` — C1-M seed boundary, workload projection, and real-CS-3 fixed-communication negative timing result.
-- `memory/topics/m3-idle-pe-tier.md` — M3 idle-PE storage protocol, single-row and multi-row cycle models, and v4/v5 verdict.
-- `memory/topics/m1-s37-prefix-reuse-device-gates.md` — M1/S3.7 real-device gate, full-model prefix-reuse benchmarks, and batch/slot capacity boundary.
-- `memory/topics/agentic-kv-trace-datasets.md` — TraceLab/Mooncake dataset shape and geometry-projection caveats.
-- `memory/topics/a7-Lp-vs-Lg-settled-on-tracelab.md` — Prompt-vs-generation ratio result and TraceLab scale gap.
-- `memory/topics/csl-control-payload-mechanisms.md` — CSL control payload mechanisms used by M3 route transitions.
-- `memory/topics/prefill-decode-transfer-bandwidth.md` — Both-segments-counted KV transfer and TSC/toolchain gotchas.
+- `memory/topics/m1b-decode-continuous-batching.md` — M1b roadmap and M1b-S0 correctness, red-control, overlay, softmax, and pinning lessons.
+- `memory/topics/m1-s4-c1-ragged-fixed-communication.md` — M1-S4 C1 fixed-communication results and ragged-prefix context.
+- `memory/topics/derived-scripts-and-editing-a-running-script.md` — Worktree relocation and live-file/editor-sync gotchas.
+- `memory/project.md` — CS-3 run transport and environment operational gotchas.
+- `tracking/conflicts.md` — Manual conflict for the 2026-09-06 meeting-deck copy.
 
 ## Important constraints
 

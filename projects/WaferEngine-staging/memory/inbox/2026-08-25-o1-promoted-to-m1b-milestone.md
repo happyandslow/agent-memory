@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # O1 promoted to formal M1b decode continuous-batching milestone — 2026-08-25
 
 **Project:** WaferEngine-staging

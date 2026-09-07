@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # GitHub repository and local planning tracker — 2026-08-27
 
 **Project:** wse3-performance-model

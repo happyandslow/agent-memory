@@ -2,7 +2,7 @@
 title: MeshRT paper-result provenance gaps at meshrt 5d47163
 project: WaferEngine-staging
 author: codex
-status: captured
+status: drained   <!-- drained 2026-09-07 by daily maintain pass -->
 date: 2026-08-25
 ---
 

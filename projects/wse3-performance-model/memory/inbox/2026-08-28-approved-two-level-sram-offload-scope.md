@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Approved two-level SRAM-offload scope — 2026-08-28
 
 **Project:** wse3-performance-model

@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Decoder-only lever value on traces, and what each trace can and cannot represent — 2026-09-04
 
 **Project:** wse3-performance-model

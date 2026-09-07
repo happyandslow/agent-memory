@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # M1b-S0 local DSR/FMAC witness must bind production shapes and cannot self-approve — 2026-09-01
 
 **Project:** WaferEngine-staging

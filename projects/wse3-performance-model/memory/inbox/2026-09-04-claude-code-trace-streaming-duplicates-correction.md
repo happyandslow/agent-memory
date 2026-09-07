@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Claude Code transcripts log one API call as several assistant records — de-duplicate by message id before counting — 2026-09-04
 
 **Project:** wse3-performance-model

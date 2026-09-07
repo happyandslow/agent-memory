@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Frozen-hash pin cascade after an intentional source change — some pins are baseline pins and must NOT be updated — 2026-09-03
 
 **Project:** WaferEngine-staging

@@ -2,49 +2,47 @@
 
 # WSE-3 Performance Model Context
 
-Compact startup packet for fresh agent sessions. Keep this short enough that an agent can read it every time.
+Compact startup packet for fresh agent sessions. This generated view is intentionally thin: load `plan.md`, `memory/project.md`, and only the relevant topic note(s).
 
 ## What this project is
 
-- A measurement-first workspace for WSE-3 performance modeling. It preserves a
-  traceable chain from runnable WSE-3 implementation and raw measurement to
-  analysis, abstraction, model, and validation.
+- See `memory/project.md` for stable identity, source-of-truth paths, machines, and commands.
 
 ## Current state
 
-- Active; scaffolded on 2026-08-27 at
-  `/home/lexu/wse3-performance-model` and registered in agent-memory.
-- No real measurements or calibrated models have been added yet.
+- Daily maintenance last checked this project on 2026-09-07.
+- Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
 
 ## Current focus
 
-- Add the first real WSE-3 implementation and reproducible measurement while
-  preserving complete run provenance.
+- The project has moved from scaffold-only to active measured-evidence memory for Qwen3-4B on CS-3/WSE-3, trace/KV economics, Wavel provider contracts, and two-wafer pipeline-parallel experiments.
+- Qwen3-4B CS-3 memory now records compiled SRAM/capacity findings, route-table SRAM lever, decode context slope, batch/phase/stage measurements, and optimization backlog.
+- Trace analysis and keep-vs-park framing are recorded with corrected Claude Code de-duplication caveats and workload-representativeness boundaries.
 
 ## Next likely actions
 
-- [ ] Add an exact implementation revision with build and launch instructions.
-- [ ] Record the first immutable WSE-3 measurement and correctness result.
-- [ ] Derive the first component breakdown and model only after measurement.
+- [ ] Verify live `/home/lexu/wse3-performance-model` repo state and exact artifacts before reusing any number.
+- [ ] Use the topic packets as routers to source docs/artifacts, not as replacement evidence.
+- [ ] Continue pricing SRAM/softmax/chunking/multi-wafer levers using measured cycles and explicit provenance.
 
 ## Must-read topic notes
 
-- None yet. Read `memory/project.md` for stable paths/conventions and `plan.md`
-  for the initial roadmap.
+- `memory/topics/qwen3-4b-sram-capacity-and-levers.md` — Compiled SRAM/capacity breakdowns, route-table lever, score-buffer wall, and supply/demand methodology.
+- `memory/topics/qwen3-4b-cs3-measurements.md` — CS-3 measured decode/prefill/batch/phase/stage/softmax evidence.
+- `memory/topics/trace-kv-economics.md` — G(C), Mooncake/Claude/ServeGen trace economics, keep-vs-park caveats.
+- `memory/topics/two-wafer-pipeline-parallel.md` — Two-wafer PP hop price and 750 MHz TSC calibration.
+- `memory/topics/wavel-provider-contract-and-placement.md` — Wavel provider contract and placement-aware communication modeling.
+- `memory/topics/cs3-and-simfab-ops-gotchas.md` — CS-3/simfab operational traps.
 
 ## Important constraints
 
-- Real WSE-3 measurements are the foundation; simulated, inferred, fitted, and
-  predicted values must be labeled separately.
-- Raw results are immutable, and every derived result must name its input
-  measurement IDs and analysis code.
-- The workspace was not a Git repository at project creation, so verify live
-  version-control state before relying on revision metadata.
+- Do not search broad raw transcripts unless the user asks for targeted archaeology.
+- Do not edit generated views directly outside the maintain/regeneration pass.
 
 ## Restart checklist
 
 1. Verify live repo/server state; memory may be stale.
-2. Read `tracking/status.md` and `plan.md`.
-3. Inspect the relevant implementation, measurement, analysis, and model
-   records rather than trusting memory as evidence.
-4. Proceed with the user's task.
+2. Read `memory/project.md` and `plan.md`.
+3. Read `tracking/status.md`.
+4. Read relevant topic notes.
+5. Proceed with the user's task.

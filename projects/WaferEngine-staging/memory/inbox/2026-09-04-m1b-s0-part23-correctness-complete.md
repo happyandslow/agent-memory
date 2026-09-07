@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # M1b-S0 Part 2+3 correctness complete — production ingress bit-exact on CS-3; perf sweep in flight — 2026-09-04
 
 **Project:** WaferEngine-staging

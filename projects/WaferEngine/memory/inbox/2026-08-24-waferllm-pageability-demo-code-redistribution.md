@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # WaferLLM Attention→FFN pageability-demo code redistribution — 2026-08-24
 
 **Project:** WaferEngine

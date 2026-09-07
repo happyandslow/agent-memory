@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Qwen3-4B decode on CS-3: cost vs context (681K + 16 cycles/token) and the real ceiling (29,184) — 2026-09-04
 
 **Project:** wse3-performance-model

@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # O1 continuous-batching staged roadmap — 2026-08-24
 
 **Project:** WaferEngine-staging  

@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Wavel + KAIR + Argus for WaferEngine placement planning — 2026-08-27
 
 **Project:** WaferEngine

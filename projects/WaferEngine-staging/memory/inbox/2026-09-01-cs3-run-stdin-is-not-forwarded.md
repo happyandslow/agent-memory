@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # `cs3-run` remote commands hang when they depend on caller stdin — 2026-09-01
 
 **Project:** WaferEngine-staging

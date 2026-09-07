@@ -356,3 +356,9 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 - Drained four M1-S4/C1 captures into new `memory/topics/m1-s4-c1-ragged-fixed-communication.md`. C1-M can rejoin lanes by threshold without per-lane RoPE, but fixed communication keeps the critical path; the real-CS-3 manual matrix at `S=256,N=1024,F=769,G=255` showed -0.03% to -0.09% speedup despite skipping up to 37.49% of lane-steps. TraceLab/Mooncake workload shape must be projected into legal device cells before use.
 - Drained two M3 captures into `memory/topics/m3-idle-pe-tier.md`. The M3 clock convention is 0.85 GHz; raw cycles are canonical. Owner-side DSD receive reduced single-row roundtrip marginal to 56 cyc/word, and multi-row v4 GO-chain is router-priced and wins for R>=2 while v5 cascade is CE store-and-forward. Next M3 lever is storage-side DSD emit/park-receive or a v4/v5 hybrid.
+
+
+### 2026-09-07 — maintain pass drained M1b and operational backlog
+
+- Drained 19 WaferEngine-staging inbox captures from 2026-08-24..2026-09-04 into `memory/topics/m1b-decode-continuous-batching.md`, existing methodology topics, `memory/project.md`, and conflicts. Current M1b-S0 memory now records real-CS-3 Part 1 ragged validation, Part 2+3 correctness closure, low-amplitude red-control requirements, simulator-overlay/readback lessons, softmax DSR first-cell bug, and frozen-pin review caveats.
+- Recorded a manual conflict for the untracked `2026-09-06 copy.pptx` meeting deck variant rather than guessing whether it supersedes the tracked deck.

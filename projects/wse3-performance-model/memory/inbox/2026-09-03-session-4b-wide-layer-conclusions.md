@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Session "4b-wide-layer" (2026-09-02/03): what was concluded about on-chip KV, SRAM levers, and CS-3's place in agentic inference
 
 **Project:** wse3-performance-model

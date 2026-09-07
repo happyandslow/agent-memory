@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Qwen3-4B: host-computed route table replaces `comm_mod.init` — CS-3 verified, +5 KB/PE — 2026-09-02
 
 **Project:** wse3-performance-model

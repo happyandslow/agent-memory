@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Qwen3-4B per-role SRAM breakdown, decode capacity ceiling, and the local 4B compile recipe — 2026-09-02
 
 **Project:** wse3-performance-model

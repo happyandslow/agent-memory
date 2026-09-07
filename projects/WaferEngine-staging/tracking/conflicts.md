@@ -97,3 +97,9 @@ copies of an addressing formula will drift** — the second copy is where the bu
 **before declaring a case impossible, check whether the impossibility came from an
 implementation choice you assumed** (here, take-over vs ride-along semantics turned "mixed
 hit/miss batches need ragged support" into a non-problem).
+
+
+## 2026-09-07 — needs manual review
+
+- `meetings/2026-09-06 copy.pptx` is untracked and differs from tracked `meetings/2026-09-06.pptx` by size/hash. Cron did not choose a canonical slide deck or add the copy to Git. If it is intentional, rename with a slug such as `2026-09-06-<topic>.pptx` and document which deck is canonical.
+- Temporary Office lock files `meetings/~$2026-09-06.pptx` and `meetings/~$2026-09-06 copy.pptx` are untracked local clutter. Cron left them untouched because a cloud/open-file race could make deletion unsafe.

@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # MeshRT 9B decode: per-layer step time is flat in region size; the stage floor is SRAM — 2026-09-04
 
 **Project:** wse3-performance-model

@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # SRAM supply merit order and KV demand curve — the two exchange charts — 2026-09-02
 
 **Project:** wse3-performance-model

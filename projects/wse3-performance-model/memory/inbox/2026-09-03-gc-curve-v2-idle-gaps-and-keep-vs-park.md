@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # G(C) v2, inter-call idle gaps, and the keep-vs-park question — 2026-09-03
 
 **Project:** wse3-performance-model

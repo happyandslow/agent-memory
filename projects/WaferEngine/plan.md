@@ -143,3 +143,9 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 ### 2026-08-24 — maintain pass drained P=256 MeshJIT captures
 
 - Drained six MeshJIT/P=256 shared-slot captures into `memory/topics/meshjit-code-relocation.md`. P=8 Route-A/Policy-P + resident fdiv reached a guarded real-CS-3 bit-exact Attention→FFN run, but P=256 still fails raw-f16 correctness. Route-repaint-only, host-fence, and passive-late-visibility hypotheses were negative; the decisive localization is that the max-only path reduces the last PE-local lane, not all lanes. Next gate is a same-artifact dependency handoff fix before rerunning the full P=256 baseline-vs-dynamic comparison.
+
+
+### 2026-09-07 — maintain pass drained pageability/Wavel backlog
+
+- Drained six WaferEngine inbox captures from 2026-08-24..31 into `memory/topics/meshjit-code-relocation.md`, `memory/project.md`, and generated views. Current pageability state: P=256 Attention→FFN shared-slot E2E is device-proven for the corrected page package, and the historical P=256 blocker was isolated to the pointer-alias max producer rather than fabric collective behavior.
+- Added the Wavel/KAIR/Argus planning-only placement slice to project memory. Treat it as design/planning context, not as implemented integration.

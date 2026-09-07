@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Two-wafer pipeline-parallel decode on CS-3: the per-hop price is ~175 µs (≈135 µs of it the SDK stream floor), not tens of ms; TSC runs at ~750 MHz — 2026-09-03
 
 **Project:** wse3-performance-model

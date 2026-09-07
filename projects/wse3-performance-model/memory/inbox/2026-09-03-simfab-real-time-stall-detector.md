@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # simfab aborts with "received length (0 bytes) … kernel stall" when the host does not service the device for ~90 s — a sim artifact, not a kernel bug — 2026-09-03
 
 **Project:** wse3-performance-model

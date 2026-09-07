@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Running production decode function bodies under a simulator overlay: four consumed candidates — 2026-08-31
 
 **Project:** WaferEngine-staging

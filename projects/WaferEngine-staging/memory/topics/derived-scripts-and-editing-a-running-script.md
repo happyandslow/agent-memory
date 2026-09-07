@@ -87,3 +87,9 @@ Source: `memory/inbox/2026-08-18-approved-plan-can-be-silently-reverted-by-edito
 An approved plan file can silently revert if a human editor buffer still holds an older version and writes it back after an agent/review loop finishes. Before implementing an approved plan, verify the on-disk bytes directly with discriminator strings that exist only in the approved version and only in the rejected version; do not rely on an agent Read cache. In the E13 decode-KV-egress plan, approved markers such as `TOP_K=1`, `dbg_force_eos_step`, and `free-run greedy` disappeared while rejected markers such as `aligned PRNG` and `force/bounded-step` reappeared. Recovery was to rebuild the approved version, re-run the marker greps until approved hits were present and rejected hits were zero, then have the human confirm their editor buffer was also updated before continuing.
 
 Promotion signal: this is procedural and applies to any approved-artifact + live-editor-sync workflow. It pairs with the existing rules in this topic: avoid editing files while another process is consuming them, and verify the exact bytes being acted on.
+
+
+## Updates — 2026-09-07 maintenance drain: relocation and review gotchas
+
+- Cross-filesystem linked worktree relocation should use copy → repair `.git` pointer/common-dir → verify tracked+untracked equivalence → only then delete the source. `diff -qr` can lie when `.git` indirection differs; add `/.worktrees/` to local `.git/info/exclude` for staging-only worktree roots.
+- Frozen-hash pin cascades after intentional source changes must distinguish baseline pins from expected-current pins. Some pins are supposed to remain old-baseline sentinels; updating them all can erase the red-control value.

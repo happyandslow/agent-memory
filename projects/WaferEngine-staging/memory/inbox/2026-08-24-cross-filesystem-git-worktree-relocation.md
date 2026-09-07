@@ -1,3 +1,5 @@
+**Status:** drained   <!-- drained 2026-09-07 by daily maintain pass -->
+
 # Cross-filesystem Git worktree relocation — 2026-08-24
 
 **Project:** WaferEngine-staging
