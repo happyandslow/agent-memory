@@ -2,12 +2,15 @@
 
 # wse3-performance-model Timeline
 
+- 2026-09-07 — getting-trustworthy-numbers-off-cs3 → `memory/inbox/2026-09-07-getting-trustworthy-numbers-off-cs3.md`
+- 2026-09-07 — 4b-decoder-outruns-native-prefill → `memory/inbox/2026-09-07-4b-decoder-outruns-native-prefill.md`
 - 2026-09-06 — vertical-stack-topology → `assets/2026-09-06-vertical-stack-topology.png`
-- 2026-09-06 — thin-block-sublinear → `inbox/2026-09-06-thin-block-sublinear.md`
+- 2026-09-06 — thin-block-sublinear → `memory/inbox/2026-09-06-thin-block-sublinear.md`
 - 2026-09-06 — kv-stride → `assets/2026-09-06-kv-stride.png`
 - 2026-09-06 — inplace-cuts → `assets/2026-09-06-inplace-cuts.png`
 - 2026-09-06 — cut3-inplace → `assets/2026-09-06-cut3-inplace.png`
 - 2026-09-06 — a1-shard-and-stall → `assets/2026-09-06-a1-shard-and-stall.png`
+- 2026-09-06 — 4b-decode-attn-activation-lifetimes → `memory/inbox/2026-09-06-4b-decode-attn-activation-lifetimes.md`
 - 2026-09-05 — servegen-reuse_incremental_cdf → `assets/2026-09-05-servegen-reuse_incremental_cdf.png`
 - 2026-09-05 — servegen-reason_ratio_pdf → `assets/2026-09-05-servegen-reason_ratio_pdf.png`
 - 2026-09-05 — servegen-output_reentry_ratio → `assets/2026-09-05-servegen-output_reentry_ratio.png`
@@ -43,10 +46,12 @@
 - 2026-09-04 — 4b-row-is-serial-attn-ffn-block-times → `memory/inbox/2026-09-04-4b-row-is-serial-attn-ffn-block-times.md`
 - 2026-09-04 — 4b-decode-cost-vs-context-and-device-ceiling → `memory/inbox/2026-09-04-4b-decode-cost-vs-context-and-device-ceiling.md`
 - 2026-09-04 — 4b-block-times-vs-batch-and-thin-stage-sram-fit → `memory/inbox/2026-09-04-4b-block-times-vs-batch-and-thin-stage-sram-fit.md`
+- 2026-09-03 — two-wafer-pp-token-budget → `artifacts/2026-09-03-two-wafer-pp-token-budget.png`
 - 2026-09-03 — two-wafer-pp-hop-price-and-tsc-calibration → `memory/inbox/2026-09-03-two-wafer-pp-hop-price-and-tsc-calibration.md`
 - 2026-09-03 — two-wafer-pp-floorplan → `artifacts/2026-09-03-two-wafer-pp-floorplan.png`
 - 2026-09-03 — simfab-real-time-stall-detector → `memory/inbox/2026-09-03-simfab-real-time-stall-detector.md`
 - 2026-09-03 — session-4b-wide-layer-conclusions → `memory/inbox/2026-09-03-session-4b-wide-layer-conclusions.md`
+- 2026-09-03 — plot_token_budget → `artifacts/2026-09-03-plot_token_budget.py`
 - 2026-09-03 — plot_pp_floorplan → `artifacts/2026-09-03-plot_pp_floorplan.py`
 - 2026-09-03 — mooncake-percall-latency → `assets/2026-09-03-mooncake-percall-latency.png`
 - 2026-09-03 — mooncake-percall-latency-serving-trace → `memory/inbox/2026-09-03-mooncake-percall-latency-serving-trace.md`

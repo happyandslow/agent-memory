@@ -85,6 +85,11 @@ buckets: on-wafer 78 %, SDK H2D/D2H 18 %, host 2 %, wire 1 %); scripts beside th
 
 ## Gotchas learned
 
+- **A host bracket is not overhead.** `send X -> recv Z` = 602 us and the empty
+  SDK ring = 160 us are not comparable: the bracket CONTAINS the on-wafer
+  compute (488 us of it), the ring has none. Subtract a same-clock on-wafer
+  residency before calling any host-side number "overhead" — this was misread
+  once in-session and had to be re-explained.
 - Cross-PE TSC stamps cannot be aligned by an init-time sync: `enable_tsc` on
   the z_mux column ran ~133 ms after the demux column's, both counters start
   near 0, so a one-shot sync reads ~1 cyc while frame-time differs by ~1e8
@@ -110,8 +115,13 @@ buckets: on-wafer 78 %, SDK H2D/D2H 18 %, host 2 %, wire 1 %); scripts beside th
 
 ## Pointers
 
+- ContextBase result page (figures embedded):
+  https://context.ed-aisys.com/doc/2026-09-03-result-qwen3-4b-decode-on-two-cs-3s-170-s-per-hop-132-slower-byte-exact-PX4AB8DEN4
 - `demo/4b-pp-demo/` (code, provenance, `cs3/` timing JSON + records + token
-  gates + `two_wafer_pp_floorplan.png`, `sim/`), analysis doc above.
+  gates + both figures, `sim/`), analysis doc above. `cs3/two_wafer_pp_token_budget_share.png`
+  (+ `tools/plot_token_budget_share.py`) is the share-safe variant of the budget
+  figure — model name, layer counts, `lm_head` and run tags removed — made for
+  sending to Cerebras.
 - Memory artifacts: `projects/wse3-performance-model/artifacts/2026-09-03-two-wafer-pp-floorplan.png`,
   `…/2026-09-03-plot_pp_floorplan.py`.
 - Related captures: `2026-09-03-cs3-run-heredoc-hang-and-container-env.md`,
