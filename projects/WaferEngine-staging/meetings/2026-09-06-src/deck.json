@@ -13,7 +13,7 @@
     },
     {
      "label": "Rates",
-     "value": "Device-measured, 750 MHz"
+     "value": "Device-measured, 0.85 GHz"
     },
     {
      "label": "Scope",
@@ -24,7 +24,7 @@
      "value": "2026-09-06"
     }
    ],
-   "notes": "Framing for the room: this is not a progress report, it is an argument about where a wafer belongs in agentic serving. Three verdicts — where it fits, where it does not, and where it should fit but cannot yet. Every CS-3 rate quoted is device-measured and cycle-canonical at 750 MHz; the launcher prints 0.85 GHz, which is 13% optimistic. No GPU comparison appears on any slide: every H200 number we have is an external figure for a 9B from the MeshRT paper, and no 4B GPU curve has been measured."
+   "notes": "Framing for the room: this is not a progress report, it is an argument about where a wafer belongs in agentic serving. Three verdicts — where it fits, where it does not, and where it should fit but cannot yet. Cycles are the measurement and are frequency-independent; every tok/s is converted at 0.85 GHz per Le's convention, which is what the launcher prints and what his other material uses. Ratios -- decoder vs native prefill, rung vs rung -- are ratios of cycle counts and do not move with the clock. No GPU comparison appears on any slide: every H200 number we have is an external figure for a 9B from the MeshRT paper, and no 4B GPU curve has been measured."
   },
   {
    "type": "figure",
@@ -76,7 +76,7 @@
     [
      "Is that path measured?",
      "No — the link was never measured",
-     "Yes — 4,224 to 42,203 tok/s"
+     "Yes — 4,787 to 47,830 tok/s"
     ]
    ],
    "weights": [
@@ -84,7 +84,7 @@
     1.2,
     1.2
    ],
-   "notes": "This is the single most sensitive quantity in the decomposition — nothing else moves by anything like 24×. The reload category exists only if every block ever computed remains retrievable from a host-side mirror. Collapse category 2 into category 3 and the agentic workload stops being a movement problem and becomes a prefill problem, at which point this week's 5.7× is the dominant lever rather than a marginal one. The honest position for the room: we do not know which world we are in, because the GPU-box to CS-3 leg has never been measured (Round 21 records the access problem). The only bandwidth we have measured is host-to-wafer memcpy at 3.2 GB/s against a 12.5 GB/s design rate, which is a different leg. Figure caption: Same trace, same replay, one assumption changed."
+   "notes": "This is the single most sensitive quantity in the decomposition — nothing else moves by anything like 24×. The reload category exists only if every block ever computed remains retrievable from a host-side mirror. Collapse category 2 into category 3 and the agentic workload stops being a movement problem and becomes a prefill problem, at which point this week's 5.7x is the dominant lever rather than a marginal one. The honest position for the room: we do not know which world we are in, because the GPU-box to CS-3 leg has never been measured (Round 21 records the access problem). The only bandwidth we have measured is host-to-wafer memcpy at 3.2 GB/s against a 12.5 GB/s design rate, which is a different leg. Figure caption: Same trace, same replay, one assumption changed."
   },
   {
    "type": "table",
@@ -155,7 +155,7 @@
     1.7,
     0.8
    ],
-   "notes": "The 5% threshold is derived from prefill and decode rates on both engines, so it moves if the GPU side is re-measured — and Le expects a real 4B GPU measurement to come in 2-3x faster than the 9B paper figures we currently substitute, which would raise the threshold and eat into the 63% margin. State that when the row is read. The fourth row is Le's inference, not the report's: Round 35 argues the 300K context depth is a frontier-model artefact that does not transfer to a 4B deployment, but it never extends the same argument to thinking length. That extension is what makes the model ladder two slides on necessary rather than optional."
+   "notes": "The 5% threshold is derived from prefill and decode rates on both engines, so it moves if the GPU side is re-measured — and Le expects a real 4B GPU measurement to come in 2-3x faster than the 9B paper figures we currently substitute, which would raise the threshold and eat into the 63% margin. State that when the row is read. The fourth row is Le's inference, not the report's: Round 35 argues the 300K context depth is a frontier-model artefact that does not transfer to a 4B deployment, but it never extends the same argument to thinking length. That extension is what makes the model ladder two slides on necessary rather than optional. Native prefill at 0.85 GHz is 10,545-11,143 tok/s; the 4.29-4.53x and 1.91-2.02x are cycle ratios and do not move with the clock."
   },
   {
    "type": "table",
@@ -310,28 +310,28 @@
      "A — 4 rows × 256², 9 layers per block",
      "8",
      "101,670",
-     "7,377",
+     "8,360",
      "29,184"
     ],
     [
      "L = 4 — 9 rows × 256×128",
      "18",
      "48,872",
-     "15,346",
+     "17,392",
      "16,256"
     ],
     [
      "L = 2 — 18 rows × 256×64",
      "36",
      "27,348",
-     "27,424",
+     "31,081",
      "8,128"
     ],
     [
      "L = 1 — 36 rows × 256×32",
      "72",
      "17,771",
-     "42,203",
+     "47,830",
      "4,064"
     ]
    ],
@@ -342,157 +342,59 @@
     0.9,
     1.0
    ],
-   "notes": "Each rung was predicted from a one-layer height rig before it ran, and the predictions held to 0.5-1.0%: L=4 measured 0.995x of prediction, L=2 1.001x, L=1 1.010x. The mechanism behind the flat region: at 256 rows the kernel is issue-bound, not compute-bound — each PE holds only 10 of 2,560 hidden dimensions, so every DSD operation's fixed setup dominates the work it does, and halving the rows doubles work per operation without adding operations. Stated plainly: at 2K the current layout uses 65,536 PEs to do work that 32,768 PEs do in the same time. Le's reading, which the numbers back: the tok/s x context product is near-constant at about 220M, so thinning L converts context into stages rather than creating throughput. It is a benchmark axis, not a deployment axis. The sustainable axis is splitting operations, because within a layer only the scan holds KV.",
-   "subtitle": "One wafer, single request, forced prefill at 2K context, 750 MHz. Every row device-measured and gated."
-  },
-  {
-   "type": "metrics",
-   "eyebrow": "Not yet → measured · the ceiling was one 8-bit field",
-   "title": "Ten lines moved L=1's context ceiling from 4,064 to 12,032",
-   "subtitle": "The K cache is stored [dimension][position], so writing one token strides by positions-per-PE — and that stride is a signed 8-bit hardware field.",
-   "hero": {
-    "value": "2.96×",
-    "label": "The context ceiling at L = 1, pinned by compile sweep at 47.9 bytes per position"
-   },
-   "cards": [
-    {
-     "value": "1 field",
-     "label": "A signed 8-bit stride",
-     "note": "Capped context at 127 × rows"
-    },
-    {
-     "value": "10 lines",
-     "label": "One copy, four stores",
-     "note": "Byte-identical by construction"
-    },
-    {
-     "value": "1,000",
-     "label": "Records bit-identical",
-     "note": "Free and forced paths"
-    },
-    {
-     "value": "+0.05%",
-     "label": "Cycle cost",
-     "note": "Inside run-to-run variation"
-    }
-   ],
-   "notes": "Byte-identity here is the strong form: 1,000 device-produced records matching bit for bit on sampled ids, top-k ids and top-k values, on both paths, reusing the original forced request file verbatim so the token sequence replays identically. The negative control is what proves the cap was removed rather than merely survived: at kv_len_per_pe = 136 the unpatched tree refuses to compile with 'integer value 136 cannot be coerced to type i8' named at the stride line, and the patched tree runs. Consequence for the ladder: the context column stops halving. Modelled ceilings after the lift are about 30,200 / 23,600 / 17,400 / 11,500 for A / L=4 / L=2 / L=1 — but only L=1's 12,032 is compiled; the rest are model, not compile, and each needs its own cheap compile sweep before anyone leans on it."
-  },
-  {
-   "type": "metrics",
-   "eyebrow": "Not yet → measured · decoupling the two roles",
-   "title": "Standing the roles in a column costs their compute nothing",
-   "subtitle": "Side by side forces attention and FFN to share a row band, so the FFN gets rows it does not need. Stacking frees the two heights.",
-   "hero": {
-    "value": "−1.3%",
-    "label": "Attention's own work when its block is moved out of a row and into a column of its own"
-   },
-   "cards": [
-    {
-     "value": "12,202",
-     "label": "cycles/token measured",
-     "note": "Three layers, gate passed"
-    },
-    {
-     "value": "+4.1%",
-     "label": "The strip hop",
-     "note": "The mechanism's whole price"
-    },
-    {
-     "value": "4.3%",
-     "label": "Half the FFN's rows",
-     "note": "Context-independent at every height"
-    },
-    {
-     "value": "1.34×",
-     "label": "Two lanes, projected",
-     "note": "Same area, same ceiling"
-    }
-   ],
-   "notes": "Gate: production final record bitwise equal to the free reference's last step, sampled id differing only by PRNG stream position, which is the documented contract. The projection to say out loud and label as a projection: two stacked lanes at ATTN 128 | FFN 64 give twelve stages of three layers where side-by-side fits nine of four — same area to the PE, same 16,256 context ceiling, about 20,489 tok/s, 1.34x over L=4's measured 15,346. It rests on two unvalidated assumptions: flat per-layer time for multi-layer stacked bands, and a lane-to-lane riser cheaper than the period. The honest boundary of the idea: at equal heights stacking buys nothing and costs the 4.1% hop. Its entire value is the asymmetry it can exploit."
-  },
-  {
-   "type": "metrics",
-   "eyebrow": "Not yet · two wafers",
-   "title": "The cost of a second wafer is the host, not the network",
-   "subtitle": "Qwen3-4B split by layer across two CS-3s, byte-exact over 4,096 steps. Each token crosses the boundary twice.",
-   "hero": {
-    "value": "3%",
-    "label": "Share of the crossing cost that is actually the network — a faster interconnect does not fix this"
-   },
-   "cards": [
-    {
-     "value": "+33%",
-     "label": "Two-wafer step",
-     "note": "1,380.2 against 1,036.2 µs"
-    },
-    {
-     "value": "170 µs",
-     "label": "Per crossing",
-     "note": "Two crossings per token"
-    },
-    {
-     "value": "70%",
-     "label": "Is SDK stream latency",
-     "note": "Flat from 8 B to 10 KB"
-    },
-    {
-     "value": "18 µs",
-     "label": "RDMA swapped for TCP",
-     "note": "On a 1,380 µs step"
-    }
-   ],
-   "notes": "Composition, all measured: about 250 us SDK direct-stream completion latency for the two wafers, 45 us on-wafer host-facing gather and fan-out columns, 19 us host work, 14 us RDMA wire and wait — 328 of the 344 us attributed, closing at 99.2%. Correction to carry: the report's 171 and 175 us figures are the same measurement at n=2 and n=1; the n=3 mean is 172, so quote about 170 and avoid false precision. The scaling rule is 170·N, not 170·(N-1), because the decode loop is closed — the sampled token must return to the wafer holding the embedding. Only N=2 was measured. Round 34's '+16% step' is superseded: it priced one crossing where the layout makes two."
+   "notes": "Each rung was predicted from a one-layer height rig before it ran, and the predictions held to 0.5-1.0%: L=4 measured 0.995x of prediction, L=2 1.001x, L=1 1.010x. The mechanism behind the flat region: at 256 rows the kernel is issue-bound, not compute-bound — each PE holds only 10 of 2,560 hidden dimensions, so every DSD operation's fixed setup dominates the work it does, and halving the rows doubles work per operation without adding operations. Stated plainly: at 2K the current layout uses 65,536 PEs to do work that 32,768 PEs do in the same time. Le's reading, which the numbers back: the tok/s x context product is near-constant at about 220M, so thinning L converts context into stages rather than creating throughput. It is a benchmark axis, not a deployment axis. The sustainable axis is splitting operations, because within a layer only the scan holds KV. The context caps in this table are the i8-stride caps that were in force when these ran. Round 118 has since compiled and pinned the post-lift ceilings on every rung: L=1 12,032 (2.96x), L=2 18,176 (2.24x), L=4 24,832 (1.53x), and A unchanged -- A was always SRAM-bound, not stride-bound, so the lift buys it nothing, which is now compiled rather than inferred. ANOMALY to know before quoting A: in the current tree A does not compile at 29,184, and the unpatched snapshot fails identically, so A's footprint grew somewhere in the B-prime lineage between the tree that measured 29,184 and this one. Not yet investigated (Round 118).",
+   "subtitle": "One wafer, single request, forced prefill at 2K. Cycles measured, tok/s at 0.85 GHz. Context caps are the pre-stride-lift i8 caps — see notes."
   },
   {
    "type": "table",
-   "eyebrow": "Not yet · what two wafers actually buy",
-   "title": "The net turns on the same unmeasured fact",
+   "eyebrow": "Not yet → measured · the context ceiling",
+   "title": "Ten lines removed the field that was capping context",
+   "subtitle": "A memory descriptor's stride is a signed 8-bit field, so context was capped at 127 × the block's rows. Ten lines replace that one strided K-cache write with four scalar stores: 1,000 device records byte-identical, +0.05% cycles.",
    "columns": [
-    "World",
-    "Priced saving",
-    "Net per call",
-    "Break-even"
+    "Rung",
+    "Old stride cap",
+    "Compiled ceiling",
+    "Lift"
    ],
    "rows": [
     [
-     "With a host mirror, any rate",
-     "Exactly zero",
-     "−0.315 s",
-     "never"
+     "L = 1 — 32 rows, 1 layer",
+     "4,064",
+     "12,032",
+     "2.96×"
     ],
     [
-     "No mirror, today's layout A at 8K",
-     "2.314 s",
-     "+1.998 s",
-     "6,726 decode tok"
+     "L = 2 — 64 rows, 2 layers",
+     "8,128",
+     "18,176",
+     "2.24×"
     ],
     [
-     "No mirror, L = 4 at 8K",
-     "1.214 s",
-     "+0.899 s",
-     "3,529 decode tok"
+     "L = 4 — 128 rows, 4 layers",
+     "16,256",
+     "24,832",
+     "1.53×"
     ],
     [
-     "No mirror, L = 1 at 2K",
-     "0.347 s",
-     "+0.031 s",
-     "1,008 decode tok"
+     "A — 256 rows, 9 layers",
+     "32,512",
+     "26,112",
+     "none — SRAM-bound"
     ]
    ],
    "weights": [
-    1.8,
+    1.9,
     1.0,
-    1.0,
+    1.1,
     1.2
    ],
-   "notes": "Capacity does move real tokens — a mean 14,637 per call out of reload into resident — so the old 'covers 3% of calls' objection was the wrong test. But with a mirror only new prefill is charged at a prefill rate, and new prefill is C-invariant, so the priced saving is exactly zero and the net is the raw decode penalty. The counter-intuitive result worth saying out loud: what kills the two-wafer case is making prefill faster, not the decode penalty. Break-even falls from 6,726 decode tokens at today's rate to 1,008 at L=1, against an actual mean of 917 — so this week's 5.7x has itself eroded the two-wafer argument. Three places it is negative: the mirror world at every rate, the pessimistic leading scoring rule at -0.078 s/call, and both Mooncake traces at every rate. The positive result belongs to the agentic trace and the no-mirror world only. Two biases, both understating the case: 51,200 is below the real 53K rung, and the prefill rates are measured at 2K-8K while the trace context is far longer.",
-   "subtitle": "Claude Code, capacity 29,184 → 51,200, cost charged at 344 µs per decode token. Actual mean is 917 decode tokens per call."
+   "notes": "Which ceiling binds depends on the rung: a thin block has few rows, so 127 x rows bites first and the rung is stride-bound; A has 256 rows, so its stride cap is 32,512 while SRAM only reaches 26,112 -- A was always SRAM-bound and the lift buys it nothing. That was a model prediction in Round 114 and is now compiled fact (Round 118). Gates: 1,000 device records byte-identical on both the free and forced paths, reusing the original forced request verbatim; and a negative control that is the convincing part -- at kv_len_per_pe = 136 the UNPATCHED tree refuses to compile, naming the line ('integer value 136 cannot be coerced to type i8'), while the patched tree runs. That is the cap being removed rather than merely survived. Slope validated at 16 x (L+2) bytes per position across a nine-fold range in layers per block, within half a percent on three rungs. ANOMALY worth stating if A comes up: A does not compile at 29,184 in this tree, and the unpatched snapshot fails identically with 'ran out of PE memory for data (.bss)' -- so it is not the lift; A's footprint grew somewhere in the B-prime lineage between the tree that measured 29,184 and this one. 26,112 is this tree's number, 29,184 is the historical measurement, and they are not the same code. Also available and not taken: decoupling prefill capacity from context capacity is a twenty-line launcher change worth +17% context at L=1 (12,032 -> 14,080), at the price that the artefact stops accepting arbitrary prefill lengths (Round 117)."
   },
   {
    "type": "table",
    "eyebrow": "Not yet → measured · SRAM returned to the budget",
-   "title": "Boot-only routing code became a host-computed table",
+   "title": "Boot-only routing code moved to the host: 5.6 KB back on every compute PE",
+   "subtitle": "comm_mod.init derived the routes once at boot, then stayed resident for the whole run. The host now computes them per PE and ships 68 B.",
    "columns": [
     "Region",
     "Baseline",
@@ -501,20 +403,32 @@
    ],
    "rows": [
     [
-     "Decode ATTN, 4 × 65,536 PE",
+     "Decode ATTN — 4 × 65,536 PE",
      "39,328 B",
      "34,080 B",
      "−5,248 B"
     ],
     [
-     "Decode FFN, 4 × 65,536 PE",
+     "Decode FFN — 4 × 65,536 PE",
      "34,944 B",
      "30,272 B",
      "−4,672 B"
     ],
     [
+     "ATTN role image, .text",
+     "22,892 B",
+     "17,660 B",
+     "−5,232 B"
+    ],
+    [
+     "FFN role image, .text",
+     "11,316 B",
+     "6,640 B",
+     "−4,676 B"
+    ],
+    [
      "HT head / HT tail",
-     "unchanged",
+     "27,360 / 45,584 B",
      "unchanged",
      "0"
     ],
@@ -526,13 +440,133 @@
     ]
    ],
    "weights": [
-    1.8,
+    1.9,
     1.0,
     1.0,
     0.9
    ],
-   "notes": "comm_mod.init was 5,632 B of .text that ran once at boot to derive 13 route words and never ran again, yet stayed resident for the life of the program. The host now computes the same values per PE — 34 x u16 = 68 B uploaded alongside the weights — and an 812 B apply function installs them. Gates, in order: a simulator self-check with both derivations running side by side found 0 of 1,024 role PEs disagreeing on any of the 34 entries; oracle and re-arm passed over 3 rounds; and on the device all 4,096 steps of top-20 values, indices and sampled ids are md5-identical to baseline. Steady-state cost +0.007% on one run each, which is noise — the real support is mechanical, since only boot-path code changed. Two things to keep off the slide: the 30,464 ceiling is a link ceiling from a compile sweep and has never been executed, and the separate shared-reduce change is not free (-1,136 B more but +0.39% per token), so 'pure SRAM saving' must mean the route table alone. Not landed — working copy, Le commits.",
-   "subtitle": "Appliance-compiled per-PE maxima of a 49,152 B bank. The per-PE routing setup moved to the host: 5.6 KB of boot-only code left every compute PE and 68 B of data replaced it."
+   "notes": "Appliance-compiled per-PE maxima of a 49,152 B bank; every PE within a region is identical. Not paged, not overlaid, not deleted -- recomputed on the host and shipped as data. Gates in order: a simulator self-check ran both derivations side by side and 0 of 1,024 role PEs disagreed on any of the 34 table entries; oracle and re-arm passed over 3 rounds; on the device all 4,096 steps of top-20 values, indices and sampled ids are md5-identical to baseline. Steady-state cost +0.007% on one run each -- noise; the real support is that only boot-path code changed. Two things to keep off this slide: the 30,464 ceiling is a compile-sweep link ceiling that has never been executed (the shipped config is still 8,192), and the separate shared-reduce change is NOT free (-1,136 B more but +0.39% per token), so 'pure SRAM saving' means the route table alone. Not landed -- working copy, Le commits. Provenance: wsjob-rcbpvpt6cay6aomhuujnx9 baseline / wsjob-amzrrqt78wnfxoxy9blpyq route table."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Not yet · how the cut changes the rate",
+   "title": "Side by side against stacked, across the layers-per-block ladder",
+   "subtitle": "One wafer, one request, forced prefill at 2K, equal wafer area (589,824 PEs). Cycles measured; tok/s converted at 0.85 GHz.",
+   "columns": [
+    "Layout",
+    "Stages",
+    "cycles/token",
+    "tok/s",
+    "Context cap"
+   ],
+   "rows": [
+    [
+     "Side by side, H = 256 — today's A",
+     "8",
+     "101,670",
+     "8,360",
+     "29,184"
+    ],
+    [
+     "Side by side, H = 128 — L = 4",
+     "18",
+     "48,872",
+     "17,392",
+     "16,256"
+    ],
+    [
+     "Side by side, H = 64 — L = 2",
+     "36",
+     "27,348",
+     "31,081",
+     "8,128"
+    ],
+    [
+     "Side by side, H = 32 — L = 1",
+     "72",
+     "17,771",
+     "47,830",
+     "4,064"
+    ],
+    [
+     "Stacked 2 lanes, ATTN 128 | FFN 64",
+     "24",
+     "≈ 36,602",
+     "≈ 23,223",
+     "16,256"
+    ],
+    [
+     "Stacked 2 lanes, ATTN 96 | FFN 32",
+     "36",
+     "≈ 26,042",
+     "≈ 32,639",
+     "12,192"
+    ],
+    [
+     "Stacked 2 lanes, ATTN 32 | FFN 32",
+     "72",
+     "≈ 18,238",
+     "≈ 46,606",
+     "4,064"
+    ]
+   ],
+   "weights": [
+    2.1,
+    0.7,
+    1.0,
+    0.9,
+    1.0
+   ],
+   "notes": "The four side-by-side rows are device-measured; every stacked row is a projection that applies the measured 4.1% hop premium and the measured height ladder to a three-layer rig. Read it by context, not by throughput: at the same 16,256 ceiling stacking is worth 1.34x; at about 27,000 tok/s (0.85 GHz) stacking buys 1.5x the context at slightly better throughput; at equal heights it buys nothing and costs the hop. Omitted deliberately: stacked ONE lane at ATTN 128 | FFN 64 is ~73,203 cycles/token -- the trap, since a single stacked column is half the wafer's width. Two assumptions carry the stacked rows: flat per-layer time for multi-layer stacked bands, and a lane-to-lane riser cheaper than the period. Slide 10 is the measured ladder alone; this is what stacking does to it. The context caps in this table are the i8-stride caps that were in force when these ran. Round 118 has since compiled and pinned the post-lift ceilings on every rung: L=1 12,032 (2.96x), L=2 18,176 (2.24x), L=4 24,832 (1.53x), and A unchanged -- A was always SRAM-bound, not stride-bound, so the lift buys it nothing, which is now compiled rather than inferred. ANOMALY to know before quoting A: in the current tree A does not compile at 29,184, and the unpatched snapshot fails identically, so A's footprint grew somewhere in the B-prime lineage between the tree that measured 29,184 and this one. Not yet investigated (Round 118)."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Not yet · two wafers",
+   "title": "The two-wafer experiment, and where the 344 µs per token goes",
+   "subtitle": "Qwen3-4B split by layer across two CS-3s, bsz 1, byte-exact over 4,096 steps. Each token crosses the boundary twice.",
+   "columns": [
+    "Leg",
+    "Per token",
+    "Note"
+   ],
+   "rows": [
+    [
+     "SDK direct-stream H2D + D2H, both wafers",
+     "≈ 250 µs",
+     "≈ 125 µs per wafer"
+    ],
+    [
+     "On-wafer host-facing gather / fan-out columns",
+     "≈ 45 µs",
+     "set by hop count, not bytes"
+    ],
+    [
+     "Host work — embedding copy 13.3, enqueue 5.3",
+     "19 µs",
+     "per token"
+    ],
+    [
+     "RDMA wire and wait",
+     "14 µs",
+     "RTT alone is 11.0 µs"
+    ],
+    [
+     "Attributed total",
+     "328 of 344 µs",
+     "closes at 99.2%"
+    ],
+    [
+     "One wafer → two wafers",
+     "1,036.2 → 1,380.2 µs",
+     "+33%, n = 3, sd 0.38%"
+    ]
+   ],
+   "weights": [
+    2.2,
+    1.1,
+    1.2
+   ],
+   "notes": "Wafer A holds layers 0-17, wafer B layers 18-35 plus the HT tail; the hidden state crosses A to B and the sampled token id crosses back. The headline is the composition: roughly 70% of a crossing is the SDK's per-call host-to-wafer stream latency and 3% is the network, so a faster interconnect does not fix it. Two independent confirmations: isolated on a passthrough ring the SDK round trip is ~160 us and flat from 8 B to 10 KB, unmoved by blocking vs spin, io_buffer_size or pinned io_loc; and running the whole thing over TCP instead of RDMA costs 18 us on a 1,380 us step while still byte-exact, even though the RDMA RTT (11.0 us) is three times faster than TCP's (31.9 us). Corrections to carry: about 170 us per crossing (the n=3 mean is 172; the report's 171 and 175 are n=2 and n=1), and the scaling rule is 170*N, not 170*(N-1), because the decode loop is closed -- the sampled token must return to the wafer holding the embedding. Round 34's '+16% step' is superseded: it priced one crossing where the layout makes two. Never measured: two-wafer capacity, N>2, bsz>1 to amortise the crossing, and cross-wafer prefill."
   },
   {
    "type": "next_steps",
@@ -565,6 +599,2070 @@
     }
    ],
    "notes": "The A1 stall in one line if asked: cut (ii) is functionally correct on the device — oracle gate passes with zero defects over 1,000 steps — but stalls 151.5K cycles on five of every six tokens against 8.1K of real work, localised to A1's first half, with the queue-7 rebind theory falsified by a controlled job. One bug blocks the operation-cut branch; the layout branch went around it. Le's standing rule stopped further device debugging pending a joint session. On the streaming prize: the FFN block's compiled SRAM is 27.8 KB of 48 per PE and does not grow with context, so 20.2 KB per PE idles across 262,144 PEs — about 5.42 GB, more KV capacity than the entire on-chip context we serve today. It is stranded because the scan reads the whole KV every step, so parked KV needs rate-matched streaming, not just placement. A peer session is already on that problem."
+  },
+  {
+   "type": "section",
+   "number": "A",
+   "title": "Appendix",
+   "subtitle": "Every experimental result in the session report — one slide each, figure or table, with the question it answered."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F1",
+   "title": "SRAM levers are not comparable by size — they are ranked by when the price is paid",
+   "image": "figures/appendix/f01_sram_merit_order.png",
+   "caption": "A merit order of the KV-capacity levers: x is resident KV tokens, each block is a lever in price order, colour is when the cost is paid (P0 boot, P1 per turn, P2 per decode step, P3 accuracy), hatching means not device-verified, and the red line is the 167K score-buffer wall. Produced from machine-readable price cards written for the SRAM-performance exchange methodology. It settled that there is no single formula: prices in different currencies are comparable only under a stated workload profile. Analytical, built on compiled constants.",
+   "notes": "Round 5. Sources: analyses/2026-09-02-sram-perf-exchange/ (levers.json) and docs/design/2026-09-02-sram-performance-exchange-methodology.md. No device job. Caveats the report attaches: unpriced levers stay hatched and are never assumed free; capacities are re-derived after every composition change; the per-step price of the near pool (95K) and far pool (167K) has never been measured. The 167K wall itself is the per-slot 32 B of softmax scratch that cannot be parked (Round 4)."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F2",
+   "title": "The first demand curve was wrong: calling an over-capacity session infeasible collapsed the shared-pool line",
+   "image": "figures/appendix/f02_gc_demand_curve_v1.png",
+   "caption": "Version 1 of G(C), the prefill tokens avoided per call as a function of resident KV capacity C, replayed on 1,048 local Claude Code contexts. Its shared-pool line collapses below 256K, which is an artifact of declaring any session larger than C infeasible rather than a property of the workload. Kept for the record only; F3 is the corrected curve. Measured trace replay with an analytical residency model.",
+   "notes": "Round 7; Le's correction. File lives in agent-memory (assets/2026-09-02-gc-demand-curve.png), not the repo. Two reasons not to quote numbers off it: the infeasibility rule, and the fact that the underlying trace was later found to contain 58,581 duplicate rows (Round 28). F3 is both re-ruled and regenerated."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F3",
+   "title": "How much prefill a resident-KV capacity actually avoids, and what the next rung is worth",
+   "image": "figures/appendix/f03_gc_demand_curve_v2.png",
+   "caption": "Version 2 replaces the infeasibility rule with best-effort prefix residency: an LRU trims tails and any missing prefix is recomputed, which lands the shared-pool line within 15-20% of the single-request curve. The marginal value of capacity is dG/dC = P(context > C) — 0.93 at 32K, 0.80 at 64K, 0.51 at 167K. Measured trace replay of 46,650 de-duplicated API calls.",
+   "notes": "Round 7, regenerated after the Round 28 de-duplication. Script and data in analyses/2026-09-02-gc-trace-study/. Caveats: Claude tokenizer, one power user, one harness, one month; and per Round 35 these are frontier-model context depths (median 302K per call), so read the deep rungs as an upper bound on what a 4B deployment would need."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F4",
+   "title": "The provider keeps KV about an hour, and intra-turn gaps are 10.9 s — keeping across a turn is unconditionally right",
+   "image": "figures/appendix/f04_idle_gaps_prefix_reuse.png",
+   "caption": "Idle-gap distributions inside a turn and at turn starts, next to the share of context the provider re-created as a function of gap length. It re-created 3.7% of context for gaps under five minutes and 95.9% beyond an hour. Measured directly from the usage fields of 46,650 de-duplicated Claude Code API calls.",
+   "notes": "Round 7, regenerated after Round 28 (the intra-turn gap p50 moved from 3.3 s to 10.9 s when duplicate streamed records were removed — which makes keeping more clearly right, not less). analyses/2026-09-02-gc-trace-study/. What it cannot price: turn-boundary contention, which needs a multi-tenant trace this study does not have."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F5",
+   "title": "Recompute is never the right recovery above ~25K tokens; without a host mirror, eviction is the most expensive option",
+   "image": "figures/appendix/f05_keep_vs_reload.png",
+   "caption": "Break-even idle gap for the three recoveries — keep, reload, recompute — against context length. With a host mirror at the 12.5 GB/s design rate, reloading any context up to 256K takes less than the median intra-turn gap; without one, the measured 1.37-1.44 GB/s egress makes eviction the worst option. Decode tok/s cancels in keep-versus-reload: it sets the stakes, not the crossover. Measured gaps and measured link rates, modelled economics.",
+   "notes": "Round 7. Link rates: host-to-wafer 3.2 GB/s and wafer-to-host 1.37-1.44 GB/s are measured; 12.5 GB/s is the design rate. The GPU-box to CS-3 leg has never been measured (Round 21 records the access problem), so the mirror's existence is the single unmeasured fact behind this figure."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F6",
+   "title": "On a real serving trace the pool size is invisible — and with measured GPU rates one 4B wafer no longer wins per request",
+   "image": "figures/appendix/f06_mooncake_percall_latency.png",
+   "caption": "Per-request latency on the Mooncake FAST'25 conversation and toolagent traces under a 512-token block-LRU prefix cache. Cache hit rate is flat from 32K to 1M tokens and only reaches its infinite-cache value at 16-64M. The first pass had CS-3 about 2x faster per request; revised with measured H200 rates it loses on prefill-heavy requests, because the GPU's 8x faster prefill outweighs the wafer's faster decode. Measured trace, modelled single-stream latency.",
+   "notes": "Rounds 8 and 11; analyses/2026-09-03-mooncake-trace-study/. Two caveats to say out loud: every GPU number here is an external H200 figure for a 9B from the MeshRT paper — no 4B GPU curve has ever been measured — and the CS-3 side of the model was computed at 750 MHz, so CS-3 latencies fall by 1/1.133 at 0.85 GHz while the GPU column does not move. Per-point cycle counts are not recoverable from the plotted latencies."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F7",
+   "title": "Batching alone saturates the wafer at ~2,370 tok/s; pipelining requests across stages is the better multiplier",
+   "image": "figures/appendix/f07_bsz_scaling.png",
+   "caption": "Measured decode cycles per step at batch 1, 2, 4 and 8 on CS-3, fitted as 427K + 359K x bsz, plotted against the two-wafer demo's pipelined per-wafer period of 166K cycles. Because the batch-independent part is only ~0.43M cycles, in-kernel batching asymptotes at 0.85e9/359K = ~2,370 tok/s per wafer, while stage pipelining reaches ~5,120. Measured on-device TSC.",
+   "notes": "Round 9. Jobs: wsjob-ety497nzzyactz9mnp8exh, wsjob-kehrtcp6jwvpdmkrhzqnsp, wsjob-ypfwbalxthvu6ckbzf7yuk, wsjob-jtyqqnkrmamhczfjwu3gto. The batch runs needed two experiment-only edits (SiLU scratch moved out of the D-cache; tail logits partials restructured) which live only in analyses/2026-09-03-cs3-4b-prefill-bsz/bsz_experiment.patch — the tracked kernel trees were never modified. Batch 16 does not link. The figure's tok/s axis was drawn at 750 MHz; multiply by 1.133."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F8",
+   "title": "KV is 90-95% prefill-origin: the decoder's own output is a tenth of unique context, and tool results are the bulk",
+   "image": "figures/appendix/f08_increment_structure.png",
+   "caption": "The increment structure of agentic calls — new tokens per call, what those tokens are, and where a session's unique context comes from. Decode by-products are 10% of unique context in Claude Code sessions and 4-5% in Mooncake; the harness base prefix is 2% of unique content but 27% of re-sent volume. Measured from trace usage fields.",
+   "notes": "Round 11; regenerated after the Round 28 de-duplication, so read increments as p50 1.5K per call and p50 10.9K per turn (the pre-dedup figures were 1.9K and 24.7K). analyses/2026-09-02-gc-trace-study/. Attribution of the increment into tool results versus user text is harness-only information and exists for no other trace."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F9",
+   "title": "Three quarters of what an agentic model decodes is hidden reasoning — that is what makes the per-turn decode budget",
+   "image": "figures/appendix/f09_decode_breakdown.png",
+   "caption": "Per-turn decode against per-turn prefill, and an attribution of decoded tokens: hidden reasoning 75%, visible text 5.9%, Edit/Write tool inputs 9.1%, Bash 6.0%, other tools 3.9%. Per turn the median is 5,838 decoded tokens against 10,917 newly prefilled, yet the turn is decode-bound in time on both engines because decode is 10-200x slower per token. Measured token counts; the visible/hidden split is estimated.",
+   "notes": "Rounds 14 and 28 (regenerated post-dedup; the pre-dedup figures were 14.4K decode tokens per turn and an 89% hidden share). The hidden share rests on an assumed 3.8 characters per visible token, so it is +/-10 points, not exact. A reasoning-light agent would have a per-turn decode budget an order of magnitude smaller, which is the whole premise of the decode-heavy case."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F10",
+   "title": "Decode cost is linear in context — 681K cycles plus 16.1 per context token — and the device ceiling is 29,184",
+   "image": "figures/appendix/f10_context_sweep.png",
+   "caption": "Five device runs of the unmodified route-table 4B decode tree at batch 1 with host-ingested prefixes, 4,096 decode steps each, sweeping MAX_SEQ_LEN from 8,192 to 29,184. From 8K to 29K the step slows 41%; at the ceiling a step is 1,109,064 cycles = 766 tok/s at 0.85 GHz. The next setting, 30,464, fails to link on the appliance. Measured on-device TSC.",
+   "notes": "Round 16; analyses/2026-09-04-4b-context-sweep/. Jobs: wsjob-amzrrqt78wnfxoxy9blpyq (8K reference), wsjob-ef9m7k5abo3xmpxkx2ox7q, wsjob-ldhubkgfqptdu82pg3l3vi, wsjob-pkugixotaderkrvmydmsui, wsjob-5faj77vfj547buzddc4mvb, plus wsjob-bja2eqjp3zgiv469n7tnbp for the link failure. The figure's tok/s axis is at 750 MHz (954/843/729/684/676); at 0.85 GHz they are 1,082/956/826/776/766. Later caveat: 29,184 was measured on an earlier tree — the current B-prime lineage compiles A only to 26,112, and the unpatched control fails identically, so the lineage added footprint somewhere (Round 118)."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F11",
+   "title": "Both engines fall as 1/context — and per dollar the GPU keeps a 15-60x margin under every lever set",
+   "image": "figures/appendix/f11_throughput_vs_context.png",
+   "caption": "Modelled decode throughput per device against context. The GPU side is bytes-bound (weights plus every stream's KV per step, batched to HBM capacity at 80% of 4.8 TB/s); the CS-3 side uses the measured step laws with row pipelining and batching assumed, and caps the number of streams by on-chip KV capacity. Per device the wafer ends between 0.8x (today) and 3.5x (every lever) an H200. Modelled on measured inputs, not measured.",
+   "notes": "Round 24; analyses/2026-09-04-throughput-vs-context/. First cut only; the verdict it supports is that serving price is not where a 4B on CS-3 wins, and that its value stays per-turn latency at large reasoning budgets. Caveats: every GPU number is an external 9B figure, no 4B GPU curve exists, and the CS-3 columns were computed at 750 MHz (multiply by 1.133 at 0.85 GHz) while the GPU columns do not move. Per-point cycle counts are not recoverable from the plotted rates."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F12",
+   "title": "Four ways to cut the model into pipeline stages — and the three that were never built",
+   "image": "figures/appendix/f12_thin_stage_layouts.png",
+   "caption": "On-chip layouts: A is today's four rows of 256-square blocks with nine layers each; B fuses ATTN and FFN into one-layer 128-square blocks (36 stages); C splits the roles into thin 128x64 blocks (72 stages); D pairs one two-layer FFN block with two ATTN blocks (54 stages). The B/C/D throughputs on this figure are analytical, resting on the assumption that per-layer time stays flat as a block shrinks. Design figure.",
+   "notes": "Rounds 24-26. Only A was measured when this was drawn. B, C and D were never built: the ladder that was actually built and measured is the height ladder (A, L=4, L=2, L=1 on 256-wide blocks of falling height, Rounds 77-86). Do not carry the label 'L = 4 is P = 128 on one lane' — 128-square blocks are the L = 2 rung, and only one lane of 256-wide blocks fits the fabric (Rounds 63, 77). Layout B's context ceiling was hand accounting and was never compiled; the fused 4B image has never been assembled."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F13",
+   "title": "71% of agentic calls decode at least 512 tokens, and those calls carry 96% of all decode tokens",
+   "image": "figures/appendix/f13_decode_classes.png",
+   "caption": "Decode-heavy classes by output tokens, per call and per turn, on both traces. Calls above 8K output are only 3.1% of calls but 55% of turns and 92% of per-turn decode tokens. Mooncake has no request above 2K output at all. Measured on 32,378 de-duplicated Claude Code main-thread calls and 35,639 Mooncake requests.",
+   "notes": "Round 27, subagent decoder-lever-value; analyses/2026-09-05-decoder-lever-value/ and docs/analysis/2026-09-05-decoder-only-lever-value.md. Caveat the report attaches: Mooncake's two traces share one synthesized long-output sample, so decode-length conditioning there is approximate."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F14",
+   "title": "A decode-heavy call's KV is re-read: 99% of calls have a successor re-reading at least 95% of it",
+   "image": "figures/appendix/f14_reuse_by_class.png",
+   "caption": "Forward KV reuse by the next call, conditioned on decode length. The median reuse fraction is 0.999 for calls under 512 output tokens and still 0.954 for calls above 8K, with a median gap of 10-18 s. On Mooncake only 37% of decode-heavy requests ever get a next turn, at a median gap of 159 s. Measured trace replay.",
+   "notes": "Round 27. This is the half of Le's worry that turned out wrong — decode-heavy calls do have reusable KV on the agentic trace. The half that was right is F15: what is reused is the input context, never the decode's own product. Multi-tenant odds are much poorer, which is the Mooncake row."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F15",
+   "title": "Not keeping the context costs a median 13.9 s reload — 61% of the next call's latency",
+   "image": "figures/appendix/f15_keep_value.png",
+   "caption": "Value of keeping KV on chip per call: reload time avoided, recompute time avoided, and the idle gap it has to fit inside. At the measured 3.2 GB/s link a median reload is 13.9 s and 49% of reloads exceed the gap; at the 12.5 GB/s design link it is 3.6 s and 28%. Keeping the decode's own output KV is worth only 0.003-0.13 s per call, because thinking is stripped before the next call. Measured reuse and gaps, modelled at measured link rates.",
+   "notes": "Round 27. The comparison assumes reload at the full link rate with no overlap, and applies the visible-output share uniformly. The recompute alternative is priced at the forced-prefill rates of the time; with the rates now measured (up to 47,831 tok/s at L = 1) recompute is a much stronger substitute for keeping than this figure shows."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F16",
+   "title": "Today's 29K fits 0.04% of agentic calls; even the 167K far pool covers only 19% of decode tokens",
+   "image": "figures/appendix/f16_capacity_rungs.png",
+   "caption": "Share of decode work covered at each KV-capacity rung — 29K measured on device, 51K with fp8 KV, 95K near pool, 167K far pool. The median agentic call context is 309K tokens (p90 715K), so capacity is binding and still about 2x short of the median. For Mooncake-class traffic the picture inverts: 90% of decode work already fits 29K. Measured contexts against analytical capacity rungs.",
+   "notes": "Round 27. Round 35's caveat travels with this figure: the 300K+ contexts exist because the harness was driving frontier Claude models, and a 4B-class deployment would carry a leaner base prompt and compact far earlier — so read these coverage shares as an upper bound on what a 4B needs, and ServeGen (F20) as the closer proxy."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F17",
+   "title": "Decode-stream concurrency is 1 at the median on both traces — filling 36 or 54 stages is an operator question",
+   "image": "figures/appendix/f17_concurrency.png",
+   "caption": "Concurrency of decode-heavy streams over time against the pipeline stage counts under consideration (4, 36, 54). Four stages fill in bursts; 36 and 54 never fill on either trace, with a maximum of 7 concurrent decode-heavy streams on Mooncake. Measured from trace timestamps.",
+   "notes": "Round 27. The follow-on arithmetic (Round 29) is the useful part: at a 1% per-session duty cycle, filling S decode-heavy stages needs roughly 12 x S users mid-turn — about 50 users for 4 stages and 700 for 54. That is an operator-scale number, never a single box, and it is why pipelining is filed as a multi-tenant question rather than a lever this trace can price."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F18",
+   "title": "A multi-tenant reasoning platform's per-request output is almost exactly an agentic per-call output",
+   "image": "figures/appendix/f18_servegen_output_cdf.png",
+   "caption": "Output-length CDFs from the ServeGen release (Alibaba Cloud Model Studio production, NSDI'26), DeepSeek-R1 including reasoning tokens against the language models. R1's per-request output is p50 792, p90 3,432, max 32,768, with a bimodal reason ratio (0.38 / 0.9, mean 0.70) — statistically the same shape as Claude Code's p50 763 per call. Measured on the released distributions.",
+   "notes": "Round 31, subagent servegen-trace-study; analyses/2026-09-05-servegen-trace-study/ with provenance.txt (clone commit d70c8b2d) and the field-semantics quotes that settle whether output length includes reasoning. Caveat: the five model-level datasets are fitted per-client marginals only — no per-request records and no joint input/output distribution — and length mixtures are rate-weighted over released client windows, which are a subset of production."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F19",
+   "title": "This platform re-sends the reasoning: 83.4% of turn pairs grow by at least the previous full output",
+   "image": "figures/appendix/f19_servegen_reuse_cdf.png",
+   "caption": "Per-turn reuse length and incremental prefill across 1,616 ServeGen conversations (5,720 turns, a 24-hour window in February 2025), computed by count arithmetic on input and output token counts without any harness information. Reuse is p50 7,498 tokens (82% token-weighted) and the incremental prefill is p50 2,107. The 83.4% result is the opposite of Claude Code, where thinking is stripped and only ~5% of decoded tokens re-enter context. Measured, with reuse as an upper bound.",
+   "notes": "Round 31. Reuse is an upper bound under a verbatim-history assumption (13.6% of pairs are partial, 3% shrink). The 1,616 conversations are an unstated selection of 57,205 and their model is unstated. Token units are each source model's tokenizer and were not rescaled. This is a platform choice, not a law — which is exactly why it decides whether decoded KV is worth keeping."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F20",
+   "title": "For multi-tenant reasoning traffic 29K already covers two thirds of the decode work",
+   "image": "figures/appendix/f20_servegen_capacity.png",
+   "caption": "Share of ServeGen requests and of output tokens that fit each KV-capacity rung. 29K holds 78% of requests and 67% of output tokens; 167K holds 99% and 98%. Context sits where Mooncake's does (input p50 7.7K) rather than at Claude Code's 300K, so the 29K and 51K rungs are far more useful on multi-tenant reasoning traffic than on our own trace. Measured on the released conversation file.",
+   "notes": "Round 31. The headline the report draws from F18 plus F20: reasoning-era traffic is decode-heavy but not deep-context, and this platform keeps the reasoning in context, which makes decoded KV reusable there in a way it is not on the agentic trace. Concurrency on the released 16 req/s slice is derived by Little's law, not measured, and ignores queueing and burstiness."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F21",
+   "title": "Softmax is the largest phase everywhere and carries 69% of the whole context slope",
+   "image": "figures/appendix/f21_phase_breakdown.png",
+   "caption": "Phase-level breakdown inside one ATTN and one FFN layer against batch and context, stamped by an on-device TSC probe on today's 256-square blocks across seven configurations. Softmax carries 0.303 of the 0.439 cycles per context token per layer and 49% of the batch slope; the three KV-walking phases together give 15.8 cycles per context token per step over 36 layers, independently reproducing the context sweep's 16.07. The FFN layer is flat in context (5,802 / 5,797 / 5,814 cycles at 2K / 8K / 23K). Measured device TSC.",
+   "notes": "Round 45, subagent 4b-block-tsc; analyses/2026-09-05-4b-phase-tsc/ with phase-tsc.patch and the stage-cut table. All four byte-identity gates pass against existing unprobed references; probe overhead +0.02% to +0.11%; sum of phases equals layer busy on every run. Caveats: 29K could not be probed at all (the ATTN PE has 960 B free with no probe), so the long-context point is 23K; only row 0 is instrumented; the SiLU phase is measured out of the D-cache and reads about 10% high."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F22",
+   "title": "The three ways to cut a layer into stages: which phases go to which stage",
+   "image": "figures/appendix/f22_one_layer_cuts.png",
+   "caption": "The one-layer testbed's three cuts drawn as full 256-square blocks on today's footprint, with the real hand-offs and the periods derived from the measured phase sums: cut (i) ATTN | FFN (2 stages), cut (ii) A1 | A2 | FFN (3), cut (iii) A1 | scan | O-proj | F1 | F2 (5). Topology sketch; the derived periods come from measured phases, the areas do not mean anything.",
+   "notes": "Round 46. Read this as 'which phases go to which stage', never as the area each stage gets — Le's Round 47 correction was that a full square per stage gives cut (iii) five squares and cut (i) two for the same computation, which is not a comparison. The decision metric is tokens/s per PE at equal area, which is what the B-prime equal-area testbed was built for."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F23",
+   "title": "Comparing cuts needs equal active area — and the strip heights drawn here were wrong in five of six setups",
+   "image": "figures/appendix/f23_equal_area_cuts.png",
+   "caption": "The equal-area testbed on today's side-by-side row, attention-role strips west and FFN-role strips east, with each cut drawn at budget A (a full row) and budget B (a layer's real deployment share, about 57 rows). The heights in this drawing are illustrative and Round 52 checked all six setups: only A-(i) is feasible as drawn. Every other setup violates height admissibility (a strip needs dim % h = 0, and KV holders and FFN strips need a power of two) or overflows SRAM. Design figure, superseded in detail.",
+   "notes": "Rounds 47 and 52. Superseded further by compiled numbers (Round 59): height 16 does not compile at all because the K-cache DSD stride is a signed 8-bit field capping positions per PE at 127, and cut (i) at 32 | 32 = 64 rows is SRAM-clean by compiled fact. Budget B at 57 rows is infeasible for every cut. Keep the figure for the framing — equal area, strips of a row — and do not read the heights off it."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F24",
+   "title": "The chain that actually ran on silicon for cut (ii) — and where the A1 stall showed up",
+   "image": "figures/appendix/f24_cut2_device_layout.png",
+   "caption": "Cut (ii) as run on CS-3: today's four-row, two-square footprint with two layers laid out as A1 -> relay -> A2 -> FFN, the probe on row 0 and row 1. Faithful to the run's own placement plan. On device the chain is functionally correct — the restated oracle gate passes with zero defects over 1,000 steps — but it runs at 128,131 cycles per token against a derived 8,434, because A1 stalls on five of every six steps. Measured on device.",
+   "notes": "Rounds 55-56. Baseline job wsjob-j33adkcfd8trw5xofupqwa; attribution job C2Q_2K; per-stage compiled SRAM A1 15.6 KB, relay 7.0, A2 14.9, FFN 11.8 of 48. Do not carry the queue-7 boot-rebind explanation: it was falsified by a controlled job that bound queue 7 at compile time and changed 128,131 to 128,139. The one step in six where the stall skips runs at 8,368 cycles, within 0.8% of the derived 8,434 — the pipeline is right and only the stall stands between it and 100K tok/s."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F25",
+   "title": "The equal-area testbed as drawn — superseded before it ever ran",
+   "image": "figures/appendix/f25_bprime_96rows.png",
+   "caption": "The three cuts side by side at a common 96-row budget with strip heights chosen to balance the stages under the linear prior, plus a 128-square pair drawn for comparison. Round 63 superseded the comparison pair: a 128-square block is a quarter of today's block and is therefore the L = 2 rung, while the equal-area L = 4 is 256 wide by 128 tall. The 96-row budget itself was then overtaken by compiled SRAM. Design figure, superseded.",
+   "notes": "Round 57, superseded by Round 63 (the rung labelling) and Round 59 (compiled heights: 32 | 32 = 64 rows fits with 16-20 KB/PE to spare; height 16 does not compile). Kept because it is the clearest picture of what 'equal area, heights as the balancing knob' means. The FFN activation model behind these heights was also wrong — the FFN's inner dimension is width-sharded, not Y-sharded (Round 58)."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F26",
+   "title": "The thin-stage layouts drawn to fabric scale: L = 4 on one lane, and the two-lane rung that stayed on paper",
+   "image": "figures/appendix/f26_l4_layout.png",
+   "caption": "Left panel: L = 4 as nine rows of ATTN 256x128 plus FFN 256x128 on one lane, with the funnel column and the odd-row result return — this is the layout that was built, gated and measured at 48,872 cycles per token. Right panel: an L = 2 design at 128-square blocks on two lanes, 36 stages, which needs the HT band decoupled from P and a multi-lane serpentine and was never built. Design figure for a measured layout.",
+   "notes": "Round 68, subagent 4b-l4-p128; demo/qwen3-4b-thin-stage/l4/. Three generator changes were needed for the left panel: row pitch = H_ROWS instead of 256, the funnels moved to a dedicated one-wide column, and an odd row count with a westward result return. Note the L = 2 rung that was actually built and measured is not this drawing — it is the one-lane 256x64 geometry (Round 84), which needed neither of the two-lane changes."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F27",
+   "title": "Why A1 stalls: a 256-row column rendezvous where one late row stops the whole column",
+   "image": "figures/appendix/f27_a1_shard_and_stall.png",
+   "caption": "Inside one A1 square: the Q/K/V weight matrix is sharded on both axes — the input dimension down the 256 rows, the output dimension across the 256 columns — so every PE ends with a partial result and the column all-reduce is a rendezvous. The device probe split A1's per-token program in two and localised the stall to the first half (RMSNorm, the three matvecs, the column all-reduce): 151,500 cycles on five of every six tokens against 8,100 cycles of real work, while the second half is steady at 1,856. Measured device probe.",
+   "notes": "Rounds 62, 87. Values are always correct — this is delay, not error. Ruled out with the job that ruled it out: the queue-7 raw rebind and its one-wavelet-skew variant (C2Q_2K, compile-time binding, 128,139 vs 128,131), a hardware timeout (none exists in the SDK), A1's second half, the tail, buffer gating and transport widths. Still standing: the axis-3 to axis-0 route repaint at the end of the previous step racing the next step's column reduce, or another wait with a six-token period in the Y-reduce path. Unresolved; stall work was stopped by Le's rule."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F28",
+   "title": "The operation cuts belong inside today's allocation, not one square per stage",
+   "image": "figures/appendix/f28_inplace_cuts.png",
+   "caption": "The same two 256x256 squares per row and the same nine layers per block as today, with the squares cut into horizontal strips whose heights balance the stages: today's cut (i), then cut (ii) in place, then cut (iii) in place. Predicted periods use the measured 256-square phase times and the measured height-scaling curve — cut (ii) 1.35x and cut (iii) 1.71x today. Predicted, not measured; neither in-place cut was built.",
+   "notes": "Round 89, answering Le's objection that a stage-per-square arrangement invents new inter-block data paths (the relay square, the wide cross-row transfer and the K-pipe hops exist only because A1 and A2 were put in different squares — and the A1 stall lives in that machinery). An in-place split needs none of it: the hand-off between two strips is a short local hop, and the sub-height strip generator it needs is built and silicon-proven."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F29",
+   "title": "Cut (iii) in place: five stages, and only one of them touches the KV cache",
+   "image": "figures/appendix/f29_cut3_inplace.png",
+   "caption": "The five stages as horizontal strips of today's two squares, each labelled with the computations it owns and its measured per-layer cost, plus why the cuts run across rows rather than columns. A1 sits at 256x64 and the scan at 256x192 in the west square; O-proj, F1 and F2 share the east square. The scan paces at 6,609 cycles after its height penalty, giving 59.5K cycles per token = 14,286 tok/s at 0.85 GHz, 1.71x today, at a context ceiling of 24,384. Predicted from measured phases; never built.",
+   "notes": "Round 90. The structural point is that stage 2 (the scan) is the only stage that touches the KV cache, so only its geometry has to respect the context ceiling — which is why splitting operations is a sustainable axis and thinning L is not. Cutting rows spends context (KV positions live on the rows); cutting columns would spend weight memory and change the head's lane mapping, every weight tile and the strip widths at once. The width axis has never been built or measured."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F30",
+   "title": "Stacking the two roles vertically so their heights can differ, and what the K-pipe strip carries",
+   "image": "figures/appendix/f30_vertical_stack_topology.png",
+   "caption": "Today's side-by-side L = 1 row against the stacked proposal, plus the four steps of the inter-row K-pipe: collect along each row to the edge column, fold the lanes onto eight colour pipes as a time fold, carry south down a one-PE-wide strip, then unfold and broadcast into the next block. Sender and receiver re-frame independently, which is what makes a hop between blocks of different heights possible at all. Stacking was then built and measured: 12,202 cycles per token on a three-layer rig, with attention's own compute unchanged at -1.3%.",
+   "notes": "Rounds 93, 97, 104; demo/qwen3-4b-thin-stage/vstack/. The implementation came out smaller than the six-change spec: the strip machinery needed no change, and the K-pipe fold moving from cyclic to block is what removes the height-to-height reshard entirely (and is byte-identical at equal heights, controlled in Round 105). One-lane stacking is a loss because it uses half the columns; the second lane is what converts it."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · F31",
+   "title": "One 8-bit stride field capped on-chip context at 127 positions per row — and ten lines removed it",
+   "image": "figures/appendix/f31_kv_stride.png",
+   "caption": "One PE's K cache laid out as [dimension][position]: the score GEMV walks every position for a fixed dimension, so positions must be contiguous, which makes the write of one new token a strided copy with stride = positions per PE. A memory descriptor's stride is a signed 8-bit hardware field, so positions per PE is capped at 127 and context at 127 x block rows. Option A unrolls the write into four scalar stores; option B transposes the cache to the V layout. Option A was implemented and gated byte-identical on 1,000 device records.",
+   "notes": "Rounds 78, 95, 96, 108, 111-115. Verified against csl/language/dsds.md, which types a memory DSD's stride as i8 and mem4d_dsd strides as tuples of i8 — no descriptor form escapes the field, and there is no 16-bit stride to widen to. The V write is contiguous and untouched. Correction to carry: there was never a launcher check enforcing 127; the cap was the CSL cast alone, which is why a height-16 build failed at compile time rather than at config time."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 9",
+   "title": "Prefill measures 10,544-11,143 tok/s; in-kernel batching saturates at ~2,370",
+   "subtitle": "First CS-3 measurements of the 4B: native prefill at two chunk sizes, and decode at batch 1 through 8. A selection of 5 of 7 measured points — bsz 2 (1,289,187 cyc/step) and bsz 4 (2,102,119) are omitted and both sit on the fitted line. Measured on-device TSC; tok/s converted at 0.85 GHz.",
+   "columns": [
+    "Run",
+    "Cycles",
+    "tok/s @0.85 GHz"
+   ],
+   "rows": [
+    [
+     "P1 — prefill, 1 x 8,192 tokens",
+     "76,282 / token",
+     "11,143"
+    ],
+    [
+     "P2 — prefill, 4 x 2,048 tokens",
+     "80,615 / token",
+     "10,544"
+    ],
+    [
+     "Decode, bsz 1 (TOP_K 20)",
+     "785,826 / step",
+     "1,082"
+    ],
+    [
+     "Decode, bsz 8",
+     "3,300,460 / step",
+     "2,061"
+    ],
+    [
+     "Fitted law 427K + 359K x bsz",
+     "359K per element",
+     "~2,370 asymptote"
+    ]
+   ],
+   "weights": [
+    1.6,
+    1.1,
+    1.0
+   ],
+   "notes": "Round 9. Prefill jobs wsjob-eptcyqjparjjjombvqiozp (P1) and wsjob-gbgvnij9crj7srrlc5nyce (P2, byte-identical KV across rounds). Decode batch jobs wsjob-ety497nzzyactz9mnp8exh, wsjob-kehrtcp6jwvpdmkrhzqnsp, wsjob-ypfwbalxthvu6ckbzf7yuk, wsjob-jtyqqnkrmamhczfjwu3gto. The first batch attempt failed to compile (FFN SiLU scratch overflows the 512 B D-cache window; HT-tail logits partials overflow the tail PE) — wsjob-3bqgsljf25cvxguqjccqo6, wsjob-puluwcakbvtzlcqkcz5jyg. Batch 16 does not link. Patch: analyses/2026-09-03-cs3-4b-prefill-bsz/bsz_experiment.patch; the tracked kernel trees were never modified. Because the batch-independent part is only ~0.43M cycles, in-kernel batching cannot pass ~2,370 tok/s — which is what made stage pipelining the interesting direction."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 12",
+   "title": "Per-layer time barely moves with region size — the smallest region that links is the fastest",
+   "subtitle": "MeshRT Qwen3.5-9B layer_block benchmark on CS-3 at batch 1 and 4K context, eight regions, 12 device jobs. A selection of 5 of the 8 measured regions: 128x512 (+1.1%), 256x512 (+5.3%) and 512x256 (+17%) are omitted, and 16,384-PE regions do not link at all. Measured device TSC.",
+   "columns": [
+    "Region (W x H)",
+    "PEs",
+    "Full cyc/step",
+    "vs 256-square"
+   ],
+   "rows": [
+    [
+     "128 x 256",
+     "32,768",
+     "15,647",
+     "-0.3%"
+    ],
+    [
+     "256 x 128",
+     "32,768",
+     "15,718",
+     "+6.6%"
+    ],
+    [
+     "256 x 256 (published)",
+     "65,536",
+     "14,719",
+     "0"
+    ],
+    [
+     "512 x 128",
+     "65,536",
+     "16,923",
+     "+20%"
+    ],
+    [
+     "512 x 512",
+     "262,144",
+     "17,787",
+     "+22%"
+    ]
+   ],
+   "weights": [
+    1.4,
+    0.9,
+    1.1,
+    1.0
+   ],
+   "notes": "Round 12, subagent meshrt-9b-region-profile; analyses/2026-09-04-meshrt-9b-region-profile/README.md carries every wsjob id. Commit 288fe8ae; reproduces the published 256-square numbers to 0.0001%; negative gate — illegal meshes are rejected by the generator's divisibility checks. Width is the expensive axis (the hidden tile and KV are sharded along X in MeshRT, so a wider mesh lengthens the chains a batch-1 decode is latency-bound on); height is nearly free. The floor on stage size is per-PE SRAM, not time. 512-square is slower than 256-square at batch 1 but wins 37% at batch 16. A small TSC probe also split the layer: mixer/attention 69-77%, FFN 23-31%, with a ~1,450-cycle per-step floor at every region size. This is the flat-time evidence every later thin-stage prediction leaned on — and it is a 9B kernel, not the 4B."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 13",
+   "title": "A block row is one serial resource: ATTN and FFN alternate per layer, so they cannot hold different tokens",
+   "subtitle": "One PE per block stamps its own TSC at the per-layer boundaries; bursts leave through new routing-only collector streams, so no existing data path is touched. Row 0, steady state over the last 512 of 4,096 steps at about 8K context. Measured device TSC.",
+   "columns": [
+    "Quantity (row 0)",
+    "Cycles",
+    "What it means"
+   ],
+   "rows": [
+    [
+     "T_attn — 9 ATTN layers",
+     "127,301",
+     "14,145 per layer, 72% of a layer"
+    ],
+    [
+     "T_ffn — 9 FFN layers",
+     "50,238",
+     "5,582 per layer"
+    ],
+    [
+     "Waits: ATTN on FFN / FFN on ATTN",
+     "44,981 / 113,313",
+     "The roles alternate every layer"
+    ],
+    [
+     "Row-0 step period",
+     "808,995",
+     "Row busy only 21.9% of the step"
+    ],
+    [
+     "T_attn + T_ffn = row period",
+     "177,539",
+     "4,788 tok/s forced, at 0.85 GHz"
+    ]
+   ],
+   "weights": [
+    1.5,
+    0.9,
+    1.6
+   ],
+   "notes": "Round 13, subagent 4b-block-tsc; analyses/2026-09-04-4b-block-tsc/README.md. Job wsjob-tp5yqatuwy2mfzoubusxnc, configs device_2x4_8k + device_prefill4k. Gates: token records byte-identical to the 09-02 run, per-token TSC -0.058%, and a negative control (stamping before the work) that collapses the block time and is rejected by the checker. The 6,677 tok/s that 0.85e9 / max(T_attn, T_ffn) would give needs ATTN and FFN as independent pipeline stages — a kernel change, not a layout change — and that was later built and measured (Round 39). Cross-check: the eight stamped blocks sum to 87.8% of the row period; the 12.2% residual is the HT head, HT tail and inter-row K-pipe, which were not stamped."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 16",
+   "title": "Decode cost is linear in context, and the device ceiling is 29,184 — the next setting will not link",
+   "subtitle": "Five device runs of the unmodified route-table decode tree at batch 1 with host-ingested prefixes, 4,096 decode steps each. The fit over the five points is 681K + 16.1 cycles per context token per step; the sixth setting tried, 30,464, fails to link on the appliance. Measured on-device TSC.",
+   "columns": [
+    "MAX_SEQ_LEN",
+    "Context during decode",
+    "Cycles/step",
+    "tok/s @0.85 GHz"
+   ],
+   "rows": [
+    [
+     "8,192 (reference)",
+     "4K -> 8K",
+     "785,826",
+     "1,082"
+    ],
+    [
+     "16,384",
+     "12K -> 16K",
+     "889,547",
+     "956"
+    ],
+    [
+     "23,040",
+     "18.7K -> 22.8K",
+     "1,029,112",
+     "826"
+    ],
+    [
+     "28,160",
+     "23.8K -> 27.9K",
+     "1,096,070",
+     "776"
+    ],
+    [
+     "29,184",
+     "24.8K -> 28.9K",
+     "1,109,064",
+     "766"
+    ]
+   ],
+   "weights": [
+    1.1,
+    1.3,
+    1.0,
+    1.0
+   ],
+   "notes": "Round 16; analyses/2026-09-04-4b-context-sweep/. Jobs in row order: wsjob-amzrrqt78wnfxoxy9blpyq (09-02), wsjob-ef9m7k5abo3xmpxkx2ox7q, wsjob-ldhubkgfqptdu82pg3l3vi, wsjob-pkugixotaderkrvmydmsui, wsjob-5faj77vfj547buzddc4mvb, wsjob-bja2eqjp3zgiv469n7tnbp. The device ceiling is 29,184 and not the locally compiled 30,464 because the appliance compiler adds a few hundred bytes of .text — the 30,464 figure is a link ceiling that was never executed. 16 cycles per context token is 15x the MeshRT 20B long-context kernel's 1.1, which Round 17 traced to instruction structure and KV layout, not hardware. Later caveat (Round 118): 29,184 was measured on an earlier tree; A compiles only to 26,112 in the current lineage and the unpatched control fails identically."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 26",
+   "title": "The ATTN:FFN ratio never inverts — ATTN grows faster with batch and is the only role that grows with context",
+   "subtitle": "Block-TSC probe rerun at batch 1, 2, 4 and 8 with context held equal at 2K, five device jobs, tokens byte-identical to unprobed runs. Fits: T_attn = 45.2K + 61.7K x b, T_ffn = 27.2K + 24.9K x b per nine-layer row. Measured device TSC; rates at 0.85 GHz.",
+   "columns": [
+    "bsz",
+    "T_attn",
+    "T_ffn",
+    "Ratio",
+    "Rows-as-stages tok/s"
+   ],
+   "rows": [
+    [
+     "1",
+     "106,645",
+     "51,964",
+     "2.05",
+     "5,358"
+    ],
+    [
+     "2",
+     "168,577",
+     "77,056",
+     "2.19",
+     "6,919"
+    ],
+    [
+     "4",
+     "292,757",
+     "127,240",
+     "2.30",
+     "8,093"
+    ],
+    [
+     "8",
+     "538,793",
+     "226,604",
+     "2.38",
+     "8,882"
+    ]
+   ],
+   "weights": [
+    0.6,
+    1.1,
+    1.1,
+    0.8,
+    1.4
+   ],
+   "notes": "Round 26, subagent 4b-block-tsc; analyses/2026-09-04-4b-block-tsc-bsz/. The FFN's 2.85x MAC count does not show: both blocks are issue-bound, ATTN grows at 6.9K cycles per layer per batch element against the FFN's 2.8K, and context adds 3.3 cycles per context token per batch element to ATTN only (FFN is flat). Ratio reaches 2.4 at (1, 8K), 2.9 at (1, 16K), 3.8 at (1, 29K). Balancing rule for the D pairing: FFN layers per shared block = round(ratio), capped at 3 by SRAM. With ATTN and FFN as independent stages the same sweep predicts 7,968 tok/s at bsz 1 and 12,617 at bsz 8 — but per Le's Round 72 correction those batch figures are multi-request aggregates and say nothing about a single request's serving rate."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 27",
+   "title": "Capacity is binding, keeping KV pays per hit, and pipelining is an operator question",
+   "subtitle": "The decoder-only lever evaluation's verdict, from replaying 32,378 de-duplicated Claude Code calls and 35,639 Mooncake requests against measured CS-3 rates and modelled keep/reload/recompute economics.",
+   "columns": [
+    "Lever",
+    "Work it touches",
+    "Value per hit",
+    "Verdict"
+   ],
+   "rows": [
+    [
+     "a — capacity 29K -> 167K",
+     "Agentic decode tokens 0.01% -> 19%; Mooncake 90% -> 100%",
+     "Precondition for lever b",
+     "Binding; ~2x short of the median agentic context"
+    ],
+    [
+     "b — keep KV across calls",
+     "99% of agentic calls, >=95% reused in 10-18 s; 37% of Mooncake",
+     "13.9 s = 61% of next-call latency; decoded-KV part <=0.13 s",
+     "High per hit, gated by a; fast recompute substitutes"
+    ],
+    [
+     "c — pipelining / batching",
+     "Concurrency p50 1 on both traces, max 7-47",
+     "Fills 4 stages in bursts; 36 or 54 never on-trace",
+     "Multi-tenant / operator question only"
+    ]
+   ],
+   "weights": [
+    1.0,
+    1.6,
+    1.6,
+    1.5
+   ],
+   "notes": "Round 27, subagent decoder-lever-value; docs/analysis/2026-09-05-decoder-only-lever-value.md and analyses/2026-09-05-decoder-lever-value/. Figures F13-F17 are this study's five panels. Assumptions that carry the verdict, as the report states them: the 4B step law is applied beyond the 29K it was measured on; reload happens at the full link rate with no overlap; the visible-output share is applied uniformly; and the 54-stage recompute rate was analytical at the time. The measured L-ladder rates (up to 47,831 tok/s) have since made the recompute substitute much stronger than this table assumes."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 28",
+   "title": "58,581 of ~105K trace rows were duplicates — the agentic decode budget is 5.8K tokens per turn, not 14.4K",
+   "subtitle": "One API call is logged as several assistant records, one per streamed content block, each repeating the same message id and usage. A selection of 5 of the 13 corrected quantities; also corrected were calls per turn (~19 -> ~12) and per-turn new prefill (24,691 -> 10,917). Every CS-3 measurement and every ratio was unaffected.",
+   "columns": [
+    "Quantity",
+    "Before",
+    "After"
+   ],
+   "rows": [
+    [
+     "Claude Code API calls",
+     "102,517",
+     "46,650"
+    ],
+    [
+     "Intra-turn gap p50 / p90",
+     "3.3 s / 22 s",
+     "10.9 s / 50 s"
+    ],
+    [
+     "Per-turn decode tokens p50 / p90",
+     "14,373 / 66,685",
+     "5,838 / 23,546"
+    ],
+    [
+     "Hidden-reasoning share of decode",
+     "89%",
+     "75%"
+    ],
+    [
+     "Median turn on CS-3 (29K curve)",
+     "26.0 s",
+     "10.5 s"
+    ]
+   ],
+   "weights": [
+    1.8,
+    1.1,
+    1.1
+   ],
+   "notes": "Round 28. Fixed in extract_claude_code_traces.py (keep the first record per message id) and decode_breakdown.py (merge a call's blocks before attributing tokens); all downstream results regenerated, pre-correction results kept in results/pre-dedup-2026-09-04/. Figures F3, F4, F5, F8, F9 and F10 are the regenerated versions. What survives unchanged: the G(C) supply/demand picture, the keep-versus-park logic (a 10.9 s gap makes keeping more clearly right than 3.3 s did), the 5% decode threshold, and every CS-3 measurement. What changes in the narrative: the per-turn decode budget of an agentic user is about 6K tokens, not 14K, so the decode-heavy argument stands on a smaller base."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 31",
+   "title": "Multi-tenant reasoning traffic is decode-heavy but not deep-context",
+   "subtitle": "Three-way comparison of the traces the argument rests on. A selection of 5 of 7 axes: incremental prefill (p50 2,107 / 1.5K / new input dominates) and idle gaps (inter-turn 308 s / intra-turn 10.9 s / 3.0 s) are omitted. Measured on each release; ServeGen reuse is an upper bound and its concurrency is derived.",
+   "columns": [
+    "Axis",
+    "ServeGen R1",
+    "Claude Code",
+    "Mooncake"
+   ],
+   "rows": [
+    [
+     "Per-request output",
+     "p50 792, p90 3,432",
+     "p50 763 per call; 5.8K per turn",
+     "p50 350, max 2,000"
+    ],
+    [
+     "Reuse length",
+     "p50 7,498 (upper bound)",
+     "context p50 ~302K, 98% re-sent",
+     "37-57% block reuse"
+    ],
+    [
+     "Output re-enters next input",
+     "Yes — 83% fully",
+     "~5% — thinking stripped",
+     "0% (toolagent)"
+    ],
+    [
+     "Fits 29K / 167K",
+     "78% / 99% of requests",
+     "0.04% / 19% of decode tokens",
+     "~90% fits 29K"
+    ],
+    [
+     "Decode-stream concurrency",
+     "26 mean / 68 peak (derived)",
+     "1 user",
+     "3.4-6.7 req/s arrivals"
+    ]
+   ],
+   "weights": [
+    1.2,
+    1.4,
+    1.4,
+    1.3
+   ],
+   "notes": "Round 31, subagent servegen-trace-study; docs/analysis/2026-09-05-servegen-reasoning-workload-first-pass.md and analyses/2026-09-05-servegen-trace-study/ (provenance.txt, clone commit d70c8b2d). Raw data stays outside the repo. Headline: a ServeGen R1 request's output is statistically almost the same as a Claude Code per-call output, but its context sits where Mooncake's does, so the 29K and 51K rungs are far more useful there than on our own trace — and that platform keeps the reasoning in context, which makes decoded KV reusable there. Caveats: reuse assumes verbatim history (13.6% of pairs partial, 3% shrink); the 1,616 conversations are an unstated selection of 57,205 and their model is unstated; concurrency comes from Little's law on a released 16 req/s slice and ignores queueing."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 34",
+   "title": "Two wafers of today's layout do not move the needle — only two wafers with the far-pool levers reach half the calls",
+   "subtitle": "Capacity rungs against how much of the agentic workload each covers. Capacity figures are measured (29K) or analytical (the rest); coverage is measured on the de-duplicated Claude Code trace.",
+   "columns": [
+    "KV capacity",
+    "What it is",
+    "Calls that fit",
+    "Decode tokens"
+   ],
+   "rows": [
+    [
+     "29,184",
+     "Today, measured on device",
+     "0.1%",
+     "0.0%"
+    ],
+    [
+     "53-58K",
+     "Two wafers, today's layer split",
+     "3.0%",
+     "1.3%"
+    ],
+    [
+     "95K",
+     "Near-pool lever",
+     "10.0%",
+     "6.5%"
+    ],
+    [
+     "167K",
+     "Far-pool lever (score wall)",
+     "24.5%",
+     "21.6%"
+    ],
+    [
+     "334K",
+     "Two wafers x far pool",
+     "54.7%",
+     "52.0%"
+    ]
+   ],
+   "weights": [
+    1.0,
+    1.7,
+    1.0,
+    1.0
+   ],
+   "notes": "Round 34. The two 'prefill lengths' this answers are different things: the increment a call prefills is small (p50 1.5K per call, 10.9K per turn), while the resident context the decode needs is large (p50 302K). So 29K is adequate for the increment and an order of magnitude short of the context. Round 35's reframing travels with this table: the 300K contexts are a frontier-model artefact, a 4B harness would be leaner and compact earlier, and on that reading 29K is roughly the operating point rather than 10x short. For ServeGen R1 and Mooncake, 29K already covers 78% and ~90%. Also struck in Round 34: a second wafer cannot be a KV farm — there is no direct wafer-to-wafer link, so a KV pool on another wafer is host DRAM with an extra hop."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 36",
+   "title": "For dense-attention models the per-wafer resident context stays 24-32K whatever the model size",
+   "subtitle": "Resident KV capacity = eta x (N x 44 GB - weights) / KV bytes per token, with eta ~ 0.13 calibrated on two independent measured anchors. A selection of 5 of 8 rows: Qwen3-8B (24K), Qwen3-30B-A3B (94K on 3 wafers) and GPT-OSS-120B (1.0M on 8 wafers) are omitted. Analytical, on measured anchors.",
+   "columns": [
+    "Model",
+    "Wafers",
+    "KV/token",
+    "Today (eta 0.13)",
+    "Per wafer"
+   ],
+   "rows": [
+    [
+     "Qwen3-4B bf16",
+     "1",
+     "144 KB",
+     "32K (measured 29K)",
+     "32K"
+    ],
+    [
+     "Qwen3.5-9B, dense attention",
+     "2",
+     "144 KB",
+     "62K",
+     "31K"
+    ],
+    [
+     "Qwen3.5-9B, 3:1 hybrid (GDN)",
+     "2",
+     "36 KB",
+     "247K",
+     "123K"
+    ],
+    [
+     "GPT-OSS-20B MXFP4",
+     "4",
+     "24 KB",
+     "863K (kernel: 900K)",
+     "216K"
+    ],
+    [
+     "Qwen3-235B-A22B bf16",
+     "12",
+     "188 KB",
+     "39K",
+     "3K"
+    ]
+   ],
+   "weights": [
+    1.6,
+    0.7,
+    0.9,
+    1.3,
+    0.9
+   ],
+   "notes": "Round 36; analyses/2026-09-05-kv-capacity-scaling/. Eta is the share of post-weight SRAM the kernel actually turns into KV, calibrated on two anchors that agree: the 4B's measured one-wafer ceiling (29,184 x 147 KB = 4.3 GB of 36 GB left, 0.12) and MeshRT's GPT-OSS-20B 900K kernel on four wafers (22 GB of 163 GB, 0.135). Three readings: adding wafers only for weights buys no depth (every wafer beyond the weight minimum adds ~40K tokens for dense Qwen); architecture dominates the ladder, with sliding-window and hybrid models holding 5-10x more context per wafer; and a model that just fits its weight minimum has almost no KV room. Caveats: eta is a two-point calibration, not a fit; KV bytes per token are from published architectures (Qwen3.5-9B's hybrid structure must be verified per checkpoint); pool levers multiply every row by 3-5x but are not shown feasible for MeshRT layouts."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 37",
+   "title": "Forced prefill runs at exactly one token per row period — there is no pipelining penalty at four stages",
+   "subtitle": "Forced mode implemented as a runtime flag plus a baked token list on the HT head; the same compiled image serves both modes. Four device jobs, about 16 minutes of CS-3 time, all gates pass. Measured on-device TSC; rates at 0.85 GHz.",
+   "columns": [
+    "Context",
+    "Free (serial)",
+    "Forced",
+    "Cycles/token",
+    "Measured / predicted"
+   ],
+   "rows": [
+    [
+     "2K",
+     "1,263 tok/s",
+     "5,674 tok/s",
+     "149,811",
+     "1.044"
+    ],
+    [
+     "8K",
+     "1,081 tok/s",
+     "5,108 tok/s",
+     "166,407",
+     "1.032"
+    ]
+   ],
+   "weights": [
+    0.7,
+    1.1,
+    1.1,
+    1.1,
+    1.2
+   ],
+   "notes": "Round 37, subagent 4b-thin-stage-forced; demo/qwen3-4b-thin-stage/ (step1-forced-design.md, step1-README.md, step1-forced.patch, results/step1_results.json). Jobs wsjob-d46iukzpnbdb2jp3obmum3 and wsjob-f4pbfv3uetmpyzcf87gi2y (2K), wsjob-9t9d8hgzjxhdnt2vzzufrx and wsjob-9sdgqjhg5nin2udesnjrcz (8K), all exit 0. The 1.7B pipeline's 0.82 bubble discount does not apply here: inter-row hops and the head's embedding gather hide inside the ATTN-bound row period. The small surplus over prediction is the one legal cross-token overlap the row allows; removing it gives 1.007 and 0.998. Gates: sim forced-vs-free byte-identical, sim negative control diverges at exactly the expected step, device forced records byte-identical to same-tree free references at both contexts, and the free reference byte-identical back to the 09-02 pristine run."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Rounds 39, 44",
+   "title": "ATTN and FFN as independent stages: 8,360 tok/s at 2K, byte-identical, 1.47x the four-stage rate",
+   "subtitle": "Eight stages, two tokens per row, period = T_attn. The verify build computes top-k every step for the byte gate; the production build runs the logits once per round and streams the head's tokens. Production equals verify to within 0.03%, so the tail was not binding at eight stages. Measured on-device TSC; rates at 0.85 GHz.",
+   "columns": [
+    "Build",
+    "Context",
+    "Cycles/token",
+    "tok/s @0.85 GHz",
+    "Gate"
+   ],
+   "rows": [
+    [
+     "Verify (tail computes top-k)",
+     "2K",
+     "101,723",
+     "8,356",
+     "Byte-identical to free"
+    ],
+    [
+     "Production (tail skips logits)",
+     "2K",
+     "101,670",
+     "8,360",
+     "Final record equal"
+    ],
+    [
+     "Verify",
+     "8K",
+     "118,550",
+     "7,170",
+     "Byte-identical to free"
+    ],
+    [
+     "Production",
+     "8K",
+     "118,554",
+     "7,170",
+     "Final record equal"
+    ]
+   ],
+   "weights": [
+    1.5,
+    0.7,
+    1.0,
+    1.1,
+    1.3
+   ],
+   "notes": "Rounds 39 and 44, subagent 4b-thin-stage-forced. Jobs wsjob-lhgcurbqytb7crgetkhbwk and wsjob-dpgl8fsv9fmdhutvkbqp92 (Round 39); wsjob-3ef5h5eql38sxxfe2zazre, wsjob-krjgzzijgtatakhqm9v5gn, wsjob-vdexixxz6bdsvfmvequom3, wsjob-u2yb3psg6yfakcqmycywjb (Round 44). The 4 -> 8 gain is T_row / T_attn = 1.47 at 2K and 1.40 at 8K, exactly the ATTN-bound period the batch sweep predicted; the FFN stage idles 51% to 63% of every period, which is what layout D's pairing or FFN-at-batch-b would recover. Round 38's corruption on the first attempt was a latent race in the HT tail (the top-k X-merge repaints shared reduce colours, which is safe at 150K-cycle spacing but not at 12K), fixed with a Y-phase admission gate. Two device-only lessons recorded: a raw-int colour parameter leaves the router entry disabled, and runtime repaints argued race-free by causality are unsafe at device scale."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 45",
+   "title": "Where a layer's cycles go: softmax dominates and grows fastest with both context and batch",
+   "subtitle": "Phase-TSC probe on today's 256-square blocks, seven device runs, all four byte-identity gates pass. Columns are a selection from the full ten-phase table (see F21); rows are 5 of the 7 runs — bsz 2 at 2K (softmax 7,185) and bsz 4 at 2K (13,784) are omitted. Measured device TSC, cycles per layer per step, row 0.",
+   "columns": [
+    "Run (bsz, context)",
+    "Softmax",
+    "ATTN layer",
+    "FFN layer",
+    "Softmax share"
+   ],
+   "rows": [
+    [
+     "bsz 1, 2K",
+     "3,808",
+     "11,886",
+     "5,802",
+     "32%"
+    ],
+    [
+     "bsz 8, 2K",
+     "27,241",
+     "59,807",
+     "25,182",
+     "46%"
+    ],
+    [
+     "bsz 1, 8K",
+     "5,211",
+     "14,176",
+     "5,797",
+     "37%"
+    ],
+    [
+     "bsz 2, 8K",
+     "9,938",
+     "23,301",
+     "8,580",
+     "43%"
+    ],
+    [
+     "bsz 1, 23K",
+     "9,984",
+     "20,931",
+     "5,814",
+     "48%"
+    ]
+   ],
+   "weights": [
+    1.4,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "notes": "Round 45, subagent 4b-block-tsc; analyses/2026-09-05-4b-phase-tsc/ with phase-tsc.patch and results/phase_tsc.json. Softmax carries 69% of the context slope (0.303 of 0.439 cycles per context token per layer; score 20%, P.V 11%, every other phase zero) and 49% of the ATTN batch slope. The three KV-walking phases give 15.8 cycles per context token per step over 36 layers, independently reproducing the context sweep's 16.07. FFN is flat in context. A1 | A2 is not near-even: 3,452 against 8,434 at 2K (1 : 2.4), 1 : 4.5 at 23K, because A2 keeps the softmax. Caveats: 29K could not be probed (960 B free on the ATTN PE), only row 0 is instrumented, and the SiLU phase runs out of D-cache and reads ~10% high."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 45",
+   "title": "Cutting a layer five ways would raise the stage rate 1.3-1.8x — derived from measured phases, not measured",
+   "subtitle": "Each cut's pacing stage is the longest contiguous run of measured phase slots; throughput is 0.85e9 divided by that. Derived, under three assumptions the one-layer testbed exists to replace: each cut stage becomes its own PE region, per-phase time is unchanged, hand-offs are free, and there are enough PEs.",
+   "columns": [
+    "Run",
+    "ATTN+FFN (2/layer)",
+    "A1 | A2 | FFN (3)",
+    "5-way cut"
+   ],
+   "rows": [
+    [
+     "bsz 1, 2K",
+     "11,886 cyc -> 71.5K tok/s",
+     "8,434 -> 100.8K",
+     "6,656 -> 127.7K"
+    ],
+    [
+     "bsz 8, 2K",
+     "59,807 -> 14.2K x b",
+     "43,171 -> 19.7K",
+     "39,740 -> 21.4K"
+    ],
+    [
+     "bsz 1, 8K",
+     "14,176 -> 60.0K",
+     "10,669 -> 79.7K",
+     "8,894 -> 95.6K"
+    ],
+    [
+     "bsz 2, 8K",
+     "23,301 -> 36.5K x b",
+     "17,974 -> 47.3K",
+     "15,929 -> 53.4K"
+    ],
+    [
+     "bsz 1, 23K",
+     "20,931 -> 40.6K",
+     "17,445 -> 48.7K",
+     "15,659 -> 54.3K"
+    ]
+   ],
+   "weights": [
+    1.0,
+    1.5,
+    1.3,
+    1.3
+   ],
+   "notes": "Round 45. The five-way cut is A1 | scan | O-proj+residual | FFN up/gate | FFN down = 180 stages for the whole model — the finest cut whose boundaries are already real control-flow boundaries, needing no numerical restructuring. Rates at 0.85 GHz; 'x b' marks multi-request batch rates, which per Round 72 say nothing about a single request. Chunking the scan saturates at k = 2 because its fixed collective cost binds. The subagent's own recommendation was that the highest-payoff move is not a cut but a cheaper softmax — which Round 49 then tested and found the obvious fusion makes things worse. Caveats: 256-square block times, which transfer to smaller blocks only under the flat-time assumption; at 180 stages the per-layer blocks would be 3-4K PEs each, where the SRAM accounting has not been done, so this is a period statement and not a fit statement."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 48",
+   "title": "At full block size the phase-sum model predicts the measured stage period to 0.2%",
+   "subtitle": "Cut (i) — ATTN | FFN with one layer per block on today's full squares — needed no kernel change: at one layer per block the serial kernel is already a two-stage pipeline. Six device jobs, all gates pass, verify records byte-identical to same-tree free references. Measured on-device TSC; rates at 0.85 GHz.",
+   "columns": [
+    "Context",
+    "Cycles/token",
+    "tok/s @0.85 GHz",
+    "Derived",
+    "Measured / derived"
+   ],
+   "rows": [
+    [
+     "2K",
+     "11,866",
+     "71,633",
+     "11,886 cyc",
+     "1.002"
+    ],
+    [
+     "8K",
+     "13,705",
+     "62,021",
+     "14,176 cyc",
+     "1.034"
+    ]
+   ],
+   "weights": [
+    0.7,
+    1.1,
+    1.2,
+    1.0,
+    1.2
+   ],
+   "notes": "Round 48, subagent 4b-thin-stage-forced; demo/qwen3-4b-thin-stage/one-layer-cuts/cut1-README.md and results/cut1_results.json. Hand-off overhead is within noise (ATTN stage busy 11,492 against a period of 12,053 at 2K); the A-multicast hand-off and the head feed hide completely, and the head keeps up at this rate. The 8K row's 1.034 is a TSC-window context-average effect through the softmax slope. Bonus result: the full HT tail was isolated as a stage for the first time at 35.8K cycles per token at TOP_K 4 and about 120-126K at TOP_K 20 — which is exactly what the production tail-skip buys, since no stage period below those numbers could otherwise show. This is a rig, not a model: one layer on half the wafer."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 49",
+   "title": "Exact softmax fusion is byte-identical and 8-14% slower — the lever is DSD overhead, not fusion",
+   "subtitle": "Folding the sum and cast passes into the exp pass removes exactly what it targets and loses two to three times that inside the exp loop. Ten device jobs, all gates pass; every exact variant is byte-identical on device. Measured device TSC, softmax cycles per layer per step.",
+   "columns": [
+    "Config",
+    "Baseline",
+    "Fused (a2)",
+    "Change"
+   ],
+   "rows": [
+    [
+     "2K, bsz 1",
+     "4,103",
+     "4,581",
+     "+11.7%"
+    ],
+    [
+     "8K, bsz 1",
+     "5,502",
+     "5,958",
+     "+8.3%"
+    ],
+    [
+     "23K, bsz 1",
+     "10,246",
+     "11,030",
+     "+7.6%"
+    ],
+    [
+     "23K, bsz 1, variant (c)",
+     "10,246",
+     "10,781",
+     "+5.2%"
+    ],
+    [
+     "2K, bsz 8",
+     "29,342",
+     "33,360",
+     "+13.7%"
+    ]
+   ],
+   "weights": [
+    1.4,
+    1.0,
+    1.0,
+    0.9
+   ],
+   "notes": "Round 49, subagent 4b-block-tsc; analyses/2026-09-05-4b-softmax-fusion/ (anatomy.md written before any code, softmax-fusion-a.patch, results/{anatomy,timing}.json, gates.txt). Every exact variant is byte-identical on device at all four configs, including 23K where a slot spans two tiles — the only case that changes the reduction decomposition. The fusion removes the sum (1,152 -> 24) and cast (170 -> 13) at 23K and loses more inside the exp loop; the slopes get worse too. Variant (c) shows the mechanism from the other side: removing three @set_dsd_length per tile and inlining the slot function recovers about half the loss without touching arithmetic. So the real levers are fewer and longer DSD operations, the ~2,000 cycles per layer of fixed collective cost, and a cheaper exp kernel. Caveat: (c)'s guards also fuse, so it measures fusion plus de-overhead, not de-overhead alone. The online/flash variant (b) was never built."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 59",
+   "title": "Compiled numbers, not tables: height 16 does not compile, and height 32 fits with 16-20 KB per PE to spare",
+   "subtitle": "Real-geometry compile-only builds of the 2K cut (i) geometry at heights 16 and 32 with cs-readelf memory reports, run after Le's rule that only compiled SRAM numbers count. Compiled (link-time), per PE of a 48 KB bank, uniform within regions.",
+   "columns": [
+    "Region",
+    "KB/PE at height 32",
+    "Headroom"
+   ],
+   "rows": [
+    [
+     "ATTN strip (256 x 32)",
+     "32.2",
+     "15.8 KB"
+    ],
+    [
+     "FFN strip (256 x 32)",
+     "27.8",
+     "20.2 KB"
+    ],
+    [
+     "HT tail (binding region)",
+     "42.8",
+     "5.2 KB"
+    ],
+    [
+     "HT head",
+     "27.3",
+     "20.7 KB"
+    ],
+    [
+     "Inter-row strips",
+     "4.0",
+     "44 KB"
+    ]
+   ],
+   "weights": [
+    1.6,
+    1.2,
+    1.0
+   ],
+   "notes": "Round 59. Height 16 is rejected by the compiler outright: the KV-cache DSD stride is a signed 8-bit field, so positions per PE caps at 127, and a 16-row strip at 2K context would hold 128 — a kernel constraint no hand table had, surfaced only by compiling. That gives a hard floor of 32 rows at 2K and 128 rows at 8K for any KV-holding stage. This is the round that established the working rule for the rest of the program: never hand-derive per-PE SRAM, and ship every runnable deployment with its compiled breakdown next to its wsjob id. The earlier sram_fit.py tables (Rounds 33, 52, 53) were downgraded to first screens, and their FFN activation model was wrong besides — the FFN's inner dimension is width-sharded, not Y-sharded."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 62",
+   "title": "The stall is in A1's first half — the fused QKV column all-reduce, not the queue-7 band broadcast",
+   "subtitle": "A split probe on the compile-time-queue-7 tree, one device job, two minutes. Binding queue 7 at compile time changed 128,131 cycles per token to 128,139, so the raw-rebind theory is dead. Measured device probe; the six-step cycle is intact (four slow steps, one at 6.2K, one at 143.2K).",
+   "columns": [
+    "A1 half",
+    "What it does",
+    "Slow steps",
+    "Fast step"
+   ],
+   "rows": [
+    [
+     "First",
+     "RMSNorm, Q/K/V matvecs, QKV column all-reduce (256 rows)",
+     "151.5K cycles (median)",
+     "6.2K"
+    ],
+    [
+     "Second",
+     "QK-norm band reduce (32 cols) + RoPE, on queue 7",
+     "1,856 cycles",
+     "1,856"
+    ]
+   ],
+   "weights": [
+    0.8,
+    2.2,
+    1.1,
+    0.8
+   ],
+   "notes": "Round 62, job C2Q_2K. True A1 content cost is 8,100 cycles, so about 145,000 of the 151,500 is pure waiting, and the wait sits at the rendezvous. What remains standing: the axis-3 to axis-0 route repaint at the end of the previous step racing the next step's column reduce, or another wait with a six-token period in the Y-delivery/reduce path. It must be specific to the A1 image or its timing environment, because vanilla attention runs the same collective at full speed on the same silicon (11,900 cycles for a whole layer). Also refuted: a hardware timeout — no such mechanism exists in the SDK, and the 153.7K quantum is within 2.5% of this kernel family's own stalled loop period. Stall work stopped here per Le's rule; the plain-language brief is in one-layer-cuts/cut2-status.md."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 63",
+   "title": "A 128-square block is a quarter of today's block, so it is the L = 2 rung — the equal-area L = 4 is 256 wide by 128 tall",
+   "subtitle": "Le's catch: L = 4 keeps 4 of today's 9 layers per block (4/9 of the weights), but a 128-square block is 1/4 of a 256-square one. Those do not match. Fabric use, omitted below: today 4 rows of 256; both L = 4 variants 9 x 128 = 1,154 rows, the square one using only ~400 of 762 columns. Analytical correction.",
+   "columns": [
+    "Quantity",
+    "Today (A)",
+    "128-square, one lane",
+    "256 x 128"
+   ],
+   "rows": [
+    [
+     "PEs per block",
+     "65,536",
+     "16,384 (1/4)",
+     "32,768 (1/2)"
+    ],
+    [
+     "Layers per block",
+     "9",
+     "4",
+     "4"
+    ],
+    [
+     "Weight density per PE",
+     "1x",
+     "1.78x",
+     "0.89x"
+    ],
+    [
+     "Active PEs total",
+     "524,288",
+     "294,912 (56%)",
+     "589,824 (1.13x)"
+    ],
+    [
+     "Period if per-layer time is flat",
+     "107K cycles",
+     "~48K",
+     "~48K"
+    ]
+   ],
+   "weights": [
+    1.5,
+    1.1,
+    1.4,
+    1.2
+   ],
+   "notes": "Round 63. The single-lane 128-square build is a cheap probe of the flat-versus-linear question at 128-row height, but as a deployment it idles 44% of the wafer. The equal-area L = 4 is cheaper to build than the square: it is exactly the B-prime sub-height generator at H = 128 with four layers per block and nine rows, so P_BLOCK_SIZE stays 256 and the HT band needs no decoupling from P. Its flatness even has direct evidence — the MeshRT 9B sweep measured a 128x256 region at -0.3% per layer. Corollary Le drew immediately: 128-square blocks carry about two layers, so they are the L = 2 rung, needing both the HT decoupling and a multi-lane serpentine. Do not carry the label 'L = 4 is P = 128 on one lane'."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 75",
+   "title": "At 32 rows a layer costs 1.48x the full-square time with one eighth of the PEs — 5.4x better than the linear prior",
+   "subtitle": "The first sub-height geometry ever to run on silicon: cut (i) at ATTN 32 rows | FFN 32 rows, one layer, 256-wide strips, 16,384 PEs total, 2K context. The identical geometry had wedged before the phantom-cell fix. Measured on-device TSC; rates at 0.85 GHz.",
+   "columns": [
+    "Run",
+    "Build",
+    "Cycles/token",
+    "tok/s @0.85 GHz"
+   ],
+   "rows": [
+    [
+     "RB32_free",
+     "Free reference",
+     "—",
+     "1,000 tokens in 3 min"
+    ],
+    [
+     "B1V_2K",
+     "Verify (full tail every step)",
+     "35,847",
+     "23,712 — tail-limited"
+    ],
+    [
+     "B1P_2K",
+     "Production",
+     "17,589",
+     "48,326"
+    ]
+   ],
+   "weights": [
+    1.0,
+    1.6,
+    1.1,
+    1.3
+   ],
+   "notes": "Round 75, jobs 18-20 of 20. Per-strip busy from the row-0 probe on the production build: ATTN 32-row 17,520 cycles (sets the period), FFN 32-row 13,768 (about 21% headroom). Gates: deterministic, on-chip top-k invariants hold on all 1,000 steps, and the numpy-oracle bounded-divergence verdict followed as an addendum (zero defects). Compiled SRAM in out_B1V_2K/msize.txt and out_B1P_2K/msize.txt, appliance compile. The linear prior said ATTN at 32 rows would cost 8 x 11,886 = 95K cycles; measured 17.5K. As a power law between the two points, T scales as PEs^-alpha with alpha about 0.19 for ATTN and 0.41 for FFN. Throughput per allocated PE goes from 0.482 on the full-square rig to 2.60 here. This geometry only ran at all because Round 73 found phantom strip cells beyond the active height overwriting host-painted transit routes."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 77",
+   "title": "Halving a block's rows from 256 to 128 costs 3.5%, to 32 costs 48% — while per-PE efficiency rises 5.4x",
+   "subtitle": "The height ladder, four points, one layer per block, 2K context, 256-wide strips, production builds, free references clean at every height. Nine minutes of wall time for four jobs. Measured on-device TSC.",
+   "columns": [
+    "ATTN | FFN rows",
+    "PEs",
+    "Cycles/token",
+    "ATTN busy",
+    "tok/s per PE"
+   ],
+   "rows": [
+    [
+     "256 | 256 (full square)",
+     "131,072",
+     "11,866",
+     "11,886",
+     "0.482"
+    ],
+    [
+     "128 | 128",
+     "65,536",
+     "12,278",
+     "11,720",
+     "0.932"
+    ],
+    [
+     "64 | 64",
+     "32,768",
+     "13,658",
+     "13,296",
+     "1.68"
+    ],
+    [
+     "32 | 32",
+     "16,384",
+     "17,589",
+     "17,520",
+     "2.60"
+    ]
+   ],
+   "weights": [
+    1.4,
+    1.0,
+    1.1,
+    1.0,
+    1.1
+   ],
+   "notes": "Round 77, jobs 21-24. ATTN paces at every height. The FFN busy figures of the non-pacing strip include back-pressure wait, so they are upper bounds on the FFN's own cost. This is the measured answer to the flat-versus-linear question that every earlier thin-stage prediction depended on: neither, and much closer to flat. Correction landed in the same round: two lanes of 256-wide blocks do not fit — a lane is ATTN + FFN = 512 columns plus HT band and strips, about 660 of 762 — so only one lane of 256-wide blocks exists, and on that lane layers per block = H/32. Context caps at each rung (127 x H, before the stride lift) fall linearly: 32,512 / 16,256 / 8,128 / 4,064."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 77",
+   "title": "Every thin geometry is numerically sound: zero defects across 3,000 compared steps",
+   "subtitle": "The oracle gate for the height ladder. Byte-identity is impossible at sub-height because a strip's height changes the order in which column-wise reductions add partial sums, so the gate is: unordered top-k id set against an independent numpy implementation, with any differing member inside 3 bf16 ulp of the oracle's own k-th value, plus bounded value drift and determinism. Measured against a locally computed oracle.",
+   "columns": [
+    "Height",
+    "Steps",
+    "Id set identical",
+    "Within 3 ulp",
+    "Defects"
+   ],
+   "rows": [
+    [
+     "32 rows",
+     "1,000",
+     "138",
+     "862",
+     "0"
+    ],
+    [
+     "64 rows",
+     "1,000",
+     "139",
+     "861",
+     "0"
+    ],
+    [
+     "128 rows",
+     "1,000",
+     "139",
+     "861",
+     "0"
+    ]
+   ],
+   "weights": [
+    1.0,
+    0.8,
+    1.1,
+    1.1,
+    0.8
+   ],
+   "notes": "Round 77 addendum, run in-session after the subagents ran out of credits. Max relative drift 0.0047 against a 5e-2 bound. The three verdicts being near-identical is itself informative: the divergence is the model's own near-tie churn (its top logits pack within about 2 ulp), not a height-dependent numerical effect. Do not confuse this with the weak 'oracle overlap 1.000' diagnostic reported for the L = 4 and L = 2 minis — that oracle ran its own argmax chain, so the overlap measured sampling divergence rather than model error (Rounds 99, 100). The strong evidence for those layouts is the byte-identity chain: forced reproduces free, determinism across runs, bit-identical re-arm, and the production final record bitwise equal to the free reference's last step."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Rounds 81, 82",
+   "title": "L = 4 measured on the wafer: 2.08x today at 2K and 1.91x at 8K, with the flat-per-layer prior holding to 0.5%",
+   "subtitle": "The first full-model thin-stage deployment on silicon: 9 rows of ATTN 256x128 plus FFN 256x128, 4 layers per block, 18 stages, one lane, odd-row serpentine, funnel column. Production forced prefill. Measured on-device TSC; rates at 0.85 GHz.",
+   "columns": [
+    "Context",
+    "Cycles/token",
+    "tok/s @0.85 GHz",
+    "vs A",
+    "Per-layer ATTN / FFN"
+   ],
+   "rows": [
+    [
+     "2K",
+     "48,872",
+     "17,392",
+     "2.08x",
+     "13,018 / 6,024"
+    ],
+    [
+     "8K",
+     "62,198",
+     "13,666",
+     "1.91x",
+     "17,665 / 6,027"
+    ]
+   ],
+   "weights": [
+    0.8,
+    1.1,
+    1.2,
+    0.8,
+    1.3
+   ],
+   "notes": "Rounds 81-82, subagent 4b-l4-p128; demo/qwen3-4b-thin-stage/l4/. Jobs wsjob-mpxy5ilsmz35mmbxwtfvba (L4F_2K), wsjob-2ajwwpp4wqbivmwfdzsrfa (L4P_2K), wsjob-dkfhxgqn5q5huyneetpx3h (L4F_8K), wsjob-2txoxftwlnocoeqyeg65j9 (L4P_8K); appliance compiles wsjob-lrgvjhemkezd5h3mzqcx6f and wsjob-ftfwkwp9nshx5tphpascqt with msize. The B-prime ladder predicted 4 x 12,278 = 49,112 cycles; measured 48,872, i.e. 0.995x. Gate: the production final record's args and vals are bitwise identical to the free reference's last step (the sampled id differs only by PRNG stream position, per the production contract); free reference 1,000/1,000 steps. Per-layer time stays near flat when the block halves in height with four layers banked (+9.9% ATTN, +4.3% FFN), which answers the multi-layer weight-bank question: no penalty is visible at the pipeline level. Compiled per-PE SRAM at 8K: ATTN 35.7 KB, FFN 27.8, head 27.4, tail 44.8 (binding). Context slope 2K -> 8K is 2.2 cycles per context token, against vanilla A's 2.8."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 84",
+   "title": "L = 2 lands within 0.1% of the ladder prediction: 27,348 cycles per token, 3.72x today",
+   "subtitle": "One lane, 256x64 blocks, 2 layers per block, 18 rows, 36 stages — the same tree at H_ROWS = 64 with an even row count, so no odd-row return. Measured on-device TSC; rates at 0.85 GHz.",
+   "columns": [
+    "Run",
+    "wsjob",
+    "Result"
+   ],
+   "rows": [
+    [
+     "Ladder prediction (2 x 13,658)",
+     "—",
+     "27,316 cycles/token"
+    ],
+    [
+     "L2F_2K free reference",
+     "wsjob-anlkis2hlrjgrl3dkvumjg",
+     "1,000/1,000 steps; 852,657 cyc/token autoregressive"
+    ],
+    [
+     "L2P_2K production forced",
+     "wsjob-y6j5dsywfuoutq7yrsequv",
+     "27,348 cyc/token = 31,081 tok/s"
+    ]
+   ],
+   "weights": [
+    1.3,
+    1.6,
+    1.9
+   ],
+   "notes": "Round 84, run by the main session after both subagents hit usage credits one step from the device. Measured / predicted = 1.001. Gate PASS, checked on the pulled records: the production final record's topk_args and topk_vals are bitwise identical to the free reference's last step, only the sampled id differs by PRNG stream position. Compile job L2C_2K wsjob-xtdmieztfmyv82dd4mukcp with msize: HT tail 43.4 KB (binding, unchanged vanilla), block role A 32.0, role B 27.9, head 27.3, funnels 11.2 and 10.0, strips ~4.3. Two independent rungs now confirm that the deployable period is the block's one-layer time times the layers per block, with no multi-layer or extra-stage penalty. The row-0 probe's ATTN window (17,132) exceeds the 64-row ladder point by 29% while the token period matches to 0.1% — the extra is inter-stage waiting in a 36-stage free run, not work."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 85",
+   "title": "The whole ladder fits: even 72 stages leaves 15 KB per PE spare — the constraint is context, not SRAM",
+   "subtitle": "Settled by compiling it rather than arguing from arithmetic. Compiled per-PE maxima by fabric region, of a 48 KB bank, from CS-3 compile jobs. Inter-row strips, omitted below, are 4.3 KB/PE at every rung. Compiled (link-time), appliance toolchain.",
+   "columns": [
+    "Region",
+    "L = 1",
+    "L = 2",
+    "L = 4"
+   ],
+   "rows": [
+    [
+     "HT tail (binding, unchanged vanilla)",
+     "43.4",
+     "43.4",
+     "43.4"
+    ],
+    [
+     "Block role A (ATTN)",
+     "33.1",
+     "32.0",
+     "31.2"
+    ],
+    [
+     "Block role B (FFN)",
+     "28.2",
+     "27.9",
+     "27.8"
+    ],
+    [
+     "HT head",
+     "27.3",
+     "27.3",
+     "27.3"
+    ],
+    [
+     "Funnels",
+     "10.9 / 10.0",
+     "11.2 / 10.0",
+     "~10.5"
+    ]
+   ],
+   "weights": [
+    1.9,
+    0.9,
+    0.9,
+    0.9
+   ],
+   "notes": "Round 85; L1C_2K wsjob-q57sbtxnbco3tdj3nsxfsr, exit 0, about 2 minutes. The ATTN block grows only about 0.6 KB per halving of height (31.2 -> 32.0 -> 33.1 from L = 4 to L = 1), because weights and KV per PE are set by total active area — the same 589,824 PEs at every rung — and only the per-token buffers move. Geometry is unchanged too: 36 x 32 = 1,152 rows, exactly what L = 4 (9 x 128) and L = 2 (18 x 64) use on the same lane; only the KV staircase widens from 18 to 36 columns. The constraint on L = 1 at the time was the i8 KV stride: 127 x 32 = 4,064 tokens. That is what made the ten-line stride lift the highest-value next change, and it converted L = 1 from a 4K-context curiosity into a real rung (ceiling 12,032 after the lift)."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 86",
+   "title": "Four rungs measured on silicon: the L axis does not create throughput, it converts context into stages",
+   "subtitle": "The deployable L ladder, one wafer, single request, forced prefill, 2K context, all four rungs measured on the device. Context caps are the pre-stride-lift figures (127 x block rows); after the lift they become compiled SRAM and stop halving. Measured on-device TSC; rates at 0.85 GHz.",
+   "columns": [
+    "Layout",
+    "Stages",
+    "Cycles/token",
+    "tok/s @0.85 GHz",
+    "Context cap (pre-lift)"
+   ],
+   "rows": [
+    [
+     "A: 4 rows x 256-square, 9 layers",
+     "8",
+     "101,670",
+     "8,360",
+     "29,184"
+    ],
+    [
+     "L = 4: 9 rows x 256 x 128",
+     "18",
+     "48,872",
+     "17,392",
+     "16,256"
+    ],
+    [
+     "L = 2: 18 rows x 256 x 64",
+     "36",
+     "27,348",
+     "31,081",
+     "8,128"
+    ],
+    [
+     "L = 1: 36 rows x 256 x 32",
+     "72",
+     "17,771",
+     "47,831",
+     "4,064"
+    ]
+   ],
+   "weights": [
+    1.7,
+    0.7,
+    1.0,
+    1.1,
+    1.1
+   ],
+   "notes": "Round 86; L1F_2K wsjob-dtgodgumspm3uepbkh8x9z and L1P_2K wsjob-gmxdh9vcsu8xwuyimxkowe close the ladder (measured / predicted from the 32|32 rig = 1.010). Gate PASS on every rung: the production final record's topk_args and topk_vals bitwise identical to the free reference's last step. Le's reading, and the mechanism behind it: for a fixed context the KV a PE holds is context divided by block height, so halving the height doubles per-PE KV — which is why the context column collapses linearly and the tok/s x context product barely moves (215M / 249M / 223M / 172M). Thinning L is a benchmark axis, not a deployment axis. The sustainable axis is splitting the operations, because within a layer only the score/scan step holds KV, so cut (iii) can multiply stages while leaving the KV-holding stage its own geometry."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 89",
+   "title": "Cut (iii) in place is worth 1.71x at nearly today's context ceiling; cut (ii) only 1.35x",
+   "subtitle": "The operation cuts placed inside today's allocation — one row is still two 256-square blocks carrying nine layers, cut into horizontal strips whose heights balance the stages. Predicted, from measured 256-square phase times and the measured height-scaling curve. Neither in-place cut was built.",
+   "columns": [
+    "Layout",
+    "Strips (west | east)",
+    "Pacing stage",
+    "tok/s @0.85 GHz",
+    "Context cap"
+   ],
+   "rows": [
+    [
+     "Today, cut (i)",
+     "ATTN 256 | FFN 256",
+     "ATTN 11,886",
+     "8,360 measured",
+     "29,184 measured"
+    ],
+    [
+     "Cut (ii) in place",
+     "A1 64, A2 192 | FFN 256",
+     "A2 8,375",
+     "11,273 predicted",
+     "24,384"
+    ],
+    [
+     "Cut (iii) in place",
+     "A1 64, scan 192 | O 48, F1 128, F2 80",
+     "scan 6,609",
+     "14,286 predicted",
+     "24,384"
+    ]
+   ],
+   "weights": [
+    1.1,
+    1.9,
+    1.0,
+    1.1,
+    0.9
+   ],
+   "notes": "Round 89, answering Le's objection that the cuts must live inside today's allocation rather than take a square each. Two things the table makes obvious: cut (ii) is worth only 1.35x because A2 keeps the softmax and the whole KV walk, so no way of dividing the ATTN square's rows makes the halves even; and cut (iii) pays because it moves the O-projection out of the KV stage and rebalances across both squares. This is also the axis that keeps context — only the scan holds KV, so only it needs height. Predicted, not measured: the phase times are measured at 256-square and the height curve is measured for whole ATTN/FFN layers, but per-phase height scaling is exactly what was never measured. The in-place cuts need the sub-height strip machinery, which is built and silicon-proven; the A1 stall must be understood or avoided by construction first."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 90",
+   "title": "Only one of cut (iii)'s five stages touches the KV cache — which is why this axis keeps context",
+   "subtitle": "The five partitions and their computations. Every boundary is a contiguous run of measured phase slots from the phase-TSC profile, so no numerical restructuring is needed. Cycles per layer are measured on a full 256-square block at 2K, batch 1.",
+   "columns": [
+    "Stage",
+    "What it owns",
+    "Phases",
+    "Cycles/layer"
+   ],
+   "rows": [
+    [
+     "A1 — project",
+     "RMSNorm; Q/K/V matvecs; column all-reduce; QK-norm; RoPE",
+     "a + b",
+     "3,453"
+    ],
+    [
+     "scan — attend (holds KV)",
+     "K/V write; score GEMV; softmax; P.V — all with their reduces",
+     "c + d + e",
+     "6,656"
+    ],
+    [
+     "O-proj — finish attention",
+     "Output projection + X reduce; residual add and norm",
+     "f + g",
+     "1,778"
+    ],
+    [
+     "F1 — expand",
+     "RMSNorm of Z; up/gate GEMVs + reduce; SiLU; SwiGLU",
+     "h + i",
+     "3,742"
+    ],
+    [
+     "F2 — contract",
+     "Down GEMV + X reduce; residual; push to next layer",
+     "j",
+     "2,060"
+    ]
+   ],
+   "weights": [
+    1.2,
+    2.4,
+    0.7,
+    0.8
+   ],
+   "notes": "Round 90. The scan is the only stage that touches the KV cache, which is the structural fact making this axis worth taking: only stage 2's geometry has to respect the context ceiling. Placed in today's footprint (F29), A1 and the scan take the west square (10,109 cycles of work) and O-proj, F1 and F2 the east (7,580), so the west carries more and shifting that balance would need the width axis. Why the cuts run across rows: a row index carries the hidden-dimension shard and the KV positions, a column index carries the attention/feature dimension, the eight KV-head bands and the FFN inner dimension — so a horizontal cut spends context and a vertical cut spends weight memory. Horizontal was chosen because its machinery exists."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 92",
+   "title": "The FFN gives up half its rows for 4.3% and is never the pacing stage at any height",
+   "subtitle": "From the B-prime height ladder, which measured FFN strips at 256, 128, 64 and 32 rows alongside ATTN. The FFN is also completely context-independent (5,802 / 5,797 / 5,814 cycles at 2K / 8K / 23K), so none of this changes with sequence length. Measured on-device TSC, cycles per layer.",
+   "columns": [
+    "FFN rows",
+    "Cycles/layer",
+    "vs full square",
+    "ATTN at same height"
+   ],
+   "rows": [
+    [
+     "256",
+     "5,802",
+     "—",
+     "11,886"
+    ],
+    [
+     "128",
+     "6,051",
+     "+4.3%",
+     "11,720"
+    ],
+    [
+     "64",
+     "6,429",
+     "+10.8%",
+     "13,296"
+    ],
+    [
+     "32",
+     "10,037",
+     "+73%",
+     "17,520"
+    ]
+   ],
+   "weights": [
+    0.9,
+    1.1,
+    1.1,
+    1.3
+   ],
+   "notes": "Round 92, answering Le's question of whether shrinking the FFN was ever measured. It was, and the FFN still finishes in about half the ATTN stage's time at every height. This is what makes vertical role stacking the robust version of 'spend area on context': attention area is only free to give up at short context (halving rows is -1.4% at 2K but +34% at 8K, because the per-PE KV walk is context divided by rows), whereas FFN area is free to give up at any context. So the right move is not to shrink compute uniformly and store more; it is to take from the FFN and give to attention."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 92",
+   "title": "20.2 KB per PE sits idle in every FFN square — more capacity than the entire context we serve today",
+   "subtitle": "The FFN block's compiled SRAM is 27.8 KB of 48 per PE and does not grow with context (identical at 2K and 8K). Compiled SRAM (measured) plus arithmetic; the capacity is real but stranded without a streaming mechanism.",
+   "columns": [
+    "Quantity",
+    "Value"
+   ],
+   "rows": [
+    [
+     "Idle FFN SRAM (262,144 PEs x 20.2 KB)",
+     "5.42 GB"
+    ],
+    [
+     "KV for the whole model, per token",
+     "144 KB"
+    ],
+    [
+     "Tokens of KV that idle SRAM could hold",
+     "~36,800"
+    ],
+    [
+     "Today's measured on-chip context",
+     "29,184 (4.30 GB)"
+    ]
+   ],
+   "weights": [
+    2.2,
+    1.0
+   ],
+   "notes": "Round 92, Le's storage-PE idea. The catch, stated precisely: the scan stage reads the whole KV every step, so KV parked on FFN PEs is only useful if it can be delivered at the rate the scan consumes it — that is the streamed-ingress / chunked-score lever (backlog C2, C3), not a placement change. Parking it without that lever strands it. Three variants separate cleanly: shrink FFN rows and give them to attention is buildable now (vertical stacking, and it raises the context cap directly); change the block aspect at fixed area needs the width axis, which is not built; and idle FFN SRAM as a KV store is the real prize but is gated on the streaming lever, which the peer session 4b-layout-kv-stream owns."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 98",
+   "title": "Compiled: at 128 attention rows the context ceiling really is the stride field, not SRAM",
+   "subtitle": "Appliance compile of the vertical-stack real config — one block column, six bands alternating ATTN 256x128 and FFN 256x64, three layers, 216,200 PEs. Compile job wsjob-fbzg6xly3yqk3lom4buuob, 12.6 s, cslc 1.13.2. West and east strips, omitted below, are 4.2 KB/PE. Compiled per-PE maxima of a 48 KB bank.",
+   "columns": [
+    "Region",
+    "KB/PE of 48",
+    "PEs"
+   ],
+   "rows": [
+    [
+     "HT tail (unchanged, binding)",
+     "43.4",
+     "32,768"
+    ],
+    [
+     "HT head (unchanged)",
+     "27.3",
+     "32,768"
+    ],
+    [
+     "ATTN band, 256 x 128, one layer",
+     "25.5",
+     "32,768 each"
+    ],
+    [
+     "FFN band, 256 x 64, one layer",
+     "19.4",
+     "16,384 each"
+    ],
+    [
+     "Funnels (scatter / gather)",
+     "11.2 / 10.2",
+     "256 each"
+    ]
+   ],
+   "weights": [
+    1.8,
+    1.0,
+    1.0
+   ],
+   "notes": "Round 98, subagent 4b-vstack-opus. The number that makes the point: the attention band's KV is only 256 bytes per PE at 2K here (one layer, four KV columns, sixteen cache slots), so taking that band to the i8 stride ceiling of 127 slots per PE — a 16,256-token context — adds under 2 KB per PE and lands the band around 27 KB of 48. The FFN rows that attention absorbed are what bought it. That is the vertical-stacking thesis confirmed on compiled numbers, and it sharpened the case for the stride lift: remove that one 8-bit field and this geometry has roughly 20 KB per PE of headroom left to spend on context. Beyond buildability, this compile also confirmed the appliance toolchain accepts the new CSL including the raw-bit-pattern round header, which until then had only run on the local 2.10 toolchain."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 104",
+   "title": "Standing a block in a column of its own costs its compute nothing — stacking's whole price is one strip hop",
+   "subtitle": "Vertical role stacking on silicon: one block column, six bands alternating ATTN 256x128 and FFN 256x64, 576 rows, one lane, three layers, 2K context. Production forced, block-TSC probe. Measured on-device TSC.",
+   "columns": [
+    "Quantity",
+    "Measured",
+    "Height-ladder point",
+    "Delta"
+   ],
+   "rows": [
+    [
+     "Attention stage's own work, 256 x 128",
+     "11,568",
+     "11,720",
+     "-1.3%"
+    ],
+    [
+     "Token period",
+     "12,202",
+     "pacing stage 11,720",
+     "+4.1%"
+    ],
+    [
+     "FFN stage, 256 x 64",
+     "7,312",
+     "6,429",
+     "+13.7%"
+    ],
+    [
+     "Rig throughput at 0.85 GHz",
+     "69,661 tok/s",
+     "—",
+     "rig, not a deployment"
+    ]
+   ],
+   "weights": [
+    1.7,
+    1.1,
+    1.2,
+    1.0
+   ],
+   "notes": "Round 104, subagent 4b-vstack-opus; demo/qwen3-4b-thin-stage/vstack/status.md. Jobs VSF_2K wsjob-2p9ugtzgnk4cak6dtlt9qv (free reference, 1,000/1,000 steps, both probe streams drained) and VSP_2K wsjob-p2cjfcwwtsuf9xwy9vveb7 (production; final-record top-k args and values bitwise equal to the free reference's last step). The 482-cycle period premium is the mechanism's whole price: stacking replaces attention's cheap intra-row multicast with a full K-pipe strip hop, and the FFN's +13.7% is the same hop from the other side. It does not bind — the FFN still finishes in under two thirds of the pacing stage. Cost: 3 of 6 device jobs, one of them wedged on a probe bug (a probe lane must never be the collector row's westmost cell) and cancelled with no data. Provenance note: the device numbers were produced by the tree before an inert route install was reverted; the equivalence was settled by a byte-for-byte records comparison at mini scale rather than by spending another device job."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 110",
+   "title": "Side by side, measured: the L ladder trades context for throughput at a near-constant product (1 of 2)",
+   "subtitle": "Equal wafer area (589,824 PEs), one wafer, one request, 2K context, forced prefill. All four rows measured on the device. Context caps are the pre-stride-lift figures (127 x block rows). The stacked projections are on the next slide.",
+   "columns": [
+    "Layout",
+    "Stages",
+    "Cycles/token",
+    "tok/s @0.85 GHz",
+    "Context cap"
+   ],
+   "rows": [
+    [
+     "Side by side, H = 256 (A)",
+     "8",
+     "101,670",
+     "8,360",
+     "29,184"
+    ],
+    [
+     "Side by side, H = 128 (L = 4)",
+     "18",
+     "48,872",
+     "17,392",
+     "16,256"
+    ],
+    [
+     "Side by side, H = 64 (L = 2)",
+     "36",
+     "27,348",
+     "31,081",
+     "8,128"
+    ],
+    [
+     "Side by side, H = 32 (L = 1)",
+     "72",
+     "17,771",
+     "47,831",
+     "4,064"
+    ]
+   ],
+   "weights": [
+    1.7,
+    0.7,
+    1.2,
+    1.1,
+    0.9
+   ],
+   "notes": "Round 110. This is the measured half of the comparison; the projected half is the next slide. Read the pair by context, not by throughput: at the same context ceiling stacking wins 1.34x on throughput, at roughly the same throughput it wins 1.5x on context, and at equal heights it buys nothing and costs 4.1%. Side by side forces the two roles to the same height because they share a row band, so it is structurally obliged to give the FFN rows it does not need."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 110",
+   "title": "Stacked two lanes, projected: 1.34x at equal context, and nothing at equal heights (2 of 2)",
+   "subtitle": "The same equal-area comparison for stacked layouts. These rows are projections, not measurements: they apply the measured 4.1% hop premium to the measured height ladder. A one-lane stacked row is omitted deliberately — it uses half the columns (~73,203 cycles, ~11,612 tok/s) and is the trap the design note warned about.",
+   "columns": [
+    "Layout",
+    "Stages",
+    "Cycles/token",
+    "tok/s @0.85 GHz",
+    "Context cap"
+   ],
+   "rows": [
+    [
+     "Stacked 2 lanes, ATTN 128 | FFN 64",
+     "24",
+     "~36,606",
+     "~23,220",
+     "16,256"
+    ],
+    [
+     "Stacked 2 lanes, ATTN 96 | FFN 32",
+     "36",
+     "~26,042",
+     "~32,640",
+     "12,192"
+    ],
+    [
+     "Stacked 2 lanes, ATTN 32 | FFN 32",
+     "72",
+     "~18,238",
+     "~46,606",
+     "4,064"
+    ]
+   ],
+   "weights": [
+    1.7,
+    0.7,
+    1.2,
+    1.1,
+    0.9
+   ],
+   "notes": "Round 110. Stacking is worth exactly the asymmetry it can exploit: its whole value is that the FFN has measured headroom (it finishes in about half attention's time and gives up half its rows for 4.3%), and only a stacked layout can spend it. Two assumptions carry every row here and are stated rather than buried: flat per-layer time for multi-layer stacked bands (validated for side-by-side blocks at L = 4, never for stacked ones), and a lane-to-lane return riser cheaper than the period. The ATTN 96 row additionally interpolates the height ladder at 96 rows, which was never measured. The second lane needs the multi-lane serpentine, the one generator piece nobody has built."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Rounds 113, 115",
+   "title": "The stride cap is removed: 1,000 device records byte-identical, +0.05% cost, ceiling 4,064 -> 12,032",
+   "subtitle": "The one strided K-cache descriptor becomes four scalar stores — same values, same addresses, so byte-identity holds by construction. The ceiling is compiled SRAM and is pinned, not bracketed. A selection of 5 of 6 sweep points: 11,776 (368 positions, 47.3 KB) is omitted. Compiled sweep plus a device byte-identity gate.",
+   "columns": [
+    "MAX_SEQ_LEN",
+    "Positions/PE",
+    "Result",
+    "ATTN role A"
+   ],
+   "rows": [
+    [
+     "2,048",
+     "64",
+     "fits (byte-identity point)",
+     "33.1 KB"
+    ],
+    [
+     "4,096",
+     "128",
+     "fits — past the old 127 cap",
+     "36.1 KB"
+    ],
+    [
+     "8,192",
+     "256",
+     "fits",
+     "42.1 KB"
+    ],
+    [
+     "12,032",
+     "376",
+     "fits — the pinned ceiling",
+     "47.7 KB"
+    ],
+    [
+     "12,064",
+     "377",
+     "ran out of PE memory for data",
+     "—"
+    ]
+   ],
+   "weights": [
+    1.1,
+    1.0,
+    1.8,
+    1.0
+   ],
+   "notes": "Rounds 111-115, subagent 4b-stride-lift; demo/qwen3-4b-thin-stage/stride-lift/status.md, stride-lift.patch. Device byte-identity gate in its strong form: S1F_2K wsjob-efevuvs9bqmjs3n6pldxfv against L1F_2K wsjob-dtgodgumspm3uepbkh8x9z, and S1P_2K wsjob-jtr9nucul5bkzrdplegypm against L1P_2K wsjob-gmxdh9vcsu8xwuyimxkowe, reusing the original forced request verbatim — all three record arrays byte-identical on both paths, 1,000 records each. Cost 17,780.0 cycles/token against 17,771.4, +0.05%. The negative control is the convincing artefact: at 136 positions per PE the unpatched tree refuses to compile with 'integer value 136 cannot be coerced to type i8' on the .stride line, and the patched tree runs. Correction to carry: there was never a launcher check enforcing the cap — a grep for 127 in the launchers finds nothing — it was the CSL cast alone. Measured slope 47.9 bytes per position per PE, not the 32 B estimated."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 116",
+   "title": "L = 1 stays above native prefill across its whole context range — 4.3x at 1.5K, still 1.4x at 11.5K",
+   "subtitle": "The throughput-versus-context curve after the stride lift: 36 rows of 256x32, 72 stages, production forced, each point's prefill sized to its context and 1,000 decode steps, so each point is a mean over a context window rather than a single depth. Fit: cycles/token = 12,225 + 3.626 x context, R-squared 0.99999. Measured on-device TSC.",
+   "columns": [
+    "Mean context",
+    "Cycles/token",
+    "tok/s @0.85 GHz",
+    "vs native prefill"
+   ],
+   "rows": [
+    [
+     "1,524",
+     "17,780.0",
+     "47,807",
+     "4.29-4.53x"
+    ],
+    [
+     "3,572",
+     "25,177.6",
+     "33,760",
+     "3.03-3.20x"
+    ],
+    [
+     "7,668",
+     "39,949.5",
+     "21,277",
+     "1.91-2.02x"
+    ],
+    [
+     "11,508",
+     "54,000.3",
+     "15,741",
+     "1.41-1.49x"
+    ]
+   ],
+   "weights": [
+    1.1,
+    1.1,
+    1.2,
+    1.2
+   ],
+   "notes": "Round 116. Residuals +29, +1, -79, +48 cycles. A 12,225-cycle fixed floor plus 3.63 cycles per context token; throughput falls 3.04x from 2K to the ceiling. The 4K point sits just past the old 4,064 cap, so everything to the right of it is ground the unpatched kernel could not reach at all. The probe confirms where the slope lives: ATTN busy rises 3.608 cycles per context token against the token period's 3.626 (agreement to 0.5%), while the FFN busy floor is flat at every context. Two limitations carried forward: the block-TSC probe has its own lower ceiling (probed builds fail to link at 10,240 and above), so the 12K point has no per-stage breakdown, and the host-level TSC that gives its cycles/token is unaffected. Native prefill for the ratio is 10,544-11,143 tok/s at 0.85 GHz. Cost across the whole stride-lift program: 8 device jobs and 63 compile-only jobs, none cancelled."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 117",
+   "title": "Every byte of the per-position cost is now named — and one of the five buffers is a free 17% of context",
+   "subtitle": "A grep for kv_len_per_pe in an array's declared size yields exactly five allocations; the earlier accounting counted three. The five total 48 B per position, against 47.9 measured. Only K and V scale with layers, at 16 B per position per layer; the other three total exactly 32 B and are layer-independent. Compiled and measured at L = 1.",
+   "columns": [
+    "Buffer",
+    "B/position/PE at L = 1",
+    "Scales with layers?"
+   ],
+   "rows": [
+    [
+     "XKCache_tile",
+     "8",
+     "yes"
+    ],
+    [
+     "XVCache_tile",
+     "8",
+     "yes"
+    ],
+    [
+     "score_f32",
+     "16",
+     "no"
+    ],
+    [
+     "score (a bf16 copy)",
+     "8",
+     "no"
+    ],
+    [
+     "kv_ingress_buf (staging)",
+     "8",
+     "no"
+    ]
+   ],
+   "weights": [
+    1.7,
+    1.2,
+    1.1
+   ],
+   "notes": "Round 117, subagent 4b-stride-lift; compile-only, no device cost. This turns the Round 114 model from fitted into structural: per-PE context bytes = 16 x (context / rows) x (L + 2), where the '+2' is now three named buffers rather than a fitted constant. The measured 47.9 rather than a flat 48 is the ingress buffer's minus-one, a fixed four-position credit. One of the two newly named buffers is a free lever: kv_ingress_buf is staging, not state, and the launcher hardwires its size to kv_len_per_pe - 1 so one artefact accepts any prefill up to the full context. Capping prefill capacity at 2,048 takes L = 1's ceiling from 12,032 to 14,080 and the slope from 48 to 40 B per position — +17% context for a twenty-line launcher change, with both ceilings pinned on the grid. The trade: the artefact then rejects a longer prefill at config time. Carried as prefill-cap.patch, deliberately not inside stride-lift.patch, because the stride lift is a pure capability gain with byte-identical output and this trades generality for capacity. The lever is worth 8 of 48 bytes at L = 1 but only 8 of 176 at A."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Round 118",
+   "title": "The stride lift is worth 2.96x at L = 1 and nothing at A — A was always SRAM-bound, not stride-bound",
+   "subtitle": "All four rungs compiled and pinned: the listed ceiling compiles and the next admissible value on that rung's grid does not. The per-position slope test passes across a nine-fold range in layers per block. Compiled (link-time), compile-only jobs.",
+   "columns": [
+    "Rung",
+    "Old i8 cap",
+    "Compiled ceiling",
+    "Lift",
+    "B/position measured"
+   ],
+   "rows": [
+    [
+     "L = 1 (32 rows, 1 layer)",
+     "4,064",
+     "12,032",
+     "2.96x",
+     "47.9 (model 48)"
+    ],
+    [
+     "L = 2 (64 rows, 2 layers)",
+     "8,128",
+     "18,176",
+     "2.24x",
+     "64.2 (model 64)"
+    ],
+    [
+     "L = 4 (128 rows, 4 layers)",
+     "16,256",
+     "24,832",
+     "1.53x",
+     "96.0 (model 96)"
+    ],
+    [
+     "A (256 rows, 9 layers)",
+     "32,512",
+     "26,112",
+     "none",
+     "180 (model 176)"
+    ]
+   ],
+   "weights": [
+    1.6,
+    0.9,
+    1.1,
+    0.7,
+    1.2
+   ],
+   "notes": "Round 118, compile-only. A is confirmed SRAM-bound rather than stride-bound — its ceiling is below its old stride cap, so lifting the stride buys A exactly zero, and that prediction survived falsification rather than being assumed. The absolute ceilings the model predicted ran 4-5% low one-sidedly, and the cause is identified as an over-generous linker margin (1.0 KB assumed where about 0.3 was needed), not the model: re-running with 0.3 KB gives figures within 1%. One anomaly, flagged rather than buried: A does not compile at 29,184 in this tree even though 29,184 is where A was originally measured, and the unpatched control fails identically with the same .bss overflow — so A's footprint grew somewhere in the B-prime lineage. Anyone quoting either A number should first find where. Control log BASE_A29k.log sits beside the patched job's. These compiled ceilings replace the Round 114 model numbers."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Rounds 112, 119",
+   "title": "The decoder passed the prefill kernel at L = 4 and is 4.3-4.5x past it at L = 1",
+   "subtitle": "Native prefill has not changed all session; everything on the other side of the comparison has. A selection of 5 of 7 configurations: rows-as-stages (4 stages, 177,539 cyc, 4,788 tok/s) and the projected stacked two-lane layout (~36,606 cyc) are omitted. Cycles measured; tok/s at 0.85 GHz.",
+   "columns": [
+    "Configuration",
+    "Stages",
+    "Cycles/token",
+    "tok/s @0.85 GHz",
+    "vs native prefill"
+   ],
+   "rows": [
+    [
+     "Native prefill kernel",
+     "—",
+     "76,282 / 80,615",
+     "11,143 / 10,544",
+     "1x"
+    ],
+    [
+     "Forced decode, ATTN | FFN split",
+     "8",
+     "101,670",
+     "8,360",
+     "0.75-0.79x"
+    ],
+    [
+     "L = 4, 256 x 128 blocks",
+     "18",
+     "48,872",
+     "17,392",
+     "1.56-1.65x"
+    ],
+    [
+     "L = 2, 256 x 64 blocks",
+     "36",
+     "27,348",
+     "31,081",
+     "2.79-2.95x"
+    ],
+    [
+     "L = 1, 256 x 32 blocks",
+     "72",
+     "17,771",
+     "47,831",
+     "4.29-4.54x"
+    ]
+   ],
+   "weights": [
+    1.8,
+    0.7,
+    1.1,
+    1.1,
+    1.1
+   ],
+   "notes": "Rounds 112 and 119. Native prefill jobs wsjob-eptcyqjparjjjombvqiozp (P1, 1 x 8,192) and wsjob-gbgvnij9crj7srrlc5nyce (P2, 4 x 2,048); the two cycle figures in the first row are per token for those two chunk sizes. Every row is measured on device and byte-identical or oracle-gated. Round 20 concluded that only a re-layout to many small stages would make the decoder a faster prefiller than the prefill kernel — that re-layout now exists and is measured at every rung. Two things to keep beside the number: the comparison is at 2K context, where L = 1's own ceiling was 4,064 tokens before the stride lift (a prefiller that cannot hold the sequence it is prefilling is not a prefiller, which is exactly why the stride work mattered), and native prefill was measured at 8,192 and 2,048 chunks, so it is the honest baseline for chunked prefill rather than for one long sequence. On the clock: cycles are the measurement, the launcher has been printing at 0.85 GHz all along, and every ratio here is a cycle ratio that does not move."
   }
  ]
 }

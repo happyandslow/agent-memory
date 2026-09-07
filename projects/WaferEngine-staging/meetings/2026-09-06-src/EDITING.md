@@ -11,6 +11,25 @@ python3 $S/validate_layout.py ../2026-09-06.pptx     # must print OK
 python3 $S/render_preview.py ../2026-09-06.pptx preview 90
 ```
 
+## Shape
+
+**Slides 1–14 are the talk.** 1–9 workload evidence, 10–13 this week's device
+work, 14 the decision list.
+
+**Slide 15 is a section divider; 16–85 are backup.** One slide per experimental
+result in the session report — 31 figures (F1–F31) and 39 tables, each titled
+with the question the experiment answered. Never presented in order; flipped to
+on demand. Source: `appendix_slides.json`, merged into `deck.json` at build
+time. Figures live in `figures/appendix/` and are verbatim copies — none was
+redrawn, so the document-density ones (F21, F30, F31 especially) will not read
+on a projector.
+
+Note the builder's real table capacity is **5 rows, not 7**, once a two-line
+title and a three-line subtitle are present. Sixteen appendix tables were
+reshaped for it — rows selected with the omission named in the subtitle, one
+restructured into columns, one split into "(1 of 2)". No row was dropped
+silently.
+
 ## What this deck argues
 
 Not a progress report. Three verdicts on where a wafer belongs in agentic
@@ -46,9 +65,19 @@ without redrawing them at slide density.
   capacity; LRU evicts the head first, so median resident reads 0). Context
   medians: **196,590** over all calls including sidechains, **301,617**
   main-thread only — always say which.
-- L ladder, stride lift, vertical stacking: `docs/reports/2026-09-04-4b-wide-layer-session-report.md`,
-  Rounds 77–116. Cycles are canonical at **750 MHz**; the launcher prints
-  0.85 GHz, which is 13% optimistic.
+- L ladder, vertical stacking: `docs/reports/2026-09-04-4b-wide-layer-session-report.md`,
+  Rounds 77–116.
+
+### Clock convention — changed 2026-09-07
+
+Cycles are the measurement and are frequency-independent. **Every tok/s in this
+deck is converted at 0.85 GHz** (`tok/s = 0.85e9 / cycles_per_token`), which is
+Le's rule as of 2026-09-07 and what the launcher already prints. This
+supersedes the earlier interim rule of quoting at 750 MHz; a figure taken from
+the report at 750 MHz must be multiplied by **1.133**. Ratios — decoder versus
+native prefill, rung versus rung, stacked versus side-by-side — are ratios of
+cycle counts and do not move with the clock. Native prefill at 0.85 GHz is
+10,545–11,143 tok/s.
 - Two-wafer numbers: `docs/analysis/2026-09-03-4b-two-wafer-pp-decode-demo.md`.
 - SRAM route table: `wse3-performance-model/demo/qwen3-4b-decode-sram/s1-init-route-table/README.md`.
   Uncommitted working copy; Le commits.
