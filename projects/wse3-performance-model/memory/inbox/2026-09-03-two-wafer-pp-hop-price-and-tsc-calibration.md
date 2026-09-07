@@ -16,7 +16,9 @@ whether a bigger hidden state changes the hop price.
 Doc: `wse3-performance-model/docs/analysis/2026-09-03-4b-two-wafer-pp-decode-demo.md`.
 Code + raw: `wse3-performance-model/demo/4b-pp-demo/` (`code/`, `cs3/`, `sim/`,
 `tools/`, `PROVENANCE.md`, `README.md`). ContextBase log: see Pointers.
-Figure: `artifacts/2026-09-03-two-wafer-pp-floorplan.png` (script beside it).
+Figures: `artifacts/2026-09-03-two-wafer-pp-floorplan.png` (placement + hop) and
+`artifacts/2026-09-03-two-wafer-pp-token-budget.png` (per-token time in four
+buckets: on-wafer 78 %, SDK H2D/D2H 18 %, host 2 %, wire 1 %); scripts beside them.
 
 ## What was built (the cut)
 

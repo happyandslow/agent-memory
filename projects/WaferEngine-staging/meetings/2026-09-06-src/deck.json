@@ -155,7 +155,7 @@
     1.7,
     0.8
    ],
-   "notes": "The 5% threshold is derived from prefill and decode rates on both engines, so it moves if the GPU side is re-measured — and Le expects a real 4B GPU measurement to come in 2-3x faster than the 9B paper figures we currently substitute, which would raise the threshold and eat into the 63% margin. State that when the row is read. The fourth row is Le's inference, not the report's: Round 35 argues the 300K context depth is a frontier-model artefact that does not transfer to a 4B deployment, but it never extends the same argument to thinking length. That extension is what makes the model ladder two slides on necessary rather than optional. Native prefill at 0.85 GHz is 10,545-11,143 tok/s; the 4.29-4.53x and 1.91-2.02x are cycle ratios and do not move with the clock."
+   "notes": "The 5% threshold is derived from prefill and decode rates on both engines, so it moves if the GPU side is re-measured — and Le expects a real 4B GPU measurement to come in 2-3x faster than the 9B paper figures we currently substitute, which would raise the threshold and eat into the 63% margin. State that when the row is read. The fourth row is Le's inference, not the report's: Round 35 argues the 300K context depth is a frontier-model artefact that does not transfer to a 4B deployment, but it never extends the same argument to thinking length. That extension is what makes the model ladder two slides on necessary rather than optional. Native prefill at 0.85 GHz is 10,544-11,143 tok/s; the 4.29-4.53x and 1.91-2.02x are cycle ratios and do not move with the clock."
   },
   {
    "type": "table",
@@ -448,76 +448,84 @@
    "notes": "Appliance-compiled per-PE maxima of a 49,152 B bank; every PE within a region is identical. Not paged, not overlaid, not deleted -- recomputed on the host and shipped as data. Gates in order: a simulator self-check ran both derivations side by side and 0 of 1,024 role PEs disagreed on any of the 34 table entries; oracle and re-arm passed over 3 rounds; on the device all 4,096 steps of top-20 values, indices and sampled ids are md5-identical to baseline. Steady-state cost +0.007% on one run each -- noise; the real support is that only boot-path code changed. Two things to keep off this slide: the 30,464 ceiling is a compile-sweep link ceiling that has never been executed (the shipped config is still 8,192), and the separate shared-reduce change is NOT free (-1,136 B more but +0.39% per token), so 'pure SRAM saving' means the route table alone. Not landed -- working copy, Le commits. Provenance: wsjob-rcbpvpt6cay6aomhuujnx9 baseline / wsjob-amzrrqt78wnfxoxy9blpyq route table."
   },
   {
+   "type": "figure",
+   "eyebrow": "Not yet · the same 36 layers, placed three ways",
+   "title": "What the three layouts in the table actually look like on the wafer",
+   "image": "figures/three_layouts.png",
+   "caption": "Today's placement pins both roles to the same 256 rows. L = 1 cuts the wafer into 36 thin rows, one layer each. Stacking puts the two roles in one column so their heights can differ, paying for the halved width with a second lane.",
+   "notes": "Drawn to scale on the real 762 x 1172 fabric; editable source at wse3-performance-model/docs/diagrams/2026-09-07-three-layouts.excalidraw, generator gen_three_layouts.py. Panel C is the layout that was actually built and measured -- 36 rows x (ATTN 256x32 + FFN 256x32) on ONE lane. The older F12 proposal drew C as 64x128 blocks on four lanes; Round 77 superseded that, because a lane of 256-wide blocks is 512 columns plus the HT band and strips, so only one such lane fits. The stacked panel's six band-pairs per lane carry three layers each: 2 lanes x 6 bands = 12 groups, 36 / 12 = 3."
+  },
+  {
    "type": "table",
    "eyebrow": "Not yet · how the cut changes the rate",
    "title": "Side by side against stacked, across the layers-per-block ladder",
-   "subtitle": "One wafer, one request, forced prefill at 2K, equal wafer area (589,824 PEs). Cycles measured; tok/s converted at 0.85 GHz.",
+   "subtitle": "One wafer, one request, forced prefill at 2K, equal wafer area. Cycles measured, tok/s at 0.85 GHz. Side-by-side caps are compiled and pinned; no stacked ceiling has been compiled, so none is shown.",
    "columns": [
     "Layout",
-    "Stages",
     "cycles/token",
     "tok/s",
-    "Context cap"
+    "Cap, i8 stride",
+    "Cap, after lift"
    ],
    "rows": [
     [
-     "Side by side, H = 256 — today's A",
-     "8",
+     "A — 8 stages, H = 256",
      "101,670",
      "8,360",
-     "29,184"
+     "29,184",
+     "26,112 · earlier tree 29,184"
     ],
     [
-     "Side by side, H = 128 — L = 4",
-     "18",
+     "L = 4 — 18 stages, H = 128",
      "48,872",
      "17,392",
-     "16,256"
+     "16,256",
+     "24,832"
     ],
     [
-     "Side by side, H = 64 — L = 2",
-     "36",
+     "L = 2 — 36 stages, H = 64",
      "27,348",
      "31,081",
-     "8,128"
+     "8,128",
+     "18,176"
     ],
     [
-     "Side by side, H = 32 — L = 1",
-     "72",
+     "L = 1 — 72 stages, H = 32",
      "17,771",
      "47,830",
-     "4,064"
+     "4,064",
+     "12,032"
     ],
     [
-     "Stacked 2 lanes, ATTN 128 | FFN 64",
-     "24",
+     "Stacked ×2, ATTN 128 | FFN 64 — 24 st.",
      "≈ 36,602",
      "≈ 23,223",
-     "16,256"
+     "16,256",
+     "—"
     ],
     [
-     "Stacked 2 lanes, ATTN 96 | FFN 32",
-     "36",
+     "Stacked ×2, ATTN 96 | FFN 32 — 36 st.",
      "≈ 26,042",
      "≈ 32,639",
-     "12,192"
+     "12,192",
+     "—"
     ],
     [
-     "Stacked 2 lanes, ATTN 32 | FFN 32",
-     "72",
+     "Stacked ×2, ATTN 32 | FFN 32 — 72 st.",
      "≈ 18,238",
      "≈ 46,606",
-     "4,064"
+     "4,064",
+     "—"
     ]
    ],
    "weights": [
-    2.1,
-    0.7,
-    1.0,
+    2.0,
+    0.95,
+    0.85,
     0.9,
-    1.0
+    1.5
    ],
-   "notes": "The four side-by-side rows are device-measured; every stacked row is a projection that applies the measured 4.1% hop premium and the measured height ladder to a three-layer rig. Read it by context, not by throughput: at the same 16,256 ceiling stacking is worth 1.34x; at about 27,000 tok/s (0.85 GHz) stacking buys 1.5x the context at slightly better throughput; at equal heights it buys nothing and costs the hop. Omitted deliberately: stacked ONE lane at ATTN 128 | FFN 64 is ~73,203 cycles/token -- the trap, since a single stacked column is half the wafer's width. Two assumptions carry the stacked rows: flat per-layer time for multi-layer stacked bands, and a lane-to-lane riser cheaper than the period. Slide 10 is the measured ladder alone; this is what stacking does to it. The context caps in this table are the i8-stride caps that were in force when these ran. Round 118 has since compiled and pinned the post-lift ceilings on every rung: L=1 12,032 (2.96x), L=2 18,176 (2.24x), L=4 24,832 (1.53x), and A unchanged -- A was always SRAM-bound, not stride-bound, so the lift buys it nothing, which is now compiled rather than inferred. ANOMALY to know before quoting A: in the current tree A does not compile at 29,184, and the unpatched snapshot fails identically, so A's footprint grew somewhere in the B-prime lineage between the tree that measured 29,184 and this one. Not yet investigated (Round 118)."
+   "notes": "The four side-by-side rows are device-measured and their post-lift ceilings are compiled and pinned (Round 118: the listed value compiles, the next admissible value on that rung's grid fails). Every stacked row's RATE is a projection from a measured three-layer rig, and no stacked CEILING has been compiled at all -- the three cells differ in what stands behind them. ATTN 32 | FFN 32: its attention band is 256 x 32 holding one layer, geometrically identical to side-by-side L = 1, so 12,032 is expected but not separately compiled. ATTN 128 | FFN 64: model only, though calibrated on a compiled point -- the vstack msize gives 25.5 KB/PE for a 256 x 128 band holding one layer, whose context part is 0.75 KB, so the fixed part is 24.75 KB; back-solving L = 4 at the same geometry with four layers gives 1.69 KB per extra attention layer, which cross-checks against 26.2M attention parameters x 2 B / 32,768 PEs = 1.56 KB. It beats every side-by-side rung because stacking gives attention 393,216 PEs against L = 4's 294,912, so each attention PE carries less weight and has more room for KV. ATTN 96 | FFN 32: deliberately blank -- there is no compiled point at 96 rows and the fixed part depends on rows through both weights and per-token buffers, so a number there would be two extrapolations deep. A's row: the lineage difference is unexplained and is NOT the stride lift (the unpatched tree fails identically with 'ran out of PE memory for data (.bss)'); never present either A number alone, since 29,184 appears throughout the report and would propagate as current. A gains nothing from the lift in either tree -- its ceiling sits below its old stride cap of 32,512, so it was always SRAM-bound. All three stacked ceilings are cheap to compile: compile-only, no device time, about twenty minutes for all three, driver and config generator ready."
   },
   {
    "type": "table",
@@ -548,7 +556,7 @@
     [
      "RDMA wire and wait",
      "14 µs",
-     "RTT alone is 11.0 µs"
+     "in-run wire residual 3.0 µs"
     ],
     [
      "Attributed total",
@@ -566,7 +574,7 @@
     1.1,
     1.2
    ],
-   "notes": "Wafer A holds layers 0-17, wafer B layers 18-35 plus the HT tail; the hidden state crosses A to B and the sampled token id crosses back. The headline is the composition: roughly 70% of a crossing is the SDK's per-call host-to-wafer stream latency and 3% is the network, so a faster interconnect does not fix it. Two independent confirmations: isolated on a passthrough ring the SDK round trip is ~160 us and flat from 8 B to 10 KB, unmoved by blocking vs spin, io_buffer_size or pinned io_loc; and running the whole thing over TCP instead of RDMA costs 18 us on a 1,380 us step while still byte-exact, even though the RDMA RTT (11.0 us) is three times faster than TCP's (31.9 us). Corrections to carry: about 170 us per crossing (the n=3 mean is 172; the report's 171 and 175 are n=2 and n=1), and the scaling rule is 170*N, not 170*(N-1), because the decode loop is closed -- the sampled token must return to the wafer holding the embedding. Round 34's '+16% step' is superseded: it priced one crossing where the layout makes two. Never measured: two-wafer capacity, N>2, bsz>1 to amortise the crossing, and cross-wafer prefill."
+   "notes": "Wafer A holds layers 0-17, wafer B layers 18-35 plus the HT tail; the hidden state crosses A to B and the sampled token id crosses back. The headline is the composition: roughly 70% of a crossing is the SDK's per-call host-to-wafer stream latency and 3% is the network, so a faster interconnect does not fix it. Two independent confirmations: isolated on a passthrough ring the SDK round trip is ~160 us and flat from 8 B to 10 KB, unmoved by blocking vs spin, io_buffer_size or pinned io_loc; and running the whole thing over TCP instead of RDMA costs 18 us on a 1,380 us step while still byte-exact, even though the RDMA RTT (11.0 us) is three times faster than TCP's (31.9 us). Corrections to carry: about 170 us per crossing (the n=3 mean is 172; the report's 171 and 175 are n=2 and n=1), and the scaling rule is 170*N, not 170*(N-1), because the decode loop is closed -- the sampled token must return to the wafer holding the embedding. Round 34's '+16% step' is superseded: it priced one crossing where the layout makes two. Never measured: two-wafer capacity, N>2, bsz>1 to amortise the crossing, and cross-wafer prefill. On the RDMA row, three different quantities are easy to conflate. The per-token loop table measures a 'wire + wait residual' of 3.0 us -- net_rtt minus both hosts' active segments, i.e. the genuinely-on-the-wire part -- while B's token write-back (RDMA write + poll, software plus wire) is 21.8 us on its own line. Separately, an isolated RDMA round trip with no wafer loaded measures 11.0 us p50, against TCP's 31.9. The ~14 us shown here is the analysis document's own roll-up for the crossing decomposition, apportioning wire-related time across those lines -- not a fourth measurement. If anyone asks 'isn't the wire 3 microseconds?' -- yes, that is the in-run residual, and it is the sharpest form of the point that the network is not the problem."
   },
   {
    "type": "next_steps",
