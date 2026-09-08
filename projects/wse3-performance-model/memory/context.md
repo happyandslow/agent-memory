@@ -10,19 +10,21 @@ Compact startup packet for fresh agent sessions. This generated view is intentio
 
 ## Current state
 
-- Daily maintenance last checked this project on 2026-09-07.
+- Daily maintenance last checked this project on 2026-09-08.
 - Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
 
 ## Current focus
 
 - The project has moved from scaffold-only to active measured-evidence memory for Qwen3-4B on CS-3/WSE-3, trace/KV economics, Wavel provider contracts, and two-wafer pipeline-parallel experiments.
 - Qwen3-4B CS-3 memory now records compiled SRAM/capacity findings, route-table SRAM lever, decode context slope, batch/phase/stage measurements, and optimization backlog.
+- The 2026-09-06 thin-block capture is drained: L=4/L=2/L=1 rungs, KV stride-cap lift, context-capacity model, and vertical ATTN/FFN stacking measurements are recorded in `memory/topics/qwen3-4b-cs3-measurements.md`.
 - Trace analysis and keep-vs-park framing are recorded with corrected Claude Code de-duplication caveats and workload-representativeness boundaries.
 
 ## Next likely actions
 
 - [ ] Verify live `/home/lexu/wse3-performance-model` repo state and exact artifacts before reusing any number.
 - [ ] Use the topic packets as routers to source docs/artifacts, not as replacement evidence.
+- [ ] Diagnose the A1 stall and decide whether to build/measure the second stacked lane before treating vertical stacking as a deployment result.
 - [ ] Continue pricing SRAM/softmax/chunking/multi-wafer levers using measured cycles and explicit provenance.
 
 ## Must-read topic notes

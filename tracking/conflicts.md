@@ -77,3 +77,12 @@
 - Remote-only commits at status time: `3a91971`, `08cde57`, `b5f8fa9`, `5d9c785`, `af30d2c`, `0e968df`, `7df9a8e`, `89584ac`, `8ace038`, `7be79a2`, `33d76b3`, `74eb62b`, `addbd53`, `d94e42b`, `871c861`, `2c0cd72`, `129929a`, `4f1e68c`, `2bba311`, `c0b7a5a`, `fc21307`, `4dcafbd`, `8d7cd77`, `553c981`, `ffb93b1`, `27c0ba3`, `e51f788`, `2d0d6c6`, `dd06c1c`, `7487863`, `e9e480b`, `c5a7280`, `bf77964`, `ee67297`.
 - Worktree still has a modified binary meeting deck: `projects/WaferEngine-staging/meetings/2026-08-24.pptx` (`1809578 -> 2343557` bytes in `git diff --stat`).
 - Cron did not push, rebase, reset, or overwrite the deck. Le/manual resolution needed: decide whether to preserve/commit the PPTX change, then reconcile `main` with `origin/main`.
+
+## 2026-09-08 — local branch diverged from origin/main; pull blocked
+
+- Daily maintenance fetched origin, then attempted `git pull --ff-only`; it failed with `fatal: Not possible to fast-forward, aborting.`
+- Status after fetch before this maintenance commit: `main` is ahead 1 and behind 2 relative to `origin/main`.
+- Local-only commit before this pass: `f26b74f memory: daily work maintenance 2026-09-07`.
+- Remote-only commits at status time: `2abb7c0 memory: daily reflect captures 2026-09-07 (cron)`; `4af1b65 memory: regen views (session hook)`.
+- Worktree also has untracked WaferEngine-staging meeting artifacts: `projects/WaferEngine-staging/meetings/2026-09-06 copy.pptx`, `projects/WaferEngine-staging/meetings/~$2026-09-06.pptx`, and `projects/WaferEngine-staging/meetings/~$2026-09-06 copy.pptx`.
+- Cron did not push, rebase, reset, choose a canonical PPTX, or delete the Office lock files. Le/manual resolution needed: reconcile `main` with `origin/main` and decide whether the copied deck should be kept, renamed, or removed.

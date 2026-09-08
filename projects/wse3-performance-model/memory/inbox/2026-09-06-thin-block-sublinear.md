@@ -3,6 +3,9 @@
 Source: session 4b-wide-layer, report Round 73–75
 (docs/reports/2026-09-04-4b-wide-layer-session-report.md).
 
+Status: drained 2026-09-08 into `plan.md` and
+`memory/topics/qwen3-4b-cs3-measurements.md`.
+
 - Measured on CS-3 (2K context, one layer, strips 256 wide × 32 tall,
   appliance-compiled, cycles canonical, 750 MHz): cut (i) ATTN 32 | FFN 32
   production 17,589 cycles/token (42.6K tok/s rig rate); strip busy

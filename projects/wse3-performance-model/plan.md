@@ -40,3 +40,8 @@ Agents may propose edits, but should not overwrite this mechanically. Generated/
 
 - Drained 41 captured inbox notes from 2026-08-27..2026-09-05 into seven topic packets. The project now has durable memory for automation/Git safety, Wavel provider contracts, Qwen3-4B SRAM/capacity levers, CS-3 measurements, trace/KV economics, two-wafer PP, and CS-3/simfab operational gotchas.
 - Current evidence has moved beyond the original scaffold: Qwen3-4B SRAM breakdowns, context-cost measurements, trace-demand studies, and two-wafer PP hop timings are now recorded as source-linked topic memory. Treat individual rates as measured under their named artifacts/configs and verify live repo state before reusing them.
+
+### 2026-09-08 — maintain pass drained thin-block/stacking capture
+
+- Drained the 2026-09-06 thin-block capture into `memory/topics/qwen3-4b-cs3-measurements.md`: L=4/L=2/L=1 thin-stage rungs, KV stride-cap lift, calibrated context-capacity model, and vertical ATTN/FFN stacking evidence are now source-linked topic memory.
+- Current open modeling questions from that capture are the A1 stall, whether to build/measure the second stacked lane, and the scoped 128² two-lane width-axis family.
