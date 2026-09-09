@@ -2,7 +2,12 @@
 
 # wse3-performance-model Timeline
 
+- 2026-09-07 — servegen-is-prefill-dominated → `memory/inbox/2026-09-07-servegen-is-prefill-dominated.md`
+- 2026-09-07 — score-at-the-storage-pe-not-stream-kv → `memory/inbox/2026-09-07-score-at-the-storage-pe-not-stream-kv.md`
+- 2026-09-07 — rig-vs-deployment → `assets/2026-09-07-rig-vs-deployment.png`
+- 2026-09-07 — no-rounds-framing-and-layout-first-sequencing → `memory/inbox/2026-09-07-no-rounds-framing-and-layout-first-sequencing.md`
 - 2026-09-07 — getting-trustworthy-numbers-off-cs3 → `memory/inbox/2026-09-07-getting-trustworthy-numbers-off-cs3.md`
+- 2026-09-07 — 4b-floorplan-degrees-of-freedom-ht-head-tail → `memory/inbox/2026-09-07-4b-floorplan-degrees-of-freedom-ht-head-tail.md`
 - 2026-09-07 — 4b-decoder-outruns-native-prefill → `memory/inbox/2026-09-07-4b-decoder-outruns-native-prefill.md`
 - 2026-09-06 — vertical-stack-topology → `assets/2026-09-06-vertical-stack-topology.png`
 - 2026-09-06 — thin-block-sublinear → `memory/inbox/2026-09-06-thin-block-sublinear.md`
