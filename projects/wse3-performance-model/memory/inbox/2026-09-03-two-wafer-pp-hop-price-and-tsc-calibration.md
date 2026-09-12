@@ -103,13 +103,41 @@ buckets: on-wafer 78 %, SDK H2D/D2H 18 %, host 2 %, wire 1 %); scripts beside th
 
 ## Implications / next actions
 
+- [x] **Cerebras confirmed (Slack, 2026-09-12) [vendor statement]:** the < 5 µs
+      Hot Chips number is a direct wafer-to-wafer I/O hop, not a `send()`+
+      `receive()` guarantee; SDK 2.10 `SdkLayout` direct streams go through the
+      buffered HostIO path (runtime worker/completion queue + client-side frame
+      buffering; `nonblock` only changes thread waiting, never zero-copy), so
+      ≈114–135 µs per H2D+D2H pair is "an observed floor of the SDK 2.10
+      host-mediated runtime path, not a hardware or interconnect floor", and
+      **no supported option selects the lower-level zero-copy HostIO mode.**
+      Path to a fix = product decision; requests via EPCC + Cerebras product /
+      EPCC-support teams help (Cerebras contact: Alexander Mikoyan). They want
+      the harness (`demo/4b-pp-demo/code/launch_passthrough.py` + demux/z_mux).
 - [ ] Class-P2 per-hop price for the multi-wafer route: ≈170 µs per wafer per
-      token at bsz 1, ≈135 of it the SDK stream floor. Below that needs a
-      wafer→wafer streamer path the SDK does not expose — ask Cerebras.
+      token at bsz 1, ≈135 of it the SDK stream floor — vendor-confirmed.
+- [x] **Measured 2026-09-12 (`wsjob-vrggxuarqr3nqz9tq7ybya`):** pre-posting the
+      receive before the send buys **nothing** (158.5 vs 157.8 µs). And the
+      ≈160 µs is a **service time, not a latency**: with 2/4/8/16 frames in
+      flight on one stream pair the per-frame period is a flat 167 µs
+      (≈6,000 send+receive pairs/s), identical for 5 KB and 8 B frames. The
+      runtime worker serializes ops; queued frames wait. The earlier "SDK cost
+      hides behind compute when frames are queued" inference was only true
+      because the wafer's 222 µs row period sat above this 167 µs ceiling.
+      **Extra stream pairs do not help beyond the second
+      (`wsjob-58je3fbgqaz7qqkcisvwsl`): 1 pair 6.3 k, 2 pairs 9.0 k, 4/8/16
+      pairs 8.9/7.7/8.6 k send+receive pairs/s aggregate — the serialization
+      is per runtime (~113 µs busy per pair once ≥2 streams fill the idle),
+      not per stream.** Rule for any host↔wafer traffic on SDK 2.10: ≈9
+      operations/ms per wafer total, so few large ops; bandwidth still scales
+      with streams (h2d-playground 1→16 pinned: 1→11–15 GB/s) because bytes
+      amortise the per-op cost. Multi-sequence throughput across a wafer
+      boundary caps at ≈9 k tok/s per boundary.
 - [ ] Host-side stream knobs are exhausted (measured); do not spend more time
-      there. Multi-request overlap can hide the hop for throughput (per-row
-      period 222 µs) but not for single-request latency; bsz>1 is still
-      blocked by two small SRAM buffers (separate capture).
+      there. Multi-request overlap can hide the hop for throughput only up to
+      the ≈6 k ops/s per-stream-pair ceiling (see below), never for
+      single-request latency; bsz>1 is still blocked by two small SRAM buffers
+      (separate capture).
 - [ ] Re-label prior "@0.85 GHz" tok/s figures as cycle counts before
       comparing across documents.
 
