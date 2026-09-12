@@ -10,7 +10,7 @@ Compact startup packet for fresh agent sessions. This generated view is intentio
 
 ## Current state
 
-- Scaffolded and populated on 2026-08-06 from two drained depth-layout captures.
+- Daily maintenance last checked this project on 2026-09-12; scaffolded and populated on 2026-08-06 from two drained depth-layout captures.
 - Device-size compile of the one-layer `64 x 256` rectangular decode layout fits (44,794 / 49,152 B tightest PE); it costs 22.6–24.5% decode throughput and 42.52% max context vs the 8-stage baseline; the square `128 x 128` fails first on HT-embedding SRAM.
 - Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
 
