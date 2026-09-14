@@ -36,3 +36,30 @@ artifacts under `/home/lexu/build/4b-l4/code/bprime-snapshot`.
   build/measure the second stacked lane; scope the 128² two-lane width-axis
   family. A valid capacity sweep must prefill to each tested live context,
   because per-token cost tracks `iter_num`, not `MAX_SEQ_LEN`.
+
+## 2026-09-14 update — corrected fabric constants, per-stage layout C, width axis
+
+Source: `inbox/2026-09-14-layoutc-3p7x-is-one-sync-barrier-not-compute.md`,
+`inbox/2026-09-14-fused-block-fits-sparse-cache-and-trace-placement.md`.
+
+- **"13.0 cyc/word CE bulk DSD" is a store-and-forward relay artefact** (a PE that
+  receives AND re-emits), not a receive ceiling. Pure receive, and `@fmachs`
+  consuming a fabin DSD directly as its streamed operand ("moving is computing",
+  compiles and runs on WSE-3, not used in production decode.csl), measure
+  **~1.17 cyc/word at N≥128** (simfab; R3 pattern; 384 words ≈ 451 cyc). Keep
+  13 only for actual CE relays. Double-buffered async receive is the *slowest*
+  strategy at these sizes.
+- **Scatter placement of collective participants costs a fixed ~+24 cyc**, not a
+  per-hop multiple (simfab, same 16 participants contiguous vs 1-in-4 over 8×8;
+  +6 % at L=16, +0.7 % at L=256). A reduce hop is dominated by the receiving
+  participant's instruction; pass-through routing is ~2 cyc/hop. Third
+  independent confirmation (with the height ladder and the width data) that the
+  kernel is per-participant-latency bound, not chain-length bound.
+- **Per-layer per-token slots, 256×256 blocks, 2K (4b-wide-layer phase-TSC):**
+  ATTN 11,886 (QKV ≈3,452 + attn+O ≈8,434), FFN 5,802; T_attn/T_ffn 2.05 →
+  ≈2.7 at 8K. Blocks alternate (one idle); pipelining them measured 1.47×/1.40×.
+- **Layout C per-stage, CS-3 (`docs/reports/2026-09-14-tall-per-stage-timing.md`):**
+  at 128-wide, attn+O 0.91–0.96× of the 256-wide slot, QKV 1.22–1.35×, FFN 1.51×;
+  the 3.7× is 46.6 % one `round_barrier` (35,536 cyc, context-independent) —
+  see the inbox note. **Width axis: a narrow block costs context, not time.**
+- Per-PE MAC counts do not predict time here in either axis; do not use them.

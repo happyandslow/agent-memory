@@ -1,0 +1,12 @@
+{
+ "slides": [
+  {
+   "type": "figure",
+   "eyebrow": "Prefix × decode · four configurations, eleven scenarios",
+   "title": "PD-split wins wherever it fits; above 29K, H100 only",
+   "image": "figures/pd_split_spectrum_table.png",
+   "caption": "ms per request, derived from measured rates; link 1.2 Tbit/s unmeasured. PD-split decodes on the wafer, so it keeps the 29K ceiling.",
+   "notes": "Source: 4b-wide-layer Round 171. Modelling: CS-3 decode = (681K + 16.1·C) cycles at 750 MHz; H100 decode = 4.60 + 0.0489·C/1K ms (fit to measured 1K–32K); H100 prefill measured, held at the 32K rate beyond 32K (optimistic for H100); link 0.98 µs per prefix token (Le's 1.2 Tbit/s, unmeasured; API not open). GPU-streamed = KV stays on the GPU and the whole cache crosses per token. The Claude Code row is a frontier-model workload a 4B never serves (Round 168) — for completeness, not a target. Rendered by figures/render_pd_table.py."
+  }
+ ]
+}
