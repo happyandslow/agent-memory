@@ -1,0 +1,1128 @@
+{
+ "slides": [
+  {
+   "type": "title",
+   "team": "WaferEngine · CS-3",
+   "kicker": "Weekly collaborator discussion",
+   "title": "Both Sides Measured",
+   "subtitle": "Where the wafer wins, and what it cannot hold: a 4B GPU baseline, three traces re-cut, and layout C on silicon.",
+   "meta": [
+    {
+     "label": "Model",
+     "value": "Qwen3-4B"
+    },
+    {
+     "label": "Rates",
+     "value": "CS-3 tok/s at 750 MHz as reported — clock TBD"
+    },
+    {
+     "label": "Period",
+     "value": "09-07 → 09-13"
+    },
+    {
+     "label": "Date",
+     "value": "2026-09-13"
+    }
+   ],
+   "notes": "DRAFT for Le's review. Sources: three sessions — 4b-mini-ppl-debug (layout C), 4b-pp-demo (trace length distributions), 4b-wide-layer (GPU baseline, capacity, interconnect, positioning; Rounds 153–171). Every CS-3 tok/s on these slides is the number the source session reported, converted at 750 MHz; Le's 2026-09-07 rule is 0.85 GHz (multiply by 1.133). Ratios of cycle counts do not move with the clock; ratios against the H100 do. Decision pending."
+  },
+  {
+   "type": "statement",
+   "eyebrow": "This week in three lines",
+   "title": "Decode leads 4–5×, on the one workload we cannot hold.",
+   "subtitle": "Layout C is closed: the kernel is coordination-bound, not FLOP-bound. Both sides measured for the first time.",
+   "notes": "The three verdicts, one per section. (1) from the H100 baseline (4b-wide-layer Round 156). (2) from the trace re-cut (4b-pp-demo) against the analytical ladder (Rounds 153–154). (3) from layout C's single-layer measurement and 4b-wide-layer's phase-TSC profile (4b-mini-ppl-debug, conclusion doc §5b)."
+  },
+  {
+   "type": "section",
+   "number": "01",
+   "title": "The workload",
+   "subtitle": "Three traces, re-cut per request on 2026-09-12: Claude Code (46,650 de-duplicated calls), Mooncake (39,632 requests), ServeGen (four Alibaba models)."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Workload · request lengths",
+   "title": "Three worlds, not one workload",
+   "image": "figures/trace_length_distributions.png",
+   "caption": "Per-request input context (left) and output length (right), log scale; p10–p99 bar, p50 filled, p90 open, × max. Dashed lines: 29,184 tokens measured placed-region ceiling, and ≈103K whole-wafer total (derived, not measured). Claude Code: one user, 26,144 main-thread + 20,506 subagent calls, 2026-08-04 → 09-02. Mooncake output is hard-capped at 2,000. ServeGen publishes no p10.",
+   "notes": "Source: analyses/2026-09-12-trace-length-distributions/ (README, plot_length_distributions.py, results/lengths.json). Recomputed from the existing study files: gc-trace steps.csv, mooncake data/*.jsonl, servegen lengths.json. Per-turn Claude Code: decode p50 5.8K / p90 23.5K, new prefill p50 10.9K / p90 254K; per session max context p50 94K / p90 281K / p99 965K. ServeGen R1 reasoning share of output p50 76%; requests with output > 2K are 16% of requests but 57% of decode tokens."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Workload · what the distributions say",
+   "title": "Only the agentic harness produces the case where not even one request fits",
+   "items": [
+    "Claude Code: huge input (p50 100–300K), medium output (a few K to ~20K per turn)",
+    "Mooncake: input a few K, output a few hundred — p99 input 62–85K",
+    "ServeGen R1: input a few hundred, output a few thousand — p99 input ≤ 23K",
+    "Every non-agentic trace has p99 input inside the measured 29,184-token ceiling",
+    "The whole-wafer total (≈103K, derived) holds tens of such sessions — and a fraction of one Claude Code request",
+    "So 'grow one request' vs 'park many requests' has no workload-independent answer"
+   ],
+   "notes": "4b-pp-demo's conclusion for the on-chip KV debate. The 103K figure is 29K placed + ≈74K unplaced SRAM, derived not measured. Supporting measured numbers from the 09-03/09-05 captures (not new): 99% of Claude Code calls have a successor re-reading ≥95% of their KV within 10–18 s; not keeping it costs a median 13.9 s reload = 61% of the next call's latency; decode-stream concurrency p50 = 1 in both traces."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Workload · Claude Code, split by caller",
+   "title": "Subagent calls are a different shape, not a smaller copy",
+   "subtitle": "Tokens per call; p10 / p50 / p90 / p99 unless noted.",
+   "columns": [
+    "",
+    "Main thread (26,144 calls)",
+    "Subagents (20,506 calls)"
+   ],
+   "rows": [
+    [
+     "Input context",
+     "95K / 302K / 719K / 955K",
+     "29K / 100K / 326K / 726K"
+    ],
+    [
+     "First call of a session, context p50",
+     "51.5K",
+     "18.6K"
+    ],
+    [
+     "Output (p10 / p50 / p90 / p99 / max)",
+     "166 / 763 / 3.8K / 10.6K / 64K",
+     "2 / 4 / 170 / 1.5K / 22.8K"
+    ],
+    [
+     "Calls with output ≤ 5 tokens (≤ 50)",
+     "0.2% (1.1%)",
+     "58% (70%)"
+    ]
+   ],
+   "weights": [
+    1.4,
+    1.3,
+    1.3
+   ],
+   "notes": "Source: 4b-pp-demo, memory/inbox/2026-09-12-trace-length-distributions-and-subagent-vs-main.md. Subagent input is 3× smaller but still 10^5-scale — it does not fit 29K either. Output is essentially one tool call with no visible reasoning. Behaviour rows (output share of traffic, intra-turn gap, calls per session, output by model) are in the appendix."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Workload · consequence",
+   "title": "The decode budget lives on the main thread; subagents are prefill-dominated fan-out",
+   "items": [
+    "Subagents are 44% of all calls, with output p50 of 4 tokens",
+    "Main-thread output is 11.6% of that class's token traffic; subagents 1.5%",
+    "Correction to last week: the 'median context 309K' was the main-thread number",
+    "Including subagent calls, the per-call median is 197K — the figure used from here on"
+   ],
+   "notes": "4b-pp-demo. The 309K appeared in the 09-04/09-05 captures and last week's deck; it is not wrong, it is the main-thread-only cut. 197K is the all-calls median and is the number 4b-wide-layer's capacity and PD-split analyses use."
+  },
+  {
+   "type": "section",
+   "number": "02",
+   "title": "The GPU baseline",
+   "subtitle": "SGLang 0.5.19 on one H100 80GB, vanilla, every cell measured. Same model on both sides for the first time."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Baseline · measured both sides",
+   "title": "The wafer leads single-stream decode by 4–5× and trails prefill by 7×",
+   "subtitle": "Qwen3-4B. CS-3 rates as reported by the source session (750 MHz); clock convention pending.",
+   "columns": [
+    "",
+    "CS-3",
+    "H100 80GB",
+    "Lead"
+   ],
+   "rows": [
+    [
+     "Decode, bs = 1 @ 4K",
+     "~1,000 tok/s (1.0 ms)",
+     "213 tok/s (4.70 ms)",
+     "CS-3 4.7×"
+    ],
+    [
+     "Decode, bs = 1 @ ~30K",
+     "653 tok/s",
+     "162 tok/s",
+     "CS-3 4.0×"
+    ],
+    [
+     "Context slope",
+     "21.5 ns/token",
+     "48.9 ns/token",
+     "CS-3 2.3× shallower"
+    ],
+    [
+     "Decode, batched",
+     "~2,100 tok/s",
+     "4,684 tok/s (bs 32 @ 1K)",
+     "H100 2.2×"
+    ],
+    [
+     "Prefill, native",
+     "9.3–9.8K tok/s",
+     "66.5–70.4K tok/s",
+     "H100 ~7×"
+    ],
+    [
+     "Max context, one request",
+     "29K",
+     "~524K",
+     "H100 18×"
+    ]
+   ],
+   "weights": [
+    1.3,
+    1.2,
+    1.3,
+    1.0
+   ],
+   "notes": "Source: docs/reports/2026-09-13-sglang-qwen3-4b-h100-baseline.md and 4b-wide-layer Round 156. CS-3 column: decode cycles/step = 681K + 16.1 × context, converted at 750 MHz by the source session. At 0.85 GHz the CS-3 rates rise by 1.133 and the leads become ~5.4× / 4.5× / 2.6× shallower; the batched and prefill deficits shrink to ~2.0× and ~6×. Le to decide which clock the deck uses. Finding 10 (prefill behind) goes from extrapolated to measured."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Baseline · what it settles",
+   "title": "Our only measured advantage applies exclusively to the workload we cannot hold",
+   "items": [
+    "Confirmed: prefill is ~7× behind — finding 10 is now measured, not extrapolated",
+    "Killed: the 'fast recompute engine for short-context multi-tenant traffic' claim",
+    "Even the analytical thin-stage forced prefill (31–43K tok/s) is 1.6–2.2× slower than the H100's measured native prefill",
+    "There is no prefill-side wedge anywhere on the roadmap",
+    "Median agentic turn at short context: CS-3 6.9 s vs H100 28 s",
+    "At the real 197K context: H100 ~75 s, CS-3 cannot hold it at all"
+   ],
+   "notes": "4b-wide-layer Round 156. The single-stream decode lead (4.0–4.7×) grows with context — and the workload with long context is the one that does not fit."
+  },
+  {
+   "type": "section",
+   "number": "03",
+   "title": "The capacity case",
+   "subtitle": "Every rung of the on-chip ladder against the traces, then the two ways around it: more wafers, or a link."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Capacity · the ladder against the traces",
+   "title": "No rung reaches the agent harness; the workloads it reaches also fit in 80 GB of HBM",
+   "subtitle": "Ceilings are analytical except today's, which is measured. Trace percentiles: Claude Code p50 197K, Mooncake p99 85K, ServeGen p99 23K.",
+   "columns": [
+    "Rung",
+    "Ceiling",
+    "Basis",
+    "Claude Code p50",
+    "Mooncake · ServeGen p99"
+   ],
+   "rows": [
+    [
+     "Today",
+     "29,184",
+     "measured",
+     "no",
+     "no · yes"
+    ],
+    [
+     "Fusion",
+     "~17.6K",
+     "derived",
+     "no",
+     "no · no"
+    ],
+    [
+     "Split",
+     "~26K",
+     "derived",
+     "no",
+     "no · yes"
+    ],
+    [
+     "Near pool",
+     "95K",
+     "derived",
+     "no",
+     "yes · yes"
+    ],
+    [
+     "Far pool (every lever)",
+     "167K",
+     "derived",
+     "no — below the median",
+     "yes · yes"
+    ],
+    [
+     "fp8 + far pool + chunked scoring",
+     "≈225K",
+     "derived",
+     "yes — ~55% of calls",
+     "yes · yes"
+    ]
+   ],
+   "weights": [
+    1.3,
+    0.7,
+    0.7,
+    1.2,
+    1.5
+   ],
+   "notes": "4b-wide-layer Rounds 153–154. The far pool at 167K is the score-buffer wall, not a storage limit: fp8 storage alone allows ≈225K, and chunked scoring (lever C3, owned by the 4b-chunked-softmax session) removes the wall. The yes/no columns compare each ceiling against the quoted trace percentile; they are my reading of the numbers the session gave, not a table the session produced."
+  },
+  {
+   "type": "statement",
+   "eyebrow": "Capacity · in one sentence",
+   "title": "Capacity cannot reach the workload that wants it; the workloads it reaches do not need it.",
+   "subtitle": "The reopener is the score-buffer wall: fp8 storage plus chunked scoring would clear the 197K median for ~55% of agent calls — all derived.",
+   "notes": "4b-wide-layer Round 153. The sentence is the session's; the reopener is Round 154's."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Capacity · buying it with wafers",
+   "title": "Multi-card does not rescue capacity: it halves the one thing we lead",
+   "items": [
+    "Measured: 175 µs per wafer per token at today's layout",
+    "29K → 197K needs ≈ 6 extra wafers, i.e. +1.01 ms per token (derived)",
+    "Decode goes from 1.05 to 2.06 ms per token: 954 → 485 tok/s",
+    "A negative-sum trade in the one dimension where the wafer is ahead"
+   ],
+   "notes": "4b-wide-layer Round 156/157. The 175 µs is measured; the extension is arithmetic. tok/s at 750 MHz as reported."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Capacity · KV over a link",
+   "title": "Per token, attention reads the whole KV — it cannot cross a link",
+   "subtitle": "Card-to-card interconnect at 1.2 Tbit/s (150 GB/s), per Le; not measured in this project. Whole decode step on the wafer is 1.0 ms.",
+   "columns": [
+    "Context",
+    "KV",
+    "Over the 150 GB/s link",
+    "H100 from its own HBM"
+   ],
+   "rows": [
+    [
+     "29K",
+     "4.01 GB",
+     "26.7 ms / token",
+     "1.20 ms"
+    ],
+    [
+     "197K",
+     "27.1 GB",
+     "180 ms / token",
+     "8.08 ms"
+    ]
+   ],
+   "weights": [
+    0.8,
+    0.8,
+    1.3,
+    1.3
+   ],
+   "notes": "4b-wide-layer Round 159. Fitting 29K of KV into half a token budget needs ≈8 TB/s — the link is 53× short — and the H100 reads the same KV 22× faster from HBM. This is a bandwidth-class fact, not an engineering gap. The earlier 171 µs crossing figure was the public API and is retracted (see Corrections)."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Capacity · what the link does buy",
+   "title": "KV must live where the attention compute is; the link carries activations, and AFD is a weights-side solution",
+   "items": [
+    "Activations: 5 KB per layer, 34 ns of wire — pure latency",
+    "36 layers × 6–10 µs round trip = 0.22–0.36 ms per token: affordable",
+    "So attention–FFN disaggregation is viable on the real interconnect",
+    "But it removes FFN weight traffic: worth 57.3% at 4K, only 15.0% at 197K",
+    "A dense 4B on an 80 GB GPU is AFD's worst case — which is why NVIDIA keeps attention + KV together"
+   ],
+   "notes": "4b-wide-layer Round 159. The 6–10 µs round trip is Le's interconnect figure plus turnaround, unmeasured here. AFD = Attention–FFN Disaggregation, NVIDIA's split in which the GPU holds prefill and decode attention plus the whole KV and the LPX side does FFN/MoE."
+  },
+  {
+   "type": "section",
+   "number": "04",
+   "title": "The prefix × decode spectrum",
+   "subtitle": "Four configurations across eleven workload scenarios, derived from each machine's measured rates. Per-request wall time."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Spectrum · scenarios that fit (1 of 2)",
+   "title": "PD-split wins every scenario that fits: the GPU prefills, the wafer decodes",
+   "subtitle": "ms per request. PD-split = GPU prefill → link → CS-3 decode. Derived from measured rates; link at 0.98 µs per prefix token (unmeasured).",
+   "columns": [
+    "Scenario (prefix / decode)",
+    "CS-3 alone",
+    "PD-split",
+    "H100 alone",
+    "GPU-streamed"
+   ],
+   "rows": [
+    [
+     "Qwen-Turbo p50 (680 / 11)",
+     "82",
+     "21",
+     "61",
+     "28"
+    ],
+    [
+     "ServeGen R1 p50 (208 / 792)",
+     "745",
+     "726",
+     "3,654",
+     "888"
+    ],
+    [
+     "Long reasoning (208 / 10,000)",
+     "9,147",
+     "9,128",
+     "46,105",
+     "11,172"
+    ],
+    [
+     "R1 p90 (2,100 / 3,400)",
+     "3,462",
+     "3,273",
+     "16,020",
+     "10,290"
+    ],
+    [
+     "Qwen-Max p90 (2,400 / 433)",
+     "668",
+     "453",
+     "2,078",
+     "1,472"
+    ]
+   ],
+   "weights": [
+    1.8,
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "notes": "4b-wide-layer Round 171. Modelling: CS-3 decode = (681K + 16.1·C) cycles at 750 MHz; H100 decode = 4.60 + 0.0489·C/1K ms (fit to measured 1K–32K); H100 prefill measured, held at the 32K rate beyond 32K (optimistic for H100). GPU-streamed = KV stays on the GPU and the whole cache crosses per token. PD-split's decode side is the wafer, so it keeps the 29K ceiling. Best in every row here is PD-split."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Spectrum · scenarios that fit (2 of 2)",
+   "title": "The longer the prefix, the more the 7× prefill deficit costs CS-3 alone",
+   "subtitle": "ms per request. Same model as the previous slide.",
+   "columns": [
+    "Scenario (prefix / decode)",
+    "CS-3 alone",
+    "PD-split",
+    "H100 alone",
+    "GPU-streamed"
+   ],
+   "rows": [
+    [
+     "Mooncake conv p50 (6,900 / 350)",
+     "1,096",
+     "482",
+     "1,834",
+     "2,850"
+    ],
+    [
+     "Mooncake toolagent p90 (17,000 / 507)",
+     "2,435",
+     "1,012",
+     "3,103",
+     "9,468"
+    ],
+    [
+     "Long-doc classification (27,000 / 20)",
+     "2,872",
+     "734",
+     "796",
+     "1,238"
+    ],
+    [
+     "Mooncake conv p90 (27,000 / 597)",
+     "3,730",
+     "1,592",
+     "4,212",
+     "17,411"
+    ]
+   ],
+   "weights": [
+    1.8,
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "notes": "4b-wide-layer Round 171. PD-split's margin over CS-3 alone: 1.03× at 208 tokens, 1.5× at 2.4K, 2.3× at 6.9K, 2.4× at 17K, 3.9× at 27K. Its weakest win is long-prefix/tiny-decode (classification), where the H100 alone is within 8%."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Spectrum · above the wall",
+   "title": "Above 29K only the H100 serves — PD-split does not extend the ceiling, because its decode side is the wafer",
+   "subtitle": "ms per request. The Claude Code row is a frontier-model workload a 4B never serves; it is here for completeness, not as a target.",
+   "columns": [
+    "Scenario (prefix / decode)",
+    "CS-3 alone",
+    "PD-split",
+    "H100 alone",
+    "GPU-streamed"
+   ],
+   "rows": [
+    [
+     "Mooncake conv p99 (85,000 / 1,100)",
+     "no fit",
+     "no fit",
+     "12,075",
+     "97,363"
+    ],
+    [
+     "Claude Code median (197,000 / 5,800)",
+     "no fit",
+     "no fit",
+     "88,215",
+     "1,158,677"
+    ]
+   ],
+   "weights": [
+    1.8,
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "notes": "4b-wide-layer Round 171 and Round 168. H100 prefill beyond 32K is held at the 32K rate, so these two H100 times are understated. The GPU-streamed column is worse than the H100 alone in every row of the spectrum except the 680-token one, and 8–13× worse above 29K: 'keep KV on the GPU' is dead at every scale."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Spectrum · how to read it",
+   "title": "Prefix length sets the margin over CS-3 alone; decode share sets the margin over the H100",
+   "items": [
+    "Over CS-3 alone: 1.03× at a 208-token prefix, rising to 3.9× at 27K — PD-split is the prefill fix",
+    "Over H100 alone: 5.0× where decode is ~100% of the work, down to 1.08× at 4% — the decode advantage",
+    "The 29K wall decides participation; above it the GPU is alone, with or without a wafer",
+    "Short-prefix / long-decode (reasoning) is the wafer's home turf: 5× over H100 alone, PD-split barely needed",
+    "Long-prefix / short-decode (RAG, summarisation) needs PD-split, and the H100 is competitive",
+    "PD-split was ruled out earlier on a 3.2 GB/s H2D measurement; the real link is 62–176× that requirement"
+   ],
+   "notes": "4b-wide-layer Rounds 169 and 171. The 3.2 GB/s was host-to-wafer memcpy through the public API, a different leg from the card-to-card interconnect."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Spectrum · depth vs breadth",
+   "title": "The same 167K holds zero agentic requests or 803 ServeGen requests",
+   "subtitle": "Capacity spent on one request's depth, or on many requests' prefixes. Derived.",
+   "columns": [
+    "Capacity",
+    "Depth: one agentic request",
+    "Mooncake p50 (6.9K prefix)",
+    "ServeGen R1 p50 (208 prefix)"
+   ],
+   "rows": [
+    [
+     "Today, 29K (measured)",
+     "14.7% of the 197K median",
+     "4 prefixes",
+     "139 prefixes"
+    ],
+    [
+     "Far pool, 167K (derived)",
+     "84.8% — still short",
+     "24 prefixes",
+     "803 prefixes"
+    ]
+   ],
+   "weights": [
+    1.2,
+    1.3,
+    1.1,
+    1.1
+   ],
+   "notes": "4b-wide-layer Round 164. The frontier is two-dimensional and only the depth axis has been pushed."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Spectrum · recommended order",
+   "title": "Push breadth first: prefix reuse inside today's 29K, with harvesting as the mechanism",
+   "items": [
+    "Prefix reuse is startable inside today's 29K, with two independent justifications",
+    "Our prefill is 7× slower, so avoiding a re-prefill is worth 7× more to us: 10.9K tokens cost the H100 156 ms and CS-3 1,147 ms",
+    "ServeGen traffic is 3.9 : 1 prefill-to-decode by token",
+    "Near-pool harvesting is the one rung already priced: 1.17 cycles per word, inside the ≤ 2 gate (simfab microbench)",
+    "Then the depth-vs-breadth allocation curve",
+    "Do not chase 167K or 225K as a target"
+   ],
+   "notes": "4b-wide-layer Round 164. The 1.17 cyc/word figure came from the fused-block thread's simfab microbench, which also corrected a 13 cyc/word relay artefact. Two measurements still missing: the width axis (four measured points on height, none on width), and the wafer-edge round trip to a GPU (waits on Cerebras opening the API)."
+  },
+  {
+   "type": "section",
+   "number": "05",
+   "title": "Layout C",
+   "subtitle": "One decoder layer cut into three thin stages on a single 256×256 block. Implemented through a five-layer group, measured on CS-3, closed on 2026-09-13."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Layout C · placement",
+   "title": "Eight groups of five layers on a 650 × 1028 footprint, with head and tail on the left",
+   "image": "figures/layoutC_placement_map.png",
+   "caption": "Wafer map only; the colour ledger is in the source figure. Analytical placement from a design and source audit, not a compiled full model.",
+   "notes": "Source: docs/diagrams/2026-09-13-layoutC-color-regions.png (.excalidraw editable). Northbound groups G4–G7 are mirrored proposals with no chip-fit, route, queue or SRAM validation. Purple columns are router-only activation bridges; orange x=645 is the KV feeder reservation."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Layout C · one group",
+   "title": "A1 and A3 share the left half; A2 takes the whole right half",
+   "image": "figures/layoutC_tall_a2.png",
+   "caption": "Compiled miniature (16 × 16 core, one layer, simulator validation) with the same shape as the full geometry: A1 128 × 80 (32 hidden per row), spare 128 × 16, A3 128 × 160 (16 per row), A2 128 × 256 (10 per row). 65,536 PEs reserved, 63,488 active.",
+   "notes": "Source: docs/diagrams/2026-09-10-layoutC-tall-a2.png; geometry source of truth is docs/reports/2026-09-13-layoutC-implementation-handoff.md §3. Why the row shards are 32/10/16 and which tensor axis each stage shards: the hidden-reshard and weight-axes figures in the appendix."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Layout C · measured",
+   "title": "3.7–3.9× the original's single-layer latency in half the PEs",
+   "subtitle": "Raw CS-3 device cycles, batch 1, BF16, one layer. Serialized latency, not pipelined throughput; synthetic weights.",
+   "columns": [
+    "Initial KV",
+    "Original ATTN + FFN (131,072 PE)",
+    "Layout C A1 + A2 + A3 (65,536 PE)",
+    "Ratio"
+   ],
+   "rows": [
+    [
+     "1,280",
+     "26,377 cycles",
+     "102,511 cycles",
+     "3.886×"
+    ],
+    [
+     "5,120",
+     "28,000 cycles",
+     "104,330 cycles",
+     "3.726×"
+    ]
+   ],
+   "weights": [
+    0.8,
+    1.4,
+    1.4,
+    0.7
+   ],
+   "notes": "Source: docs/reports/2026-09-13-layoutC-single-layer-performance.md (+ evidence JSON). Three independent jobs per cell, 33 tokens each, first 4 dropped, median of 29 then median across jobs. All 1,013,760 output elements exact against each geometry's own operation-order oracle. Common boundary: START enqueue → all output rows complete on one collector PE; empty cost 8,231 cycles, not subtracted. Context sensitivity is tiny on both sides: +0.42 / +0.47 cycles per KV position. The bar chart is in the appendix."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Layout C · why",
+   "title": "FLOP does not predict time here: FFN has 2× the MACs, ATTN takes 2× the time",
+   "image": "figures/attn_vs_ffn_three_axes.png",
+   "caption": "The original ATTN and FFN blocks on three axes. TIME is 4b-wide-layer's phase-TSC profile (per layer per token, 2K, full 256 × 256 square); FLOP is derived MACs per PE; SRAM is the compiled per-PE total. ATTN also grows with context (T_attn / T_ffn → ~2.7 at 8K); FFN is flat.",
+   "notes": "Source: docs/reports/2026-09-13-attn-vs-ffn-three-axes.png (footnote cropped for the slide; the FLOP-panel subtitle still collides with the 1200 tick — re-export pending). Numbers: ATTN 560 MACs / 11,886 cycles / 31.75 KB; FFN 1,140 MACs / 5,802 cycles / 29.77 KB. SRAM from demo/qwen3-4b-thin-stage/results/cs3/out_S1B_2K/msize.txt. This replaces the per-PE-work bar chart, which plotted FLOP only and is withdrawn (Corrections)."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Layout C · the explanation that survived",
+   "title": "The kernel is comm- and latency-bound, so a three-way cut pays three coordination costs",
+   "items": [
+    "The MAC model that named A3 (FFN) as the pacing stage predicted the ratio and got the mechanism backwards — withdrawn",
+    "Measured: ATTN paces the original at 2.05× FFN's time, and FFN idles",
+    "Per-stage time for A1 / A2 / A3 was never measured; only the combined single-layer numbers exist",
+    "Separately measured: ATTN and FFN as independent pipelined stages give 1.47× at 2K and 1.40× at 8K",
+    "That result keeps two blocks and overlaps them — the lever layout C gave up"
+   ],
+   "notes": "4b-mini-ppl-debug's correction plus docs/reports/2026-09-13-layoutC-performance-conclusion.md §5b. Also withdrawn with the MAC model: the '2.65× optimal three-way split' floor and the 0.31× / 0.62× first-order pipelined-throughput figures."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Layout C · what stands regardless",
+   "title": "The first five-layer group with on-wafer feedback runs on CS-3, exact",
+   "items": [
+    "Mini geometry: 5 layers × 33 tokens, 10,560 output elements exact",
+    "Full geometry: 5 layers × 2 tokens, 5,120 exact",
+    "Full cache probe: 83,886,080 K/V values and every cursor pass; a one-bit-flip negative control fails as it should",
+    "Router-only strip transport with the marker / ACK / reset / START protocol validated both directions, with dropped- and duplicated-fragment controls",
+    "Two device defects found and fixed on 09-10: A2 RoPE reset overwriting XKCache; cut-chain zero local-layer count"
+   ],
+   "notes": "Sources: docs/reports/2026-09-13-layoutC-first-group-feedback.md, docs/reports/2026-09-10-layoutC-kv-fix.md. The transport, checker and handoff work carry over to the fused block."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Layout C · decision",
+   "title": "Closed. Next: one fused 256 × 256 block with attention state on one PE in N",
+   "items": [
+    "The two-group D17 link is paused (Le, 09-13)",
+    "Fused block: FFN + QKV on every PE; attention heavy state on 1-in-N PEs; the rest hold KV and a minimal scan",
+    "Gate: compile-only SRAM of the three PE images",
+    "First-order expectation: ~1.0× the original's latency in half the area — derived, not measured",
+    "Layout C's structural cause — three serial stages sharing one block's area — does not apply to a fused block"
+   ],
+   "notes": "4b-mini-ppl-debug relaying Le's 09-13 decision. Memory note (layoutc-closed-fused-sparse-attention-next) adds: fusion 1.34× at fixed wafer and SRAM-ahead vs the FFN block; gate = compile-only .text-vs-layer-halving; streaming measured cheap. Those figures were not in the message sent to this deck and are not on the slide."
+  },
+  {
+   "type": "section",
+   "number": "06",
+   "title": "Why the hardware advantage does not come out",
+   "subtitle": "A property of this kernel, not of the architecture — the scoping caveat is on the slide."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Kernel · the fixed term",
+   "title": "87% of per-layer time is independent of how much work each PE does",
+   "items": [
+    "Least-squares on the measured height ladder: T = 10,398 + 855 × W (W = per-PE work) — halving the area moved time by 1.4%",
+    "Per PE per layer: 3,080 bytes in ~17,688 cycles = 0.174 B/cycle against ~27 available, 0.63% utilisation",
+    "Mechanism: 10 hidden + 16 attention values per PE, so a QKV matvec is 160 MACs against ~100 cycles of DSD setup; 8–9.6K of the fixed term is collectives",
+    "Aggregate: 6,269× the bandwidth converted into 4.7×; 0.045% utilisation against the H100's 59.7%",
+    "Scope: Cerebras quotes CS-5 at 10,000 tok/s per user on 31B–120B models — a model 8–30× larger running 10× faster. These are this kernel's numbers, not the architecture's",
+    "Their own rates back-solve to 0.24–1.52% of aggregate bandwidth, so the diagnosis (latency-bound) is corroborated; the lever it implies is speculative decoding, not yet pulled"
+   ],
+   "notes": "4b-wide-layer Rounds 158 and 162. Speculative decoding amortises the fixed term and the KV scan; batching amortises only the first, and our batching measured 2.2×. Unaffected by the caveat: everything trace-based — the three workload shapes, AFD's weights-side nature, MoE sparsity inverting sign, KV not crossing a link."
+  },
+  {
+   "type": "section",
+   "number": "07",
+   "title": "Industry context and positioning",
+   "subtitle": "What NVIDIA's LPX and Cerebras's CS-6 say about the boundary, and how to frame the argument."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Context · two public data points",
+   "title": "Both LPX and CS-6 add a DRAM tier; the field is moving from total residency to tiering",
+   "items": [
+    "NVIDIA Groq 3 LPX: 500 MB compiler-managed SRAM per chip, 128 GB rack-wide, 96 C2C links = 2.5 TB/s per chip, plus 256 GB + 128 GB DRAM",
+    "LPX does FFN / MoE; the GPUs hold prefill and decode attention and the whole KV — attention–FFN disaggregation with compile-time static allocation",
+    "Shared design constant: a full SRAM sweep is ~3.3 µs on LPX and ~2.1 µs on WSE-3",
+    "The difference is the boundary: LPX made the chip edge part of the compiler's schedule; Cerebras has no edge inside a wafer",
+    "Cerebras CS-6 (Hot Chips 2026) adds 3D-stacked DRAM — the tier CS-3 lacks. Roadmap, no capacity or bandwidth numbers published",
+    "If KV moved there the thresholds are 4.0 TB/s at 29K, 27.1 TB/s at 197K (8.1× HBM), 84.6 TB/s at p90 — derived"
+   ],
+   "notes": "4b-wide-layer Rounds 158 and 162, from the NVIDIA blog and the Cerebras Hot Chips 2026 post. LPX also uses a plesiosynchronous protocol aligning hundreds of chips as one system."
+  },
+  {
+   "type": "compare",
+   "eyebrow": "Positioning · a proposal, not a decision — neither option is marked",
+   "title": "From capacity to residency",
+   "options": [
+    {
+     "label": "On-chip capacity → performance",
+     "points": [
+      "167K far pool < 197K median",
+      "Numbers are this kernel's, not the architecture's",
+      "CS-6 and LPX both add DRAM"
+     ]
+    },
+    {
+     "label": "The residency frontier",
+     "points": [
+      "Which state must be resident",
+      "Weights tierable; KV not (53×)",
+      "Per-PE distribution binds, not totals"
+     ]
+    }
+   ],
+   "notes": "4b-wide-layer Rounds 163–164. Not marked recommended because Le has not decided. Rounds 166–167 (Le: 'weights and KV are not different; a fixed system prompt is weights') refine the taxonomy row and were not relayed to this deck — pending Le."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Positioning · the residency frontier in three layers",
+   "title": "Taxonomy is AFD's table; placement is the measured, novel part; method is what survived this week",
+   "items": [
+    "Taxonomy: dense weights tierable; MoE experts must be tiered; KV not tierable (53× short); activations trivially tierable",
+    "Placement: inside the resident tier, per-PE distribution binds, not aggregate capacity — halving width halves the ceiling, fusion doubles it, at identical totals",
+    "Per-PE footprint is not weight-dominated: 24.8 of the ATTN block's 31.8 KB is code, buffers and KV machinery",
+    "Method: across ~12 contested claims this week, the single predictor of survival was whether the measurement carried a control; the failure mode recurred twelve times",
+    "CS-3 is the extremal no-tier point, so every residency decision is forced into the open and measurable"
+   ],
+   "notes": "4b-wide-layer Rounds 163–164, expanded from the compare slide."
+  },
+  {
+   "type": "next_steps",
+   "eyebrow": "Decide",
+   "title": "What the room needs to settle",
+   "items": [
+    {
+     "owner": "Convention",
+     "action": "Clock for every tok/s: 750 MHz as reported, or 0.85 GHz per the 09-07 rule"
+    },
+    {
+     "owner": "Fused block",
+     "action": "Go / no-go criteria for the compile-only SRAM gate"
+    },
+    {
+     "owner": "Workstream",
+     "action": "Prefix reuse inside today's 29K, with near-pool harvesting as the mechanism"
+    },
+    {
+     "owner": "Measure",
+     "action": "The width axis — four points on height, none on width"
+    },
+    {
+     "owner": "Measure",
+     "action": "Wafer-edge round trip to a GPU — waits on Cerebras opening the API"
+    },
+    {
+     "owner": "Framing",
+     "action": "Adopt the residency frontier, or keep capacity"
+    }
+   ],
+   "notes": "The first item changes numbers on four slides (baseline, multi-card, and the three spectrum tables); nothing else on the deck depends on it. Items 4–5 are the two measurements 4b-wide-layer names as missing."
+  },
+  {
+   "type": "section",
+   "number": "C",
+   "title": "Corrections",
+   "subtitle": "Three things said earlier — one last week, two this week — that the measurements overturned."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Correction · layout C explanation",
+   "title": "The per-PE MAC breakdown is withdrawn: it predicted the 3.7× and named the pacing stage backwards",
+   "items": [
+    "As sent: original ATTN 560 / FFN 1,140 MACs per PE; layout C A1 / A2 / A3 = 1,536 / 640 / 3,648, 'explaining 88–92% of the ratio'",
+    "Measured (4b-wide-layer phase-TSC): ATTN takes 2.05× FFN's time — the kernel is comm- and latency-bound, not FLOP-bound",
+    "Withdrawn with it: the per-PE-work bar chart, the 2.65× three-way floor, the 0.31× / 0.62× throughput figures, and 'enlarge FFN to 512 × 256'",
+    "The 3.7–3.9× measurement itself stands; struck sections are kept struck in the conclusion doc so they are not re-derived"
+   ],
+   "notes": "4b-mini-ppl-debug, second message; docs/reports/2026-09-13-layoutC-performance-conclusion.md §5 (struck) and §5b (corrected)."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Correction · the interconnect",
+   "title": "The 171 µs crossing was the public API, not the fabric",
+   "items": [
+    "Le: the card-to-card interconnect is 3–5 µs at 1.2 Tbit/s (150 GB/s); the public Cerebras API does not expose it",
+    "The 171 µs was measured through that API — 43× worse than the silicon",
+    "Withdrawn: Rounds 157–158's 'the boundary is a wall, AFD is dead at bs = 1'",
+    "Survives: KV cannot cross a link (53× short); the link carries activations, so AFD is viable — on the weights side",
+    "Revived: PD-split, which had been ruled out on a 3.2 GB/s host-to-wafer measurement of a different leg"
+   ],
+   "notes": "4b-wide-layer Round 159 and Round 169."
+  },
+  {
+   "type": "bullets",
+   "eyebrow": "Correction · last week's median",
+   "title": "The 'median context 309K' was the main-thread number; over all calls it is 197K",
+   "items": [
+    "Subagent calls are 44% of the Claude Code trace and were not in the 09-04 / 09-05 cut",
+    "Main thread p50 302K; subagents p50 100K; all calls p50 197K",
+    "Every capacity and spectrum figure this week uses 197K",
+    "The verdict does not change: 197K is still 6.8× the measured ceiling and above the far pool"
+   ],
+   "notes": "4b-pp-demo. Pending Le: Round 167 ('a fixed system prompt is weights') and Round 168 ('a 4B never serves the Claude Code model; applying Round 35's caveat changes the verdict') were not relayed to this deck and may belong here."
+  },
+  {
+   "type": "section",
+   "number": "A",
+   "title": "Appendix",
+   "subtitle": "The full tables behind the talk, one per slide."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · request lengths (1 of 3)",
+   "title": "Claude Code per call: p10 / p50 / p90 / p99 / max, tokens",
+   "columns": [
+    "Trace",
+    "n",
+    "Input context",
+    "Output"
+   ],
+   "rows": [
+    [
+     "Claude Code · main thread",
+     "26,144",
+     "95K / 302K / 719K / 955K / 1.0M",
+     "166 / 763 / 3.8K / 10.6K / 64K"
+    ],
+    [
+     "Claude Code · subagents",
+     "20,506",
+     "29K / 100K / 326K / 726K / 991K",
+     "2 / 4 / 170 / 1.5K / 22.8K"
+    ],
+    [
+     "Claude Code · all calls",
+     "46,650",
+     "47K / 197K / 616K / 930K / 1.0M",
+     "2 / 243 / 2.5K / 8.7K / 64K"
+    ]
+   ],
+   "weights": [
+    1.3,
+    0.6,
+    1.6,
+    1.5
+   ],
+   "notes": "analyses/2026-09-12-trace-length-distributions/results/lengths.json. Per turn (4,032 turns): decode p50 5.8K / p90 23.5K; new prefill p50 10.9K / p90 254K. Per session (1,057): max context p50 94K / p90 281K / p99 965K."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · request lengths (2 of 3)",
+   "title": "Mooncake per request: p10 / p50 / p90 / p99 / max, tokens",
+   "subtitle": "Output is hard-capped at 2,000.",
+   "columns": [
+    "Trace",
+    "n",
+    "Input context",
+    "Output"
+   ],
+   "rows": [
+    [
+     "Mooncake · conversation",
+     "12,031",
+     "964 / 6.9K / 27K / 85K / 126K",
+     "24 / 350 / 597 / 1.1K / 2,000 (cap)"
+    ],
+    [
+     "Mooncake · toolagent",
+     "23,608",
+     "1.8K / 6.3K / 17K / 62K / 126K",
+     "3 / 30 / 507 / 897 / 2,000 (cap)"
+    ],
+    [
+     "Mooncake · synthetic",
+     "3,993",
+     "30 / 11.6K / 39K / 66K / 191K",
+     "4 / 69 / 389 / 768 / 893"
+    ]
+   ],
+   "weights": [
+    1.3,
+    0.6,
+    1.6,
+    1.5
+   ],
+   "notes": "analyses/2026-09-12-trace-length-distributions/results/lengths.json, from analyses/2026-09-03-mooncake-trace-study/data/*.jsonl."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · request lengths (3 of 3)",
+   "title": "ServeGen per request: p50 / p90 / p99 / max, tokens",
+   "subtitle": "ServeGen publishes mean / p50 / p90 / p99 / max only — no p10, no raw rows.",
+   "columns": [
+    "Model",
+    "Input context",
+    "Output"
+   ],
+   "rows": [
+    [
+     "ServeGen · DeepSeek-R1",
+     "208 / 2.1K / 23K / 57K",
+     "792 / 3.4K / 12.6K / 32.8K"
+    ],
+    [
+     "ServeGen · Qwen-Max",
+     "812 / 2.4K / 6.2K / 31K",
+     "56 / 433 / 840 / 9.3K"
+    ],
+    [
+     "ServeGen · Qwen-Plus",
+     "216 / 1.7K / 4.7K / 372K",
+     "39 / 213 / 1.1K / 16K"
+    ],
+    [
+     "ServeGen · Qwen-Turbo",
+     "680 / 813 / 2.3K / 229K",
+     "11 / 73 / 467 / 10.9K"
+    ]
+   ],
+   "weights": [
+    1.2,
+    1.4,
+    1.4
+   ],
+   "notes": "analyses/2026-09-05-servegen-trace-study/results/lengths.json. R1: reasoning share of output p50 76%; requests with output > 2K are 16% of requests but 57% of decode tokens."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · Claude Code by caller",
+   "title": "Main thread vs subagents: behaviour",
+   "columns": [
+    "",
+    "Main thread",
+    "Subagents"
+   ],
+   "rows": [
+    [
+     "Output share of the class's token traffic",
+     "11.6%",
+     "1.5%"
+    ],
+    [
+     "Intra-turn gap p50",
+     "14.9 s",
+     "8.3 s"
+    ],
+    [
+     "Calls per session p50 / p90",
+     "21 / 267",
+     "15 / 46"
+    ],
+    [
+     "Output p50 by model",
+     "Opus 4.8 837 · Opus 5 673 · Fable 5 501 · Fable 5.1 1,145",
+     "Opus 4.8 3 · Opus 5 3 · Sonnet 5 3 · Haiku 4.5 1 (p90 4) · Fable 5 74"
+    ]
+   ],
+   "weights": [
+    1.2,
+    1.5,
+    1.5
+   ],
+   "notes": "4b-pp-demo; agent-memory memory/inbox/2026-09-12-trace-length-distributions-and-subagent-vs-main.md."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · ATTN vs FFN, the numbers",
+   "title": "Three axes for the original blocks at 2K",
+   "columns": [
+    "Block",
+    "Per-PE MACs (derived)",
+    "Per-layer time (measured CS-3)",
+    "Per-PE SRAM (compiled)"
+   ],
+   "rows": [
+    [
+     "Original ATTN (QKV + attn + O)",
+     "560",
+     "11,886 cycles",
+     "31.75 KB"
+    ],
+    [
+     "Original FFN",
+     "1,140",
+     "5,802 cycles",
+     "29.77 KB"
+    ]
+   ],
+   "weights": [
+    1.3,
+    1.0,
+    1.2,
+    1.0
+   ],
+   "notes": "TIME: 4b-wide-layer phase-TSC profile. SRAM: demo/qwen3-4b-thin-stage/results/cs3/out_S1B_2K/msize.txt. MACs: 4b-mini-ppl-debug's derivation. FLOP says FFN 2.04×; TIME says ATTN 2.05×; SRAM says ATTN 1.07×."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · layout C measurement",
+   "title": "Single-layer completion latency, original vs layout C",
+   "image": "figures/layoutC_single_layer_performance.png",
+   "caption": "Cycles per serialized layer at two initial KV lengths. Three independent runs × 29 measured tokens; error bars are the run-median range. The dashed line is the empty-boundary cost (≈8.23K), shown but not subtracted.",
+   "notes": "docs/reports/2026-09-13-layoutC-single-layer-performance.png."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · layout C geometry",
+   "title": "One group on a 256 × 256 block",
+   "subtitle": "Columns × rows; source of truth is the implementation handoff §3.",
+   "columns": [
+    "Stage",
+    "Columns × rows",
+    "Values per row",
+    "PEs"
+   ],
+   "rows": [
+    [
+     "A1 (QKV)",
+     "128 × 80",
+     "hidden 32",
+     "10,240"
+    ],
+    [
+     "Spare",
+     "128 × 16",
+     "—",
+     "2,048"
+    ],
+    [
+     "A3 (FFN)",
+     "128 × 160",
+     "16",
+     "20,480"
+    ],
+    [
+     "A2 (attention + O)",
+     "128 × 256",
+     "10",
+     "32,768"
+    ]
+   ],
+   "weights": [
+    1.2,
+    1.0,
+    1.0,
+    0.8
+   ],
+   "notes": "docs/reports/2026-09-13-layoutC-implementation-handoff.md §3. 65,536 PEs reserved, 63,488 active. PE counts are columns × rows from the stated geometry."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · layout C sharding",
+   "title": "Why the row shards are 32 / 10 / 16",
+   "image": "figures/layoutC_hidden_reshard.png",
+   "caption": "How the hidden dimension is re-sharded between stages.",
+   "notes": "docs/diagrams/2026-09-10-layoutC-hidden-reshard.png."
+  },
+  {
+   "type": "figure",
+   "eyebrow": "Appendix · layout C sharding",
+   "title": "Which tensor axis each stage shards",
+   "image": "figures/layoutC_weight_axes.png",
+   "caption": "Weight axes per stage.",
+   "notes": "docs/diagrams/2026-09-10-layoutC-weight-axes.png."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · if KV moved to a DRAM tier",
+   "title": "Bandwidth a DRAM tier would need to hold the KV scan at today's step time",
+   "subtitle": "Derived from the whole-KV-per-token read; CS-6 has published no numbers.",
+   "columns": [
+    "Context",
+    "Threshold",
+    "vs H100 HBM"
+   ],
+   "rows": [
+    [
+     "29K",
+     "4.0 TB/s",
+     "1.2×"
+    ],
+    [
+     "197K (Claude Code median)",
+     "27.1 TB/s",
+     "8.1×"
+    ],
+    [
+     "616K (Claude Code p90)",
+     "84.6 TB/s",
+     "25×"
+    ]
+   ],
+   "weights": [
+    1.3,
+    1.0,
+    1.0
+   ],
+   "notes": "4b-wide-layer Round 162. The vs-HBM column is 27.1 / 8.1 = 3.35 TB/s as the HBM reference; the 1.2× and 25× are my arithmetic on the session's thresholds — strike if unwanted."
+  },
+  {
+   "type": "table",
+   "eyebrow": "Appendix · NVIDIA Groq 3 LPX",
+   "title": "LPX as published",
+   "subtitle": "From the NVIDIA blog, as fetched by 4b-wide-layer.",
+   "columns": [
+    "Quantity",
+    "Value"
+   ],
+   "rows": [
+    [
+     "SRAM per chip (compiler-managed)",
+     "500 MB; 128 GB rack-wide"
+    ],
+    [
+     "On-chip bandwidth",
+     "150 TB/s"
+    ],
+    [
+     "Chip-to-chip",
+     "96 C2C links = 2.5 TB/s per chip; plesiosynchronous"
+    ],
+    [
+     "Role in the system",
+     "FFN / MoE; GPUs hold attention and the whole KV (AFD)"
+    ],
+    [
+     "DRAM",
+     "256 GB + 128 GB"
+    ]
+   ],
+   "weights": [
+    1.2,
+    1.8
+   ],
+   "notes": "4b-wide-layer Round 158."
+  }
+ ]
+}
