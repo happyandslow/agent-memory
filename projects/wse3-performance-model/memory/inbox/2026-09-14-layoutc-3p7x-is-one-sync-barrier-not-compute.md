@@ -48,6 +48,22 @@ localized"). Two wrong explanations were tried before the right one:
   not time** — per-PE KV doubles at 128-wide (definitional), attention time ≈
   unchanged. Non-monotonic near ½ on both axes (shallow minimum at half).
 
+**CONFIRMED BY INTERVENTION, 2026-09-15 (CS-3).** A router-only "staircase"
+reshard replaced the CE cascade: A1 row y enters A2 on its own corridor column
+c(y) = 127−⌊1.6y⌋ (decreasing in y, so no two streams share a router and one
+colour suffices), turns south to root row ⌊3.2y⌋, fans out ≤ 3 rows, and each
+row multicasts from its own origin column both ways; rows fed by two streams
+need a second multicast colour. Zero `@fmovh(atom_out, atom_in)`. Measured
+against a same-session baseline that reproduced the banked median exactly:
+**102,767 → 67,699 cyc/token (1.518×)**, 5,120 context 69,547 (1.504×),
+**output bit-identical on the same fixture** (84,480 values, 0 mismatches).
+Edge `round_barrier` **35,536 → 884** (onto the ~830 ordinary all-reduce),
+interior `x_row_recv` **35,174 → 282**, every compute segment within 2 %. So
+the barrier was never the tree and never arithmetic — it was one column
+relaying ~880 two-element atoms through its CEs, and the cost showed up in
+whichever segment each PE was parked in. Tall is now 2.56× the original
+(was 3.88×); the residual is the three stages alternating, not data movement.
+
 ## Implications / next actions
 
 - Layout C is **closed** as a performance direction (Le, 2026-09-13); the

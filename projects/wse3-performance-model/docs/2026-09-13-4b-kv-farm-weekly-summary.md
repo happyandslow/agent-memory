@@ -37,6 +37,7 @@ Qwen3-4B decode on one WSE-3 keeps the whole KV cache inside the ATTN blocks' SR
 | M2 | two-pass merge: max stream → router broadcast → local rescale → `@fadds` streaming sum | 1,346,696 | 2.00× |
 | T3 | rest of t2 on DSDs/DSRs (reductions, SIMD exp, `@increment_dsd_offset` P·V) | 1,241,770 | 1.85× |
 | **SW** | **t1 switch-forwarded** (router pos0 pass-through / pos1 inject, `SWITCH_ADV`) | **1,177,712** | **1.75×** |
+| **CT** (2026-09-15) | **contiguous head-to-row assignment** (head h = farm rows 32h..32h+31, class column 0, no stubs / pass-through) | **1,138,588** | **1.69×** |
 
 **Penalty curve (decode 64 after prefill N; 16K/24K with the block cache enlarged to 16,384 / 24,576 slots, added 2026-09-14; end-to-end at 7,936: shipped 1,046 tok/s device / ≈ 936 host-observed, farm 719 / ≈ 642):**
 
