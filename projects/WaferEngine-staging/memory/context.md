@@ -10,19 +10,21 @@ Compact startup packet for fresh agent sessions. This generated view is intentio
 
 ## Current state
 
-- Daily maintenance last checked this project on 2026-09-12.
+- Scoped M1b maintenance checked the live worktree and closure evidence on 2026-09-17; unrelated project history was not re-audited.
 - Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
 
 ## Current focus
 
-- M1b decode continuous batching is now the active formal milestone memory; M1b-S0 Part 1 is real-CS-3 bit-exact with +2.36% overhead, and Part 2+3 correctness is captured as complete with performance still unclaimed.
+- M1b-S0 is COMPLETE. Parts 1-3 correctness and final +2.323% equal-position CS-3 timed-decode overhead are accepted. The remaining resource gate passed on 2026-09-17: local SDK 2.10 full-geometry production compile, decode-role max data +48 B / max text +1,392 B. These local ELFs are not asserted identical to historical CS-3 binaries.
+- S1 awaits separate review; M1-S4 stays open until S0/S1 are jointly re-verified with S5/K0. S0 is static membership, not full continuous batching. Part 2/3 remains uncommitted at `5bb85048`; verify live state before acting.
 - Operational/procedural backlog was drained: CS-3 stdin/env gotchas, worktree relocation, staged diff classification, frozen pins, simulator-overlay readback, and softmax DSR first-cell bug.
 - A manual conflict is open for untracked `meetings/2026-09-06 copy.pptx` versus the tracked 2026-09-06 deck.
 
 ## Next likely actions
 
 - [ ] Verify live repo/server branch state before acting; memory is not proof.
-- [ ] Before M1b performance claims, check the post-2026-09-04 sweep/artifacts directly.
+- [ ] Review S1 EOS/actual-completion/no-write-after-EOS contract and gates before implementing it.
+- [ ] Use final S0 validation/resource reports for claims; +2.323% covers timed decode only, not metadata/ingress latency or pretrained-weight quality.
 - [ ] Resolve the 2026-09-06 meeting deck copy conflict manually before adding or deleting slide variants.
 
 ## Must-read topic notes

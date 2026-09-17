@@ -2,6 +2,18 @@
 
 # nc_service Timeline
 
+- 2026-09-13 — cerebras-only-refactor-boundaries → `memory/inbox/2026-09-13-cerebras-only-refactor-boundaries.md`
+- 2026-09-12 — nc-service-local-migration → `memory/inbox/2026-09-12-nc-service-local-migration.md`
+- 2026-09-12 — drafter-timing-and-process-boundaries → `memory/inbox/2026-09-12-drafter-timing-and-process-boundaries.md`
+- 2026-09-12 — cerebras-only-migration-scope → `memory/inbox/2026-09-12-cerebras-only-migration-scope.md`
+- 2026-09-11 — hybrid-nn-gpu-verifier-bootstrap → `memory/inbox/2026-09-11-hybrid-nn-gpu-verifier-bootstrap.md`
+- 2026-09-11 — host-token-bridge → `memory/inbox/2026-09-11-host-token-bridge.md`
+- 2026-09-10 — waferengine-submodule-default → `memory/inbox/2026-09-10-waferengine-submodule-default.md`
+- 2026-09-10 — sd-source-directory-automation → `memory/inbox/2026-09-10-sd-source-directory-automation.md`
+- 2026-09-10 — live-progress-pipe-and-worker-eviction → `memory/inbox/2026-09-10-live-progress-pipe-and-worker-eviction.md`
+- 2026-09-10 — gpu-verify-forward-ms-is-per-rank-and-forward-only → `memory/inbox/2026-09-10-gpu-verify-forward-ms-is-per-rank-and-forward-only.md`
+- 2026-09-10 — drafting-readiness-preflight → `memory/inbox/2026-09-10-drafting-readiness-preflight.md`
+- 2026-09-10 — csl-kernel-cs3-real-bundle → `memory/inbox/2026-09-10-csl-kernel-cs3-real-bundle.md`
 - 2026-08-02 — cerebras-nvidia-bridging-open-items-audit → `memory/inbox/2026-08-02-cerebras-nvidia-bridging-open-items-audit.md`
 - 2026-07-29 — m2-device-bringup-and-the-ingress-blocker → `memory/inbox/2026-07-29-m2-device-bringup-and-the-ingress-blocker.md`
 - 2026-07-28 — take-scalars-from-the-kernel-not-your-own-derivation → `memory/inbox/2026-07-28-take-scalars-from-the-kernel-not-your-own-derivation.md`

@@ -44,6 +44,8 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 ## Next actions
 
+- [x] **M1b-S0/D0 COMPLETE 2026-09-17.** Parts 1-3 production-ingress host/simulator and real-CS-3 correctness are accepted; final equal-position timed-decode overhead is +2.323%. The remaining local SDK 2.10 full-geometry resource gate passed (decode-role max data +48 B, max text +1,392 B; not historical device-ELF identity). Evidence: `memory/topics/m1b-decode-continuous-batching.md`, repo `docs/analysis/2026-09-17-m1b-s0-production-resource-report.md`.
+- [ ] **M1b-S1/D1: review EOS/actual-completion/no-write-after-EOS contract and gates before implementation.** S0 has static membership only. M1-S4 remains open until S0/S1 are jointly re-verified through S5/K0 fixed-slot integration; no Git operation is authorized by this next-action entry.
 - [ ] **Audit the Lane B equation and A/B-crossing slides** for the delta-reload vs full-KV-reload
       definition mismatch: full-KV Lane B is `B(L)=I(L)` with no post-ingress forced delta (adding
       one double-counts); the next free-decode token is a common tail, charged to all lanes or none.
@@ -362,3 +364,8 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 - Drained 19 WaferEngine-staging inbox captures from 2026-08-24..2026-09-04 into `memory/topics/m1b-decode-continuous-batching.md`, existing methodology topics, `memory/project.md`, and conflicts. Current M1b-S0 memory now records real-CS-3 Part 1 ragged validation, Part 2+3 correctness closure, low-amplitude red-control requirements, simulator-overlay/readback lessons, softmax DSR first-cell bug, and frozen-pin review caveats.
 - Recorded a manual conflict for the untracked `2026-09-06 copy.pptx` meeting deck variant rather than guessing whether it supersedes the tracked deck.
+
+### 2026-09-17 — scoped M1b-S0 closure maintenance
+
+- Drained `memory/inbox/2026-09-17-m1b-s0-resource-closure.md` into the existing M1b topic and next actions. Corrected Part 1 fixture vs Part 2/3 production-ingress attribution; recorded final +2.323% device overhead and the separately scoped local linked-resource gate. S0 is complete; S1 awaits review and M1-S4 stays open.
+- Regenerated the current-state views from those sources; preserved unrelated plans and the existing manual slide-copy conflict. No commit, push, or external sync.
