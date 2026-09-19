@@ -11,6 +11,8 @@
 ## Source of truth
 
 - Code repo: git@github.com:happyandslow/WaferEngine.git
+- ContextBase project: https://context.ed-aisys.com/collection/meshagentwaferos-1M2Y0UCxIv
+- Canonical gala2 cross-agent memory: `/home/lexu/agent-memory/projects/WaferEngine-staging`
 - Remote server path(s): gala2:/home/lexu/WaferEngine-staging
 - Local checkout path(s): 
 - Obsidian path: `/Users/lexu/Library/CloudStorage/GoogleDrive-lxu5398@gmail.com/My Drive/Obsidian-note-vault/note-vault/10-work/WaferEngine-staging`
@@ -45,6 +47,14 @@ export MEMORY=$AGENT_MEMORY_ROOT/projects/WaferEngine-staging   # or /home/lexu/
 
 ## Conventions
 
+- **Planning-document ownership (Le, 2026-09-18):** `PROGRESS.md` and all
+  `milestones/` working files are untracked in the code repo and synchronized
+  through agent-memory and ContextBase. Do not stage them during checkpoints.
+  Preserve their local contents when changing tracking. Local `.git/info/exclude`
+  rules do not protect files already tracked by a historical branch; audit before
+  checkout. This exception does not change ownership of other planning/code files.
+  Memory synchronization is not authorization to stage, commit, push, or rewrite
+  either repository. See `memory/inbox/2026-09-18-m1b-s1-handoff-and-tracking-ownership.md`.
 - Active model = `models/qwen3_1p7b-*` (decode/prefill/e2e/e2e-pdSeparate). Old
   llama3_1_8b is deprecated (`models/deprecated/`); README/REPO_LAYOUT docs describe
   it and are stale — trust the qwen `launch.py` + `run_sim.sh`/`run_device.sh` pattern.

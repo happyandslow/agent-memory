@@ -10,26 +10,28 @@ Compact startup packet for fresh agent sessions. This generated view is intentio
 
 ## Current state
 
-- Scoped M1b maintenance checked the live worktree and closure evidence on 2026-09-17; unrelated project history was not re-audited.
+- Scoped M1b maintenance checked live local/GitHub refs and synchronized agent-memory/ContextBase on 2026-09-18; unrelated project history was not re-audited.
 - Generated status is in `tracking/status.md`; human roadmap and durable progress narrative are in `plan.md`.
 
 ## Current focus
 
 - M1b-S0 is COMPLETE. Parts 1-3 correctness and final +2.323% equal-position CS-3 timed-decode overhead are accepted. The remaining resource gate passed on 2026-09-17: local SDK 2.10 full-geometry production compile, decode-role max data +48 B / max text +1,392 B. These local ELFs are not asserted identical to historical CS-3 binaries.
-- S1 awaits separate review; M1-S4 stays open until S0/S1 are jointly re-verified with S5/K0. S0 is static membership, not full continuous batching. Part 2/3 remains uncommitted at `5bb85048`; verify live state before acting.
+- S1 awaits separate review; M1-S4 stays open until S0/S1 are jointly re-verified with S5/K0. S0 is static membership, not full continuous batching. Local S1 HEAD `2371b583` is tree-identical to live S0 feature `d05cb598`; live main is separately `23982d7c` and does not contain that S1 commit in its ancestry. Verify/review the live base before acting.
+- `PROGRESS.md` and all `milestones/` working files are untracked in the code repo and maintained through agent-memory/ContextBase. Do not stage them; local excludes cannot protect files tracked on an older branch. This sync preserved their local bytes and performed no Git mutation.
 - Operational/procedural backlog was drained: CS-3 stdin/env gotchas, worktree relocation, staged diff classification, frozen pins, simulator-overlay readback, and softmax DSR first-cell bug.
 - A manual conflict is open for untracked `meetings/2026-09-06 copy.pptx` versus the tracked 2026-09-06 deck.
 
 ## Next likely actions
 
 - [ ] Verify live repo/server branch state before acting; memory is not proof.
-- [ ] Review S1 EOS/actual-completion/no-write-after-EOS contract and gates before implementing it.
+- [ ] Review S1 EOS/actual-completion/no-write-after-EOS contract and gates before implementing it; prepared local prompt: `docs/session-prompts/M1b-S1.md`.
 - [ ] Use final S0 validation/resource reports for claims; +2.323% covers timed decode only, not metadata/ingress latency or pretrained-weight quality.
 - [ ] Resolve the 2026-09-06 meeting deck copy conflict manually before adding or deleting slide variants.
 
 ## Must-read topic notes
 
 - `memory/topics/m1b-decode-continuous-batching.md` — M1b roadmap and M1b-S0 correctness, red-control, overlay, softmax, and pinning lessons.
+- `memory/inbox/2026-09-18-m1b-s1-handoff-and-tracking-ownership.md` — current Git audit, ownership decision, recovery paths, and ContextBase session pointer.
 - `memory/topics/m1-s4-c1-ragged-fixed-communication.md` — M1-S4 C1 fixed-communication results and ragged-prefix context.
 - `memory/topics/derived-scripts-and-editing-a-running-script.md` — Worktree relocation and live-file/editor-sync gotchas.
 - `memory/project.md` — CS-3 run transport and environment operational gotchas.

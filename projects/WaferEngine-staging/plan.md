@@ -46,6 +46,7 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 - [x] **M1b-S0/D0 COMPLETE 2026-09-17.** Parts 1-3 production-ingress host/simulator and real-CS-3 correctness are accepted; final equal-position timed-decode overhead is +2.323%. The remaining local SDK 2.10 full-geometry resource gate passed (decode-role max data +48 B, max text +1,392 B; not historical device-ELF identity). Evidence: `memory/topics/m1b-decode-continuous-batching.md`, repo `docs/analysis/2026-09-17-m1b-s0-production-resource-report.md`.
 - [ ] **M1b-S1/D1: review EOS/actual-completion/no-write-after-EOS contract and gates before implementation.** S0 has static membership only. M1-S4 remains open until S0/S1 are jointly re-verified through S5/K0 fixed-slot integration; no Git operation is authorized by this next-action entry.
+      Prepared prompt: repo `docs/session-prompts/M1b-S1.md`. The 2026-09-18 audit found S1 HEAD `2371b583` tree-identical to live S0 feature `d05cb598`, separate from live main `23982d7c`; re-audit/review the base before starting. PROGRESS and all milestone working files are untracked and synchronized through memory/ContextBase, not code Git. See `memory/inbox/2026-09-18-m1b-s1-handoff-and-tracking-ownership.md`.
 - [ ] **Audit the Lane B equation and A/B-crossing slides** for the delta-reload vs full-KV-reload
       definition mismatch: full-KV Lane B is `B(L)=I(L)` with no post-ingress forced delta (adding
       one double-counts); the next free-decode token is a common tail, charged to all lanes or none.
@@ -369,3 +370,8 @@ Human-maintained roadmap and durable progress narrative. This is the canonical h
 
 - Drained `memory/inbox/2026-09-17-m1b-s0-resource-closure.md` into the existing M1b topic and next actions. Corrected Part 1 fixture vs Part 2/3 production-ingress attribution; recorded final +2.323% device overhead and the separately scoped local linked-resource gate. S0 is complete; S1 awaits review and M1-S4 stays open.
 - Regenerated the current-state views from those sources; preserved unrelated plans and the existing manual slide-copy conflict. No commit, push, or external sync.
+
+### 2026-09-18 — scoped S1 handoff and tracking-ownership maintenance
+
+- Drained `memory/inbox/2026-09-18-m1b-s1-handoff-and-tracking-ownership.md` into the existing M1b topic, project conventions, and S1 next action. S0 remains complete; S1 is review-only and M1-S4 remains open. Corrected stale uncommitted/push-blocker state using live refs without claiming S0 ancestry in current main.
+- Synchronized the dated closure/handoff log and existing ContextBase overview, progress, milestone, and ownership pages. Preserved local code-repo PROGRESS/milestone contents, all unrelated work, and the manual slide-copy conflict. Regenerated scoped memory views. No source edit, experiment, staging, commit, push, or history rewrite.
