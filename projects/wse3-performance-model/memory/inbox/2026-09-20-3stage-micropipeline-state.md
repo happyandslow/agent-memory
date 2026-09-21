@@ -108,6 +108,23 @@ skill; staging `/home/lexu/xzstair-cs3/package-xz` → `CS-3:~/rsync/xzstair-cs3
 ## Pointers
 
 - 3-way comparison experiment handoff: `docs/reports/2026-09-20-3way-pipeline-comparison-experiment.md`.
+- **On-chip PLACEMENT / floorplan of the 3 impls (to-scale, real geometry):**
+  `artifacts/2026-09-21-3impl-onchip-floorplan.{excalidraw,svg,png}` (project
+  copy `docs/diagrams/2026-09-21-3impl-onchip-floorplan.*`). Drawn from real
+  compiled dims — single tall block = **258×258 PE** (strip 2 + left col 128:
+  A1 QKV top-80 / gap 16 / A3 FFN bottom-160 ‖ right col A2 attn+O 128×256;
+  `tall/host/tall_layout.py:full_geometry` + `tall/launch_tall.py:290-294`); fat
+  block = ATTN 256×256 + FFN 256×256 (`upstream/launch_legacy_probe.py:30,45`);
+  wafer ~762×1034 PE, 2 cols × 4 rows = 8 blocks, HT(embed/LM) 128 strip left
+  (`launch.py:646-653`). **① is the real WaferEngine placement** (4 ATTN + 4 FFN,
+  [9,9,9,9]=36 layers); **②③ 8-block tall tilings are PROPOSED** (single block
+  compiled-real, 8-up tiling unbuilt). ② consecutive + within-block feedback
+  (purple loop); ③ non-consecutive (bk={k,k+8,…,k+32}) + big-loop b8→b1 (orange),
+  ×5 passes.
+- Module-relationship view (no placement, simpler):
+  `artifacts/2026-09-20-3impl-onchip-layout.{excalidraw,svg,png}`. Bottleneck
+  compare on both: fat 11,680 vs 3-stage A2 7,746 (1.51× upper bound; decided by
+  inter-block comm).
 - Prior captures: [[2026-09-17-tall-fine-grained-pipeline-and-per-stage-vs-context]] (per-stage vs context, ceiling), [[2026-09-18-pipe-slots2-deadlock-handoff]] (the runtime-divisor bug, corrected).
 - Ring/credit diagram: `docs/diagrams/2026-09-18-feedback-credit-ring-deadlock.{excalidraw,svg,png}`.
 - Skill: `cerebras-debugging` (sim-vs-device, artifact-SHA discipline, compile-memory-report-for-SRAM).

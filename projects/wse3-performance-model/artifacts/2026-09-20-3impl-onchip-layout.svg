@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="640" viewBox="0 0 1400 640" font-family="system-ui,Segoe UI,'Noto Sans CJK SC',sans-serif">
+<defs><marker id="m7048e8" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#7048e8"/></marker><marker id="me8590c" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#e8590c"/></marker><marker id="m868e96" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#868e96"/></marker></defs>
+<rect width="1400" height="640" fill="#fff"/>
+<text x="60" y="74.0" font-size="16" fill="#1e1e1e">① Baseline(已跑通 · WaferEngine):8 胖块 = 4 ATTN + 4 FFN,256-宽,无 micro-pipeline</text>
+<rect x="90" y="95" width="132" height="74" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="112" y="123.0" font-size="12" fill="#1971c2">ATTN</text>
+<text x="112" y="138.0" font-size="12" fill="#1971c2">×9 层</text>
+<text x="112" y="153.0" font-size="12" fill="#1971c2">256-宽</text>
+<path d="M 222,132 L 242,132" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="242" y="95" width="132" height="74" rx="6" fill="#fff4e6" stroke="#e8590c" stroke-width="2"/>
+<text x="264" y="123.0" font-size="12" fill="#e8590c">FFN</text>
+<text x="264" y="138.0" font-size="12" fill="#e8590c">×9 层</text>
+<text x="264" y="153.0" font-size="12" fill="#e8590c">256-宽</text>
+<path d="M 374,132 L 394,132" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="394" y="95" width="132" height="74" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="416" y="123.0" font-size="12" fill="#1971c2">ATTN</text>
+<text x="416" y="138.0" font-size="12" fill="#1971c2">×9 层</text>
+<text x="416" y="153.0" font-size="12" fill="#1971c2">256-宽</text>
+<path d="M 526,132 L 546,132" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="546" y="95" width="132" height="74" rx="6" fill="#fff4e6" stroke="#e8590c" stroke-width="2"/>
+<text x="568" y="123.0" font-size="12" fill="#e8590c">FFN</text>
+<text x="568" y="138.0" font-size="12" fill="#e8590c">×9 层</text>
+<text x="568" y="153.0" font-size="12" fill="#e8590c">256-宽</text>
+<path d="M 678,132 L 698,132" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="698" y="95" width="132" height="74" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="720" y="123.0" font-size="12" fill="#1971c2">ATTN</text>
+<text x="720" y="138.0" font-size="12" fill="#1971c2">×9 层</text>
+<text x="720" y="153.0" font-size="12" fill="#1971c2">256-宽</text>
+<path d="M 830,132 L 850,132" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="850" y="95" width="132" height="74" rx="6" fill="#fff4e6" stroke="#e8590c" stroke-width="2"/>
+<text x="872" y="123.0" font-size="12" fill="#e8590c">FFN</text>
+<text x="872" y="138.0" font-size="12" fill="#e8590c">×9 层</text>
+<text x="872" y="153.0" font-size="12" fill="#e8590c">256-宽</text>
+<path d="M 982,132 L 1002,132" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="1002" y="95" width="132" height="74" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1024" y="123.0" font-size="12" fill="#1971c2">ATTN</text>
+<text x="1024" y="138.0" font-size="12" fill="#1971c2">×9 层</text>
+<text x="1024" y="153.0" font-size="12" fill="#1971c2">256-宽</text>
+<path d="M 1134,132 L 1154,132" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="1154" y="95" width="132" height="74" rx="6" fill="#fff4e6" stroke="#e8590c" stroke-width="2"/>
+<text x="1176" y="123.0" font-size="12" fill="#e8590c">FFN</text>
+<text x="1176" y="138.0" font-size="12" fill="#e8590c">×9 层</text>
+<text x="1176" y="153.0" font-size="12" fill="#e8590c">256-宽</text>
+<text x="60" y="189.0" font-size="12" fill="#1e1e1e">瓶颈 = max(T_attn 11,680, T_ffn 4,931) = 11,680/层</text>
+<text x="60" y="242.0" font-size="16" fill="#1e1e1e">② 3-stage × 8,连续层,块内 feedback(现有块,差块间前向路由)</text>
+<rect x="90.0" y="250" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="103.0" y="281.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="134.0" y="250" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="147.0" y="281.0" font-size="11" fill="#e03131">A2</text>
+<rect x="178.0" y="250" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="191.0" y="281.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="140.0" y="323.0" font-size="11" fill="#1e1e1e">L1-5</text>
+<path d="M 212,250 L 212,236 L 100,236 L 100,250" fill="none" stroke="#7048e8" stroke-width="1.5" marker-end="url(#m7048e8)"/>
+<path d="M 222,279 L 242,279" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="242.0" y="250" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="255.0" y="281.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="286.0" y="250" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="299.0" y="281.0" font-size="11" fill="#e03131">A2</text>
+<rect x="330.0" y="250" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="343.0" y="281.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="292.0" y="323.0" font-size="11" fill="#1e1e1e">L6-10</text>
+<path d="M 364,250 L 364,236 L 252,236 L 252,250" fill="none" stroke="#7048e8" stroke-width="1.5" marker-end="url(#m7048e8)"/>
+<path d="M 374,279 L 394,279" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="394.0" y="250" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="407.0" y="281.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="438.0" y="250" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="451.0" y="281.0" font-size="11" fill="#e03131">A2</text>
+<rect x="482.0" y="250" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="495.0" y="281.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="444.0" y="323.0" font-size="11" fill="#1e1e1e">L11-15</text>
+<path d="M 516,250 L 516,236 L 404,236 L 404,250" fill="none" stroke="#7048e8" stroke-width="1.5" marker-end="url(#m7048e8)"/>
+<path d="M 526,279 L 546,279" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="546.0" y="250" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="559.0" y="281.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="590.0" y="250" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="603.0" y="281.0" font-size="11" fill="#e03131">A2</text>
+<rect x="634.0" y="250" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="647.0" y="281.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="596.0" y="323.0" font-size="11" fill="#1e1e1e">L16-20</text>
+<path d="M 668,250 L 668,236 L 556,236 L 556,250" fill="none" stroke="#7048e8" stroke-width="1.5" marker-end="url(#m7048e8)"/>
+<path d="M 678,279 L 698,279" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="698.0" y="250" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="711.0" y="281.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="742.0" y="250" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="755.0" y="281.0" font-size="11" fill="#e03131">A2</text>
+<rect x="786.0" y="250" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="799.0" y="281.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="748.0" y="323.0" font-size="11" fill="#1e1e1e">L21-25</text>
+<path d="M 820,250 L 820,236 L 708,236 L 708,250" fill="none" stroke="#7048e8" stroke-width="1.5" marker-end="url(#m7048e8)"/>
+<path d="M 830,279 L 850,279" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="850.0" y="250" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="863.0" y="281.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="894.0" y="250" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="907.0" y="281.0" font-size="11" fill="#e03131">A2</text>
+<rect x="938.0" y="250" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="951.0" y="281.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="900.0" y="323.0" font-size="11" fill="#1e1e1e">L26-30</text>
+<path d="M 972,250 L 972,236 L 860,236 L 860,250" fill="none" stroke="#7048e8" stroke-width="1.5" marker-end="url(#m7048e8)"/>
+<path d="M 982,279 L 1002,279" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="1002.0" y="250" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1015.0" y="281.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="1046.0" y="250" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="1059.0" y="281.0" font-size="11" fill="#e03131">A2</text>
+<rect x="1090.0" y="250" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="1103.0" y="281.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="1052.0" y="323.0" font-size="11" fill="#1e1e1e">L31-35</text>
+<path d="M 1124,250 L 1124,236 L 1012,236 L 1012,250" fill="none" stroke="#7048e8" stroke-width="1.5" marker-end="url(#m7048e8)"/>
+<path d="M 1134,279 L 1154,279" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="1154.0" y="250" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1167.0" y="281.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="1198.0" y="250" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="1211.0" y="281.0" font-size="11" fill="#e03131">A2</text>
+<rect x="1242.0" y="250" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="1255.0" y="281.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="1204.0" y="323.0" font-size="11" fill="#1e1e1e">L36</text>
+<path d="M 1276,250 L 1276,236 L 1164,236 L 1164,250" fill="none" stroke="#7048e8" stroke-width="1.5" marker-end="url(#m7048e8)"/>
+<text x="60" y="342.0" font-size="12" fill="#7048e8">块内 A3→A1 往返 每层一次(紫),流水仅 3 级深 → ~20,842/层(装不下时才拆多块)</text>
+<text x="60" y="422.0" font-size="16" fill="#1e1e1e">③ 3-stage × 8,非连续层,绕大圈(差绕圈调度 + loop-back 路由 + 非连续KV)</text>
+<rect x="90.0" y="430" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="103.0" y="461.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="134.0" y="430" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="147.0" y="461.0" font-size="11" fill="#e03131">A2</text>
+<rect x="178.0" y="430" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="191.0" y="461.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="98" y="501.5" font-size="9.5" fill="#1e1e1e">{1,9,17,25,33}</text>
+<path d="M 222,459 L 242,459" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="242.0" y="430" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="255.0" y="461.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="286.0" y="430" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="299.0" y="461.0" font-size="11" fill="#e03131">A2</text>
+<rect x="330.0" y="430" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="343.0" y="461.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="250" y="501.5" font-size="9.5" fill="#1e1e1e">{2,10,18,26,34}</text>
+<path d="M 374,459 L 394,459" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="394.0" y="430" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="407.0" y="461.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="438.0" y="430" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="451.0" y="461.0" font-size="11" fill="#e03131">A2</text>
+<rect x="482.0" y="430" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="495.0" y="461.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="402" y="501.5" font-size="9.5" fill="#1e1e1e">{3,11,19,27,35}</text>
+<path d="M 526,459 L 546,459" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="546.0" y="430" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="559.0" y="461.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="590.0" y="430" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="603.0" y="461.0" font-size="11" fill="#e03131">A2</text>
+<rect x="634.0" y="430" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="647.0" y="461.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="554" y="501.5" font-size="9.5" fill="#1e1e1e">{4,12,20,28,36}</text>
+<path d="M 678,459 L 698,459" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="698.0" y="430" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="711.0" y="461.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="742.0" y="430" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="755.0" y="461.0" font-size="11" fill="#e03131">A2</text>
+<rect x="786.0" y="430" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="799.0" y="461.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="706" y="501.5" font-size="9.5" fill="#1e1e1e">{5,13,21,29}</text>
+<path d="M 830,459 L 850,459" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="850.0" y="430" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="863.0" y="461.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="894.0" y="430" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="907.0" y="461.0" font-size="11" fill="#e03131">A2</text>
+<rect x="938.0" y="430" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="951.0" y="461.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="858" y="501.5" font-size="9.5" fill="#1e1e1e">{6,14,22,30}</text>
+<path d="M 982,459 L 1002,459" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="1002.0" y="430" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1015.0" y="461.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="1046.0" y="430" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="1059.0" y="461.0" font-size="11" fill="#e03131">A2</text>
+<rect x="1090.0" y="430" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="1103.0" y="461.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="1010" y="501.5" font-size="9.5" fill="#1e1e1e">{7,15,23,31}</text>
+<path d="M 1134,459 L 1154,459" fill="none" stroke="#868e96" stroke-width="2" marker-end="url(#m868e96)"/>
+<rect x="1154.0" y="430" width="44.0" height="58" rx="6" fill="#e7f5ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1167.0" y="461.0" font-size="11" fill="#1971c2">A1</text>
+<rect x="1198.0" y="430" width="44.0" height="58" rx="6" fill="#fff5f5" stroke="#e03131" stroke-width="2"/>
+<text x="1211.0" y="461.0" font-size="11" fill="#e03131">A2</text>
+<rect x="1242.0" y="430" width="44.0" height="58" rx="6" fill="#ebfbee" stroke="#2f9e44" stroke-width="2"/>
+<text x="1255.0" y="461.0" font-size="11" fill="#2f9e44">A3</text>
+<text x="1162" y="501.5" font-size="9.5" fill="#1e1e1e">{8,16,24,32}</text>
+<path d="M 1286,488 L 1286,526 L 90,526 L 90,488" fill="none" stroke="#e8590c" stroke-width="2.5" marker-end="url(#me8590c)"/>
+<text x="618.0" y="542.0" font-size="12" fill="#e8590c">绕大圈 feedback:每 8 层一圈(block8 → block1)</text>
+<text x="60" y="570.0" font-size="12" fill="#1e1e1e">前向穿 8 块 = 24 级深,往返摊到 8 层 → 逼近瓶颈 A2 ≈ 7,746/层（前提:级间通信 ≤ A2,未测）</text>
+<text x="60" y="598.5" font-size="12.5" fill="#7048e8">对比:胖块瓶颈 11,680  ·  3-stage 计算瓶颈 A2 = 7,746(细分把 attn 拆成 A1+A2)= 1.51× 上界，胜负手 = 级间通信</text>
+</svg>
